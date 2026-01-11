@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+
+if [ -f "scripts/uk_aq_inject_project_ref.mjs" ]; then
+  node scripts/uk_aq_inject_project_ref.mjs
+  git add web/uk_aq_bristol.html
+fi

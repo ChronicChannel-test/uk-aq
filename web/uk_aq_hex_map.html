@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UK AQ Hex Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #142225;
+        --ink-soft: #334449;
+        --mist: #f6f1e9;
+        --teal: #0f8b8d;
+        --teal-deep: #0a5d61;
+        --sun: #f4b942;
+        --clay: #e8dcc7;
+        --fog: rgba(20, 34, 37, 0.08);
+        --card: #ffffff;
+        --heat-0: #fef9e7;
+        --heat-1: #ffd89e;
+        --heat-2: #f9b159;
+        --heat-3: #eb7a3b;
+        --heat-4: #cf3f2f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
+          radial-gradient(circle at 88% 18%, #d6f1ef 0%, transparent 50%),
+          linear-gradient(135deg, #f7f2e8, #f0f7f6);
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: linear-gradient(120deg, rgba(20, 34, 37, 0.05) 1px, transparent 1px);
+        background-size: 32px 32px;
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      main {
+        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 48px 24px 64px;
+        display: grid;
+        gap: 24px;
+      }
+
+      header {
+        display: grid;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .title {
+        font-family: "Fraunces", serif;
+        font-size: clamp(2rem, 2.6vw, 3.25rem);
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 1.05rem;
+        max-width: 720px;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .badge {
+        background: var(--clay);
+        color: var(--ink);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(20, 34, 37, 0.12);
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+        animation: floatIn 0.6s ease-out;
+      }
+
+      .card-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .card-title {
+        font-family: "Fraunces", serif;
+        margin: 0;
+        font-size: 1.4rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .actions button {
+        border: none;
+        background: var(--teal);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .actions button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 139, 141, 0.25);
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .filters label {
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .filters input {
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.15);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        color: var(--ink);
+      }
+
+      .map-wrap {
+        border-radius: 16px;
+        background: #fdfaf4;
+        padding: 16px;
+        border: 1px solid rgba(20, 34, 37, 0.08);
+      }
+
+      svg {
+        width: 100%;
+        height: 560px;
+        display: block;
+      }
+
+      .hex {
+        stroke: rgba(20, 34, 37, 0.12);
+        stroke-width: 1;
+        transition: fill 0.2s ease, stroke 0.2s ease;
+      }
+
+      .hex:hover {
+        stroke: rgba(20, 34, 37, 0.4);
+        stroke-width: 1.5;
+      }
+
+      .legend {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .legend-bar {
+        display: flex;
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+      }
+
+      .legend-swatch {
+        width: 42px;
+        height: 12px;
+      }
+
+      .tooltip {
+        position: absolute;
+        pointer-events: none;
+        background: white;
+        border-radius: 10px;
+        padding: 8px 12px;
+        box-shadow: 0 10px 20px rgba(20, 34, 37, 0.18);
+        font-size: 0.85rem;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .tooltip.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .hint {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .toggle {
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        background: #fff;
+      }
+
+      .toggle button {
+        border: none;
+        background: transparent;
+        color: var(--ink-soft);
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .toggle button.active {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .error {
+        color: #8b1e3f;
+        font-weight: 600;
+      }
+
+      @keyframes floatIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 36px 18px 48px;
+        }
+
+        .card {
+          padding: 18px;
+        }
+
+        svg {
+          height: 420px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="badge">Hex Cartogram</p>
+        <h1 class="title">UK AQ hex map</h1>
+        <p class="subtitle">
+          A population-equal hex cartogram showing the latest PM2.5 by constituency. Each
+          hex represents roughly the same number of people; values are aggregated per constituency.
+        </p>
+        <div class="meta">
+          <span id="row-count">Loading…</span>
+          <span id="last-updated">Waiting for data</span>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Latest PM2.5 by constituency</h2>
+          <div class="actions">
+            <span class="hint" id="status">Fetching from Supabase…</span>
+            <button id="refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="filters">
+          <span class="hint">Metric: Latest PM2.5</span>
+          <div class="toggle" role="group" aria-label="Aggregation">
+            <button type="button" class="active" data-metric="median">Typical (median)</button>
+            <button type="button" data-metric="mean">Average (mean)</button>
+          </div>
+          <span class="hint">Parliamentary constituency hex cartogram (equal-pop)</span>
+        </div>
+        <div class="hint" id="endpoint-hint"></div>
+        <div class="error" id="error"></div>
+        <div class="map-wrap">
+          <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+        </div>
+        <div class="legend">
+          <span>PM2.5 (ug/m3)</span>
+          <div class="legend-bar">
+            <span class="legend-swatch" style="background: var(--heat-0);"></span>
+            <span class="legend-swatch" style="background: var(--heat-1);"></span>
+            <span class="legend-swatch" style="background: var(--heat-2);"></span>
+            <span class="legend-swatch" style="background: var(--heat-3);"></span>
+            <span class="legend-swatch" style="background: var(--heat-4);"></span>
+          </div>
+          <span id="legend-label"></span>
+        </div>
+      </section>
+    </main>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+    <script>
+      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
+      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
+      const params = new URLSearchParams(window.location.search);
+      const projectRefParam = params.get("project_ref");
+      const anonKeyParam = params.get("anon_key");
+      const metricParam = params.get("metric");
+      const mapDateParam = params.get("map_date");
+      const pconVersionParam = params.get("pcon_version");
+      const inferredProjectRef = inferProjectRefFromHost();
+      const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
+        ? (projectRefParam || inferredProjectRef || "")
+        : PROJECT_REF_PLACEHOLDER;
+      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SUPABASE_ANON_KEY__")
+        ? (anonKeyParam || "")
+        : ANON_KEY_PLACEHOLDER;
+      const REST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_pcon_hex`
+        : "";
+      const MAP_CUTOVER = "2023-11-29";
+      const MAP_CONFIGS = [
+        {
+          id: "pcon24",
+          label: "2024 constituencies",
+          hexUrl: "data/PCON/uk-constituencies-2023.hexjson",
+          version: "2024",
+          effectiveFrom: MAP_CUTOVER,
+        },
+        {
+          id: "pcon23",
+          label: "Pre-2024 constituencies",
+          hexUrl: "data/PCON/uk-constituencies-2017.hexjson",
+          version: "2023",
+          effectiveUntil: MAP_CUTOVER,
+        },
+      ];
+      const mapDateKey = normalizeDateKey(mapDateParam);
+      const activeMap = pickMapConfig(mapDateKey);
+      const HEX_DATA_URL = activeMap.hexUrl;
+      const activePconVersion = pconVersionParam || activeMap.version;
+      const METRIC_LABELS = {
+        median: "Typical (median)",
+        mean: "Average (mean)",
+      };
+
+      const statusEl = document.getElementById("status");
+      const errorEl = document.getElementById("error");
+      const rowCount = document.getElementById("row-count");
+      const lastUpdated = document.getElementById("last-updated");
+      const endpointHint = document.getElementById("endpoint-hint");
+      const legendLabel = document.getElementById("legend-label");
+      const tooltip = document.getElementById("tooltip");
+      const svg = d3.select("#hex-map");
+      const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
+
+      let currentMetric = metricParam === "mean" ? "mean" : "median";
+      let hexData = null;
+      let hexCells = [];
+      let hexBounds = null;
+      let hexSide = null;
+      let hexLayout = "odd-r";
+      let pconRows = [];
+      let pconLookup = new Map();
+      let pconCodes = new Set();
+
+      endpointHint.textContent = REST_URL
+        ? `Endpoint: ${REST_URL} (${activeMap.label})`
+        : "Missing project ref. Add ?project_ref=... to the URL.";
+
+      function inferProjectRefFromHost() {
+        const host = window.location.hostname || "";
+        if (host.endsWith(".supabase.co")) {
+          return host.split(".")[0];
+        }
+        return null;
+      }
+
+      function normalizeDateKey(value) {
+        if (!value) {
+          return null;
+        }
+        const trimmed = value.trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+          return null;
+        }
+        return trimmed;
+      }
+
+      function pickMapConfig(dateKey) {
+        if (!dateKey) {
+          return MAP_CONFIGS[0];
+        }
+        return dateKey < MAP_CUTOVER ? MAP_CONFIGS[1] : MAP_CONFIGS[0];
+      }
+
+      function normalizeNumber(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : null;
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return "-";
+        }
+        return value.toLocaleString();
+      }
+
+      function formatValue(value) {
+        const numeric = normalizeNumber(value);
+        if (numeric === null) {
+          return "-";
+        }
+        return numeric.toFixed(1);
+      }
+
+      function formatTimestamp(value) {
+        if (!value) {
+          return "unknown";
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return "unknown";
+        }
+        return parsed.toLocaleString();
+      }
+
+      function updateLegend(minValue, maxValue) {
+        if (minValue === null || maxValue === null) {
+          legendLabel.textContent = "No PM2.5 values";
+          return;
+        }
+        legendLabel.textContent = `${METRIC_LABELS[currentMetric]}: ${formatValue(minValue)} to ${formatValue(maxValue)} ug/m3`;
+      }
+
+      function clearMap() {
+        svg.selectAll("*").remove();
+      }
+
+      function offsetToPixel(layout, q, r, size) {
+        if (layout === "odd-r") {
+          return {
+            x: size * Math.sqrt(3) * (q + 0.5 * (r & 1)),
+            y: size * 1.5 * r,
+          };
+        }
+        if (layout === "even-r") {
+          return {
+            x: size * Math.sqrt(3) * (q + 0.5 * ((r + 1) & 1)),
+            y: size * 1.5 * r,
+          };
+        }
+        if (layout === "odd-q") {
+          return {
+            x: size * 1.5 * q,
+            y: size * Math.sqrt(3) * (r + 0.5 * (q & 1)),
+          };
+        }
+        if (layout === "even-q") {
+          return {
+            x: size * 1.5 * q,
+            y: size * Math.sqrt(3) * (r + 0.5 * ((q + 1) & 1)),
+          };
+        }
+        return {
+          x: size * Math.sqrt(3) * (q + r / 2),
+          y: size * 1.5 * r,
+        };
+      }
+
+      function computeHexBounds(cells, side) {
+        const dx = (Math.sqrt(3) / 2) * side;
+        const dy = side;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        cells.forEach((cell) => {
+          const left = cell.cx - dx;
+          const right = cell.cx + dx;
+          const bottom = cell.cy - dy;
+          const top = cell.cy + dy;
+          if (left < minX) {
+            minX = left;
+          }
+          if (bottom < minY) {
+            minY = bottom;
+          }
+          if (right > maxX) {
+            maxX = right;
+          }
+          if (top > maxY) {
+            maxY = top;
+          }
+        });
+        return { minX, minY, maxX, maxY };
+      }
+
+      function buildHexCellsFromHexjson(hexjson) {
+        const layout = typeof hexjson?.layout === "string" ? hexjson.layout : "odd-r";
+        const entries = Object.entries(hexjson?.hexes || {});
+        const size = 1;
+        const cells = entries.map(([key, value]) => {
+          const q = Number(value?.q ?? value?.col ?? 0);
+          const r = Number(value?.r ?? value?.row ?? 0);
+          const { x, y } = offsetToPixel(layout, q, r, size);
+          return {
+            id: key,
+            cx: x,
+            cy: y,
+            pcon_code: key,
+            pcon_name: value?.n || null,
+          };
+        });
+        return { cells, bounds: computeHexBounds(cells, size), side: size, layout };
+      }
+
+      function prepareHexGrid() {
+        if (!hexData || hexCells.length) {
+          return;
+        }
+        const { cells, bounds, side, layout } = buildHexCellsFromHexjson(hexData);
+        hexCells = cells;
+        hexBounds = bounds;
+        hexSide = side;
+        hexLayout = layout;
+      }
+
+      function createProjection(bounds, width, height, padding) {
+        const dataWidth = bounds.maxX - bounds.minX;
+        const dataHeight = bounds.maxY - bounds.minY;
+        const scale = Math.min(
+          (width - padding * 2) / dataWidth,
+          (height - padding * 2) / dataHeight,
+        );
+        const extraX = width - padding * 2 - dataWidth * scale;
+        const extraY = height - padding * 2 - dataHeight * scale;
+        return (point) => ([
+          (point[0] - bounds.minX) * scale + padding + extraX / 2,
+          (bounds.maxY - point[1]) * scale + padding + extraY / 2,
+        ]);
+      }
+
+      function hexPoints(cx, cy, side) {
+        const dx = Math.sqrt(3) / 2 * side;
+        const dy = side / 2;
+        return [
+          [cx, cy + side],
+          [cx + dx, cy + dy],
+          [cx + dx, cy - dy],
+          [cx, cy - side],
+          [cx - dx, cy - dy],
+          [cx - dx, cy + dy],
+        ];
+      }
+
+      function applyMetricState() {
+        metricButtons.forEach((button) => {
+          const isActive = button.dataset.metric === currentMetric;
+          button.classList.toggle("active", isActive);
+        });
+      }
+
+      function getMetricValue(row) {
+        if (!row) {
+          return null;
+        }
+        return currentMetric === "mean"
+          ? normalizeNumber(row.mean_value)
+          : normalizeNumber(row.median_value);
+      }
+
+      function getStationCount(row) {
+        if (!row) {
+          return 0;
+        }
+        const count = normalizeNumber(row.station_count);
+        return count === null ? 0 : count;
+      }
+
+      function renderMap() {
+        if (!hexData || !hexCells.length || !hexBounds || !hexSide) {
+          return;
+        }
+        clearMap();
+        const width = svg.node().clientWidth || 960;
+        const height = svg.node().clientHeight || 560;
+        const projection = createProjection(hexBounds, width, height, 24);
+        const values = pconRows
+          .map((row) => getMetricValue(row))
+          .filter((value) => Number.isFinite(value));
+        const minValue = values.length ? d3.min(values) : null;
+        const maxValue = values.length ? d3.max(values) : null;
+        const palette = ["var(--heat-0)", "var(--heat-1)", "var(--heat-2)", "var(--heat-3)", "var(--heat-4)"];
+        let colorScale = null;
+        if (minValue !== null && maxValue !== null) {
+          const domainMax = minValue === maxValue ? minValue + 1 : maxValue;
+          colorScale = d3.scaleQuantize()
+            .domain([minValue, domainMax])
+            .range(palette);
+        }
+        updateLegend(minValue, maxValue);
+
+        const hexGroup = svg.append("g");
+        hexGroup.selectAll("polygon")
+          .data(hexCells)
+          .join("polygon")
+          .attr("class", "hex")
+          .attr("points", (cell) => hexPoints(cell.cx, cell.cy, hexSide)
+            .map((point) => projection(point))
+            .map((point) => `${point[0]},${point[1]}`)
+            .join(" "))
+          .attr("fill", (cell) => {
+            const row = pconLookup.get(cell.pcon_code);
+            const value = getMetricValue(row);
+            if (!colorScale || !Number.isFinite(value)) {
+              return "var(--clay)";
+            }
+            return colorScale(value);
+          })
+          .on("mouseenter", (event, cell) => {
+            const row = pconLookup.get(cell.pcon_code);
+            const metricValue = getMetricValue(row);
+            const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown constituency";
+            const stationCount = getStationCount(row);
+            const stationLabel = stationCount === 1
+              ? "single site"
+              : stationCount > 1
+                ? `${formatNumber(stationCount)} stations`
+                : "No stations";
+            const valueLabel = Number.isFinite(metricValue)
+              ? `${formatValue(metricValue)} ug/m3`
+              : "No PM2.5 data";
+            const updatedLabel = row?.latest_value_at
+              ? `Updated ${formatTimestamp(row.latest_value_at)}`
+              : "Updated unknown";
+            tooltip.innerHTML = `
+              <strong>${areaName}</strong><br />
+              ${METRIC_LABELS[currentMetric]}: ${valueLabel}<br />
+              ${stationLabel}<br />
+              ${updatedLabel}
+            `;
+            tooltip.classList.add("visible");
+            tooltip.style.left = `${event.pageX + 12}px`;
+            tooltip.style.top = `${event.pageY - 12}px`;
+          })
+          .on("mousemove", (event) => {
+            tooltip.style.left = `${event.pageX + 12}px`;
+            tooltip.style.top = `${event.pageY - 12}px`;
+          })
+          .on("mouseleave", () => {
+            tooltip.classList.remove("visible");
+          });
+      }
+
+      async function loadMapData() {
+        statusEl.textContent = "Loading…";
+        errorEl.textContent = "";
+        if (!REST_URL) {
+          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        if (!anonKey) {
+          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        try {
+          const pconUrl = new URL(REST_URL);
+          if (activePconVersion) {
+            pconUrl.searchParams.set("pcon_version", activePconVersion);
+          }
+          const [hexResponse, pconResponse] = await Promise.all([
+            fetch(HEX_DATA_URL),
+            fetch(pconUrl.toString(), {
+              headers: {
+                Authorization: `Bearer ${anonKey}`,
+                apikey: anonKey,
+              },
+            }),
+          ]);
+          if (!hexResponse.ok) {
+            throw new Error(`Hex data request failed: ${hexResponse.status}`);
+          }
+          if (!pconResponse.ok) {
+            throw new Error(`Constituency request failed: ${pconResponse.status}`);
+          }
+          hexData = await hexResponse.json();
+          prepareHexGrid();
+          const payload = await pconResponse.json();
+          pconRows = payload?.data || [];
+          pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+          pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
+          const withData = pconRows.filter((row) => getStationCount(row) > 0);
+          rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
+          if (payload?.last_updated) {
+            lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
+          } else {
+            lastUpdated.textContent = "Latest data unavailable";
+          }
+          renderMap();
+          statusEl.textContent = "Live";
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          errorEl.textContent = message;
+          statusEl.textContent = "Error";
+        }
+      }
+
+      metricButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const metric = button.dataset.metric;
+          if (!metric || metric === currentMetric) {
+            return;
+          }
+          currentMetric = metric;
+          applyMetricState();
+          renderMap();
+        });
+      });
+
+      document.getElementById("refresh").addEventListener("click", loadMapData);
+      window.addEventListener("resize", () => {
+        if (statusEl.textContent === "Live") {
+          renderMap();
+        }
+      });
+      applyMetricState();
+      loadMapData();
+      setInterval(loadMapData, 10 * 60 * 1000);
+    </script>
+  </body>
+</html>
