@@ -196,6 +196,23 @@
         stroke-width: 1.5;
       }
 
+      .region-boundaries {
+        pointer-events: none;
+      }
+
+      .boundary-path {
+        fill: none;
+        stroke: rgba(20, 34, 37, 0.6);
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .boundary-country {
+        stroke-width: 1.8;
+      }
+
       .legend {
         display: flex;
         gap: 8px;
@@ -392,6 +409,29 @@
         median: "Typical (median)",
         mean: "Average (mean)",
       };
+      const REGION_NAMES = {
+        E12000001: "North East",
+        E12000002: "North West",
+        E12000003: "Yorkshire and The Humber",
+        E12000004: "East Midlands",
+        E12000005: "West Midlands",
+        E12000006: "East of England",
+        E12000007: "London",
+        E12000008: "South East",
+        E12000009: "South West",
+        S92000003: "Scotland",
+        W92000004: "Wales",
+        N92000002: "Northern Ireland",
+      };
+      const AXIAL_DIRECTIONS = [
+        { q: 1, r: 0 },
+        { q: 1, r: -1 },
+        { q: 0, r: -1 },
+        { q: -1, r: 0 },
+        { q: -1, r: 1 },
+        { q: 0, r: 1 },
+      ];
+      const EDGE_DIRECTION_CACHE = new Map();
 
       const statusEl = document.getElementById("status");
       const errorEl = document.getElementById("error");
@@ -412,6 +452,7 @@
       let pconRows = [];
       let pconLookup = new Map();
       let pconCodes = new Set();
+      let boundaryPaths = [];
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -560,11 +601,217 @@
             id: key,
             cx: x,
             cy: y,
+            q,
+            r,
             pcon_code: key,
             pcon_name: value?.n || null,
+            region_code: value?.region || null,
+            region_name: REGION_NAMES[value?.region] || null,
           };
         });
         return { cells, bounds: computeHexBounds(cells, size), side: size, layout };
+      }
+
+      function offsetToAxial(layout, col, row) {
+        if (layout === "odd-r") {
+          return { q: col - (row - (row & 1)) / 2, r: row };
+        }
+        if (layout === "even-r") {
+          return { q: col - (row + (row & 1)) / 2, r: row };
+        }
+        if (layout === "odd-q") {
+          return { q: col, r: row - (col - (col & 1)) / 2 };
+        }
+        if (layout === "even-q") {
+          return { q: col, r: row - (col + (col & 1)) / 2 };
+        }
+        return { q: col, r: row };
+      }
+
+      function axialToOffset(layout, q, r) {
+        if (layout === "odd-r") {
+          return { col: q + (r - (r & 1)) / 2, row: r };
+        }
+        if (layout === "even-r") {
+          return { col: q + (r + (r & 1)) / 2, row: r };
+        }
+        if (layout === "odd-q") {
+          return { col: q, row: r + (q - (q & 1)) / 2 };
+        }
+        if (layout === "even-q") {
+          return { col: q, row: r + (q + (q & 1)) / 2 };
+        }
+        return { col: q, row: r };
+      }
+
+      function getEdgeDirectionMap(layout) {
+        if (EDGE_DIRECTION_CACHE.has(layout)) {
+          return EDGE_DIRECTION_CACHE.get(layout);
+        }
+        const size = 1;
+        const center = offsetToPixel(layout, 0, 0, size);
+        const points = hexPoints(center.x, center.y, size);
+        const edgeVectors = points.map((point, index) => {
+          const next = points[(index + 1) % 6];
+          return {
+            x: (point[0] + next[0]) / 2 - center.x,
+            y: (point[1] + next[1]) / 2 - center.y,
+          };
+        });
+        const directionVectors = AXIAL_DIRECTIONS.map((dir) => {
+          const offset = axialToOffset(layout, dir.q, dir.r);
+          const neighbor = offsetToPixel(layout, offset.col, offset.row, size);
+          return {
+            x: neighbor.x - center.x,
+            y: neighbor.y - center.y,
+          };
+        });
+        const map = edgeVectors.map((edgeVector) => {
+          let bestIndex = 0;
+          let bestScore = -Infinity;
+          const edgeLength = Math.hypot(edgeVector.x, edgeVector.y) || 1;
+          directionVectors.forEach((directionVector, directionIndex) => {
+            const dirLength = Math.hypot(directionVector.x, directionVector.y) || 1;
+            const score = (edgeVector.x * directionVector.x + edgeVector.y * directionVector.y)
+              / (edgeLength * dirLength);
+            if (score > bestScore) {
+              bestScore = score;
+              bestIndex = directionIndex;
+            }
+          });
+          return bestIndex;
+        });
+        EDGE_DIRECTION_CACHE.set(layout, map);
+        return map;
+      }
+
+      function neighborForEdge(layout, col, row, edgeIndex) {
+        const axial = offsetToAxial(layout, col, row);
+        const directionIndex = getEdgeDirectionMap(layout)[edgeIndex];
+        const direction = AXIAL_DIRECTIONS[directionIndex];
+        const neighborAxial = { q: axial.q + direction.q, r: axial.r + direction.r };
+        return axialToOffset(layout, neighborAxial.q, neighborAxial.r);
+      }
+
+      function buildPathsFromSegments(segments) {
+        const pointKey = (point) => `${point[0].toFixed(6)},${point[1].toFixed(6)}`;
+        const adjacency = new Map();
+        segments.forEach((segment, index) => {
+          const startKey = pointKey(segment.start);
+          const endKey = pointKey(segment.end);
+          if (!adjacency.has(startKey)) {
+            adjacency.set(startKey, []);
+          }
+          if (!adjacency.has(endKey)) {
+            adjacency.set(endKey, []);
+          }
+          adjacency.get(startKey).push(index);
+          adjacency.get(endKey).push(index);
+        });
+        const unused = new Set(segments.map((_, index) => index));
+        const paths = [];
+        const takeSegment = (key) => {
+          const candidates = adjacency.get(key);
+          if (!candidates) {
+            return null;
+          }
+          const nextIndex = candidates.find((index) => unused.has(index));
+          if (nextIndex === undefined) {
+            return null;
+          }
+          unused.delete(nextIndex);
+          return nextIndex;
+        };
+        while (unused.size) {
+          const index = unused.values().next().value;
+          unused.delete(index);
+          const segment = segments[index];
+          const path = [segment.start, segment.end];
+          let startKey = pointKey(segment.start);
+          let endKey = pointKey(segment.end);
+          while (true) {
+            const nextIndex = takeSegment(endKey);
+            if (nextIndex === null) {
+              break;
+            }
+            const nextSegment = segments[nextIndex];
+            const nextPoint = pointKey(nextSegment.start) === endKey
+              ? nextSegment.end
+              : nextSegment.start;
+            path.push(nextPoint);
+            endKey = pointKey(nextPoint);
+          }
+          while (true) {
+            const prevIndex = takeSegment(startKey);
+            if (prevIndex === null) {
+              break;
+            }
+            const prevSegment = segments[prevIndex];
+            const prevPoint = pointKey(prevSegment.start) === startKey
+              ? prevSegment.end
+              : prevSegment.start;
+            path.unshift(prevPoint);
+            startKey = pointKey(prevPoint);
+          }
+          paths.push(path);
+        }
+        return paths;
+      }
+
+      function regionCountry(regionCode) {
+        if (!regionCode) {
+          return null;
+        }
+        return String(regionCode).trim().charAt(0) || null;
+      }
+
+      function boundaryType(regionCode, neighborCode) {
+        const country = regionCountry(regionCode);
+        const neighborCountry = regionCountry(neighborCode) || country;
+        if (!neighborCode) {
+          return null;
+        }
+        if (country && neighborCountry && country !== neighborCountry) {
+          return "country";
+        }
+        return "region";
+      }
+
+      function buildRegionBoundaryPaths(cells, layout) {
+        const cellLookup = new Map(cells.map((cell) => [`${cell.q},${cell.r}`, cell]));
+        const segmentsByType = { region: [], country: [] };
+        cells.forEach((cell) => {
+          const points = hexPoints(cell.cx, cell.cy, 1);
+          for (let edgeIndex = 0; edgeIndex < 6; edgeIndex += 1) {
+            const neighborOffset = neighborForEdge(layout, cell.q, cell.r, edgeIndex);
+            const neighborKey = `${neighborOffset.col},${neighborOffset.row}`;
+            const neighbor = cellLookup.get(neighborKey);
+            if (!neighbor) {
+              continue;
+            }
+            const neighborRegion = neighbor?.region_code || null;
+            if (neighborRegion === cell.region_code) {
+              continue;
+            }
+            if (neighborRegion && cell.region_code && cell.region_code > neighborRegion) {
+              continue;
+            }
+            const type = boundaryType(cell.region_code, neighborRegion);
+            if (!type) {
+              continue;
+            }
+            segmentsByType[type].push({
+              start: points[edgeIndex],
+              end: points[(edgeIndex + 1) % 6],
+            });
+          }
+        });
+        return Object.entries(segmentsByType)
+          .map(([type, segments]) => ({
+            type,
+            paths: buildPathsFromSegments(segments),
+          }))
+          .filter((boundary) => boundary.paths.length);
       }
 
       function prepareHexGrid() {
@@ -576,6 +823,7 @@
         hexBounds = bounds;
         hexSide = side;
         hexLayout = layout;
+        boundaryPaths = buildRegionBoundaryPaths(cells, layout);
       }
 
       function createProjection(bounds, width, height, padding) {
@@ -674,6 +922,7 @@
             const row = pconLookup.get(cell.pcon_code);
             const metricValue = getMetricValue(row);
             const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown constituency";
+            const regionLabel = cell.region_name || cell.region_code || "Unknown region";
             const stationCount = getStationCount(row);
             const stationLabel = stationCount === 1
               ? "single site"
@@ -688,6 +937,7 @@
               : "Updated unknown";
             tooltip.innerHTML = `
               <strong>${areaName}</strong><br />
+              Region: ${regionLabel}<br />
               ${METRIC_LABELS[currentMetric]}: ${valueLabel}<br />
               ${stationLabel}<br />
               ${updatedLabel}
@@ -703,6 +953,21 @@
           .on("mouseleave", () => {
             tooltip.classList.remove("visible");
           });
+
+        const boundaryGroup = svg.append("g").attr("class", "region-boundaries");
+        boundaryGroup.selectAll("path")
+          .data(boundaryPaths)
+          .join("path")
+          .attr("class", (boundary) => `boundary-path boundary-${boundary.type || "region"}`)
+          .attr("d", (boundary) => boundary.paths.map((path) => {
+            const [first, ...rest] = path;
+            const [startX, startY] = projection(first);
+            const lines = rest.map((point) => {
+              const [x, y] = projection(point);
+              return `L${x},${y}`;
+            }).join("");
+            return `M${startX},${startY}${lines}`;
+          }).join(""));
       }
 
       async function loadMapData() {
