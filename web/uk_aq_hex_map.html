@@ -21,11 +21,11 @@
         --clay: #e8dcc7;
         --fog: rgba(20, 34, 37, 0.08);
         --card: #ffffff;
-        --heat-0: #fef9e7;
-        --heat-1: #ffd89e;
-        --heat-2: #f9b159;
-        --heat-3: #eb7a3b;
-        --heat-4: #cf3f2f;
+        --heat-0: #00a85a;
+        --heat-1: #ffd54a;
+        --heat-2: #ff9b3a;
+        --heat-3: #e03c3c;
+        --heat-4: #5b2a86;
       }
 
       * {
@@ -109,6 +109,65 @@
         display: grid;
         gap: 16px;
         animation: floatIn 0.6s ease-out;
+      }
+
+      .map-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(240px, 0.7fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .map-panel {
+        display: grid;
+        gap: 16px;
+      }
+
+      .summary-card {
+        padding: 16px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        display: grid;
+        gap: 12px;
+      }
+
+      .summary-title {
+        font-family: "Fraunces", serif;
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .summary-list {
+        display: grid;
+        gap: 14px;
+      }
+
+      .summary-item {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: var(--mist);
+        border: 1px solid var(--fog);
+        display: grid;
+        gap: 6px;
+      }
+
+      .summary-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-soft);
+      }
+
+      .summary-value {
+        font-family: "Fraunces", serif;
+        font-size: 1.4rem;
+        color: var(--ink);
+      }
+
+      .summary-name {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
       }
 
       .card-header {
@@ -222,16 +281,31 @@
         color: var(--ink-soft);
       }
 
-      .legend-bar {
+      .legend-scale {
         display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-bar {
+        width: 200px;
+        height: 12px;
         border-radius: 999px;
-        overflow: hidden;
+        background: linear-gradient(
+          90deg,
+          var(--heat-0),
+          var(--heat-1),
+          var(--heat-2),
+          var(--heat-3),
+          var(--heat-4)
+        );
         border: 1px solid rgba(20, 34, 37, 0.12);
       }
 
-      .legend-swatch {
-        width: 42px;
-        height: 12px;
+      .legend-value {
+        min-width: 42px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
       }
 
       .tooltip {
@@ -310,6 +384,12 @@
           height: 420px;
         }
       }
+
+      @media (max-width: 980px) {
+        .map-layout {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
   <body>
@@ -345,19 +425,41 @@
         </div>
         <div class="hint" id="endpoint-hint"></div>
         <div class="error" id="error"></div>
-        <div class="map-wrap">
-          <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
-        </div>
-        <div class="legend">
-          <span>PM2.5 (ug/m3)</span>
-          <div class="legend-bar">
-            <span class="legend-swatch" style="background: var(--heat-0);"></span>
-            <span class="legend-swatch" style="background: var(--heat-1);"></span>
-            <span class="legend-swatch" style="background: var(--heat-2);"></span>
-            <span class="legend-swatch" style="background: var(--heat-3);"></span>
-            <span class="legend-swatch" style="background: var(--heat-4);"></span>
+        <div class="map-layout">
+          <div class="map-panel">
+            <div class="map-wrap">
+              <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+            </div>
+            <div class="legend">
+              <span>PM2.5 (ug/m3)</span>
+              <div class="legend-scale">
+                <span class="legend-value" id="legend-min">-</span>
+                <span class="legend-bar" aria-hidden="true"></span>
+                <span class="legend-value" id="legend-max">-</span>
+              </div>
+              <span id="legend-label"></span>
+            </div>
           </div>
-          <span id="legend-label"></span>
+          <aside class="summary-card">
+            <h3 class="summary-title">PM2.5 summary</h3>
+            <p class="hint">Latest station readings across the UK.</p>
+            <div class="summary-list">
+              <div class="summary-item">
+                <span class="summary-label">Number of stations</span>
+                <span class="summary-value" id="summary-stations">-</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Lowest PM2.5</span>
+                <span class="summary-value" id="summary-lowest-value">-</span>
+                <span class="summary-name" id="summary-lowest-name">-</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Highest PM2.5</span>
+                <span class="summary-value" id="summary-highest-value">-</span>
+                <span class="summary-name" id="summary-highest-name">-</span>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
     </main>
@@ -384,6 +486,9 @@
       const REST_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_pcon_hex`
         : "";
+      const LATEST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_latest`
+        : "";
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
         {
@@ -409,6 +514,8 @@
         median: "Typical (median)",
         mean: "Average (mean)",
       };
+      const HEAT_STOPS = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4"];
+      const HEAT_STOP_FALLBACKS = ["#00a85a", "#ffd54a", "#ff9b3a", "#e03c3c", "#5b2a86"];
       const REGION_NAMES = {
         E12000001: "North East",
         E12000002: "North West",
@@ -439,6 +546,13 @@
       const lastUpdated = document.getElementById("last-updated");
       const endpointHint = document.getElementById("endpoint-hint");
       const legendLabel = document.getElementById("legend-label");
+      const legendMin = document.getElementById("legend-min");
+      const legendMax = document.getElementById("legend-max");
+      const summaryStations = document.getElementById("summary-stations");
+      const summaryLowestValue = document.getElementById("summary-lowest-value");
+      const summaryLowestName = document.getElementById("summary-lowest-name");
+      const summaryHighestValue = document.getElementById("summary-highest-value");
+      const summaryHighestName = document.getElementById("summary-highest-name");
       const tooltip = document.getElementById("tooltip");
       const svg = d3.select("#hex-map");
       const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
@@ -453,6 +567,7 @@
       let pconLookup = new Map();
       let pconCodes = new Set();
       let boundaryPaths = [];
+      let latestRows = [];
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -518,12 +633,86 @@
         return parsed.toLocaleString();
       }
 
+      function resolveCssColor(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+      }
+
+      function resolveStationName(row) {
+        return row?.station_label
+          || row?.station?.label
+          || row?.station?.station_ref
+          || "Unknown station";
+      }
+
+      function isPm25Row(row) {
+        const combined = [
+          row?.pollutant_label,
+          row?.phenomenon_label,
+          row?.phenomenon?.pollutant_label,
+          row?.phenomenon?.notation,
+          row?.phenomenon?.label,
+        ].filter(Boolean).join(" ").toLowerCase();
+        return combined.includes("pm2.5") || combined.includes("pm25") || combined.includes("pm_2.5");
+      }
+
+      function updateSummary() {
+        if (!pconRows.length) {
+          summaryStations.textContent = "-";
+        } else {
+          const totalStations = pconRows.reduce((total, row) => {
+            const count = normalizeNumber(row.station_count);
+            return total + (count ?? 0);
+          }, 0);
+          summaryStations.textContent = formatNumber(totalStations);
+        }
+
+        const candidates = latestRows
+          .filter((row) => isPm25Row(row))
+          .map((row) => {
+            const value = normalizeNumber(row.last_value);
+            if (!Number.isFinite(value)) {
+              return null;
+            }
+            return { row, value };
+          })
+          .filter(Boolean);
+
+        if (!candidates.length) {
+          summaryLowestValue.textContent = "-";
+          summaryLowestName.textContent = "No PM2.5 data";
+          summaryHighestValue.textContent = "-";
+          summaryHighestName.textContent = "No PM2.5 data";
+          return;
+        }
+
+        let lowest = candidates[0];
+        let highest = candidates[0];
+        for (const candidate of candidates) {
+          if (candidate.value < lowest.value) {
+            lowest = candidate;
+          }
+          if (candidate.value > highest.value) {
+            highest = candidate;
+          }
+        }
+
+        summaryLowestValue.textContent = `${formatValue(lowest.value)} ug/m3`;
+        summaryLowestName.textContent = resolveStationName(lowest.row);
+        summaryHighestValue.textContent = `${formatValue(highest.value)} ug/m3`;
+        summaryHighestName.textContent = resolveStationName(highest.row);
+      }
+
       function updateLegend(minValue, maxValue) {
         if (minValue === null || maxValue === null) {
           legendLabel.textContent = "No PM2.5 values";
+          legendMin.textContent = "-";
+          legendMax.textContent = "-";
           return;
         }
-        legendLabel.textContent = `${METRIC_LABELS[currentMetric]}: ${formatValue(minValue)} to ${formatValue(maxValue)} ug/m3`;
+        legendLabel.textContent = METRIC_LABELS[currentMetric];
+        legendMin.textContent = formatValue(minValue);
+        legendMax.textContent = formatValue(maxValue);
       }
 
       function clearMap() {
@@ -889,17 +1078,21 @@
         const values = pconRows
           .map((row) => getMetricValue(row))
           .filter((value) => Number.isFinite(value));
-        const minValue = values.length ? d3.min(values) : null;
         const maxValue = values.length ? d3.max(values) : null;
-        const palette = ["var(--heat-0)", "var(--heat-1)", "var(--heat-2)", "var(--heat-3)", "var(--heat-4)"];
+        const domainMin = 0;
+        const palette = HEAT_STOPS.map((name, index) =>
+          resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
+        );
         let colorScale = null;
-        if (minValue !== null && maxValue !== null) {
-          const domainMax = minValue === maxValue ? minValue + 1 : maxValue;
-          colorScale = d3.scaleQuantize()
-            .domain([minValue, domainMax])
-            .range(palette);
+        if (maxValue !== null) {
+          const roundedMax = Math.ceil(maxValue / 10) * 10;
+          const domainMax = Math.max(10, roundedMax);
+          colorScale = d3.scaleSequential()
+            .domain([domainMin, domainMax])
+            .interpolator(d3.interpolateRgbBasis(palette))
+            .clamp(true);
         }
-        updateLegend(minValue, maxValue);
+        updateLegend(maxValue === null ? null : domainMin, maxValue === null ? null : Math.max(10, Math.ceil(maxValue / 10) * 10));
 
         const hexGroup = svg.append("g");
         hexGroup.selectAll("polygon")
@@ -988,7 +1181,11 @@
           if (activePconVersion) {
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
-          const [hexResponse, pconResponse] = await Promise.all([
+          const latestUrl = new URL(LATEST_URL);
+          latestUrl.searchParams.set("pollutant", "pm2.5");
+          latestUrl.searchParams.set("scope", "all");
+          latestUrl.searchParams.set("limit", "10000");
+          const [hexResponse, pconResponse, latestResponse] = await Promise.all([
             fetch(HEX_DATA_URL),
             fetch(pconUrl.toString(), {
               headers: {
@@ -996,6 +1193,12 @@
                 apikey: anonKey,
               },
             }),
+            fetch(latestUrl.toString(), {
+              headers: {
+                Authorization: `Bearer ${anonKey}`,
+                apikey: anonKey,
+              },
+            }).catch(() => null),
           ]);
           if (!hexResponse.ok) {
             throw new Error(`Hex data request failed: ${hexResponse.status}`);
@@ -1016,6 +1219,13 @@
           } else {
             lastUpdated.textContent = "Latest data unavailable";
           }
+          if (latestResponse && latestResponse.ok) {
+            const latestPayload = await latestResponse.json();
+            latestRows = latestPayload?.data || [];
+          } else {
+            latestRows = [];
+          }
+          updateSummary();
           renderMap();
           statusEl.textContent = "Live";
         } catch (error) {
