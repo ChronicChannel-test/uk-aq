@@ -568,6 +568,7 @@
       let pconCodes = new Set();
       let boundaryPaths = [];
       let latestRows = [];
+      let latestPollutant = null;
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -645,15 +646,28 @@
           || "Unknown station";
       }
 
-      function isPm25Row(row) {
-        const combined = [
+      function extractPollutantText(row) {
+        return [
           row?.pollutant_label,
           row?.phenomenon_label,
           row?.phenomenon?.pollutant_label,
           row?.phenomenon?.notation,
           row?.phenomenon?.label,
-        ].filter(Boolean).join(" ").toLowerCase();
-        return combined.includes("pm2.5") || combined.includes("pm25") || combined.includes("pm_2.5");
+        ].filter(Boolean).join(" ").trim().toLowerCase();
+      }
+
+      function isPm25Text(value) {
+        if (!value) {
+          return false;
+        }
+        return /pm\s*2\s*\.?\s*5/.test(value)
+          || value.includes("pm25")
+          || value.includes("pm_2.5")
+          || (value.includes("particulate") && /2\s*\.?\s*5/.test(value));
+      }
+
+      function isPm25Row(row) {
+        return isPm25Text(extractPollutantText(row));
       }
 
       function updateSummary() {
@@ -667,8 +681,11 @@
           summaryStations.textContent = formatNumber(totalStations);
         }
 
-        const candidates = latestRows
-          .filter((row) => isPm25Row(row))
+        const hasPm25Hint = isPm25Text(
+          typeof latestPollutant === "string" ? latestPollutant.toLowerCase() : ""
+        );
+        const rowsForSummary = hasPm25Hint ? latestRows : latestRows.filter((row) => isPm25Row(row));
+        let candidates = rowsForSummary
           .map((row) => {
             const value = normalizeNumber(row.last_value);
             if (!Number.isFinite(value)) {
@@ -677,6 +694,21 @@
             return { row, value };
           })
           .filter(Boolean);
+
+        if (!candidates.length && latestRows.length && !hasPm25Hint) {
+          const fallback = latestRows
+            .map((row) => {
+              const value = normalizeNumber(row.last_value);
+              if (!Number.isFinite(value)) {
+                return null;
+              }
+              return { row, value };
+            })
+            .filter(Boolean);
+          if (fallback.length) {
+            candidates = fallback;
+          }
+        }
 
         if (!candidates.length) {
           summaryLowestValue.textContent = "-";
@@ -1166,6 +1198,7 @@
       async function loadMapData() {
         statusEl.textContent = "Loading…";
         errorEl.textContent = "";
+        latestPollutant = null;
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
           statusEl.textContent = "Error";
@@ -1182,7 +1215,7 @@
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
           const latestUrl = new URL(LATEST_URL);
-          latestUrl.searchParams.set("pollutant", "pm2.5");
+          latestUrl.searchParams.set("pollutant", "PM2.5");
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
           const [hexResponse, pconResponse, latestResponse] = await Promise.all([
@@ -1222,6 +1255,8 @@
           if (latestResponse && latestResponse.ok) {
             const latestPayload = await latestResponse.json();
             latestRows = latestPayload?.data || [];
+            latestPollutant = latestPayload?.pollutant || null;
+            console.log("uk_aq_latest payload", latestPayload);
           } else {
             latestRows = [];
           }
