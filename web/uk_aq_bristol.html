@@ -225,6 +225,16 @@
         width: 100%;
         height: 360px;
         display: block;
+        transition: opacity 0.2s ease, filter 0.2s ease;
+      }
+
+      .chart-wrap.is-loading #line-chart {
+        opacity: 0.35;
+        filter: grayscale(0.35);
+      }
+
+      .chart-wrap.is-loading .chart-tooltip.visible {
+        opacity: 0;
       }
 
       .chart-axis path,
@@ -428,6 +438,7 @@
       const chartHintEl = document.getElementById("chart-hint");
       const chartTooltip = document.getElementById("chart-tooltip");
       const chartSvg = d3.select("#line-chart");
+      const chartWrap = document.querySelector(".chart-wrap");
       let cachedRows = [];
       let selectedSeriesId = null;
       let seriesLookup = new Map();
@@ -690,6 +701,13 @@
           .text(message);
       }
 
+      function setChartLoading(isLoading) {
+        if (!chartWrap) {
+          return;
+        }
+        chartWrap.classList.toggle("is-loading", isLoading);
+      }
+
       function renderSeriesChart(points, meta, windowLabel, guideline) {
         chartSvg.selectAll("*").remove();
         const width = chartSvg.node()?.clientWidth || 960;
@@ -834,6 +852,7 @@
         if (!chartStatusEl) {
           return;
         }
+        setChartLoading(true);
         chartStatusEl.textContent = "Loading…";
         if (chartErrorEl) {
           chartErrorEl.textContent = "";
@@ -844,6 +863,7 @@
           }
           chartStatusEl.textContent = "Error";
           clearSeriesChart("Series endpoint missing.");
+          setChartLoading(false);
           return;
         }
         if (!anonKey) {
@@ -852,11 +872,13 @@
           }
           chartStatusEl.textContent = "Error";
           clearSeriesChart("Missing anon key.");
+          setChartLoading(false);
           return;
         }
         if (!selectedSeriesId) {
           chartStatusEl.textContent = "No station selected";
           clearSeriesChart("Select a station to view a trend.");
+          setChartLoading(false);
           return;
         }
         try {
@@ -897,6 +919,8 @@
           }
           chartStatusEl.textContent = "Error";
           clearSeriesChart("Unable to load series.");
+        } finally {
+          setChartLoading(false);
         }
       }
 
