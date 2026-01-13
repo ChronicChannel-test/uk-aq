@@ -663,6 +663,15 @@
           || "Unknown station";
       }
 
+      function resolvePconCode(row) {
+        return row?.pcon_code
+          || row?.pcon
+          || row?.station?.pcon_code
+          || row?.station?.pcon
+          || row?.station?.pconCode
+          || null;
+      }
+
       function extractPollutantText(row) {
         return [
           row?.pollutant_label,
@@ -702,7 +711,8 @@
           typeof latestPollutant === "string" ? latestPollutant.toLowerCase() : ""
         );
         const rowsForSummary = hasPm25Hint ? latestRows : latestRows.filter((row) => isPm25Row(row));
-        let candidates = rowsForSummary
+        const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
+        let candidates = rowsWithPcon
           .map((row) => {
             const value = normalizeNumber(row.last_value);
             if (!Number.isFinite(value)) {
@@ -714,6 +724,7 @@
 
         if (!candidates.length && latestRows.length && !hasPm25Hint) {
           const fallback = latestRows
+            .filter((row) => resolvePconCode(row))
             .map((row) => {
               const value = normalizeNumber(row.last_value);
               if (!Number.isFinite(value)) {
