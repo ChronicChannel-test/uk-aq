@@ -513,8 +513,11 @@
       }
 
       function formatStationLabel(row) {
-        const pollutant = getPollutantLabel(row);
-        const stationBase = row.station?.label || row.station_label || "";
+        const stationBase = row.station_name
+          || row.station?.station_name
+          || row.station?.label
+          || row.station_label
+          || "";
         const fallback = extractSeriesStation(row.label || "");
         let base = stationBase || fallback;
         if (!base) {
@@ -522,12 +525,6 @@
         }
         base = stripMissingFolio(base);
         base = dedupeSegments(base);
-        if (pollutant && pollutant !== "Unknown") {
-          const needle = pollutant.toLowerCase();
-          if (!base.toLowerCase().includes(needle)) {
-            return `${base} — ${pollutant}`;
-          }
-        }
         return base;
       }
 
@@ -656,10 +653,15 @@
           if (unique.has(id)) {
             return;
           }
+          const baseLabel = formatStationLabel(row);
+          const pollutant = getPollutantLabel(row);
+          const label = baseLabel && pollutant && pollutant !== "Unknown"
+            ? `${baseLabel} — ${pollutant}`
+            : baseLabel || pollutant || "Unknown station";
           unique.set(id, {
             id,
-            label: formatStationLabel(row),
-            pollutant: getPollutantLabel(row),
+            label,
+            pollutant,
             uom: row.uom_display || row.uom || "",
           });
         });

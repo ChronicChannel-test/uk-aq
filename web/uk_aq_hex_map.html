@@ -489,6 +489,9 @@
       const LATEST_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_latest`
         : "";
+      const POPULATION_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
+        : "";
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
         {
@@ -569,6 +572,7 @@
       let boundaryPaths = [];
       let latestRows = [];
       let latestPollutant = null;
+      let populationLookup = new Map();
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -634,13 +638,26 @@
         return parsed.toLocaleString();
       }
 
+      function parseDate(value) {
+        if (!value) {
+          return null;
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        return parsed;
+      }
+
       function resolveCssColor(name, fallback) {
         const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
         return value || fallback;
       }
 
       function resolveStationName(row) {
-        return row?.station_label
+        return row?.station_name
+          || row?.station?.station_name
+          || row?.station_label
           || row?.station?.label
           || row?.station?.station_ref
           || "Unknown station";
@@ -1154,6 +1171,13 @@
               : stationCount > 1
                 ? `${formatNumber(stationCount)} stations`
                 : "No stations";
+            const populationEntry = populationLookup.get(cell.pcon_code);
+            const populationValue = normalizeNumber(populationEntry?.population_value);
+            const populationDate = parseDate(populationEntry?.reference_date);
+            const populationYear = populationDate ? populationDate.getFullYear() : null;
+            const populationLabel = populationValue === null
+              ? "Population: n/a"
+              : `Population${populationYear ? ` (${populationYear})` : ""}: ${formatNumber(populationValue)}`;
             const valueLabel = Number.isFinite(metricValue)
               ? `${formatValue(metricValue)} ug/m3`
               : "No PM2.5 data";
@@ -1164,6 +1188,7 @@
               <strong>${areaName}</strong><br />
               Region: ${regionLabel}<br />
               ${METRIC_LABELS[currentMetric]}: ${valueLabel}<br />
+              ${populationLabel}<br />
               ${stationLabel}<br />
               ${updatedLabel}
             `;
@@ -1199,6 +1224,7 @@
         statusEl.textContent = "Loading…";
         errorEl.textContent = "";
         latestPollutant = null;
+        populationLookup = new Map();
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
           statusEl.textContent = "Error";
@@ -1218,7 +1244,15 @@
           latestUrl.searchParams.set("pollutant", "PM2.5");
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
-          const [hexResponse, pconResponse, latestResponse] = await Promise.all([
+          const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
+          if (populationUrl) {
+            populationUrl.searchParams.set("geo_type", "PCON");
+            if (mapDateKey) {
+              populationUrl.searchParams.set("reference_date", mapDateKey);
+            }
+            populationUrl.searchParams.set("limit", "2000");
+          }
+          const [hexResponse, pconResponse, latestResponse, populationResponse] = await Promise.all([
             fetch(HEX_DATA_URL),
             fetch(pconUrl.toString(), {
               headers: {
@@ -1232,6 +1266,14 @@
                 apikey: anonKey,
               },
             }).catch(() => null),
+            populationUrl
+              ? fetch(populationUrl.toString(), {
+                headers: {
+                  Authorization: `Bearer ${anonKey}`,
+                  apikey: anonKey,
+                },
+              }).catch(() => null)
+              : Promise.resolve(null),
           ]);
           if (!hexResponse.ok) {
             throw new Error(`Hex data request failed: ${hexResponse.status}`);
@@ -1259,6 +1301,23 @@
             console.log("uk_aq_latest payload", latestPayload);
           } else {
             latestRows = [];
+          }
+          if (populationResponse && populationResponse.ok) {
+            const populationPayload = await populationResponse.json();
+            const populationRows = Array.isArray(populationPayload)
+              ? populationPayload
+              : populationPayload?.data || [];
+            const lookup = new Map();
+            populationRows.forEach((row) => {
+              const code = row?.geo_code;
+              if (!code || lookup.has(code)) {
+                return;
+              }
+              lookup.set(code, row);
+            });
+            populationLookup = lookup;
+          } else {
+            populationLookup = new Map();
           }
           updateSummary();
           renderMap();
