@@ -170,6 +170,12 @@
         color: var(--ink-soft);
       }
 
+      .summary-connector {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--teal-deep);
+      }
+
       .card-header {
         display: flex;
         flex-wrap: wrap;
@@ -222,13 +228,39 @@
         color: var(--ink);
       }
 
-      .filters input {
+      .filters input[type="text"],
+      .filters input[type="search"] {
         background: #fff;
         border: 1px solid rgba(20, 34, 37, 0.15);
         border-radius: 999px;
         padding: 6px 12px;
         font-size: 0.9rem;
         color: var(--ink);
+      }
+
+      .connector-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .connector-filters .checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        background: var(--mist);
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .connector-filters input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        accent-color: var(--teal);
       }
 
       .map-wrap {
@@ -421,6 +453,21 @@
             <button type="button" class="active" data-metric="median">Typical (median)</button>
             <button type="button" data-metric="mean">Average (mean)</button>
           </div>
+          <div class="connector-filters" role="group" aria-label="Connector filters">
+            <span class="hint">Connectors:</span>
+            <label class="checkbox">
+              <input type="checkbox" data-connector="all" checked />
+              All
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" data-connector="uk_air_sos" checked />
+              UK AIR SOS
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" data-connector="sensorcommunity" checked />
+              Sensor Community
+            </label>
+          </div>
           <span class="hint">Parliamentary constituency hex cartogram (equal-pop)</span>
         </div>
         <div class="hint" id="endpoint-hint"></div>
@@ -451,11 +498,13 @@
               <div class="summary-item">
                 <span class="summary-label">Lowest PM2.5</span>
                 <span class="summary-value" id="summary-lowest-value">-</span>
+                <span class="summary-connector" id="summary-lowest-connector">-</span>
                 <span class="summary-name" id="summary-lowest-name">-</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">Highest PM2.5</span>
                 <span class="summary-value" id="summary-highest-value">-</span>
+                <span class="summary-connector" id="summary-highest-connector">-</span>
                 <span class="summary-name" id="summary-highest-name">-</span>
               </div>
             </div>
@@ -517,6 +566,15 @@
         median: "Typical (median)",
         mean: "Average (mean)",
       };
+      const CONNECTOR_DEFS = [
+        { code: "uk_air_sos", label: "UK AIR SOS" },
+        { code: "sensorcommunity", label: "Sensor Community" },
+      ];
+
+      function getConnectorLabelByCode(code) {
+        const match = CONNECTOR_DEFS.find((def) => def.code === code);
+        return match ? match.label : code;
+      }
       const HEAT_STOPS = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4"];
       const HEAT_STOP_FALLBACKS = ["#00a85a", "#ffd54a", "#ff9b3a", "#e03c3c", "#5b2a86"];
       const REGION_NAMES = {
@@ -553,12 +611,17 @@
       const legendMax = document.getElementById("legend-max");
       const summaryStations = document.getElementById("summary-stations");
       const summaryLowestValue = document.getElementById("summary-lowest-value");
+      const summaryLowestConnector = document.getElementById("summary-lowest-connector");
       const summaryLowestName = document.getElementById("summary-lowest-name");
       const summaryHighestValue = document.getElementById("summary-highest-value");
+      const summaryHighestConnector = document.getElementById("summary-highest-connector");
       const summaryHighestName = document.getElementById("summary-highest-name");
       const tooltip = document.getElementById("tooltip");
       const svg = d3.select("#hex-map");
       const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
+      const connectorInputs = Array.from(document.querySelectorAll("input[data-connector]"));
+      const connectorAll = document.querySelector("input[data-connector='all']");
+      const connectorOptions = connectorInputs.filter((input) => input !== connectorAll);
 
       let currentMetric = metricParam === "mean" ? "mean" : "median";
       let hexData = null;
@@ -566,10 +629,13 @@
       let hexBounds = null;
       let hexSide = null;
       let hexLayout = "odd-r";
+      let basePconRows = [];
+      let basePconLookup = new Map();
       let pconRows = [];
       let pconLookup = new Map();
       let pconCodes = new Set();
       let boundaryPaths = [];
+      let baseLatestRows = [];
       let latestRows = [];
       let latestPollutant = null;
       let populationLookup = new Map();
@@ -655,12 +721,30 @@
       }
 
       function resolveStationName(row) {
-        return row?.station_name
-          || row?.station?.station_name
-          || row?.station_label
-          || row?.station?.label
-          || row?.station?.station_ref
+        return row?.display_name
+          || row?.station?.display_name
           || "Unknown station";
+      }
+
+      function resolveConnectorCode(row) {
+        return row?.connector_code
+          || row?.connector?.connector_code
+          || row?.station?.connector_code
+          || row?.station?.connector?.connector_code
+          || null;
+      }
+
+      function resolveConnectorLabel(row) {
+        const label = row?.connector_label
+          || row?.connector?.label
+          || row?.station?.connector_label
+          || row?.station?.connector?.label
+          || null;
+        if (label) {
+          return label;
+        }
+        const code = resolveConnectorCode(row);
+        return code ? getConnectorLabelByCode(code) : "Unknown connector";
       }
 
       function resolvePconCode(row) {
@@ -670,6 +754,28 @@
           || row?.station?.pcon
           || row?.station?.pconCode
           || null;
+      }
+
+      function resolveStationKey(row) {
+        return row?.station_id
+          || row?.station?.id
+          || row?.station_ref
+          || row?.station?.station_ref
+          || row?.station?.ref
+          || row?.display_name
+          || row?.station?.display_name
+          || null;
+      }
+
+      function resolveLatestValue(row) {
+        return normalizeNumber(
+          row?.last_value
+          ?? row?.latest_value
+          ?? row?.value
+          ?? row?.observed_value
+          ?? row?.lastValue
+          ?? row?.latestValue
+        );
       }
 
       function extractPollutantText(row) {
@@ -707,10 +813,13 @@
           summaryStations.textContent = formatNumber(totalStations);
         }
 
-        const hasPm25Hint = isPm25Text(
-          typeof latestPollutant === "string" ? latestPollutant.toLowerCase() : ""
-        );
-        const rowsForSummary = hasPm25Hint ? latestRows : latestRows.filter((row) => isPm25Row(row));
+        const pollutantHint = typeof latestPollutant === "string"
+          ? latestPollutant.toLowerCase()
+          : "";
+        const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && latestRows.length > 0);
+        const rowsForSummary = hasPm25Hint
+          ? latestRows
+          : latestRows.filter((row) => isPm25Row(row));
         const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
         let candidates = rowsWithPcon
           .map((row) => {
@@ -740,8 +849,10 @@
 
         if (!candidates.length) {
           summaryLowestValue.textContent = "-";
+          summaryLowestConnector.textContent = "-";
           summaryLowestName.textContent = "No PM2.5 data";
           summaryHighestValue.textContent = "-";
+          summaryHighestConnector.textContent = "-";
           summaryHighestName.textContent = "No PM2.5 data";
           return;
         }
@@ -758,9 +869,16 @@
         }
 
         summaryLowestValue.textContent = `${formatValue(lowest.value)} ug/m3`;
+        summaryLowestConnector.textContent = resolveConnectorLabel(lowest.row);
         summaryLowestName.textContent = resolveStationName(lowest.row);
         summaryHighestValue.textContent = `${formatValue(highest.value)} ug/m3`;
+        summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
         summaryHighestName.textContent = resolveStationName(highest.row);
+      }
+
+      function updateRowCountText() {
+        const withData = pconRows.filter((row) => getStationCount(row) > 0);
+        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
       }
 
       function updateLegend(minValue, maxValue) {
@@ -1127,6 +1245,156 @@
         return count === null ? 0 : count;
       }
 
+      function getActiveConnectorIds() {
+        if (!connectorAll) {
+          return null;
+        }
+        const allSpecificChecked = connectorOptions.length
+          ? connectorOptions.every((input) => input.checked)
+          : false;
+        if (connectorAll.checked || allSpecificChecked) {
+          return null;
+        }
+        const active = connectorOptions
+          .filter((input) => input.checked)
+          .map((input) => input.dataset.connector)
+          .filter(Boolean);
+        return new Set(active);
+      }
+
+      function syncConnectorAllState() {
+        if (!connectorAll) {
+          return;
+        }
+        const allChecked = connectorOptions.every((input) => input.checked);
+        connectorAll.checked = allChecked;
+      }
+
+      function filterLatestRowsByConnector(rows, connectorIds) {
+        if (!rows.length) {
+          return [];
+        }
+        return rows.filter((row) => {
+          const connectorCode = resolveConnectorCode(row);
+          return connectorCode ? connectorIds.has(connectorCode) : false;
+        });
+      }
+
+      function filterPconRowsByConnector(rows, connectorIds) {
+        if (!rows.length) {
+          return [];
+        }
+        return rows.filter((row) => {
+          const connectorCode = resolveConnectorCode(row);
+          return connectorCode ? connectorIds.has(connectorCode) : false;
+        });
+      }
+
+      function buildPconRowsFromLatest(rows) {
+        if (!rows.length) {
+          return [];
+        }
+        const groups = new Map();
+        rows.forEach((row, index) => {
+          const pollutantText = extractPollutantText(row);
+          if (pollutantText && !isPm25Text(pollutantText)) {
+            return;
+          }
+          const pconCode = resolvePconCode(row);
+          if (!pconCode) {
+            return;
+          }
+          const value = resolveLatestValue(row);
+          if (!Number.isFinite(value)) {
+            return;
+          }
+          const stationKey = resolveStationKey(row) || `${pconCode}-${index}`;
+          const timestamp = parseDate(row?.last_value_at || row?.observed_at || row?.latest_value_at);
+          const group = groups.get(pconCode) || { stations: new Map(), latestAt: null };
+          const existing = group.stations.get(stationKey);
+          if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
+            group.stations.set(stationKey, { value, timestamp });
+          }
+          if (timestamp && (!group.latestAt || timestamp > group.latestAt)) {
+            group.latestAt = timestamp;
+          }
+          groups.set(pconCode, group);
+        });
+
+        const rowsForMap = [];
+        groups.forEach((group, pconCode) => {
+          const values = Array.from(group.stations.values())
+            .map((entry) => entry.value)
+            .filter((value) => Number.isFinite(value));
+          if (!values.length) {
+            return;
+          }
+          const sorted = [...values].sort((a, b) => a - b);
+          const midpoint = Math.floor(sorted.length / 2);
+          const median = sorted.length % 2 === 0
+            ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
+            : sorted[midpoint];
+          const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+          const baseRow = basePconLookup.get(pconCode) || {};
+          rowsForMap.push({
+            pcon_code: pconCode,
+            pcon_name: baseRow.pcon_name || null,
+            pcon_version: baseRow.pcon_version || activePconVersion,
+            station_count: values.length,
+            single_site: values.length === 1,
+            median_value: median,
+            mean_value: mean,
+            latest_value_at: group.latestAt ? group.latestAt.toISOString() : null,
+          });
+        });
+        return rowsForMap;
+      }
+
+      function applyConnectorFilters() {
+        if (!basePconRows.length && !baseLatestRows.length) {
+          return;
+        }
+        const connectorIds = getActiveConnectorIds();
+        if (connectorIds === null) {
+          pconRows = basePconRows;
+          latestRows = baseLatestRows;
+        } else if (connectorIds.size === 0) {
+          pconRows = [];
+          latestRows = [];
+        } else {
+          const filteredLatest = filterLatestRowsByConnector(baseLatestRows, connectorIds);
+          latestRows = filteredLatest;
+          const derived = buildPconRowsFromLatest(filteredLatest);
+          if (derived.length) {
+            pconRows = derived;
+          } else {
+            pconRows = filterPconRowsByConnector(basePconRows, connectorIds);
+          }
+        }
+        pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+        updateRowCountText();
+        updateSummary();
+        renderMap();
+      }
+
+      function handleConnectorToggle(event) {
+        if (!connectorAll) {
+          return;
+        }
+        if (event.target === connectorAll) {
+          if (connectorAll.checked) {
+            connectorOptions.forEach((input) => {
+              input.checked = true;
+            });
+          }
+        } else if (!event.target.checked && connectorAll.checked) {
+          connectorAll.checked = false;
+        } else {
+          syncConnectorAllState();
+        }
+        applyConnectorFilters();
+      }
+
       function renderMap() {
         if (!hexData || !hexCells.length || !hexBounds || !hexSide) {
           return;
@@ -1140,19 +1408,18 @@
           .filter((value) => Number.isFinite(value));
         const maxValue = values.length ? d3.max(values) : null;
         const domainMin = 0;
+        const domainMax = 70;
         const palette = HEAT_STOPS.map((name, index) =>
           resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
         );
         let colorScale = null;
         if (maxValue !== null) {
-          const roundedMax = Math.ceil(maxValue / 10) * 10;
-          const domainMax = Math.max(10, roundedMax);
           colorScale = d3.scaleSequential()
             .domain([domainMin, domainMax])
             .interpolator(d3.interpolateRgbBasis(palette))
             .clamp(true);
         }
-        updateLegend(maxValue === null ? null : domainMin, maxValue === null ? null : Math.max(10, Math.ceil(maxValue / 10) * 10));
+        updateLegend(maxValue === null ? null : domainMin, maxValue === null ? null : domainMax);
 
         const hexGroup = svg.append("g");
         hexGroup.selectAll("polygon")
@@ -1295,11 +1562,11 @@
           hexData = await hexResponse.json();
           prepareHexGrid();
           const payload = await pconResponse.json();
-          pconRows = payload?.data || [];
+          basePconRows = payload?.data || [];
+          basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
+          pconRows = basePconRows;
           pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
           pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
-          const withData = pconRows.filter((row) => getStationCount(row) > 0);
-          rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
           if (payload?.last_updated) {
             lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
           } else {
@@ -1307,11 +1574,11 @@
           }
           if (latestResponse && latestResponse.ok) {
             const latestPayload = await latestResponse.json();
-            latestRows = latestPayload?.data || [];
+            baseLatestRows = latestPayload?.data || [];
             latestPollutant = latestPayload?.pollutant || null;
             console.log("uk_aq_latest payload", latestPayload);
           } else {
-            latestRows = [];
+            baseLatestRows = [];
           }
           if (populationResponse && populationResponse.ok) {
             const populationPayload = await populationResponse.json();
@@ -1330,8 +1597,7 @@
           } else {
             populationLookup = new Map();
           }
-          updateSummary();
-          renderMap();
+          applyConnectorFilters();
           statusEl.textContent = "Live";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -1350,6 +1616,10 @@
           applyMetricState();
           renderMap();
         });
+      });
+
+      connectorInputs.forEach((input) => {
+        input.addEventListener("change", handleConnectorToggle);
       });
 
       document.getElementById("refresh").addEventListener("click", loadMapData);

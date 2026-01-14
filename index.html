@@ -513,13 +513,10 @@
       }
 
       function formatStationLabel(row) {
-        const stationBase = row.station_name
-          || row.station?.station_name
-          || row.station?.label
-          || row.station_label
+        const stationBase = row.display_name
+          || row.station?.display_name
           || "";
-        const fallback = extractSeriesStation(row.label || "");
-        let base = stationBase || fallback;
+        let base = stationBase;
         if (!base) {
           return "Unknown station";
         }
