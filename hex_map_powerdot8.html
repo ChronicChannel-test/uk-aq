@@ -372,12 +372,13 @@
       }
 
       .tooltip {
-        position: absolute;
+        position: fixed;
         pointer-events: none;
         background: white;
         border-radius: 10px;
-        padding: 8px 10px;
-        max-width: 340px;
+        padding: 8px 12px;
+        min-width: 320px;
+        max-width: 360px;
         box-shadow: 0 10px 20px rgba(20, 34, 37, 0.18);
         font-size: 0.85rem;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -401,11 +402,12 @@
 
       .tooltip-table {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 76px 104px;
-        column-gap: 8px;
+        grid-template-columns: minmax(0, 1fr) 62px 82px;
+        column-gap: 4px;
         row-gap: 4px;
         margin-top: 8px;
         align-items: start;
+        padding-right: 6px;
       }
 
       .tooltip-head {
@@ -427,6 +429,10 @@
       .tooltip-value,
       .tooltip-updated {
         text-align: left;
+      }
+
+      .tooltip-updated {
+        white-space: nowrap;
       }
 
       .tooltip.visible {
@@ -1486,6 +1492,23 @@
         renderMap();
       }
 
+      function positionTooltip(event) {
+        const left = event.clientX + 12;
+        const pointerY = event.clientY;
+        const viewportTop = 0;
+        const viewportBottom = window.innerHeight;
+        const tooltipHeight = tooltip.offsetHeight || 0;
+        let top = pointerY - 12;
+        if (top + tooltipHeight > viewportBottom) {
+          top = pointerY - tooltipHeight - 12;
+        }
+        if (top < viewportTop + 8) {
+          top = viewportTop + 8;
+        }
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
       function handleConnectorToggle(event) {
         if (!connectorAll) {
           return;
@@ -1639,12 +1662,10 @@
               `;
             }
             tooltip.classList.add("visible");
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY - 12}px`;
+            positionTooltip(event);
           })
           .on("mousemove", (event) => {
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY - 12}px`;
+            positionTooltip(event);
           })
           .on("mouseleave", () => {
             tooltip.classList.remove("visible");
