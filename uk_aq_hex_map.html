@@ -1408,7 +1408,7 @@
           .filter((value) => Number.isFinite(value));
         const maxValue = values.length ? d3.max(values) : null;
         const domainMin = 0;
-        const domainMax = 70;
+        const domainMax = 50;
         const palette = HEAT_STOPS.map((name, index) =>
           resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
         );
