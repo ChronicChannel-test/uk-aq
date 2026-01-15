@@ -1,0 +1,1804 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UK AQ Hex Map – Power 0.8</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #142225;
+        --ink-soft: #334449;
+        --mist: #f6f1e9;
+        --teal: #0f8b8d;
+        --teal-deep: #0a5d61;
+        --sun: #f4b942;
+        --clay: #e8dcc7;
+        --fog: rgba(20, 34, 37, 0.08);
+        --card: #ffffff;
+        --heat-0: #00a85a;
+        --heat-1: #ffd54a;
+        --heat-2: #ff9b3a;
+        --heat-3: #e03c3c;
+        --heat-4: #5b2a86;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
+          radial-gradient(circle at 88% 18%, #d6f1ef 0%, transparent 50%),
+          linear-gradient(135deg, #f7f2e8, #f0f7f6);
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: linear-gradient(120deg, rgba(20, 34, 37, 0.05) 1px, transparent 1px);
+        background-size: 32px 32px;
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      main {
+        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 48px 24px 64px;
+        display: grid;
+        gap: 24px;
+      }
+
+      header {
+        display: grid;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .title {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: clamp(2rem, 2.6vw, 3.25rem);
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 1.05rem;
+        max-width: 720px;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .badge {
+        background: var(--clay);
+        color: var(--ink);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(20, 34, 37, 0.12);
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+        animation: floatIn 0.6s ease-out;
+      }
+
+      .map-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(240px, 0.7fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .map-panel {
+        display: grid;
+        gap: 16px;
+      }
+
+      .summary-card {
+        padding: 16px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        display: grid;
+        gap: 12px;
+      }
+
+      .summary-title {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .summary-list {
+        display: grid;
+        gap: 14px;
+      }
+
+      .summary-item {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: var(--mist);
+        border: 1px solid var(--fog);
+        display: grid;
+        gap: 6px;
+      }
+
+      .summary-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-soft);
+      }
+
+      .summary-value {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .summary-name {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .summary-connector {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--teal-deep);
+      }
+
+      .card-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .card-title {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        margin: 0;
+        font-size: 1.4rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .actions button {
+        border: none;
+        background: var(--teal);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .actions button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 139, 141, 0.25);
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .filters label {
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .filters input[type="text"],
+      .filters input[type="search"] {
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.15);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        color: var(--ink);
+      }
+
+      .connector-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .connector-filters .checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        background: var(--mist);
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .connector-filters input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        accent-color: var(--teal);
+      }
+
+      .map-wrap {
+        border-radius: 16px;
+        background: #fdfaf4;
+        padding: 16px;
+        border: 1px solid rgba(20, 34, 37, 0.08);
+      }
+
+      svg {
+        width: 100%;
+        height: 560px;
+        display: block;
+      }
+
+      .hex {
+        stroke: rgba(20, 34, 37, 0.12);
+        stroke-width: 1;
+        transition: fill 0.2s ease, stroke 0.2s ease;
+      }
+
+      .hex:hover {
+        stroke: rgba(20, 34, 37, 0.4);
+        stroke-width: 1.5;
+      }
+
+      .region-boundaries {
+        pointer-events: none;
+      }
+
+      .boundary-path {
+        fill: none;
+        stroke: rgba(20, 34, 37, 0.6);
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .boundary-country {
+        stroke-width: 1.8;
+      }
+
+      .legend {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .legend-scale {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-bar-wrap {
+        position: relative;
+        width: 200px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .legend-bar {
+        width: 100%;
+        height: 12px;
+        border-radius: 999px;
+        background: linear-gradient(
+          90deg,
+          var(--heat-0),
+          var(--heat-1),
+          var(--heat-2),
+          var(--heat-3),
+          var(--heat-4)
+        );
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        display: block;
+      }
+
+      .legend-value {
+        min-width: 42px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      .legend-tick {
+        position: absolute;
+        top: 0;
+        width: 2px;
+        height: 18px;
+        background: rgba(20, 34, 37, 0.45);
+        border-radius: 2px;
+        pointer-events: none;
+      }
+
+      .legend-tick-label {
+        position: absolute;
+        top: 18px;
+        transform: translateX(-50%);
+        font-size: 0.7rem;
+        color: var(--ink-soft);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        pointer-events: none;
+      }
+
+      .tooltip {
+        position: absolute;
+        pointer-events: none;
+        background: white;
+        border-radius: 10px;
+        padding: 8px 10px;
+        max-width: 340px;
+        box-shadow: 0 10px 20px rgba(20, 34, 37, 0.18);
+        font-size: 0.85rem;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .tooltip-title {
+        font-weight: 700;
+      }
+
+      .tooltip-line {
+        margin-top: 2px;
+      }
+
+      .tooltip-empty {
+        margin-top: 6px;
+        font-weight: 600;
+      }
+
+      .tooltip-table {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 76px 104px;
+        column-gap: 8px;
+        row-gap: 4px;
+        margin-top: 8px;
+        align-items: start;
+      }
+
+      .tooltip-head {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+      }
+
+      .tooltip-connector {
+        grid-column: 1 / -1;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      .tooltip-connector--spaced {
+        margin-top: 8px;
+      }
+
+      .tooltip-value,
+      .tooltip-updated {
+        text-align: left;
+      }
+
+      .tooltip.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .hint {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .toggle {
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        background: #fff;
+      }
+
+      .toggle button {
+        border: none;
+        background: transparent;
+        color: var(--ink-soft);
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .toggle button.active {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .error {
+        color: #8b1e3f;
+        font-weight: 600;
+      }
+
+      @keyframes floatIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 36px 18px 48px;
+        }
+
+        .card {
+          padding: 18px;
+        }
+
+        svg {
+          height: 420px;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .map-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="badge">Hex Cartogram</p>
+        <h1 class="title">UK AQ hex map – Power 0.8</h1>
+        <p class="subtitle">
+          Power-eased colour scale (exponent 0.8 with a small top boost) to pull low values closer to mid-range colours.
+        </p>
+        <div class="meta">
+          <span id="row-count">Loading…</span>
+          <span id="last-updated">Waiting for data</span>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Latest PM2.5 by constituency</h2>
+          <div class="actions">
+            <span class="hint" id="status">Fetching from Supabase…</span>
+            <button id="refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="filters">
+          <span class="hint">Metric: Latest PM2.5</span>
+          <div class="toggle" role="group" aria-label="Aggregation">
+            <button type="button" class="active" data-metric="median">Typical (median)</button>
+            <button type="button" data-metric="mean">Average (mean)</button>
+          </div>
+          <div class="connector-filters" role="group" aria-label="Connector filters">
+            <span class="hint">Connectors:</span>
+            <label class="checkbox">
+              <input type="checkbox" data-connector="all" checked />
+              All
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" data-connector="uk_air_sos" checked />
+              UK AIR SOS
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" data-connector="sensorcommunity" checked />
+              Sensor Community
+            </label>
+          </div>
+          <span class="hint">Parliamentary constituency hex cartogram (equal-pop)</span>
+        </div>
+        <div class="hint" id="endpoint-hint"></div>
+        <div class="error" id="error"></div>
+        <div class="map-layout">
+          <div class="map-panel">
+            <div class="map-wrap">
+              <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+            </div>
+            <div class="legend">
+              <span>PM2.5 (µg/m³)</span>
+              <div
+                class="legend-scale"
+                title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+              >
+                <span class="legend-value" id="legend-min">-</span>
+                <div class="legend-bar-wrap" aria-hidden="true">
+                  <span class="legend-bar"></span>
+                  <span class="legend-tick" style="left: 28.0%"></span>
+                  <span class="legend-tick" style="left: 49.2%"></span>
+                  <span class="legend-tick" style="left: 68.6%"></span>
+                  <span class="legend-tick" style="left: 87.2%"></span>
+                  <span class="legend-tick-label" style="left: 28.0%">10</span>
+                  <span class="legend-tick-label" style="left: 49.2%">20</span>
+                  <span class="legend-tick-label" style="left: 68.6%">30</span>
+                  <span class="legend-tick-label" style="left: 87.2%">40</span>
+                </div>
+                <span class="legend-value" id="legend-max">-</span>
+              </div>
+              <span id="legend-label"></span>
+            </div>
+          </div>
+          <aside class="summary-card">
+            <h3 class="summary-title">PM2.5 summary</h3>
+            <p class="hint">Latest station readings across the UK.</p>
+            <div class="summary-list">
+              <div class="summary-item">
+                <span class="summary-label">Number of stations</span>
+                <span class="summary-value" id="summary-stations">-</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Lowest PM2.5</span>
+                <span class="summary-value" id="summary-lowest-value">-</span>
+                <span class="summary-connector" id="summary-lowest-connector">-</span>
+                <span class="summary-name" id="summary-lowest-name">-</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Highest PM2.5</span>
+                <span class="summary-value" id="summary-highest-value">-</span>
+                <span class="summary-connector" id="summary-highest-connector">-</span>
+                <span class="summary-name" id="summary-highest-name">-</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+    <script>
+      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
+      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
+      const params = new URLSearchParams(window.location.search);
+      const projectRefParam = params.get("project_ref");
+      const anonKeyParam = params.get("anon_key");
+      const metricParam = params.get("metric");
+      const mapDateParam = params.get("map_date");
+      const pconVersionParam = params.get("pcon_version");
+      const inferredProjectRef = inferProjectRefFromHost();
+      const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
+        ? (projectRefParam || inferredProjectRef || "")
+        : PROJECT_REF_PLACEHOLDER;
+      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SUPABASE_ANON_KEY__")
+        ? (anonKeyParam || "")
+        : ANON_KEY_PLACEHOLDER;
+      const REST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_pcon_hex`
+        : "";
+      const LATEST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_latest`
+        : "";
+      const POPULATION_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
+        : "";
+      const MAP_CUTOVER = "2023-11-29";
+      const MAP_CONFIGS = [
+        {
+          id: "pcon24",
+          label: "2024 constituencies",
+          hexUrl: "data/PCON/uk-constituencies-2023.hexjson",
+          version: "2024",
+          effectiveFrom: MAP_CUTOVER,
+        },
+        {
+          id: "pcon23",
+          label: "Pre-2024 constituencies",
+          hexUrl: "data/PCON/uk-constituencies-2017.hexjson",
+          version: "2023",
+          effectiveUntil: MAP_CUTOVER,
+        },
+      ];
+      const mapDateKey = normalizeDateKey(mapDateParam);
+      const activeMap = pickMapConfig(mapDateKey);
+      const HEX_DATA_URL = activeMap.hexUrl;
+      const activePconVersion = pconVersionParam || activeMap.version;
+      const METRIC_LABELS = {
+        median: "Typical (median)",
+        mean: "Average (mean)",
+      };
+      const CONNECTOR_DEFS = [
+        { code: "uk_air_sos", label: "UK AIR SOS" },
+        { code: "sensorcommunity", label: "Sensor Community" },
+      ];
+
+      function getConnectorLabelByCode(code) {
+        const match = CONNECTOR_DEFS.find((def) => def.code === code);
+        return match ? match.label : code;
+      }
+      const HEAT_STOPS = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4"];
+      const HEAT_STOP_FALLBACKS = ["#00a85a", "#ffd54a", "#ff9b3a", "#e03c3c", "#5b2a86"];
+      const REGION_NAMES = {
+        E12000001: "North East",
+        E12000002: "North West",
+        E12000003: "Yorkshire and The Humber",
+        E12000004: "East Midlands",
+        E12000005: "West Midlands",
+        E12000006: "East of England",
+        E12000007: "London",
+        E12000008: "South East",
+        E12000009: "South West",
+        S92000003: "Scotland",
+        W92000004: "Wales",
+        N92000002: "Northern Ireland",
+      };
+      const AXIAL_DIRECTIONS = [
+        { q: 1, r: 0 },
+        { q: 1, r: -1 },
+        { q: 0, r: -1 },
+        { q: -1, r: 0 },
+        { q: -1, r: 1 },
+        { q: 0, r: 1 },
+      ];
+      const EDGE_DIRECTION_CACHE = new Map();
+
+      const statusEl = document.getElementById("status");
+      const errorEl = document.getElementById("error");
+      const rowCount = document.getElementById("row-count");
+      const lastUpdated = document.getElementById("last-updated");
+      const endpointHint = document.getElementById("endpoint-hint");
+      const legendLabel = document.getElementById("legend-label");
+      const legendMin = document.getElementById("legend-min");
+      const legendMax = document.getElementById("legend-max");
+      const summaryStations = document.getElementById("summary-stations");
+      const summaryLowestValue = document.getElementById("summary-lowest-value");
+      const summaryLowestConnector = document.getElementById("summary-lowest-connector");
+      const summaryLowestName = document.getElementById("summary-lowest-name");
+      const summaryHighestValue = document.getElementById("summary-highest-value");
+      const summaryHighestConnector = document.getElementById("summary-highest-connector");
+      const summaryHighestName = document.getElementById("summary-highest-name");
+      const tooltip = document.getElementById("tooltip");
+      const svg = d3.select("#hex-map");
+      const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
+      const connectorInputs = Array.from(document.querySelectorAll("input[data-connector]"));
+      const connectorAll = document.querySelector("input[data-connector='all']");
+      const connectorOptions = connectorInputs.filter((input) => input !== connectorAll);
+
+      let currentMetric = metricParam === "mean" ? "mean" : "median";
+      let hexData = null;
+      let hexCells = [];
+      let hexBounds = null;
+      let hexSide = null;
+      let hexLayout = "odd-r";
+      let basePconRows = [];
+      let basePconLookup = new Map();
+      let pconRows = [];
+      let pconLookup = new Map();
+      let pconCodes = new Set();
+      let boundaryPaths = [];
+      let baseLatestRows = [];
+      let latestRows = [];
+      let latestPollutant = null;
+      let populationLookup = new Map();
+
+      endpointHint.textContent = REST_URL
+        ? `Endpoint: ${REST_URL} (${activeMap.label})`
+        : "Missing project ref. Add ?project_ref=... to the URL.";
+
+      function inferProjectRefFromHost() {
+        const host = window.location.hostname || "";
+        if (host.endsWith(".supabase.co")) {
+          return host.split(".")[0];
+        }
+        return null;
+      }
+
+      function normalizeDateKey(value) {
+        if (!value) {
+          return null;
+        }
+        const trimmed = value.trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+          return null;
+        }
+        return trimmed;
+      }
+
+      function pickMapConfig(dateKey) {
+        if (!dateKey) {
+          return MAP_CONFIGS[0];
+        }
+        return dateKey < MAP_CUTOVER ? MAP_CONFIGS[1] : MAP_CONFIGS[0];
+      }
+
+      function normalizeNumber(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : null;
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return "-";
+        }
+        return value.toLocaleString();
+      }
+
+      function formatValue(value) {
+        const numeric = normalizeNumber(value);
+        if (numeric === null) {
+          return "-";
+        }
+        return numeric.toFixed(1);
+      }
+
+      function formatTimestamp(value) {
+        if (!value) {
+          return "unknown";
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return "unknown";
+        }
+        return parsed.toLocaleString();
+      }
+
+      function formatShortTimestamp(value) {
+        if (!value) {
+          return "-";
+        }
+        const parsed = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return "-";
+        }
+        const day = String(parsed.getDate()).padStart(2, "0");
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const year = String(parsed.getFullYear()).slice(-2);
+        const hours = String(parsed.getHours()).padStart(2, "0");
+        const minutes = String(parsed.getMinutes()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+
+      function parseDate(value) {
+        if (!value) {
+          return null;
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        return parsed;
+      }
+
+      function resolveCssColor(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+      }
+
+      function resolveStationName(row) {
+        return row?.display_name
+          || row?.station?.display_name
+          || "Unknown station";
+      }
+
+      function resolveConnectorCode(row) {
+        return row?.connector_code
+          || row?.connector?.connector_code
+          || row?.station?.connector_code
+          || row?.station?.connector?.connector_code
+          || null;
+      }
+
+      function resolveConnectorLabel(row) {
+        const label = row?.connector_label
+          || row?.connector?.label
+          || row?.station?.connector_label
+          || row?.station?.connector?.label
+          || null;
+        if (label) {
+          return label;
+        }
+        const code = resolveConnectorCode(row);
+        return code ? getConnectorLabelByCode(code) : "Unknown connector";
+      }
+
+      function resolvePconCode(row) {
+        return row?.pcon_code
+          || row?.pcon
+          || row?.station?.pcon_code
+          || row?.station?.pcon
+          || row?.station?.pconCode
+          || null;
+      }
+
+      function resolveStationKey(row) {
+        return row?.station_id
+          || row?.station?.id
+          || row?.station_ref
+          || row?.station?.station_ref
+          || row?.station?.ref
+          || row?.display_name
+          || row?.station?.display_name
+          || null;
+      }
+
+      function resolveLatestValue(row) {
+        return normalizeNumber(
+          row?.last_value
+          ?? row?.latest_value
+          ?? row?.value
+          ?? row?.observed_value
+          ?? row?.lastValue
+          ?? row?.latestValue
+        );
+      }
+
+      function resolveLatestTimestamp(row) {
+        return parseDate(row?.last_value_at || row?.observed_at || row?.latest_value_at);
+      }
+
+      function extractPollutantText(row) {
+        return [
+          row?.pollutant_label,
+          row?.phenomenon_label,
+          row?.phenomenon?.pollutant_label,
+          row?.phenomenon?.notation,
+          row?.phenomenon?.label,
+        ].filter(Boolean).join(" ").trim().toLowerCase();
+      }
+
+      function isPm25Text(value) {
+        if (!value) {
+          return false;
+        }
+        return /pm\s*2\s*\.?\s*5/.test(value)
+          || value.includes("pm25")
+          || value.includes("pm_2.5")
+          || (value.includes("particulate") && /2\s*\.?\s*5/.test(value));
+      }
+
+      function isPm25Row(row) {
+        return isPm25Text(extractPollutantText(row));
+      }
+
+      function updateSummary() {
+        if (!pconRows.length) {
+          summaryStations.textContent = "-";
+        } else {
+          const totalStations = pconRows.reduce((total, row) => {
+            const count = normalizeNumber(row.station_count);
+            return total + (count ?? 0);
+          }, 0);
+          summaryStations.textContent = formatNumber(totalStations);
+        }
+
+        const pollutantHint = typeof latestPollutant === "string"
+          ? latestPollutant.toLowerCase()
+          : "";
+        const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && latestRows.length > 0);
+        const rowsForSummary = hasPm25Hint
+          ? latestRows
+          : latestRows.filter((row) => isPm25Row(row));
+        const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
+        let candidates = rowsWithPcon
+          .map((row) => {
+            const value = normalizeNumber(row.last_value);
+            if (!Number.isFinite(value)) {
+              return null;
+            }
+            return { row, value };
+          })
+          .filter(Boolean);
+
+        if (!candidates.length && latestRows.length && !hasPm25Hint) {
+          const fallback = latestRows
+            .filter((row) => resolvePconCode(row))
+            .map((row) => {
+              const value = normalizeNumber(row.last_value);
+              if (!Number.isFinite(value)) {
+                return null;
+              }
+              return { row, value };
+            })
+            .filter(Boolean);
+          if (fallback.length) {
+            candidates = fallback;
+          }
+        }
+
+        if (!candidates.length) {
+          summaryLowestValue.textContent = "-";
+          summaryLowestConnector.textContent = "-";
+          summaryLowestName.textContent = "No PM2.5 data";
+          summaryHighestValue.textContent = "-";
+          summaryHighestConnector.textContent = "-";
+          summaryHighestName.textContent = "No PM2.5 data";
+          return;
+        }
+
+        let lowest = candidates[0];
+        let highest = candidates[0];
+        for (const candidate of candidates) {
+          if (candidate.value < lowest.value) {
+            lowest = candidate;
+          }
+          if (candidate.value > highest.value) {
+            highest = candidate;
+          }
+        }
+
+        summaryLowestValue.textContent = `${formatValue(lowest.value)} µg/m³`;
+        summaryLowestConnector.textContent = resolveConnectorLabel(lowest.row);
+        summaryLowestName.textContent = resolveStationName(lowest.row);
+        summaryHighestValue.textContent = `${formatValue(highest.value)} µg/m³`;
+        summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
+        summaryHighestName.textContent = resolveStationName(highest.row);
+      }
+
+      function updateRowCountText() {
+        const withData = pconRows.filter((row) => getStationCount(row) > 0);
+        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
+      }
+
+      function updateLegend(minValue, maxValue, capValue) {
+        if (minValue === null || maxValue === null || capValue === null) {
+          legendLabel.textContent = "No PM2.5 values";
+          legendMin.textContent = "-";
+          legendMax.textContent = "-";
+          return;
+        }
+        legendLabel.textContent = METRIC_LABELS[currentMetric];
+        legendMin.textContent = formatValue(minValue);
+        legendMax.textContent = `${formatValue(capValue)}+`;
+      }
+
+      function clearMap() {
+        svg.selectAll("*").remove();
+      }
+
+      function offsetToPixel(layout, q, r, size) {
+        if (layout === "odd-r") {
+          return {
+            x: size * Math.sqrt(3) * (q + 0.5 * (r & 1)),
+            y: size * 1.5 * r,
+          };
+        }
+        if (layout === "even-r") {
+          return {
+            x: size * Math.sqrt(3) * (q + 0.5 * ((r + 1) & 1)),
+            y: size * 1.5 * r,
+          };
+        }
+        if (layout === "odd-q") {
+          return {
+            x: size * 1.5 * q,
+            y: size * Math.sqrt(3) * (r + 0.5 * (q & 1)),
+          };
+        }
+        if (layout === "even-q") {
+          return {
+            x: size * 1.5 * q,
+            y: size * Math.sqrt(3) * (r + 0.5 * ((q + 1) & 1)),
+          };
+        }
+        return {
+          x: size * Math.sqrt(3) * (q + r / 2),
+          y: size * 1.5 * r,
+        };
+      }
+
+      function computeHexBounds(cells, side) {
+        const dx = (Math.sqrt(3) / 2) * side;
+        const dy = side;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        cells.forEach((cell) => {
+          const left = cell.cx - dx;
+          const right = cell.cx + dx;
+          const bottom = cell.cy - dy;
+          const top = cell.cy + dy;
+          if (left < minX) {
+            minX = left;
+          }
+          if (bottom < minY) {
+            minY = bottom;
+          }
+          if (right > maxX) {
+            maxX = right;
+          }
+          if (top > maxY) {
+            maxY = top;
+          }
+        });
+        return { minX, minY, maxX, maxY };
+      }
+
+      function buildHexCellsFromHexjson(hexjson) {
+        const layout = typeof hexjson?.layout === "string" ? hexjson.layout : "odd-r";
+        const entries = Object.entries(hexjson?.hexes || {});
+        const size = 1;
+        const cells = entries.map(([key, value]) => {
+          const q = Number(value?.q ?? value?.col ?? 0);
+          const r = Number(value?.r ?? value?.row ?? 0);
+          const { x, y } = offsetToPixel(layout, q, r, size);
+          return {
+            id: key,
+            cx: x,
+            cy: y,
+            q,
+            r,
+            pcon_code: key,
+            pcon_name: value?.n || null,
+            region_code: value?.region || null,
+            region_name: REGION_NAMES[value?.region] || null,
+          };
+        });
+        return { cells, bounds: computeHexBounds(cells, size), side: size, layout };
+      }
+
+      function offsetToAxial(layout, col, row) {
+        if (layout === "odd-r") {
+          return { q: col - (row - (row & 1)) / 2, r: row };
+        }
+        if (layout === "even-r") {
+          return { q: col - (row + (row & 1)) / 2, r: row };
+        }
+        if (layout === "odd-q") {
+          return { q: col, r: row - (col - (col & 1)) / 2 };
+        }
+        if (layout === "even-q") {
+          return { q: col, r: row - (col + (col & 1)) / 2 };
+        }
+        return { q: col, r: row };
+      }
+
+      function axialToOffset(layout, q, r) {
+        if (layout === "odd-r") {
+          return { col: q + (r - (r & 1)) / 2, row: r };
+        }
+        if (layout === "even-r") {
+          return { col: q + (r + (r & 1)) / 2, row: r };
+        }
+        if (layout === "odd-q") {
+          return { col: q, row: r + (q - (q & 1)) / 2 };
+        }
+        if (layout === "even-q") {
+          return { col: q, row: r + (q + (q & 1)) / 2 };
+        }
+        return { col: q, row: r };
+      }
+
+      function getEdgeDirectionMap(layout) {
+        if (EDGE_DIRECTION_CACHE.has(layout)) {
+          return EDGE_DIRECTION_CACHE.get(layout);
+        }
+        const size = 1;
+        const center = offsetToPixel(layout, 0, 0, size);
+        const points = hexPoints(center.x, center.y, size);
+        const edgeVectors = points.map((point, index) => {
+          const next = points[(index + 1) % 6];
+          return {
+            x: (point[0] + next[0]) / 2 - center.x,
+            y: (point[1] + next[1]) / 2 - center.y,
+          };
+        });
+        const directionVectors = AXIAL_DIRECTIONS.map((dir) => {
+          const offset = axialToOffset(layout, dir.q, dir.r);
+          const neighbor = offsetToPixel(layout, offset.col, offset.row, size);
+          return {
+            x: neighbor.x - center.x,
+            y: neighbor.y - center.y,
+          };
+        });
+        const map = edgeVectors.map((edgeVector) => {
+          let bestIndex = 0;
+          let bestScore = -Infinity;
+          const edgeLength = Math.hypot(edgeVector.x, edgeVector.y) || 1;
+          directionVectors.forEach((directionVector, directionIndex) => {
+            const dirLength = Math.hypot(directionVector.x, directionVector.y) || 1;
+            const score = (edgeVector.x * directionVector.x + edgeVector.y * directionVector.y)
+              / (edgeLength * dirLength);
+            if (score > bestScore) {
+              bestScore = score;
+              bestIndex = directionIndex;
+            }
+          });
+          return bestIndex;
+        });
+        EDGE_DIRECTION_CACHE.set(layout, map);
+        return map;
+      }
+
+      function neighborForEdge(layout, col, row, edgeIndex) {
+        const axial = offsetToAxial(layout, col, row);
+        const directionIndex = getEdgeDirectionMap(layout)[edgeIndex];
+        const direction = AXIAL_DIRECTIONS[directionIndex];
+        const neighborAxial = { q: axial.q + direction.q, r: axial.r + direction.r };
+        return axialToOffset(layout, neighborAxial.q, neighborAxial.r);
+      }
+
+      function buildPathsFromSegments(segments) {
+        const pointKey = (point) => `${point[0].toFixed(6)},${point[1].toFixed(6)}`;
+        const adjacency = new Map();
+        segments.forEach((segment, index) => {
+          const startKey = pointKey(segment.start);
+          const endKey = pointKey(segment.end);
+          if (!adjacency.has(startKey)) {
+            adjacency.set(startKey, []);
+          }
+          if (!adjacency.has(endKey)) {
+            adjacency.set(endKey, []);
+          }
+          adjacency.get(startKey).push(index);
+          adjacency.get(endKey).push(index);
+        });
+        const unused = new Set(segments.map((_, index) => index));
+        const paths = [];
+        const takeSegment = (key) => {
+          const candidates = adjacency.get(key);
+          if (!candidates) {
+            return null;
+          }
+          const nextIndex = candidates.find((index) => unused.has(index));
+          if (nextIndex === undefined) {
+            return null;
+          }
+          unused.delete(nextIndex);
+          return nextIndex;
+        };
+        while (unused.size) {
+          const index = unused.values().next().value;
+          unused.delete(index);
+          const segment = segments[index];
+          const path = [segment.start, segment.end];
+          let startKey = pointKey(segment.start);
+          let endKey = pointKey(segment.end);
+          while (true) {
+            const nextIndex = takeSegment(endKey);
+            if (nextIndex === null) {
+              break;
+            }
+            const nextSegment = segments[nextIndex];
+            const nextPoint = pointKey(nextSegment.start) === endKey
+              ? nextSegment.end
+              : nextSegment.start;
+            path.push(nextPoint);
+            endKey = pointKey(nextPoint);
+          }
+          while (true) {
+            const prevIndex = takeSegment(startKey);
+            if (prevIndex === null) {
+              break;
+            }
+            const prevSegment = segments[prevIndex];
+            const prevPoint = pointKey(prevSegment.start) === startKey
+              ? prevSegment.end
+              : prevSegment.start;
+            path.unshift(prevPoint);
+            startKey = pointKey(prevPoint);
+          }
+          paths.push(path);
+        }
+        return paths;
+      }
+
+      function regionCountry(regionCode) {
+        if (!regionCode) {
+          return null;
+        }
+        return String(regionCode).trim().charAt(0) || null;
+      }
+
+      function boundaryType(regionCode, neighborCode) {
+        const country = regionCountry(regionCode);
+        const neighborCountry = regionCountry(neighborCode) || country;
+        if (!neighborCode) {
+          return null;
+        }
+        if (country && neighborCountry && country !== neighborCountry) {
+          return "country";
+        }
+        return "region";
+      }
+
+      function buildRegionBoundaryPaths(cells, layout) {
+        const cellLookup = new Map(cells.map((cell) => [`${cell.q},${cell.r}`, cell]));
+        const segmentsByType = { region: [], country: [] };
+        cells.forEach((cell) => {
+          const points = hexPoints(cell.cx, cell.cy, 1);
+          for (let edgeIndex = 0; edgeIndex < 6; edgeIndex += 1) {
+            const neighborOffset = neighborForEdge(layout, cell.q, cell.r, edgeIndex);
+            const neighborKey = `${neighborOffset.col},${neighborOffset.row}`;
+            const neighbor = cellLookup.get(neighborKey);
+            if (!neighbor) {
+              continue;
+            }
+            const neighborRegion = neighbor?.region_code || null;
+            if (neighborRegion === cell.region_code) {
+              continue;
+            }
+            if (neighborRegion && cell.region_code && cell.region_code > neighborRegion) {
+              continue;
+            }
+            const type = boundaryType(cell.region_code, neighborRegion);
+            if (!type) {
+              continue;
+            }
+            segmentsByType[type].push({
+              start: points[edgeIndex],
+              end: points[(edgeIndex + 1) % 6],
+            });
+          }
+        });
+        return Object.entries(segmentsByType)
+          .map(([type, segments]) => ({
+            type,
+            paths: buildPathsFromSegments(segments),
+          }))
+          .filter((boundary) => boundary.paths.length);
+      }
+
+      function prepareHexGrid() {
+        if (!hexData || hexCells.length) {
+          return;
+        }
+        const { cells, bounds, side, layout } = buildHexCellsFromHexjson(hexData);
+        hexCells = cells;
+        hexBounds = bounds;
+        hexSide = side;
+        hexLayout = layout;
+        boundaryPaths = buildRegionBoundaryPaths(cells, layout);
+      }
+
+      function createProjection(bounds, width, height, padding) {
+        const dataWidth = bounds.maxX - bounds.minX;
+        const dataHeight = bounds.maxY - bounds.minY;
+        const scale = Math.min(
+          (width - padding * 2) / dataWidth,
+          (height - padding * 2) / dataHeight,
+        );
+        const extraX = width - padding * 2 - dataWidth * scale;
+        const extraY = height - padding * 2 - dataHeight * scale;
+        return (point) => ([
+          (point[0] - bounds.minX) * scale + padding + extraX / 2,
+          (bounds.maxY - point[1]) * scale + padding + extraY / 2,
+        ]);
+      }
+
+      function hexPoints(cx, cy, side) {
+        const dx = Math.sqrt(3) / 2 * side;
+        const dy = side / 2;
+        return [
+          [cx, cy + side],
+          [cx + dx, cy + dy],
+          [cx + dx, cy - dy],
+          [cx, cy - side],
+          [cx - dx, cy - dy],
+          [cx - dx, cy + dy],
+        ];
+      }
+
+      function applyMetricState() {
+        metricButtons.forEach((button) => {
+          const isActive = button.dataset.metric === currentMetric;
+          button.classList.toggle("active", isActive);
+        });
+      }
+
+      function getMetricValue(row) {
+        if (!row) {
+          return null;
+        }
+        return currentMetric === "mean"
+          ? normalizeNumber(row.mean_value)
+          : normalizeNumber(row.median_value);
+      }
+
+      function getStationCount(row) {
+        if (!row) {
+          return 0;
+        }
+        const count = normalizeNumber(row.station_count);
+        return count === null ? 0 : count;
+      }
+
+      function getActiveConnectorIds() {
+        if (!connectorAll) {
+          return null;
+        }
+        const allSpecificChecked = connectorOptions.length
+          ? connectorOptions.every((input) => input.checked)
+          : false;
+        if (connectorAll.checked || allSpecificChecked) {
+          return null;
+        }
+        const active = connectorOptions
+          .filter((input) => input.checked)
+          .map((input) => input.dataset.connector)
+          .filter(Boolean);
+        return new Set(active);
+      }
+
+      function syncConnectorAllState() {
+        if (!connectorAll) {
+          return;
+        }
+        const allChecked = connectorOptions.every((input) => input.checked);
+        connectorAll.checked = allChecked;
+      }
+
+      function filterLatestRowsByConnector(rows, connectorIds) {
+        if (!rows.length) {
+          return [];
+        }
+        return rows.filter((row) => {
+          const connectorCode = resolveConnectorCode(row);
+          return connectorCode ? connectorIds.has(connectorCode) : false;
+        });
+      }
+
+      function filterPconRowsByConnector(rows, connectorIds) {
+        if (!rows.length) {
+          return [];
+        }
+        return rows.filter((row) => {
+          const connectorCode = resolveConnectorCode(row);
+          return connectorCode ? connectorIds.has(connectorCode) : false;
+        });
+      }
+
+      function buildPconRowsFromLatest(rows) {
+        if (!rows.length) {
+          return [];
+        }
+        const groups = new Map();
+        rows.forEach((row, index) => {
+          const pollutantText = extractPollutantText(row);
+          if (pollutantText && !isPm25Text(pollutantText)) {
+            return;
+          }
+          const pconCode = resolvePconCode(row);
+          if (!pconCode) {
+            return;
+          }
+          const value = resolveLatestValue(row);
+          if (!Number.isFinite(value)) {
+            return;
+          }
+          const stationKey = resolveStationKey(row) || `${pconCode}-${index}`;
+          const timestamp = parseDate(row?.last_value_at || row?.observed_at || row?.latest_value_at);
+          const group = groups.get(pconCode) || { stations: new Map(), latestAt: null };
+          const existing = group.stations.get(stationKey);
+          if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
+            group.stations.set(stationKey, { value, timestamp });
+          }
+          if (timestamp && (!group.latestAt || timestamp > group.latestAt)) {
+            group.latestAt = timestamp;
+          }
+          groups.set(pconCode, group);
+        });
+
+        const rowsForMap = [];
+        groups.forEach((group, pconCode) => {
+          const values = Array.from(group.stations.values())
+            .map((entry) => entry.value)
+            .filter((value) => Number.isFinite(value));
+          if (!values.length) {
+            return;
+          }
+          const sorted = [...values].sort((a, b) => a - b);
+          const midpoint = Math.floor(sorted.length / 2);
+          const median = sorted.length % 2 === 0
+            ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
+            : sorted[midpoint];
+          const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+          const baseRow = basePconLookup.get(pconCode) || {};
+          rowsForMap.push({
+            pcon_code: pconCode,
+            pcon_name: baseRow.pcon_name || null,
+            pcon_version: baseRow.pcon_version || activePconVersion,
+            station_count: values.length,
+            single_site: values.length === 1,
+            median_value: median,
+            mean_value: mean,
+            latest_value_at: group.latestAt ? group.latestAt.toISOString() : null,
+          });
+        });
+        return rowsForMap;
+      }
+
+      function applyConnectorFilters() {
+        if (!basePconRows.length && !baseLatestRows.length) {
+          return;
+        }
+        const connectorIds = getActiveConnectorIds();
+        if (connectorIds === null) {
+          pconRows = basePconRows;
+          latestRows = baseLatestRows;
+        } else if (connectorIds.size === 0) {
+          pconRows = [];
+          latestRows = [];
+        } else {
+          const filteredLatest = filterLatestRowsByConnector(baseLatestRows, connectorIds);
+          latestRows = filteredLatest;
+          const derived = buildPconRowsFromLatest(filteredLatest);
+          if (derived.length) {
+            pconRows = derived;
+          } else {
+            pconRows = filterPconRowsByConnector(basePconRows, connectorIds);
+          }
+        }
+        pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+        updateRowCountText();
+        updateSummary();
+        renderMap();
+      }
+
+      function handleConnectorToggle(event) {
+        if (!connectorAll) {
+          return;
+        }
+        if (event.target === connectorAll) {
+          if (connectorAll.checked) {
+            connectorOptions.forEach((input) => {
+              input.checked = true;
+            });
+          }
+        } else if (!event.target.checked && connectorAll.checked) {
+          connectorAll.checked = false;
+        } else {
+          syncConnectorAllState();
+        }
+        applyConnectorFilters();
+      }
+
+      function renderMap() {
+        if (!hexData || !hexCells.length || !hexBounds || !hexSide) {
+          return;
+        }
+        clearMap();
+        const width = svg.node().clientWidth || 960;
+        const height = svg.node().clientHeight || 560;
+        const projection = createProjection(hexBounds, width, height, 24);
+        const values = pconRows
+          .map((row) => getMetricValue(row))
+          .filter((value) => Number.isFinite(value));
+        const maxValue = values.length ? d3.max(values) : null;
+        const domainMin = 0;
+        const domainMax = 50;
+        const palette = HEAT_STOPS.map((name, index) =>
+          resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
+        );
+        let colorScale = null;
+        if (maxValue !== null) {
+          const interpolate = d3.interpolateRgbBasis(palette);
+          const exponent = 0.8;
+          const mapValueToT = (value) => {
+            const clamped = Math.max(domainMin, Math.min(domainMax, value));
+            const base = Math.pow(clamped / domainMax, exponent);
+            const boosted = base + 0.05 * base * base; // small top boost to keep 40 near ~87%
+            return Math.max(0, Math.min(1, boosted));
+          };
+          colorScale = (value) => interpolate(mapValueToT(value));
+        }
+        updateLegend(maxValue === null ? null : domainMin, maxValue, domainMax);
+
+        const hexGroup = svg.append("g");
+        hexGroup.selectAll("polygon")
+          .data(hexCells)
+          .join("polygon")
+          .attr("class", "hex")
+          .attr("points", (cell) => hexPoints(cell.cx, cell.cy, hexSide)
+            .map((point) => projection(point))
+            .map((point) => `${point[0]},${point[1]}`)
+            .join(" "))
+          .attr("fill", (cell) => {
+            const row = pconLookup.get(cell.pcon_code);
+            const value = getMetricValue(row);
+            if (!colorScale || !Number.isFinite(value)) {
+              return "var(--clay)";
+            }
+            return colorScale(value);
+          })
+          .on("mouseenter", (event, cell) => {
+            const row = pconLookup.get(cell.pcon_code);
+            const metricValue = getMetricValue(row);
+            const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown constituency";
+            const regionLabel = cell.region_name || cell.region_code || "Unknown region";
+            const populationEntry = populationLookup.get(cell.pcon_code);
+            const populationValue = normalizeNumber(populationEntry?.population_value);
+            const populationDate = parseDate(populationEntry?.reference_date);
+            const populationYear = populationDate ? populationDate.getFullYear() : null;
+            const populationLabel = populationValue === null
+              ? "Population: n/a"
+              : `Population${populationYear ? ` (${populationYear})` : ""}: ${formatNumber(populationValue)}`;
+            const valueLabel = Number.isFinite(metricValue)
+              ? `${formatValue(metricValue)} µg/m³`
+              : "No PM2.5 data";
+            const pollutantHint = typeof latestPollutant === "string"
+              ? latestPollutant.toLowerCase()
+              : "";
+            const useAllPm25 = isPm25Text(pollutantHint) || (!pollutantHint && latestRows.length > 0);
+            const rowsForTooltip = (useAllPm25 ? latestRows : latestRows.filter((item) => isPm25Row(item)))
+              .filter((item) => resolvePconCode(item) === cell.pcon_code);
+            const stationMap = new Map();
+            rowsForTooltip.forEach((item, index) => {
+              const value = resolveLatestValue(item);
+              if (!Number.isFinite(value)) {
+                return;
+              }
+              const stationKey = resolveStationKey(item) || `${cell.pcon_code}-${index}`;
+              const timestamp = resolveLatestTimestamp(item);
+              const existing = stationMap.get(stationKey);
+              if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
+                stationMap.set(stationKey, { row: item, value, timestamp });
+              }
+            });
+            const stationEntries = Array.from(stationMap.values());
+            if (!stationEntries.length) {
+              tooltip.innerHTML = `
+                <div class="tooltip-title">${areaName}</div>
+                <div class="tooltip-line">Region: ${regionLabel}</div>
+                <div class="tooltip-line">${populationLabel}</div>
+                <div class="tooltip-empty">No stations</div>
+              `;
+            } else {
+              const stationHeading = stationEntries.length === 1
+                ? "1 station"
+                : `${formatNumber(stationEntries.length)} stations`;
+              const grouped = new Map();
+              stationEntries.forEach((entry) => {
+                const connectorLabel = resolveConnectorLabel(entry.row);
+                if (!grouped.has(connectorLabel)) {
+                  grouped.set(connectorLabel, []);
+                }
+                grouped.get(connectorLabel).push(entry);
+              });
+              let tableRows = `
+                <div class="tooltip-head">${stationHeading}</div>
+                <div class="tooltip-head">PM2.5</div>
+                <div class="tooltip-head">Updated</div>
+              `;
+              let groupIndex = 0;
+              grouped.forEach((entries, connectorLabel) => {
+                const connectorClass = groupIndex === 0
+                  ? "tooltip-connector"
+                  : "tooltip-connector tooltip-connector--spaced";
+                tableRows += `
+                  <div class="${connectorClass}">${connectorLabel}</div>
+                `;
+                entries.forEach((entry) => {
+                  const stationName = resolveStationName(entry.row);
+                  const updatedText = formatShortTimestamp(entry.timestamp);
+                  tableRows += `
+                    <div class="tooltip-station">${stationName}</div>
+                    <div class="tooltip-value">${formatValue(entry.value)}</div>
+                    <div class="tooltip-updated">${updatedText}</div>
+                  `;
+                });
+                groupIndex += 1;
+              });
+              tooltip.innerHTML = `
+                <div class="tooltip-title">${areaName}</div>
+                <div class="tooltip-line">Region: ${regionLabel}</div>
+                <div class="tooltip-line">${populationLabel}</div>
+                <div class="tooltip-line">${METRIC_LABELS[currentMetric]}: ${valueLabel}</div>
+                <div class="tooltip-table">${tableRows}</div>
+              `;
+            }
+            tooltip.classList.add("visible");
+            tooltip.style.left = `${event.pageX + 12}px`;
+            tooltip.style.top = `${event.pageY - 12}px`;
+          })
+          .on("mousemove", (event) => {
+            tooltip.style.left = `${event.pageX + 12}px`;
+            tooltip.style.top = `${event.pageY - 12}px`;
+          })
+          .on("mouseleave", () => {
+            tooltip.classList.remove("visible");
+          });
+
+        const boundaryGroup = svg.append("g").attr("class", "region-boundaries");
+        boundaryGroup.selectAll("path")
+          .data(boundaryPaths)
+          .join("path")
+          .attr("class", (boundary) => `boundary-path boundary-${boundary.type || "region"}`)
+          .attr("d", (boundary) => boundary.paths.map((path) => {
+            const [first, ...rest] = path;
+            const [startX, startY] = projection(first);
+            const lines = rest.map((point) => {
+              const [x, y] = projection(point);
+              return `L${x},${y}`;
+            }).join("");
+            return `M${startX},${startY}${lines}`;
+          }).join(""));
+      }
+
+      async function loadMapData() {
+        statusEl.textContent = "Loading…";
+        errorEl.textContent = "";
+        latestPollutant = null;
+        populationLookup = new Map();
+        if (!REST_URL) {
+          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        if (!anonKey) {
+          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        try {
+          const pconUrl = new URL(REST_URL);
+          if (activePconVersion) {
+            pconUrl.searchParams.set("pcon_version", activePconVersion);
+          }
+          const latestUrl = new URL(LATEST_URL);
+          latestUrl.searchParams.set("pollutant", "PM2.5");
+          latestUrl.searchParams.set("scope", "all");
+          latestUrl.searchParams.set("limit", "10000");
+          const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
+          if (populationUrl) {
+            populationUrl.searchParams.set("geo_type", "PCON");
+            if (mapDateKey) {
+              populationUrl.searchParams.set("reference_date", mapDateKey);
+            }
+            populationUrl.searchParams.set("limit", "2000");
+          }
+          const [hexResponse, pconResponse, latestResponse, populationResponse] = await Promise.all([
+            fetch(HEX_DATA_URL),
+            fetch(pconUrl.toString(), {
+              headers: {
+                Authorization: `Bearer ${anonKey}`,
+                apikey: anonKey,
+              },
+            }),
+            fetch(latestUrl.toString(), {
+              headers: {
+                Authorization: `Bearer ${anonKey}`,
+                apikey: anonKey,
+              },
+            }).catch(() => null),
+            populationUrl
+              ? fetch(populationUrl.toString(), {
+                headers: {
+                  Authorization: `Bearer ${anonKey}`,
+                  apikey: anonKey,
+                },
+              }).catch(() => null)
+              : Promise.resolve(null),
+          ]);
+          if (!hexResponse.ok) {
+            throw new Error(`Hex data request failed: ${hexResponse.status}`);
+          }
+          if (!pconResponse.ok) {
+            throw new Error(`Constituency request failed: ${pconResponse.status}`);
+          }
+          hexData = await hexResponse.json();
+          prepareHexGrid();
+          const payload = await pconResponse.json();
+          basePconRows = payload?.data || [];
+          basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
+          pconRows = basePconRows;
+          pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+          pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
+          if (payload?.last_updated) {
+            lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
+          } else {
+            lastUpdated.textContent = "Latest data unavailable";
+          }
+          if (latestResponse && latestResponse.ok) {
+            const latestPayload = await latestResponse.json();
+            baseLatestRows = latestPayload?.data || [];
+            latestPollutant = latestPayload?.pollutant || null;
+            console.log("uk_aq_latest payload", latestPayload);
+          } else {
+            baseLatestRows = [];
+          }
+          if (populationResponse && populationResponse.ok) {
+            const populationPayload = await populationResponse.json();
+            const populationRows = Array.isArray(populationPayload)
+              ? populationPayload
+              : populationPayload?.data || [];
+            const lookup = new Map();
+            populationRows.forEach((row) => {
+              const code = row?.geo_code;
+              if (!code || lookup.has(code)) {
+                return;
+              }
+              lookup.set(code, row);
+            });
+            populationLookup = lookup;
+          } else {
+            populationLookup = new Map();
+          }
+          applyConnectorFilters();
+          statusEl.textContent = "Live";
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          errorEl.textContent = message;
+          statusEl.textContent = "Error";
+        }
+      }
+
+      metricButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const metric = button.dataset.metric;
+          if (!metric || metric === currentMetric) {
+            return;
+          }
+          currentMetric = metric;
+          applyMetricState();
+          renderMap();
+        });
+      });
+
+      connectorInputs.forEach((input) => {
+        input.addEventListener("change", handleConnectorToggle);
+      });
+
+      document.getElementById("refresh").addEventListener("click", loadMapData);
+      window.addEventListener("resize", () => {
+        if (statusEl.textContent === "Live") {
+          renderMap();
+        }
+      });
+      applyMetricState();
+      loadMapData();
+      setInterval(loadMapData, 10 * 60 * 1000);
+    </script>
+  </body>
+</html>
