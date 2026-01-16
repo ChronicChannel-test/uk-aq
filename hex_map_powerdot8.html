@@ -400,40 +400,99 @@
         font-weight: 600;
       }
 
-      .tooltip-table {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 62px 82px;
-        column-gap: 4px;
-        row-gap: 4px;
-        margin-top: 8px;
-        align-items: start;
-        padding-right: 6px;
-      }
+        .tooltip-table {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 72px 96px;
+          column-gap: 8px;
+          row-gap: 6px;
+          margin-top: 10px;
+          align-items: start;
+          padding: 10px 12px 10px 12px;
+          background: #f7f2e8;
+          border: 1px solid rgba(20, 34, 37, 0.14);
+          border-radius: 12px;
+          position: relative;
+        }
 
-      .tooltip-head {
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: var(--ink-soft);
-      }
+        .tooltip-head {
+          font-size: 0.72rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-weight: 700;
+          color: var(--ink-soft);
+        }
 
-      .tooltip-connector {
-        grid-column: 1 / -1;
-        font-weight: 700;
-        margin-top: 2px;
-      }
+        .tooltip-head:nth-of-type(2),
+        .tooltip-head:nth-of-type(3),
+        .tooltip-value,
+        .tooltip-updated {
+          padding-left: 10px;
+        }
 
-      .tooltip-connector--spaced {
-        margin-top: 8px;
-      }
+        .tooltip-head:nth-of-type(3) {
+          padding-left: 4px;
+        }
 
-      .tooltip-value,
-      .tooltip-updated {
-        text-align: left;
-      }
+        .tooltip-updated {
+          padding-left: 4px;
+          padding-right: 16px;
+        }
 
-      .tooltip-updated {
-        white-space: nowrap;
-      }
+        .tooltip-vline {
+          position: absolute;
+          top: 12px;
+          bottom: 12px;
+          width: 1px;
+          background: rgba(20, 34, 37, 0.16);
+          pointer-events: none;
+        }
+
+        .tooltip-vline--1 {
+          left: calc(100% - 192px);
+        }
+
+        .tooltip-vline--2 {
+          left: calc(100% - 116px);
+        }
+
+        .tooltip-connector {
+          grid-column: 1 / -1;
+          font-weight: 700;
+          margin-top: 4px;
+          color: var(--teal-deep);
+        }
+
+        .tooltip-connector--spaced {
+          margin-top: 10px;
+        }
+
+        .tooltip-row-divider {
+          grid-column: 1 / -1;
+          height: 1px;
+          background: rgba(20, 34, 37, 0.12);
+          margin: 2px 0;
+        }
+
+        .tooltip-row-divider--header {
+          margin: 6px 0 4px;
+        }
+
+        .tooltip-station {
+          font-weight: 700;
+          color: var(--ink);
+        }
+
+        .tooltip-value,
+        .tooltip-updated {
+          text-align: left;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .tooltip-updated {
+          white-space: nowrap;
+          color: var(--ink-soft);
+          font-size: 0.8rem;
+        }
 
       .tooltip.visible {
         opacity: 1;
@@ -584,23 +643,22 @@
           </div>
           <aside class="summary-card">
             <h3 class="summary-title">PM2.5 summary</h3>
-            <p class="hint">Latest station readings across the UK.</p>
             <div class="summary-list">
               <div class="summary-item">
                 <span class="summary-label">Number of stations</span>
                 <span class="summary-value" id="summary-stations">-</span>
               </div>
               <div class="summary-item">
-                <span class="summary-label">Lowest PM2.5</span>
-                <span class="summary-value" id="summary-lowest-value">-</span>
-                <span class="summary-connector" id="summary-lowest-connector">-</span>
-                <span class="summary-name" id="summary-lowest-name">-</span>
-              </div>
-              <div class="summary-item">
                 <span class="summary-label">Highest PM2.5</span>
                 <span class="summary-value" id="summary-highest-value">-</span>
                 <span class="summary-connector" id="summary-highest-connector">-</span>
                 <span class="summary-name" id="summary-highest-name">-</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
+                <span class="summary-value" id="summary-lowest-value">-</span>
+                <span class="summary-connector" id="summary-lowest-connector">-</span>
+                <span class="summary-name" id="summary-lowest-name">-</span>
               </div>
             </div>
           </aside>
@@ -657,10 +715,12 @@
       const activeMap = pickMapConfig(mapDateKey);
       const HEX_DATA_URL = activeMap.hexUrl;
       const activePconVersion = pconVersionParam || activeMap.version;
-      const METRIC_LABELS = {
-        median: "Typical (median)",
-        mean: "Average (mean)",
-      };
+        const METRIC_LABELS = {
+          median: "Typical (median)",
+          mean: "Average (mean)",
+        };
+        const MIN_VALID_PM25_VALUE = 0.09;
+        const MAX_VALID_PM25_VALUE = 500;
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
         { code: "sensorcommunity", label: "Sensor Community" },
@@ -773,6 +833,17 @@
         return Number.isFinite(numeric) ? numeric : null;
       }
 
+      function clampPm25(value) {
+        const numeric = normalizeNumber(value);
+        if (numeric === null) {
+          return null;
+        }
+        if (numeric > MAX_VALID_PM25_VALUE) {
+          return null;
+        }
+        return numeric;
+      }
+
       function formatNumber(value) {
         if (value === null || value === undefined || Number.isNaN(value)) {
           return "-";
@@ -879,7 +950,7 @@
       }
 
       function resolveLatestValue(row) {
-        return normalizeNumber(
+        return clampPm25(
           row?.last_value
           ?? row?.latest_value
           ?? row?.value
@@ -938,7 +1009,7 @@
         const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
         let candidates = rowsWithPcon
           .map((row) => {
-            const value = normalizeNumber(row.last_value);
+            const value = clampPm25(row.last_value);
             if (!Number.isFinite(value)) {
               return null;
             }
@@ -950,7 +1021,7 @@
           const fallback = latestRows
             .filter((row) => resolvePconCode(row))
             .map((row) => {
-              const value = normalizeNumber(row.last_value);
+                const value = clampPm25(row.last_value);
               if (!Number.isFinite(value)) {
                 return null;
               }
@@ -972,12 +1043,18 @@
           return;
         }
 
-        let lowest = candidates[0];
-        let highest = candidates[0];
-        for (const candidate of candidates) {
+        const candidatesForLowest = candidates.filter(({ value }) => value > MIN_VALID_PM25_VALUE);
+        const lowestPool = candidatesForLowest.length ? candidatesForLowest : candidates;
+
+        let lowest = lowestPool[0];
+        for (const candidate of lowestPool) {
           if (candidate.value < lowest.value) {
             lowest = candidate;
           }
+        }
+
+        let highest = candidates[0];
+        for (const candidate of candidates) {
           if (candidate.value > highest.value) {
             highest = candidate;
           }
@@ -1347,9 +1424,10 @@
         if (!row) {
           return null;
         }
-        return currentMetric === "mean"
-          ? normalizeNumber(row.mean_value)
-          : normalizeNumber(row.median_value);
+        const raw = currentMetric === "mean"
+          ? row.mean_value
+          : row.median_value;
+        return clampPm25(raw);
       }
 
       function getStationCount(row) {
@@ -1633,9 +1711,13 @@
                 <div class="tooltip-head">${stationHeading}</div>
                 <div class="tooltip-head">PM2.5</div>
                 <div class="tooltip-head">Updated</div>
+                <div class="tooltip-row-divider tooltip-row-divider--header" aria-hidden="true"></div>
               `;
               let groupIndex = 0;
               grouped.forEach((entries, connectorLabel) => {
+                if (groupIndex > 0) {
+                  tableRows += '<div class="tooltip-row-divider" aria-hidden="true"></div>';
+                }
                 const connectorClass = groupIndex === 0
                   ? "tooltip-connector"
                   : "tooltip-connector tooltip-connector--spaced";
@@ -1658,7 +1740,10 @@
                 <div class="tooltip-line">Region: ${regionLabel}</div>
                 <div class="tooltip-line">${populationLabel}</div>
                 <div class="tooltip-line">${METRIC_LABELS[currentMetric]}: ${valueLabel}</div>
-                <div class="tooltip-table">${tableRows}</div>
+                <div class="tooltip-table">${tableRows}
+                  <div class="tooltip-vline tooltip-vline--1" aria-hidden="true"></div>
+                  <div class="tooltip-vline tooltip-vline--2" aria-hidden="true"></div>
+                </div>
               `;
             }
             tooltip.classList.add("visible");
@@ -1763,7 +1848,8 @@
           }
           if (latestResponse && latestResponse.ok) {
             const latestPayload = await latestResponse.json();
-            baseLatestRows = latestPayload?.data || [];
+            const latestRaw = latestPayload?.data || [];
+            baseLatestRows = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
             latestPollutant = latestPayload?.pollutant || null;
             console.log("uk_aq_latest payload", latestPayload);
           } else {

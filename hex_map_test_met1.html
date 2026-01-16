@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UK AQ Hex Map</title>
+    <title>UK AQ Hex Map – Sensor Community Met</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -34,7 +34,7 @@
 
       body {
         margin: 0;
-        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         color: var(--ink);
         background:
           radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
@@ -69,7 +69,7 @@
       }
 
       .title {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: clamp(2rem, 2.6vw, 3.25rem);
         letter-spacing: -0.02em;
         margin: 0;
@@ -133,7 +133,7 @@
       }
 
       .summary-title {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         margin: 0;
         font-size: 1.2rem;
       }
@@ -160,8 +160,9 @@
       }
 
       .summary-value {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.4rem;
+        font-weight: 700;
         color: var(--ink);
       }
 
@@ -185,7 +186,7 @@
       }
 
       .card-title {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         margin: 0;
         font-size: 1.4rem;
       }
@@ -319,8 +320,16 @@
         gap: 8px;
       }
 
-      .legend-bar {
+      .legend-bar-wrap {
+        position: relative;
         width: 200px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .legend-bar {
+        width: 100%;
         height: 12px;
         border-radius: 999px;
         background: linear-gradient(
@@ -332,26 +341,158 @@
           var(--heat-4)
         );
         border: 1px solid rgba(20, 34, 37, 0.12);
+        display: block;
       }
 
       .legend-value {
         min-width: 42px;
         text-align: center;
         font-variant-numeric: tabular-nums;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      .legend-tick {
+        position: absolute;
+        top: 0;
+        width: 2px;
+        height: 18px;
+        background: rgba(20, 34, 37, 0.45);
+        border-radius: 2px;
+        pointer-events: none;
+      }
+
+      .legend-tick-label {
+        position: absolute;
+        top: 18px;
+        transform: translateX(-50%);
+        font-size: 0.7rem;
+        color: var(--ink-soft);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        pointer-events: none;
       }
 
       .tooltip {
-        position: absolute;
+        position: fixed;
         pointer-events: none;
         background: white;
         border-radius: 10px;
         padding: 8px 12px;
+        min-width: 320px;
+        max-width: 360px;
         box-shadow: 0 10px 20px rgba(20, 34, 37, 0.18);
         font-size: 0.85rem;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         opacity: 0;
         transform: translateY(8px);
         transition: opacity 0.2s ease, transform 0.2s ease;
       }
+
+      .tooltip-title {
+        font-weight: 700;
+      }
+
+      .tooltip-line {
+        margin-top: 2px;
+      }
+
+      .tooltip-empty {
+        margin-top: 6px;
+        font-weight: 600;
+      }
+
+        .tooltip-table {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 72px 96px;
+          column-gap: 8px;
+          row-gap: 6px;
+          margin-top: 10px;
+          align-items: start;
+          padding: 10px 12px 10px 12px;
+          background: #f7f2e8;
+          border: 1px solid rgba(20, 34, 37, 0.14);
+          border-radius: 12px;
+          position: relative;
+        }
+
+        .tooltip-head {
+          font-size: 0.72rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-weight: 700;
+          color: var(--ink-soft);
+        }
+
+        .tooltip-head:nth-of-type(2),
+        .tooltip-head:nth-of-type(3),
+        .tooltip-value,
+        .tooltip-updated {
+          padding-left: 10px;
+        }
+
+        .tooltip-head:nth-of-type(3) {
+          padding-left: 4px;
+        }
+
+        .tooltip-updated {
+          padding-left: 4px;
+          padding-right: 16px;
+        }
+
+        .tooltip-vline {
+          position: absolute;
+          top: 12px;
+          bottom: 12px;
+          width: 1px;
+          background: rgba(20, 34, 37, 0.16);
+          pointer-events: none;
+        }
+
+        .tooltip-vline--1 {
+          left: calc(100% - 192px);
+        }
+
+        .tooltip-vline--2 {
+          left: calc(100% - 116px);
+        }
+
+        .tooltip-connector {
+          grid-column: 1 / -1;
+          font-weight: 700;
+          margin-top: 4px;
+          color: var(--teal-deep);
+        }
+
+        .tooltip-connector--spaced {
+          margin-top: 10px;
+        }
+
+        .tooltip-row-divider {
+          grid-column: 1 / -1;
+          height: 1px;
+          background: rgba(20, 34, 37, 0.12);
+          margin: 2px 0;
+        }
+
+        .tooltip-row-divider--header {
+          margin: 6px 0 4px;
+        }
+
+        .tooltip-station {
+          font-weight: 700;
+          color: var(--ink);
+        }
+
+        .tooltip-value,
+        .tooltip-updated {
+          text-align: left;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .tooltip-updated {
+          white-space: nowrap;
+          color: var(--ink-soft);
+          font-size: 0.8rem;
+        }
 
       .tooltip.visible {
         opacity: 1;
@@ -428,10 +569,9 @@
     <main>
       <header>
         <p class="badge">Hex Cartogram</p>
-        <h1 class="title">UK AQ hex map</h1>
+        <h1 class="title">UK AQ hex map – sensor.community met</h1>
         <p class="subtitle">
-          A population-equal hex cartogram showing the latest PM2.5 by constituency. Each
-          hex represents roughly the same number of people; values are aggregated per constituency.
+          Temperature, humidity, and pressure from sensor.community stations, mapped with a power-eased colour scale.
         </p>
         <div class="meta">
           <span id="row-count">Loading…</span>
@@ -441,26 +581,41 @@
 
       <section class="card">
         <div class="card-header">
-          <h2 class="card-title">Latest PM2.5 by constituency</h2>
+          <h2 class="card-title">Latest sensor.community readings by constituency</h2>
           <div class="actions">
             <span class="hint" id="status">Fetching from Supabase…</span>
             <button id="refresh">Refresh</button>
           </div>
         </div>
         <div class="filters">
-          <span class="hint">Metric: Latest PM2.5</span>
+          <span class="hint">Metric: Latest <span id="metric-label">Temperature</span></span>
           <div class="toggle" role="group" aria-label="Aggregation">
             <button type="button" class="active" data-metric="median">Typical (median)</button>
             <button type="button" data-metric="mean">Average (mean)</button>
           </div>
+          <div class="connector-filters" role="group" aria-label="Sensor Community metric">
+            <span class="hint">Phenomenon:</span>
+            <label class="checkbox">
+              <input type="checkbox" data-phenomenon="temperature" checked />
+              Temperature
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" data-phenomenon="humidity" />
+              Humidity
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" data-phenomenon="pressure" />
+              Pressure
+            </label>
+          </div>
           <div class="connector-filters" role="group" aria-label="Connector filters">
             <span class="hint">Connectors:</span>
             <label class="checkbox">
-              <input type="checkbox" data-connector="all" checked />
+              <input type="checkbox" data-connector="all" />
               All
             </label>
             <label class="checkbox">
-              <input type="checkbox" data-connector="uk_air_sos" checked />
+              <input type="checkbox" data-connector="uk_air_sos" />
               UK AIR SOS
             </label>
             <label class="checkbox">
@@ -475,33 +630,47 @@
         <div class="map-layout">
           <div class="map-panel">
             <div class="map-wrap">
-              <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+              <svg id="hex-map" role="img" aria-label="Hex cartogram of sensor.community readings by constituency"></svg>
             </div>
             <div class="legend">
-              <span>PM2.5 (ug/m3)</span>
-              <div class="legend-scale">
+              <span id="legend-title">Temperature (°C)</span>
+              <div
+                class="legend-scale"
+                title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range."
+                aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range."
+              >
                 <span class="legend-value" id="legend-min">-</span>
-                <span class="legend-bar" aria-hidden="true"></span>
+                <div class="legend-bar-wrap" aria-hidden="true">
+                  <span class="legend-bar"></span>
+                  <span class="legend-tick" style="left: 28.0%"></span>
+                  <span class="legend-tick" style="left: 49.2%"></span>
+                  <span class="legend-tick" style="left: 68.6%"></span>
+                  <span class="legend-tick" style="left: 87.2%"></span>
+                  <span class="legend-tick-label" style="left: 28.0%">-</span>
+                  <span class="legend-tick-label" style="left: 49.2%">-</span>
+                  <span class="legend-tick-label" style="left: 68.6%">-</span>
+                  <span class="legend-tick-label" style="left: 87.2%">-</span>
+                </div>
                 <span class="legend-value" id="legend-max">-</span>
               </div>
               <span id="legend-label"></span>
             </div>
           </div>
           <aside class="summary-card">
-            <h3 class="summary-title">PM2.5 summary</h3>
+            <h3 class="summary-title" id="summary-title">Temperature summary</h3>
             <div class="summary-list">
               <div class="summary-item">
                 <span class="summary-label">Number of stations</span>
                 <span class="summary-value" id="summary-stations">-</span>
               </div>
               <div class="summary-item">
-                <span class="summary-label">Highest PM2.5</span>
+                <span class="summary-label" id="summary-highest-label">Highest temperature</span>
                 <span class="summary-value" id="summary-highest-value">-</span>
                 <span class="summary-connector" id="summary-highest-connector">-</span>
                 <span class="summary-name" id="summary-highest-name">-</span>
               </div>
               <div class="summary-item">
-                <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
+                <span class="summary-label" id="summary-lowest-label">Lowest temperature</span>
                 <span class="summary-value" id="summary-lowest-value">-</span>
                 <span class="summary-connector" id="summary-lowest-connector">-</span>
                 <span class="summary-name" id="summary-lowest-name">-</span>
@@ -522,6 +691,7 @@
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
       const metricParam = params.get("metric");
+      const phenomenonParam = params.get("phenomenon");
       const mapDateParam = params.get("map_date");
       const pconVersionParam = params.get("pcon_version");
       const inferredProjectRef = inferProjectRefFromHost();
@@ -565,7 +735,29 @@
         median: "Typical (median)",
         mean: "Average (mean)",
       };
-      const MIN_VALID_PM25_VALUE = 0.09;
+      const PHENOMENON_DEFS = [
+        {
+          id: "temperature",
+          label: "Temperature",
+          unit: "°C",
+          query: "temperature",
+          keywords: ["temperature"],
+        },
+        {
+          id: "humidity",
+          label: "Humidity",
+          unit: "%",
+          query: "humidity",
+          keywords: ["humidity"],
+        },
+        {
+          id: "pressure",
+          label: "Pressure",
+          unit: "hPa",
+          query: "pressure",
+          keywords: ["pressure"],
+        },
+      ];
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
         { code: "sensorcommunity", label: "Sensor Community" },
@@ -574,6 +766,29 @@
       function getConnectorLabelByCode(code) {
         const match = CONNECTOR_DEFS.find((def) => def.code === code);
         return match ? match.label : code;
+      }
+
+      function resolvePhenomenon(value) {
+        if (!value) {
+          return null;
+        }
+        const key = String(value).trim().toLowerCase();
+        return PHENOMENON_DEFS.find((def) => def.id === key || def.query === key) || null;
+      }
+
+      function getPhenomenonLabel(phenomenon) {
+        return phenomenon?.label || "Metric";
+      }
+
+      function getPhenomenonUnit(phenomenon) {
+        return phenomenon?.unit || "";
+      }
+
+      function matchesPhenomenonText(text, phenomenon) {
+        if (!text || !phenomenon) {
+          return false;
+        }
+        return phenomenon.keywords.some((keyword) => text.includes(keyword));
       }
       const HEAT_STOPS = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4"];
       const HEAT_STOP_FALLBACKS = ["#00a85a", "#ffd54a", "#ff9b3a", "#e03c3c", "#5b2a86"];
@@ -606,9 +821,16 @@
       const rowCount = document.getElementById("row-count");
       const lastUpdated = document.getElementById("last-updated");
       const endpointHint = document.getElementById("endpoint-hint");
+      const legendTitle = document.getElementById("legend-title");
       const legendLabel = document.getElementById("legend-label");
       const legendMin = document.getElementById("legend-min");
       const legendMax = document.getElementById("legend-max");
+      const legendTicks = Array.from(document.querySelectorAll(".legend-tick"));
+      const legendTickLabels = Array.from(document.querySelectorAll(".legend-tick-label"));
+      const metricLabelEl = document.getElementById("metric-label");
+      const summaryTitle = document.getElementById("summary-title");
+      const summaryHighestLabel = document.getElementById("summary-highest-label");
+      const summaryLowestLabel = document.getElementById("summary-lowest-label");
       const summaryStations = document.getElementById("summary-stations");
       const summaryLowestValue = document.getElementById("summary-lowest-value");
       const summaryLowestConnector = document.getElementById("summary-lowest-connector");
@@ -619,11 +841,13 @@
       const tooltip = document.getElementById("tooltip");
       const svg = d3.select("#hex-map");
       const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
+      const phenomenonInputs = Array.from(document.querySelectorAll("input[data-phenomenon]"));
       const connectorInputs = Array.from(document.querySelectorAll("input[data-connector]"));
       const connectorAll = document.querySelector("input[data-connector='all']");
       const connectorOptions = connectorInputs.filter((input) => input !== connectorAll);
 
       let currentMetric = metricParam === "mean" ? "mean" : "median";
+      let currentPhenomenon = resolvePhenomenon(phenomenonParam) || PHENOMENON_DEFS[0];
       let hexData = null;
       let hexCells = [];
       let hexBounds = null;
@@ -637,7 +861,6 @@
       let boundaryPaths = [];
       let baseLatestRows = [];
       let latestRows = [];
-      let latestPollutant = null;
       let populationLookup = new Map();
 
       endpointHint.textContent = REST_URL
@@ -693,6 +916,23 @@
         return numeric.toFixed(1);
       }
 
+      function formatMetricValue(value, withUnit = true) {
+        const numeric = normalizeNumber(value);
+        if (numeric === null) {
+          return "-";
+        }
+        const formatted = numeric.toFixed(1);
+        if (!withUnit) {
+          return formatted;
+        }
+        const unit = getPhenomenonUnit(currentPhenomenon);
+        if (!unit) {
+          return formatted;
+        }
+        const spacer = unit === "%" ? "" : " ";
+        return `${formatted}${spacer}${unit}`;
+      }
+
       function formatTimestamp(value) {
         if (!value) {
           return "unknown";
@@ -702,6 +942,22 @@
           return "unknown";
         }
         return parsed.toLocaleString();
+      }
+
+      function formatShortTimestamp(value) {
+        if (!value) {
+          return "-";
+        }
+        const parsed = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return "-";
+        }
+        const day = String(parsed.getDate()).padStart(2, "0");
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const year = String(parsed.getFullYear()).slice(-2);
+        const hours = String(parsed.getHours()).padStart(2, "0");
+        const minutes = String(parsed.getMinutes()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
       }
 
       function parseDate(value) {
@@ -778,28 +1034,19 @@
         );
       }
 
+      function resolveLatestTimestamp(row) {
+        return parseDate(row?.last_value_at || row?.observed_at || row?.latest_value_at);
+      }
+
       function extractPollutantText(row) {
         return [
           row?.pollutant_label,
           row?.phenomenon_label,
           row?.phenomenon?.pollutant_label,
+          row?.phenomenon?.eionet_uri,
           row?.phenomenon?.notation,
           row?.phenomenon?.label,
         ].filter(Boolean).join(" ").trim().toLowerCase();
-      }
-
-      function isPm25Text(value) {
-        if (!value) {
-          return false;
-        }
-        return /pm\s*2\s*\.?\s*5/.test(value)
-          || value.includes("pm25")
-          || value.includes("pm_2.5")
-          || (value.includes("particulate") && /2\s*\.?\s*5/.test(value));
-      }
-
-      function isPm25Row(row) {
-        return isPm25Text(extractPollutantText(row));
       }
 
       function updateSummary() {
@@ -813,17 +1060,16 @@
           summaryStations.textContent = formatNumber(totalStations);
         }
 
-        const pollutantHint = typeof latestPollutant === "string"
-          ? latestPollutant.toLowerCase()
-          : "";
-        const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && latestRows.length > 0);
-        const rowsForSummary = hasPm25Hint
-          ? latestRows
-          : latestRows.filter((row) => isPm25Row(row));
+        let rowsForSummary = latestRows.filter((row) =>
+          matchesPhenomenonText(extractPollutantText(row), currentPhenomenon)
+        );
+        if (!rowsForSummary.length && latestRows.length) {
+          rowsForSummary = latestRows;
+        }
         const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
-        let candidates = rowsWithPcon
+        const candidates = rowsWithPcon
           .map((row) => {
-            const value = normalizeNumber(row.last_value);
+            const value = resolveLatestValue(row);
             if (!Number.isFinite(value)) {
               return null;
             }
@@ -831,37 +1077,19 @@
           })
           .filter(Boolean);
 
-        if (!candidates.length && latestRows.length && !hasPm25Hint) {
-          const fallback = latestRows
-            .filter((row) => resolvePconCode(row))
-            .map((row) => {
-              const value = normalizeNumber(row.last_value);
-              if (!Number.isFinite(value)) {
-                return null;
-              }
-              return { row, value };
-            })
-            .filter(Boolean);
-          if (fallback.length) {
-            candidates = fallback;
-          }
-        }
-
         if (!candidates.length) {
+          const label = getPhenomenonLabel(currentPhenomenon).toLowerCase();
           summaryLowestValue.textContent = "-";
           summaryLowestConnector.textContent = "-";
-          summaryLowestName.textContent = "No PM2.5 data";
+          summaryLowestName.textContent = `No ${label} data`;
           summaryHighestValue.textContent = "-";
           summaryHighestConnector.textContent = "-";
-          summaryHighestName.textContent = "No PM2.5 data";
+          summaryHighestName.textContent = `No ${label} data`;
           return;
         }
 
-        const candidatesForLowest = candidates.filter(({ value }) => value > MIN_VALID_PM25_VALUE);
-        const lowestPool = candidatesForLowest.length ? candidatesForLowest : candidates;
-
-        let lowest = lowestPool[0];
-        for (const candidate of lowestPool) {
+        let lowest = candidates[0];
+        for (const candidate of candidates) {
           if (candidate.value < lowest.value) {
             lowest = candidate;
           }
@@ -874,29 +1102,64 @@
           }
         }
 
-        summaryLowestValue.textContent = `${formatValue(lowest.value)} ug/m3`;
+        summaryLowestValue.textContent = formatMetricValue(lowest.value);
         summaryLowestConnector.textContent = resolveConnectorLabel(lowest.row);
         summaryLowestName.textContent = resolveStationName(lowest.row);
-        summaryHighestValue.textContent = `${formatValue(highest.value)} ug/m3`;
+        summaryHighestValue.textContent = formatMetricValue(highest.value);
         summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
         summaryHighestName.textContent = resolveStationName(highest.row);
       }
 
       function updateRowCountText() {
         const withData = pconRows.filter((row) => getStationCount(row) > 0);
-        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
+        const label = getPhenomenonLabel(currentPhenomenon).toLowerCase();
+        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with ${label} data`;
       }
 
       function updateLegend(minValue, maxValue) {
         if (minValue === null || maxValue === null) {
-          legendLabel.textContent = "No PM2.5 values";
+          legendLabel.textContent = `No ${getPhenomenonLabel(currentPhenomenon)} values`;
           legendMin.textContent = "-";
           legendMax.textContent = "-";
+          legendTicks.forEach((tick) => {
+            tick.style.left = "50%";
+          });
+          legendTickLabels.forEach((label) => {
+            label.style.left = "50%";
+            label.textContent = "-";
+          });
           return;
         }
-        legendLabel.textContent = METRIC_LABELS[currentMetric];
-        legendMin.textContent = formatValue(minValue);
-        legendMax.textContent = formatValue(maxValue);
+        const unit = getPhenomenonUnit(currentPhenomenon);
+        const range = maxValue - minValue;
+        const labelUnit = unit ? `${getPhenomenonLabel(currentPhenomenon)} (${unit})` : getPhenomenonLabel(currentPhenomenon);
+        legendTitle.textContent = labelUnit;
+        legendLabel.textContent = `${METRIC_LABELS[currentMetric]} ${getPhenomenonLabel(currentPhenomenon)}`;
+        legendMin.textContent = formatMetricValue(minValue, false);
+        legendMax.textContent = formatMetricValue(maxValue, false);
+        const tickCount = Math.min(legendTicks.length, legendTickLabels.length);
+        if (!range || range <= 0) {
+          legendTicks.forEach((tick) => {
+            tick.style.left = "50%";
+          });
+          legendTickLabels.forEach((label) => {
+            label.style.left = "50%";
+            label.textContent = formatMetricValue(minValue, false);
+          });
+          return;
+        }
+        const step = range / (tickCount + 1);
+        for (let i = 0; i < tickCount; i += 1) {
+          const value = minValue + step * (i + 1);
+          const percent = ((value - minValue) / range) * 100;
+          if (legendTicks[i]) {
+            legendTicks[i].style.left = `${percent}%`;
+          }
+          if (legendTickLabels[i]) {
+            legendTickLabels[i].style.left = `${percent}%`;
+            legendTickLabels[i].textContent = formatMetricValue(value, false);
+          }
+        }
       }
 
       function clearMap() {
@@ -1234,13 +1497,63 @@
         });
       }
 
+      function updateMetricLabels() {
+        const label = getPhenomenonLabel(currentPhenomenon);
+        const unit = getPhenomenonUnit(currentPhenomenon);
+        if (metricLabelEl) {
+          metricLabelEl.textContent = label;
+        }
+        if (summaryTitle) {
+          summaryTitle.textContent = `${label} summary`;
+        }
+        if (summaryHighestLabel) {
+          summaryHighestLabel.textContent = `Highest ${label.toLowerCase()}`;
+        }
+        if (summaryLowestLabel) {
+          summaryLowestLabel.textContent = `Lowest ${label.toLowerCase()}`;
+        }
+        if (legendTitle) {
+          legendTitle.textContent = unit ? `${label} (${unit})` : label;
+        }
+      }
+
+      function syncPhenomenonInputs() {
+        phenomenonInputs.forEach((input) => {
+          input.checked = input.dataset.phenomenon === currentPhenomenon.id;
+        });
+      }
+
+      function handlePhenomenonToggle(event) {
+        const selectedId = event.target.dataset.phenomenon;
+        if (!selectedId) {
+          return;
+        }
+        if (!event.target.checked) {
+          event.target.checked = true;
+          return;
+        }
+        phenomenonInputs.forEach((input) => {
+          if (input !== event.target) {
+            input.checked = false;
+          }
+        });
+        const next = resolvePhenomenon(selectedId);
+        if (!next || next.id === currentPhenomenon.id) {
+          return;
+        }
+        currentPhenomenon = next;
+        updateMetricLabels();
+        loadMapData();
+      }
+
       function getMetricValue(row) {
         if (!row) {
           return null;
         }
-        return currentMetric === "mean"
-          ? normalizeNumber(row.mean_value)
-          : normalizeNumber(row.median_value);
+        const raw = currentMetric === "mean"
+          ? row.mean_value
+          : row.median_value;
+        return normalizeNumber(raw);
       }
 
       function getStationCount(row) {
@@ -1303,7 +1616,7 @@
         const groups = new Map();
         rows.forEach((row, index) => {
           const pollutantText = extractPollutantText(row);
-          if (pollutantText && !isPm25Text(pollutantText)) {
+          if (pollutantText && !matchesPhenomenonText(pollutantText, currentPhenomenon)) {
             return;
           }
           const pconCode = resolvePconCode(row);
@@ -1383,6 +1696,23 @@
         renderMap();
       }
 
+      function positionTooltip(event) {
+        const left = event.clientX + 12;
+        const pointerY = event.clientY;
+        const viewportTop = 0;
+        const viewportBottom = window.innerHeight;
+        const tooltipHeight = tooltip.offsetHeight || 0;
+        let top = pointerY - 12;
+        if (top + tooltipHeight > viewportBottom) {
+          top = pointerY - tooltipHeight - 12;
+        }
+        if (top < viewportTop + 8) {
+          top = viewportTop + 8;
+        }
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
       function handleConnectorToggle(event) {
         if (!connectorAll) {
           return;
@@ -1412,20 +1742,31 @@
         const values = pconRows
           .map((row) => getMetricValue(row))
           .filter((value) => Number.isFinite(value));
+        const minValue = values.length ? d3.min(values) : null;
         const maxValue = values.length ? d3.max(values) : null;
-        const domainMin = 0;
-        const domainMax = 50;
+        const domainMin = minValue;
+        const domainMax = maxValue;
         const palette = HEAT_STOPS.map((name, index) =>
           resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
         );
         let colorScale = null;
-        if (maxValue !== null) {
-          colorScale = d3.scaleSequential()
-            .domain([domainMin, domainMax])
-            .interpolator(d3.interpolateRgbBasis(palette))
-            .clamp(true);
+        if (domainMin !== null && domainMax !== null) {
+          const interpolate = d3.interpolateRgbBasis(palette);
+          const exponent = 0.8;
+          const range = domainMax - domainMin;
+          const mapValueToT = (value) => {
+            if (!range || range <= 0) {
+              return 0.5;
+            }
+            const clamped = Math.max(domainMin, Math.min(domainMax, value));
+            const normalized = (clamped - domainMin) / range;
+            const base = Math.pow(normalized, exponent);
+            const boosted = base + 0.05 * base * base; // small top boost to keep 40 near ~87%
+            return Math.max(0, Math.min(1, boosted));
+          };
+          colorScale = (value) => interpolate(mapValueToT(value));
         }
-        updateLegend(maxValue === null ? null : domainMin, maxValue === null ? null : domainMax);
+        updateLegend(minValue, maxValue);
 
         const hexGroup = svg.append("g");
         hexGroup.selectAll("polygon")
@@ -1449,12 +1790,6 @@
             const metricValue = getMetricValue(row);
             const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown constituency";
             const regionLabel = cell.region_name || cell.region_code || "Unknown region";
-            const stationCount = getStationCount(row);
-            const stationLabel = stationCount === 1
-              ? "single site"
-              : stationCount > 1
-                ? `${formatNumber(stationCount)} stations`
-                : "No stations";
             const populationEntry = populationLookup.get(cell.pcon_code);
             const populationValue = normalizeNumber(populationEntry?.population_value);
             const populationDate = parseDate(populationEntry?.reference_date);
@@ -1463,26 +1798,96 @@
               ? "Population: n/a"
               : `Population${populationYear ? ` (${populationYear})` : ""}: ${formatNumber(populationValue)}`;
             const valueLabel = Number.isFinite(metricValue)
-              ? `${formatValue(metricValue)} ug/m3`
-              : "No PM2.5 data";
-            const updatedLabel = row?.latest_value_at
-              ? `Updated ${formatTimestamp(row.latest_value_at)}`
-              : "Updated unknown";
-            tooltip.innerHTML = `
-              <strong>${areaName}</strong><br />
-              Region: ${regionLabel}<br />
-              ${METRIC_LABELS[currentMetric]}: ${valueLabel}<br />
-              ${populationLabel}<br />
-              ${stationLabel}<br />
-              ${updatedLabel}
-            `;
+              ? formatMetricValue(metricValue)
+              : `No ${getPhenomenonLabel(currentPhenomenon)} data`;
+            let rowsForTooltip = latestRows.filter((item) =>
+              matchesPhenomenonText(extractPollutantText(item), currentPhenomenon)
+            );
+            if (!rowsForTooltip.length) {
+              rowsForTooltip = latestRows;
+            }
+            rowsForTooltip = rowsForTooltip.filter((item) => resolvePconCode(item) === cell.pcon_code);
+            const stationMap = new Map();
+            rowsForTooltip.forEach((item, index) => {
+              const value = resolveLatestValue(item);
+              if (!Number.isFinite(value)) {
+                return;
+              }
+              const stationKey = resolveStationKey(item) || `${cell.pcon_code}-${index}`;
+              const timestamp = resolveLatestTimestamp(item);
+              const existing = stationMap.get(stationKey);
+              if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
+                stationMap.set(stationKey, { row: item, value, timestamp });
+              }
+            });
+            const stationEntries = Array.from(stationMap.values());
+            if (!stationEntries.length) {
+              tooltip.innerHTML = `
+                <div class="tooltip-title">${areaName}</div>
+                <div class="tooltip-line">Region: ${regionLabel}</div>
+                <div class="tooltip-line">${populationLabel}</div>
+                <div class="tooltip-empty">No stations</div>
+              `;
+            } else {
+              const stationHeading = stationEntries.length === 1
+                ? "1 station"
+                : `${formatNumber(stationEntries.length)} stations`;
+              const unit = getPhenomenonUnit(currentPhenomenon);
+              const tooltipMetricLabel = unit
+                ? `${getPhenomenonLabel(currentPhenomenon)} (${unit})`
+                : getPhenomenonLabel(currentPhenomenon);
+              const grouped = new Map();
+              stationEntries.forEach((entry) => {
+                const connectorLabel = resolveConnectorLabel(entry.row);
+                if (!grouped.has(connectorLabel)) {
+                  grouped.set(connectorLabel, []);
+                }
+                grouped.get(connectorLabel).push(entry);
+              });
+              let tableRows = `
+                <div class="tooltip-head">${stationHeading}</div>
+                <div class="tooltip-head">${tooltipMetricLabel}</div>
+                <div class="tooltip-head">Updated</div>
+                <div class="tooltip-row-divider tooltip-row-divider--header" aria-hidden="true"></div>
+              `;
+              let groupIndex = 0;
+              grouped.forEach((entries, connectorLabel) => {
+                if (groupIndex > 0) {
+                  tableRows += '<div class="tooltip-row-divider" aria-hidden="true"></div>';
+                }
+                const connectorClass = groupIndex === 0
+                  ? "tooltip-connector"
+                  : "tooltip-connector tooltip-connector--spaced";
+                tableRows += `
+                  <div class="${connectorClass}">${connectorLabel}</div>
+                `;
+                entries.forEach((entry) => {
+                  const stationName = resolveStationName(entry.row);
+                  const updatedText = formatShortTimestamp(entry.timestamp);
+                  tableRows += `
+                    <div class="tooltip-station">${stationName}</div>
+                    <div class="tooltip-value">${formatMetricValue(entry.value, false)}</div>
+                    <div class="tooltip-updated">${updatedText}</div>
+                  `;
+                });
+                groupIndex += 1;
+              });
+              tooltip.innerHTML = `
+                <div class="tooltip-title">${areaName}</div>
+                <div class="tooltip-line">Region: ${regionLabel}</div>
+                <div class="tooltip-line">${populationLabel}</div>
+                <div class="tooltip-line">${METRIC_LABELS[currentMetric]}: ${valueLabel}</div>
+                <div class="tooltip-table">${tableRows}
+                  <div class="tooltip-vline tooltip-vline--1" aria-hidden="true"></div>
+                  <div class="tooltip-vline tooltip-vline--2" aria-hidden="true"></div>
+                </div>
+              `;
+            }
             tooltip.classList.add("visible");
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY - 12}px`;
+            positionTooltip(event);
           })
           .on("mousemove", (event) => {
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY - 12}px`;
+            positionTooltip(event);
           })
           .on("mouseleave", () => {
             tooltip.classList.remove("visible");
@@ -1507,7 +1912,6 @@
       async function loadMapData() {
         statusEl.textContent = "Loading…";
         errorEl.textContent = "";
-        latestPollutant = null;
         populationLookup = new Map();
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
@@ -1525,7 +1929,7 @@
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
           const latestUrl = new URL(LATEST_URL);
-          latestUrl.searchParams.set("pollutant", "PM2.5");
+          latestUrl.searchParams.set("pollutant", currentPhenomenon.query);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
           const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
@@ -1568,10 +1972,8 @@
           hexData = await hexResponse.json();
           prepareHexGrid();
           const payload = await pconResponse.json();
-          basePconRows = payload?.data || [];
-          basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
-          pconRows = basePconRows;
-          pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+          const pconPayloadRows = payload?.data || [];
+          basePconLookup = new Map(pconPayloadRows.map((row) => [row.pcon_code, row]));
           pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
           if (payload?.last_updated) {
             lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
@@ -1580,12 +1982,17 @@
           }
           if (latestResponse && latestResponse.ok) {
             const latestPayload = await latestResponse.json();
-            baseLatestRows = latestPayload?.data || [];
-            latestPollutant = latestPayload?.pollutant || null;
+            const latestRaw = latestPayload?.data || [];
+            const filteredLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
+            const filteredByPhenomenon = filteredLatest.filter((row) =>
+              matchesPhenomenonText(extractPollutantText(row), currentPhenomenon)
+            );
+            baseLatestRows = filteredByPhenomenon.length ? filteredByPhenomenon : filteredLatest;
             console.log("uk_aq_latest payload", latestPayload);
           } else {
             baseLatestRows = [];
           }
+          basePconRows = buildPconRowsFromLatest(baseLatestRows);
           if (populationResponse && populationResponse.ok) {
             const populationPayload = await populationResponse.json();
             const populationRows = Array.isArray(populationPayload)
@@ -1624,6 +2031,10 @@
         });
       });
 
+      phenomenonInputs.forEach((input) => {
+        input.addEventListener("change", handlePhenomenonToggle);
+      });
+
       connectorInputs.forEach((input) => {
         input.addEventListener("change", handleConnectorToggle);
       });
@@ -1635,6 +2046,8 @@
         }
       });
       applyMetricState();
+      syncPhenomenonInputs();
+      updateMetricLabels();
       loadMapData();
       setInterval(loadMapData, 10 * 60 * 1000);
     </script>

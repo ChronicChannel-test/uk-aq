@@ -54,6 +54,10 @@ This document summarizes the schema defined in `supabase/uk_air_quality_schema.s
 ## Notes on multi-pollutant support
 - Schema is pollutant-agnostic: add new phenomena, stations, timeseries, and observations for NO2, O3, PM10, etc. No structural changes needed.
 
+## PM2.5 frontend guardrail
+- Edge functions now drop any station whose latest PM2.5 reading exceeds 500 µg/m³ before data reaches the UI.
+- The hex map frontend still keeps a `MAX_VALID_PM25_VALUE = 500` check as a safety net; if backend filtering is trusted, this guard can be removed, but it stays enabled to prevent runaway outliers from stale caches or regressions.
+
 ## Minimal ingestion flow
 1) Discover metadata from the SOS REST API: services, stations, timeseries (use `expanded=true` for richer fields).
 2) Upsert metadata into `services`, `stations`, `timeseries`, and related reference tables.
