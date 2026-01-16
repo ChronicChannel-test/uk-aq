@@ -19,6 +19,7 @@
         --teal-deep: #0a5d61;
         --sun: #f4b942;
         --clay: #e8dcc7;
+        --no-data: #efe6d8;
         --fog: rgba(20, 34, 37, 0.08);
         --card: #ffffff;
         --heat-0: #00a85a;
@@ -1649,7 +1650,7 @@
             const row = pconLookup.get(cell.pcon_code);
             const value = getMetricValue(row);
             if (!colorScale || !Number.isFinite(value)) {
-              return "var(--clay)";
+              return "var(--no-data)";
             }
             return colorScale(value);
           })
