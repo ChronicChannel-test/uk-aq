@@ -114,7 +114,7 @@
 
       .map-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.6fr) minmax(240px, 0.7fr);
+        grid-template-columns: 1fr;
         gap: 24px;
         align-items: start;
       }
@@ -240,29 +240,73 @@
         color: var(--ink);
       }
 
-      .connector-filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
+      .network-panel {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        display: grid;
+        gap: 12px;
       }
 
-      .connector-filters .checkbox {
+      .network-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .network-actions button {
+        border: none;
+        background: var(--clay);
+        color: var(--ink);
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .network-actions button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 14px rgba(20, 34, 37, 0.12);
+      }
+
+      .network-actions button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .network-panel .checkbox {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
-        border-radius: 999px;
+        padding: 6px 10px;
+        border-radius: 10px;
         border: 1px solid rgba(20, 34, 37, 0.12);
         background: var(--mist);
         font-weight: 600;
         color: var(--ink);
+        font-size: 0.85rem;
       }
 
-      .connector-filters input[type="checkbox"] {
+      .network-panel input[type="checkbox"] {
         width: 14px;
         height: 14px;
         accent-color: var(--teal);
+      }
+
+      .network-list {
+        display: grid;
+        gap: 8px;
+        max-height: 360px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .network-empty {
+        color: var(--ink-soft);
+        font-size: 0.85rem;
       }
 
       .map-wrap {
@@ -270,6 +314,112 @@
         background: #fdfaf4;
         padding: 16px;
         border: 1px solid rgba(20, 34, 37, 0.08);
+        display: grid;
+        grid-template-columns: minmax(200px, 0.35fr) minmax(0, 1fr) minmax(220px, 0.45fr);
+        gap: 16px;
+        align-items: start;
+        position: relative;
+      }
+
+      .map-canvas {
+        min-width: 0;
+      }
+
+      .map-legend {
+        grid-column: 1 / -1;
+        justify-content: center;
+      }
+
+      .map-settings {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        z-index: 2;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid rgba(20, 34, 37, 0.2);
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(20, 34, 37, 0.12);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .map-settings:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(20, 34, 37, 0.18);
+      }
+
+      .map-settings img {
+        width: 20px;
+        height: 20px;
+        display: block;
+      }
+
+      .map-settings-panel {
+        position: absolute;
+        left: 16px;
+        bottom: 68px;
+        width: auto;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(20, 34, 37, 0.18);
+        box-shadow: 0 14px 32px rgba(20, 34, 37, 0.18);
+        padding: 12px;
+        display: none;
+        z-index: 3;
+      }
+
+      .map-settings-panel.open {
+        display: grid;
+        gap: 10px;
+      }
+
+      .map-settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .map-settings-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .map-settings-close {
+        border: none;
+        background: none;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+      }
+
+      .map-settings-close img {
+        width: 24px;
+        height: 24px;
+        display: block;
+      }
+
+      .map-settings-options {
+        display: grid;
+        gap: 8px;
+        font-size: 0.88rem;
+        color: var(--ink);
+      }
+
+      .map-settings-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .map-settings-option input {
+        accent-color: var(--teal);
       }
 
       svg {
@@ -563,6 +713,14 @@
         .map-layout {
           grid-template-columns: 1fr;
         }
+
+        .map-wrap {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          order: 3;
+        }
       }
     </style>
   </head>
@@ -591,23 +749,8 @@
         <div class="filters">
           <span class="hint">Metric: Latest PM2.5</span>
           <div class="toggle" role="group" aria-label="Aggregation">
-            <button type="button" class="active" data-metric="median">Typical (median)</button>
-            <button type="button" data-metric="mean">Average (mean)</button>
-          </div>
-          <div class="connector-filters" role="group" aria-label="Connector filters">
-            <span class="hint">Connectors:</span>
-            <label class="checkbox">
-              <input type="checkbox" data-connector="all" checked />
-              All
-            </label>
-            <label class="checkbox">
-              <input type="checkbox" data-connector="uk_air_sos" checked />
-              UK AIR SOS
-            </label>
-            <label class="checkbox">
-              <input type="checkbox" data-connector="sensorcommunity" checked />
-              Sensor Community
-            </label>
+            <button type="button" class="active" data-metric="mean">Average (mean)</button>
+            <button type="button" data-metric="median">Typical (median)</button>
           </div>
           <span class="hint">Parliamentary constituency hex cartogram (equal-pop)</span>
         </div>
@@ -616,53 +759,87 @@
         <div class="map-layout">
           <div class="map-panel">
             <div class="map-wrap">
-              <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
-            </div>
-            <div class="legend">
-              <span>PM2.5 (µg/m³)</span>
-              <div
-                class="legend-scale"
-                title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
-                aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
-              >
-                <span class="legend-value" id="legend-min">-</span>
-                <div class="legend-bar-wrap" aria-hidden="true">
-                  <span class="legend-bar"></span>
-                  <span class="legend-tick" style="left: 28.0%"></span>
-                  <span class="legend-tick" style="left: 49.2%"></span>
-                  <span class="legend-tick" style="left: 68.6%"></span>
-                  <span class="legend-tick" style="left: 87.2%"></span>
-                  <span class="legend-tick-label" style="left: 28.0%">10</span>
-                  <span class="legend-tick-label" style="left: 49.2%">20</span>
-                  <span class="legend-tick-label" style="left: 68.6%">30</span>
-                  <span class="legend-tick-label" style="left: 87.2%">40</span>
+              <aside class="network-panel">
+                <div class="network-actions" role="group" aria-label="Network selection actions">
+                  <button type="button" id="network-select-all">Select All</button>
+                  <button type="button" id="network-deselect-all">Deselect All</button>
                 </div>
-                <span class="legend-value" id="legend-max">-</span>
+                <span class="hint">Networks</span>
+                <div class="network-list" id="network-list">
+                  <span class="network-empty">Loading networks...</span>
+                </div>
+              </aside>
+              <div class="map-canvas">
+                <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
               </div>
-              <span id="legend-label"></span>
+              <aside class="summary-card">
+                <h3 class="summary-title">PM2.5 summary</h3>
+                <div class="summary-list">
+                  <div class="summary-item">
+                    <span class="summary-label">Number of stations</span>
+                    <span class="summary-value" id="summary-stations">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Highest PM2.5</span>
+                    <span class="summary-value" id="summary-highest-value">-</span>
+                    <span class="summary-connector" id="summary-highest-connector">-</span>
+                    <span class="summary-name" id="summary-highest-name">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
+                    <span class="summary-value" id="summary-lowest-value">-</span>
+                    <span class="summary-connector" id="summary-lowest-connector">-</span>
+                    <span class="summary-name" id="summary-lowest-name">-</span>
+                  </div>
+                </div>
+              </aside>
+              <div class="legend map-legend">
+                <span>PM2.5 (µg/m³)</span>
+                <div
+                  id="legend-scale"
+                  class="legend-scale"
+                  title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                  aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                >
+                  <span class="legend-value" id="legend-min">-</span>
+                  <div class="legend-bar-wrap" aria-hidden="true">
+                    <span class="legend-bar"></span>
+                    <span class="legend-tick" data-value="10"></span>
+                    <span class="legend-tick" data-value="20"></span>
+                    <span class="legend-tick" data-value="30"></span>
+                    <span class="legend-tick" data-value="40"></span>
+                    <span class="legend-tick-label" data-value="10">10</span>
+                    <span class="legend-tick-label" data-value="20">20</span>
+                    <span class="legend-tick-label" data-value="30">30</span>
+                    <span class="legend-tick-label" data-value="40">40</span>
+                  </div>
+                  <span class="legend-value" id="legend-max">-</span>
+                </div>
+                <span id="legend-label"></span>
+              </div>
+              <div class="map-settings-panel" id="map-settings-panel" role="dialog" aria-label="Colour Scale">
+                <div class="map-settings-header">
+                  <span class="map-settings-title">Colour Scale</span>
+                  <button type="button" class="map-settings-close" id="map-settings-close" aria-label="Close colour scale">
+                    <img src="data/images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
+                  </button>
+                </div>
+                <div class="map-settings-options" role="group" aria-label="Colour scale options">
+                  <label class="map-settings-option">
+                    <input type="radio" name="color-scale" value="power" />
+                    Power-eased
+                  </label>
+                  <label class="map-settings-option">
+                    <input type="radio" name="color-scale" value="linear" />
+                    Linear
+                  </label>
+                </div>
+              </div>
+              <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
+                <img src="data/images/settings-cog.svg" alt="" aria-hidden="true" />
+              </button>
             </div>
           </div>
-          <aside class="summary-card">
-            <h3 class="summary-title">PM2.5 summary</h3>
-            <div class="summary-list">
-              <div class="summary-item">
-                <span class="summary-label">Number of stations</span>
-                <span class="summary-value" id="summary-stations">-</span>
-              </div>
-              <div class="summary-item">
-                <span class="summary-label">Highest PM2.5</span>
-                <span class="summary-value" id="summary-highest-value">-</span>
-                <span class="summary-connector" id="summary-highest-connector">-</span>
-                <span class="summary-name" id="summary-highest-name">-</span>
-              </div>
-              <div class="summary-item">
-                <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
-                <span class="summary-value" id="summary-lowest-value">-</span>
-                <span class="summary-connector" id="summary-lowest-connector">-</span>
-                <span class="summary-name" id="summary-lowest-name">-</span>
-              </div>
-            </div>
-          </aside>
         </div>
       </section>
     </main>
@@ -677,6 +854,7 @@
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
       const metricParam = params.get("metric");
+      const colorScaleParam = params.get("color_scale");
       const mapDateParam = params.get("map_date");
       const pconVersionParam = params.get("pcon_version");
       const inferredProjectRef = inferProjectRefFromHost();
@@ -765,6 +943,9 @@
       const legendLabel = document.getElementById("legend-label");
       const legendMin = document.getElementById("legend-min");
       const legendMax = document.getElementById("legend-max");
+      const legendScale = document.getElementById("legend-scale");
+      const legendTicks = Array.from(document.querySelectorAll(".legend-tick"));
+      const legendTickLabels = Array.from(document.querySelectorAll(".legend-tick-label"));
       const summaryStations = document.getElementById("summary-stations");
       const summaryLowestValue = document.getElementById("summary-lowest-value");
       const summaryLowestConnector = document.getElementById("summary-lowest-connector");
@@ -774,12 +955,18 @@
       const summaryHighestName = document.getElementById("summary-highest-name");
       const tooltip = document.getElementById("tooltip");
       const svg = d3.select("#hex-map");
+      const mapSettingsButton = document.querySelector(".map-settings");
+      const mapSettingsPanel = document.getElementById("map-settings-panel");
+      const mapSettingsClose = document.getElementById("map-settings-close");
+      const colorScaleInputs = Array.from(document.querySelectorAll("input[name='color-scale']"));
+      const networkPanel = document.querySelector(".network-panel");
       const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
-      const connectorInputs = Array.from(document.querySelectorAll("input[data-connector]"));
-      const connectorAll = document.querySelector("input[data-connector='all']");
-      const connectorOptions = connectorInputs.filter((input) => input !== connectorAll);
+      const networkList = document.getElementById("network-list");
+      const networkSelectAll = document.getElementById("network-select-all");
+      const networkDeselectAll = document.getElementById("network-deselect-all");
 
-      let currentMetric = metricParam === "mean" ? "mean" : "median";
+      let currentMetric = metricParam === "median" ? "median" : "mean";
+      let currentColorScale = colorScaleParam === "linear" ? "linear" : "power";
       let hexData = null;
       let hexCells = [];
       let hexBounds = null;
@@ -795,6 +982,7 @@
       let latestRows = [];
       let latestPollutant = null;
       let populationLookup = new Map();
+      let networkInputs = [];
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -898,6 +1086,71 @@
         return parsed;
       }
 
+      function setQueryParam(key, value) {
+        const url = new URL(window.location.href);
+        if (value === null || value === undefined || value === "") {
+          url.searchParams.delete(key);
+        } else {
+          url.searchParams.set(key, value);
+        }
+        window.history.replaceState({}, "", url);
+      }
+
+      function syncColorScaleInputs() {
+        colorScaleInputs.forEach((input) => {
+          input.checked = input.value === currentColorScale;
+        });
+      }
+
+      function updateLegendScaleDescription() {
+        if (!legendScale) {
+          return;
+        }
+        const description = currentColorScale === "linear"
+          ? "Linear colour scale: values map directly; values above 50 are shown as 50+."
+          : "Power-eased colour scale: pulls low values toward mid-range; values above 50 are shown as 50+.";
+        legendScale.title = description;
+        legendScale.setAttribute("aria-label", description);
+      }
+
+      function openSettingsPanel() {
+        if (!mapSettingsPanel || !mapSettingsButton) {
+          return;
+        }
+        syncSettingsPanelWidth();
+        mapSettingsPanel.classList.add("open");
+        mapSettingsButton.setAttribute("aria-expanded", "true");
+      }
+
+      function closeSettingsPanel() {
+        if (!mapSettingsPanel || !mapSettingsButton) {
+          return;
+        }
+        mapSettingsPanel.classList.remove("open");
+        mapSettingsButton.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleSettingsPanel() {
+        if (!mapSettingsPanel) {
+          return;
+        }
+        if (mapSettingsPanel.classList.contains("open")) {
+          closeSettingsPanel();
+        } else {
+          openSettingsPanel();
+        }
+      }
+
+      function syncSettingsPanelWidth() {
+        if (!mapSettingsPanel || !networkPanel) {
+          return;
+        }
+        const panelWidth = networkPanel.getBoundingClientRect().width;
+        if (panelWidth > 0) {
+          mapSettingsPanel.style.width = `${panelWidth}px`;
+        }
+      }
+
       function resolveCssColor(name, fallback) {
         const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
         return value || fallback;
@@ -928,6 +1181,124 @@
         }
         const code = resolveConnectorCode(row);
         return code ? getConnectorLabelByCode(code) : "Unknown connector";
+      }
+
+      function resolveNetworkMemberships(row) {
+        const memberships = row?.station?.station_network_memberships
+          || row?.station_network_memberships
+          || row?.station?.network_memberships
+          || row?.network_memberships
+          || [];
+        if (!Array.isArray(memberships)) {
+          return [];
+        }
+        return memberships.map((entry) => {
+          const code = entry?.network_code
+            || entry?.connector_code
+            || entry?.code
+            || null;
+          if (!code) {
+            return null;
+          }
+          return {
+            code,
+            label: entry?.network_label || entry?.label || null,
+          };
+        }).filter(Boolean);
+      }
+
+      function collectNetworkEntries(row) {
+        const memberships = resolveNetworkMemberships(row);
+        if (memberships.length) {
+          return memberships;
+        }
+        const fallbackCode = resolveConnectorCode(row);
+        if (!fallbackCode) {
+          return [];
+        }
+        return [{
+          code: fallbackCode,
+          label: row?.connector_label || row?.connector?.label || null,
+        }];
+      }
+
+      function buildNetworkDefs(rows) {
+        const byCode = new Map();
+        rows.forEach((row) => {
+          collectNetworkEntries(row).forEach((entry) => {
+            if (!entry.code || byCode.has(entry.code)) {
+              return;
+            }
+            byCode.set(entry.code, {
+              code: entry.code,
+              label: entry.label || entry.code,
+            });
+          });
+        });
+        return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
+      }
+
+      function getCurrentNetworkSelection() {
+        if (!networkInputs.length) {
+          return null;
+        }
+        return new Set(
+          networkInputs
+            .filter((input) => input.checked)
+            .map((input) => input.dataset.network)
+            .filter(Boolean)
+        );
+      }
+
+      function renderNetworkFilters(defs, selectedCodes, defaultAll) {
+        if (!networkList) {
+          return;
+        }
+        networkList.innerHTML = "";
+        networkInputs = [];
+        if (!defs.length) {
+          networkList.innerHTML = '<span class="network-empty">No networks available.</span>';
+          syncNetworkActionState();
+          return;
+        }
+        const fragment = document.createDocumentFragment();
+        const hasSelection = selectedCodes !== null && selectedCodes !== undefined;
+        defs.forEach((def) => {
+          const label = document.createElement("label");
+          label.className = "checkbox";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.dataset.network = def.code;
+          input.checked = defaultAll || (hasSelection ? selectedCodes.has(def.code) : true);
+          const text = document.createElement("span");
+          text.textContent = def.label;
+          label.append(input, text);
+          fragment.appendChild(label);
+        });
+        networkList.appendChild(fragment);
+        networkInputs = Array.from(networkList.querySelectorAll("input[data-network]"));
+        networkInputs.forEach((input) => input.addEventListener("change", handleNetworkToggle));
+        syncNetworkActionState();
+      }
+
+      function syncNetworkActionState() {
+        if (!networkSelectAll || !networkDeselectAll) {
+          return;
+        }
+        const hasNetworks = networkInputs.length > 0;
+        networkSelectAll.disabled = !hasNetworks;
+        networkDeselectAll.disabled = !hasNetworks;
+        if (!hasNetworks) {
+          return;
+        }
+        const allChecked = networkInputs.every((input) => input.checked);
+        const noneChecked = networkInputs.every((input) => !input.checked);
+        networkSelectAll.disabled = allChecked;
+        networkDeselectAll.disabled = noneChecked;
+      }
+
+      function resolveNetworkCodes(row) {
+        return collectNetworkEntries(row).map((entry) => entry.code);
       }
 
       function resolvePconCode(row) {
@@ -1084,6 +1455,37 @@
         legendLabel.textContent = METRIC_LABELS[currentMetric];
         legendMin.textContent = formatValue(minValue);
         legendMax.textContent = `${formatValue(capValue)}+`;
+      }
+
+      function mapValueToT(value, capValue) {
+        if (!Number.isFinite(value) || !Number.isFinite(capValue) || capValue <= 0) {
+          return 0;
+        }
+        const clamped = Math.max(0, Math.min(capValue, value));
+        const ratio = clamped / capValue;
+        if (currentColorScale === "linear") {
+          return Math.max(0, Math.min(1, ratio));
+        }
+        const exponent = 0.8;
+        const base = Math.pow(ratio, exponent);
+        const boosted = base + 0.05 * base * base; // small top boost to keep 40 near ~87%
+        return Math.max(0, Math.min(1, boosted));
+      }
+
+      function updateLegendTicks(capValue) {
+        if (!legendTicks.length || !legendTickLabels.length) {
+          return;
+        }
+        const updatePosition = (element) => {
+          const value = Number(element.dataset.value);
+          if (!Number.isFinite(value)) {
+            return;
+          }
+          const t = mapValueToT(value, capValue);
+          element.style.left = `${(t * 100).toFixed(1)}%`;
+        };
+        legendTicks.forEach(updatePosition);
+        legendTickLabels.forEach(updatePosition);
       }
 
       function clearMap() {
@@ -1439,48 +1841,30 @@
         return count === null ? 0 : count;
       }
 
-      function getActiveConnectorIds() {
-        if (!connectorAll) {
+      function getActiveNetworkIds() {
+        if (!networkInputs.length) {
           return null;
         }
-        const allSpecificChecked = connectorOptions.length
-          ? connectorOptions.every((input) => input.checked)
-          : false;
-        if (connectorAll.checked || allSpecificChecked) {
-          return null;
-        }
-        const active = connectorOptions
+        const active = networkInputs
           .filter((input) => input.checked)
-          .map((input) => input.dataset.connector)
+          .map((input) => input.dataset.network)
           .filter(Boolean);
+        if (!active.length) {
+          return new Set();
+        }
+        if (active.length === networkInputs.length) {
+          return null;
+        }
         return new Set(active);
       }
 
-      function syncConnectorAllState() {
-        if (!connectorAll) {
-          return;
-        }
-        const allChecked = connectorOptions.every((input) => input.checked);
-        connectorAll.checked = allChecked;
-      }
-
-      function filterLatestRowsByConnector(rows, connectorIds) {
+      function filterLatestRowsByNetwork(rows, networkIds) {
         if (!rows.length) {
           return [];
         }
         return rows.filter((row) => {
-          const connectorCode = resolveConnectorCode(row);
-          return connectorCode ? connectorIds.has(connectorCode) : false;
-        });
-      }
-
-      function filterPconRowsByConnector(rows, connectorIds) {
-        if (!rows.length) {
-          return [];
-        }
-        return rows.filter((row) => {
-          const connectorCode = resolveConnectorCode(row);
-          return connectorCode ? connectorIds.has(connectorCode) : false;
+          const codes = resolveNetworkCodes(row);
+          return codes.some((code) => networkIds.has(code));
         });
       }
 
@@ -1544,25 +1928,25 @@
         return rowsForMap;
       }
 
-      function applyConnectorFilters() {
+      function applyNetworkFilters() {
         if (!basePconRows.length && !baseLatestRows.length) {
           return;
         }
-        const connectorIds = getActiveConnectorIds();
-        if (connectorIds === null) {
+        const networkIds = getActiveNetworkIds();
+        if (networkIds === null) {
           pconRows = basePconRows;
           latestRows = baseLatestRows;
-        } else if (connectorIds.size === 0) {
+        } else if (networkIds.size === 0) {
           pconRows = [];
           latestRows = [];
         } else {
-          const filteredLatest = filterLatestRowsByConnector(baseLatestRows, connectorIds);
+          const filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkIds);
           latestRows = filteredLatest;
           const derived = buildPconRowsFromLatest(filteredLatest);
           if (derived.length) {
             pconRows = derived;
           } else {
-            pconRows = filterPconRowsByConnector(basePconRows, connectorIds);
+            pconRows = [];
           }
         }
         pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
@@ -1588,22 +1972,26 @@
         tooltip.style.top = `${top}px`;
       }
 
-      function handleConnectorToggle(event) {
-        if (!connectorAll) {
+      function handleNetworkAction(event) {
+        if (!networkInputs.length) {
           return;
         }
-        if (event.target === connectorAll) {
-          if (connectorAll.checked) {
-            connectorOptions.forEach((input) => {
-              input.checked = true;
-            });
-          }
-        } else if (!event.target.checked && connectorAll.checked) {
-          connectorAll.checked = false;
-        } else {
-          syncConnectorAllState();
+        if (event.target === networkSelectAll) {
+          networkInputs.forEach((input) => {
+            input.checked = true;
+          });
+        } else if (event.target === networkDeselectAll) {
+          networkInputs.forEach((input) => {
+            input.checked = false;
+          });
         }
-        applyConnectorFilters();
+        syncNetworkActionState();
+        applyNetworkFilters();
+      }
+
+      function handleNetworkToggle() {
+        syncNetworkActionState();
+        applyNetworkFilters();
       }
 
       function renderMap() {
@@ -1626,16 +2014,11 @@
         let colorScale = null;
         if (maxValue !== null) {
           const interpolate = d3.interpolateRgbBasis(palette);
-          const exponent = 0.8;
-          const mapValueToT = (value) => {
-            const clamped = Math.max(domainMin, Math.min(domainMax, value));
-            const base = Math.pow(clamped / domainMax, exponent);
-            const boosted = base + 0.05 * base * base; // small top boost to keep 40 near ~87%
-            return Math.max(0, Math.min(1, boosted));
-          };
-          colorScale = (value) => interpolate(mapValueToT(value));
+          colorScale = (value) => interpolate(mapValueToT(value, domainMax));
         }
         updateLegend(maxValue === null ? null : domainMin, maxValue, domainMax);
+        updateLegendScaleDescription();
+        updateLegendTicks(domainMax);
 
         const hexGroup = svg.append("g");
         hexGroup.selectAll("polygon")
@@ -1778,6 +2161,9 @@
         errorEl.textContent = "";
         latestPollutant = null;
         populationLookup = new Map();
+        const previousSelection = getCurrentNetworkSelection();
+        const hadAllSelected = networkInputs.length > 0
+          && networkInputs.every((input) => input.checked);
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
           statusEl.textContent = "Error";
@@ -1856,6 +2242,11 @@
           } else {
             baseLatestRows = [];
           }
+          renderNetworkFilters(
+            buildNetworkDefs(baseLatestRows),
+            previousSelection,
+            hadAllSelected
+          );
           if (populationResponse && populationResponse.ok) {
             const populationPayload = await populationResponse.json();
             const populationRows = Array.isArray(populationPayload)
@@ -1873,7 +2264,7 @@
           } else {
             populationLookup = new Map();
           }
-          applyConnectorFilters();
+          applyNetworkFilters();
           statusEl.textContent = "Live";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -1894,17 +2285,60 @@
         });
       });
 
-      connectorInputs.forEach((input) => {
-        input.addEventListener("change", handleConnectorToggle);
+      colorScaleInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+          if (input.checked && input.value !== currentColorScale) {
+            currentColorScale = input.value;
+            setQueryParam("color_scale", currentColorScale);
+            updateLegendScaleDescription();
+            renderMap();
+          }
+        });
       });
+
+      if (mapSettingsButton) {
+        mapSettingsButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleSettingsPanel();
+        });
+      }
+
+      if (mapSettingsClose) {
+        mapSettingsClose.addEventListener("click", (event) => {
+          event.stopPropagation();
+          closeSettingsPanel();
+        });
+      }
+
+      document.addEventListener("click", (event) => {
+        if (!mapSettingsPanel || !mapSettingsPanel.classList.contains("open")) {
+          return;
+        }
+        const target = event.target;
+        if (mapSettingsPanel.contains(target) || (mapSettingsButton && mapSettingsButton.contains(target))) {
+          return;
+        }
+        closeSettingsPanel();
+      });
+
+      if (networkSelectAll) {
+        networkSelectAll.addEventListener("click", handleNetworkAction);
+      }
+      if (networkDeselectAll) {
+        networkDeselectAll.addEventListener("click", handleNetworkAction);
+      }
 
       document.getElementById("refresh").addEventListener("click", loadMapData);
       window.addEventListener("resize", () => {
         if (statusEl.textContent === "Live") {
           renderMap();
         }
+        syncSettingsPanelWidth();
       });
       applyMetricState();
+      syncSettingsPanelWidth();
+      syncColorScaleInputs();
+      updateLegendScaleDescription();
       loadMapData();
       setInterval(loadMapData, 10 * 60 * 1000);
     </script>
