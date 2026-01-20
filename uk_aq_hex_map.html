@@ -1221,8 +1221,8 @@
                   <span class="map-settings-label">Updated within:</span>
                   <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
                     <label class="window-option">
-                      <input type="radio" name="averagingWindow" value="2h" />
-                      <span class="window-text">2 Hours</span>
+                      <input type="radio" name="averagingWindow" value="3h" />
+                      <span class="window-text">3 Hours</span>
                     </label>
                     <label class="window-option">
                       <input type="radio" name="averagingWindow" value="6h" />
@@ -1419,14 +1419,14 @@
       const MIN_VALID_PM25_VALUE = 0.09;
       const MAX_VALID_PM25_VALUE = 500;
       const WINDOW_OPTIONS = {
-        "2h": 2 * 60 * 60 * 1000,
+        "3h": 3 * 60 * 60 * 1000,
         "6h": 6 * 60 * 60 * 1000,
         "1d": 24 * 60 * 60 * 1000,
         "7d": 7 * 24 * 60 * 60 * 1000,
         all: null,
       };
       const WINDOW_LABELS = {
-        "2h": "2 Hours",
+        "3h": "3 Hours",
         "6h": "6 Hours",
         "1d": "1 Day",
         "7d": "7 Days",
