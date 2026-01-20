@@ -929,6 +929,10 @@
         margin-top: 2px;
       }
 
+      .tooltip-network-name {
+        font-weight: 700;
+      }
+
       .tooltip-empty {
         margin-top: 6px;
         font-weight: 600;
@@ -2083,6 +2087,17 @@
         return Array.from(stationMap.values());
       }
 
+      function countStationsByNetwork(entries) {
+        const counts = new Map();
+        entries.forEach((entry) => {
+          const label = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          counts.set(label, (counts.get(label) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+          .map(([label, count]) => ({ label, count }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      }
+
       function rowMatchesNetwork(row, matchers) {
         const entries = collectNetworkEntries(row);
         return entries.some((entry) => {
@@ -2972,13 +2987,23 @@
             const rowsForTooltip = getRowsForActivePollutant(latestRows)
               .filter((item) => resolvePconCode(item) === cell.pcon_code);
             const stationEntries = collectStationEntries(rowsForTooltip, cell.pcon_code);
-            const sensorLabel = formatSensorCount(stationEntries.length);
+            const networkCounts = countStationsByNetwork(stationEntries);
+            const networkLines = stationEntries.length
+              ? networkCounts.map((entry) =>
+                `<div class="tooltip-line"><span class="tooltip-network-name">${entry.label}</span>: ${formatSensorCount(entry.count)}</div>`
+              )
+              : [`<div class="tooltip-line">${formatSensorCount(0)}</div>`];
+            if (stationEntries.length && networkCounts.length >= 2) {
+              networkLines.push(
+                `<div class="tooltip-line">Total: ${formatSensorCount(stationEntries.length)}</div>`
+              );
+            }
             tooltip.innerHTML = `
               <div class="tooltip-title">${areaName}</div>
               <div class="tooltip-line">Region: ${regionLabel}</div>
               <div class="tooltip-line">${populationLabel}</div>
               <div class="tooltip-line">Average: ${valueLabel}</div>
-              <div class="tooltip-line">${sensorLabel}</div>
+              ${networkLines.join("")}
             `;
             tooltip.classList.add("visible");
             positionTooltip(event);
