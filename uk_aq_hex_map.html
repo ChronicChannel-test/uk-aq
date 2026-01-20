@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UK AQ Hex Map</title>
+    <title>UK AQ Hex Map – Power 0.8</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -19,6 +19,7 @@
         --teal-deep: #0a5d61;
         --sun: #f4b942;
         --clay: #e8dcc7;
+        --no-data: #efe6d8;
         --fog: rgba(20, 34, 37, 0.08);
         --card: #ffffff;
         --heat-0: #00a85a;
@@ -34,7 +35,7 @@
 
       body {
         margin: 0;
-        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         color: var(--ink);
         background:
           radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
@@ -69,7 +70,7 @@
       }
 
       .title {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: clamp(2rem, 2.6vw, 3.25rem);
         letter-spacing: -0.02em;
         margin: 0;
@@ -113,7 +114,7 @@
 
       .map-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.6fr) minmax(240px, 0.7fr);
+        grid-template-columns: 1fr;
         gap: 24px;
         align-items: start;
       }
@@ -123,6 +124,153 @@
         gap: 16px;
       }
 
+      .details-meta {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .network-summary {
+        display: grid;
+        gap: 12px;
+      }
+
+      .network-card {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: var(--mist);
+        border: 1px solid var(--fog);
+        display: grid;
+        gap: 10px;
+      }
+
+      .network-card-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .network-card-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .network-card-badge {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--clay);
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .network-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 12px;
+      }
+
+      .coverage-item {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 12px;
+        align-items: center;
+      }
+
+      .coverage-tile {
+        width: 72px;
+        height: 72px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.16);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .coverage-tile::after {
+        content: "";
+        position: absolute;
+        inset: 8px;
+        background: linear-gradient(
+          135deg,
+          transparent 49%,
+          rgba(20, 34, 37, 0.2) 50%,
+          transparent 51%
+        );
+        pointer-events: none;
+      }
+
+      .coverage-top {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .coverage-bottom {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+      }
+
+      .coverage-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-soft);
+        font-weight: 600;
+      }
+
+      .coverage-help {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(20, 34, 37, 0.3);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        color: var(--ink-soft);
+        background: #fff;
+      }
+
+      .coverage-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .coverage-sublabel {
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+
+      .network-card-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-soft);
+      }
+
+      .network-card-value {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
       .summary-card {
         padding: 16px;
         border-radius: 16px;
@@ -133,7 +281,7 @@
       }
 
       .summary-title {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         margin: 0;
         font-size: 1.2rem;
       }
@@ -160,8 +308,9 @@
       }
 
       .summary-value {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.4rem;
+        font-weight: 700;
         color: var(--ink);
       }
 
@@ -170,10 +319,65 @@
         color: var(--ink-soft);
       }
 
+      .summary-datetime {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+
       .summary-connector {
         font-size: 0.85rem;
         font-weight: 600;
         color: var(--teal-deep);
+      }
+
+      .details-empty {
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+      }
+
+      .sensor-table-wrap {
+        overflow-x: auto;
+      }
+
+      .sensor-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      .sensor-table th,
+      .sensor-table td {
+        text-align: left;
+        padding: 10px 12px;
+      }
+
+      .sensor-table th {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-soft);
+      }
+
+      .sensor-table tbody tr {
+        border-top: 1px solid rgba(20, 34, 37, 0.08);
+      }
+
+      .sensor-table tbody tr:first-child {
+        border-top: 1px solid rgba(20, 34, 37, 0.12);
+      }
+
+      .sensor-row--excluded {
+        background: #fdecec;
+      }
+
+      .sensor-status {
+        font-weight: 600;
+        color: var(--ink-soft);
+      }
+
+      .sensor-status--excluded {
+        color: #8b1e3f;
       }
 
       .card-header {
@@ -185,7 +389,7 @@
       }
 
       .card-title {
-        font-family: "Fraunces", serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         margin: 0;
         font-size: 1.4rem;
       }
@@ -238,29 +442,73 @@
         color: var(--ink);
       }
 
-      .connector-filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
+      .network-panel {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        display: grid;
+        gap: 12px;
       }
 
-      .connector-filters .checkbox {
+      .network-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .network-actions button {
+        border: none;
+        background: var(--clay);
+        color: var(--ink);
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .network-actions button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 14px rgba(20, 34, 37, 0.12);
+      }
+
+      .network-actions button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .network-panel .checkbox {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
-        border-radius: 999px;
+        padding: 6px 10px;
+        border-radius: 10px;
         border: 1px solid rgba(20, 34, 37, 0.12);
         background: var(--mist);
         font-weight: 600;
         color: var(--ink);
+        font-size: 0.85rem;
       }
 
-      .connector-filters input[type="checkbox"] {
+      .network-panel input[type="checkbox"] {
         width: 14px;
         height: 14px;
         accent-color: var(--teal);
+      }
+
+      .network-list {
+        display: grid;
+        gap: 8px;
+        max-height: 360px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .network-empty {
+        color: var(--ink-soft);
+        font-size: 0.85rem;
       }
 
       .map-wrap {
@@ -268,6 +516,272 @@
         background: #fdfaf4;
         padding: 16px;
         border: 1px solid rgba(20, 34, 37, 0.08);
+        display: grid;
+        grid-template-columns: minmax(200px, 0.35fr) minmax(0, 1fr) minmax(220px, 0.45fr);
+        gap: 16px;
+        align-items: start;
+        position: relative;
+      }
+
+      .map-canvas {
+        min-width: 0;
+      }
+
+      .map-legend {
+        grid-column: 1 / -1;
+        justify-content: center;
+      }
+
+      .map-settings {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        z-index: 2;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid rgba(20, 34, 37, 0.2);
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(20, 34, 37, 0.12);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .map-settings:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(20, 34, 37, 0.18);
+      }
+
+      .map-settings img {
+        width: 20px;
+        height: 20px;
+        display: block;
+      }
+
+      .map-settings-panel {
+        position: absolute;
+        left: 16px;
+        bottom: 68px;
+        width: auto;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(20, 34, 37, 0.18);
+        box-shadow: 0 14px 32px rgba(20, 34, 37, 0.18);
+        padding: 12px;
+        display: none;
+        z-index: 3;
+      }
+
+      .map-settings-label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .map-settings-panel.open {
+        display: grid;
+        gap: 8px;
+      }
+
+      .map-settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .map-settings-section {
+        display: grid;
+        gap: 4px;
+      }
+
+      .map-settings-section + .map-settings-section {
+        margin-top: 10px;
+      }
+
+      .map-settings-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--ink);
+        display: block;
+      }
+
+      .map-settings-close {
+        border: none;
+        background: none;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+      }
+
+      .map-settings-close img {
+        width: 24px;
+        height: 24px;
+        display: block;
+      }
+
+      .map-settings-options {
+        display: grid;
+        gap: 8px;
+        font-size: 0.88rem;
+        color: var(--ink);
+      }
+
+      .window-group {
+        display: grid;
+        grid-template-columns: 16px minmax(140px, 1fr);
+        column-gap: 10px;
+        row-gap: 6px;
+        align-items: center;
+        padding: 6px;
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      .window-option {
+        display: contents;
+      }
+
+      .window-option input {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        border-radius: 3px;
+        border: 1px solid rgba(20, 34, 37, 0.4);
+        background: #fff;
+        display: grid;
+        place-content: center;
+        cursor: pointer;
+      }
+
+      .window-option input::after {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--teal);
+        transform: scale(0);
+        transition: transform 0.12s ease;
+      }
+
+      .window-option input:checked::after {
+        transform: scale(1);
+      }
+
+      .window-text {
+        display: block;
+        width: 100%;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 500;
+        color: var(--ink);
+        cursor: pointer;
+        transition: background 0.2s ease, box-shadow 0.2s ease, font-weight 0.2s ease;
+      }
+
+      .window-option input:checked + .window-text {
+        background: rgba(244, 185, 66, 0.2);
+        box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.35);
+        font-weight: 600;
+      }
+
+      .window-option input:focus-visible + .window-text {
+        outline: 2px solid rgba(15, 139, 141, 0.45);
+        outline-offset: 2px;
+      }
+
+      .colour-scale-group,
+      .metric-group {
+        --toggle-slot: 22px;
+        --toggle-gap: 6px;
+        display: grid;
+        grid-template-columns: 16px minmax(140px, 1fr);
+        grid-template-rows: repeat(2, var(--toggle-slot));
+        column-gap: 10px;
+        row-gap: var(--toggle-gap);
+        align-items: center;
+        padding: 6px;
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      .colour-scale-toggle,
+      .metric-toggle {
+        grid-row: 1 / span 2;
+        width: 10px;
+        height: calc(var(--toggle-slot) * 2 + var(--toggle-gap));
+        justify-self: center;
+        border-radius: 999px;
+        background: rgba(20, 34, 37, 0.08);
+        border: 1px solid rgba(20, 34, 37, 0.2);
+        position: relative;
+        box-shadow: inset 0 1px 2px rgba(20, 34, 37, 0.12);
+        cursor: pointer;
+      }
+
+      .colour-scale-toggle::after,
+      .metric-toggle::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        width: 14px;
+        height: 18px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.25);
+        box-shadow: 0 2px 6px rgba(20, 34, 37, 0.2);
+        transform: translate(-50%, 2px);
+        transition: transform 0.2s ease;
+      }
+
+      .colour-scale-group[data-active="linear"] .colour-scale-toggle::after {
+        transform: translate(-50%, calc(var(--toggle-slot) + var(--toggle-gap) - 2px));
+      }
+
+      .metric-group[data-active="median"] .metric-toggle::after {
+        transform: translate(-50%, calc(var(--toggle-slot) + var(--toggle-gap) - 2px));
+      }
+
+      .colour-scale-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .colour-scale-option input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+      }
+
+      .colour-scale-text {
+        display: block;
+        width: 100%;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 500;
+        color: var(--ink);
+        transition: background 0.2s ease, box-shadow 0.2s ease, font-weight 0.2s ease;
+      }
+
+      .colour-scale-option input:checked + .colour-scale-text {
+        background: rgba(244, 185, 66, 0.2);
+        box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.35);
+        font-weight: 600;
+      }
+
+      .colour-scale-option input:focus-visible + .colour-scale-text {
+        outline: 2px solid rgba(15, 139, 141, 0.45);
+        outline-offset: 2px;
       }
 
       svg {
@@ -305,22 +819,41 @@
       }
 
       .legend {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
         gap: 8px;
         align-items: center;
-        flex-wrap: wrap;
         font-size: 0.85rem;
         color: var(--ink-soft);
+      }
+
+      .legend > span:first-child {
+        justify-self: end;
+        text-align: right;
+      }
+
+      .legend > #legend-label {
+        justify-self: start;
+        text-align: left;
       }
 
       .legend-scale {
         display: flex;
         align-items: center;
         gap: 8px;
+        justify-self: center;
+      }
+
+      .legend-bar-wrap {
+        position: relative;
+        width: 200px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
       }
 
       .legend-bar {
-        width: 200px;
+        width: 100%;
         height: 12px;
         border-radius: 999px;
         background: linear-gradient(
@@ -332,26 +865,168 @@
           var(--heat-4)
         );
         border: 1px solid rgba(20, 34, 37, 0.12);
+        display: block;
       }
 
       .legend-value {
         min-width: 42px;
         text-align: center;
         font-variant-numeric: tabular-nums;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      .legend-tick {
+        position: absolute;
+        top: 0;
+        width: 2px;
+        height: 18px;
+        background: rgba(20, 34, 37, 0.45);
+        border-radius: 2px;
+        pointer-events: none;
+      }
+
+      .legend-tick-label {
+        position: absolute;
+        top: 18px;
+        transform: translateX(-50%);
+        font-size: 0.7rem;
+        color: var(--ink-soft);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        pointer-events: none;
+      }
+
+      .legend-scale .legend-tick,
+      .legend-scale .legend-tick-label {
+        visibility: hidden;
+      }
+
+      .legend-scale.is-ready .legend-tick,
+      .legend-scale.is-ready .legend-tick-label {
+        visibility: visible;
       }
 
       .tooltip {
-        position: absolute;
+        position: fixed;
         pointer-events: none;
         background: white;
         border-radius: 10px;
         padding: 8px 12px;
+        min-width: 220px;
+        max-width: 280px;
         box-shadow: 0 10px 20px rgba(20, 34, 37, 0.18);
         font-size: 0.85rem;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         opacity: 0;
         transform: translateY(8px);
         transition: opacity 0.2s ease, transform 0.2s ease;
       }
+
+      .tooltip-title {
+        font-weight: 700;
+      }
+
+      .tooltip-line {
+        margin-top: 2px;
+      }
+
+      .tooltip-empty {
+        margin-top: 6px;
+        font-weight: 600;
+      }
+
+        .tooltip-table {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 72px 96px;
+          column-gap: 8px;
+          row-gap: 6px;
+          margin-top: 10px;
+          align-items: start;
+          padding: 10px 12px 10px 12px;
+          background: #f7f2e8;
+          border: 1px solid rgba(20, 34, 37, 0.14);
+          border-radius: 12px;
+          position: relative;
+        }
+
+        .tooltip-head {
+          font-size: 0.72rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-weight: 700;
+          color: var(--ink-soft);
+        }
+
+        .tooltip-head:nth-of-type(2),
+        .tooltip-head:nth-of-type(3),
+        .tooltip-value,
+        .tooltip-updated {
+          padding-left: 10px;
+        }
+
+        .tooltip-head:nth-of-type(3) {
+          padding-left: 4px;
+        }
+
+        .tooltip-updated {
+          padding-left: 4px;
+          padding-right: 16px;
+        }
+
+        .tooltip-vline {
+          position: absolute;
+          top: 12px;
+          bottom: 12px;
+          width: 1px;
+          background: rgba(20, 34, 37, 0.16);
+          pointer-events: none;
+        }
+
+        .tooltip-vline--1 {
+          left: calc(100% - 192px);
+        }
+
+        .tooltip-vline--2 {
+          left: calc(100% - 116px);
+        }
+
+        .tooltip-connector {
+          grid-column: 1 / -1;
+          font-weight: 700;
+          margin-top: 4px;
+          color: var(--teal-deep);
+        }
+
+        .tooltip-connector--spaced {
+          margin-top: 10px;
+        }
+
+        .tooltip-row-divider {
+          grid-column: 1 / -1;
+          height: 1px;
+          background: rgba(20, 34, 37, 0.12);
+          margin: 2px 0;
+        }
+
+        .tooltip-row-divider--header {
+          margin: 6px 0 4px;
+        }
+
+        .tooltip-station {
+          font-weight: 700;
+          color: var(--ink);
+        }
+
+        .tooltip-value,
+        .tooltip-updated {
+          text-align: left;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .tooltip-updated {
+          white-space: nowrap;
+          color: var(--ink-soft);
+          font-size: 0.8rem;
+        }
 
       .tooltip.visible {
         opacity: 1;
@@ -415,11 +1090,31 @@
         svg {
           height: 420px;
         }
+
+        .legend {
+          grid-template-columns: 1fr;
+          justify-items: center;
+          text-align: center;
+        }
+
+        .legend > span:first-child,
+        .legend > #legend-label {
+          justify-self: center;
+          text-align: center;
+        }
       }
 
       @media (max-width: 980px) {
         .map-layout {
           grid-template-columns: 1fr;
+        }
+
+        .map-wrap {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          order: 3;
         }
       }
     </style>
@@ -428,10 +1123,9 @@
     <main>
       <header>
         <p class="badge">Hex Cartogram</p>
-        <h1 class="title">UK AQ hex map</h1>
+        <h1 class="title">UK AQ hex map – Power 0.8</h1>
         <p class="subtitle">
-          A population-equal hex cartogram showing the latest PM2.5 by constituency. Each
-          hex represents roughly the same number of people; values are aggregated per constituency.
+          Power-eased colour scale (exponent 0.8 with a small top boost) to pull low values closer to mid-range colours.
         </p>
         <div class="meta">
           <span id="row-count">Loading…</span>
@@ -449,25 +1143,6 @@
         </div>
         <div class="filters">
           <span class="hint">Metric: Latest PM2.5</span>
-          <div class="toggle" role="group" aria-label="Aggregation">
-            <button type="button" class="active" data-metric="median">Typical (median)</button>
-            <button type="button" data-metric="mean">Average (mean)</button>
-          </div>
-          <div class="connector-filters" role="group" aria-label="Connector filters">
-            <span class="hint">Connectors:</span>
-            <label class="checkbox">
-              <input type="checkbox" data-connector="all" checked />
-              All
-            </label>
-            <label class="checkbox">
-              <input type="checkbox" data-connector="uk_air_sos" checked />
-              UK AIR SOS
-            </label>
-            <label class="checkbox">
-              <input type="checkbox" data-connector="sensorcommunity" checked />
-              Sensor Community
-            </label>
-          </div>
           <span class="hint">Parliamentary constituency hex cartogram (equal-pop)</span>
         </div>
         <div class="hint" id="endpoint-hint"></div>
@@ -475,39 +1150,212 @@
         <div class="map-layout">
           <div class="map-panel">
             <div class="map-wrap">
-              <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
-            </div>
-            <div class="legend">
-              <span>PM2.5 (ug/m3)</span>
-              <div class="legend-scale">
-                <span class="legend-value" id="legend-min">-</span>
-                <span class="legend-bar" aria-hidden="true"></span>
-                <span class="legend-value" id="legend-max">-</span>
+              <aside class="network-panel">
+                <div class="network-actions" role="group" aria-label="Network selection actions">
+                  <button type="button" id="network-select-all">Select All</button>
+                  <button type="button" id="network-deselect-all">Deselect All</button>
+                </div>
+                <span class="hint">Networks</span>
+                <div class="network-list" id="network-list">
+                  <span class="network-empty">Loading networks...</span>
+                </div>
+              </aside>
+              <div class="map-canvas">
+                <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
               </div>
-              <span id="legend-label"></span>
+              <aside class="summary-card">
+                <h3 class="summary-title">PM2.5 summary</h3>
+                <div class="summary-list">
+                  <div class="summary-item">
+                    <span class="summary-label">Number of sensors</span>
+                    <span class="summary-value" id="summary-stations">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Highest PM2.5</span>
+                    <span class="summary-value" id="summary-highest-value">-</span>
+                    <span class="summary-datetime" id="summary-highest-datetime">-</span>
+                    <span class="summary-connector" id="summary-highest-connector">-</span>
+                    <span class="summary-name" id="summary-highest-name">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
+                    <span class="summary-value" id="summary-lowest-value">-</span>
+                    <span class="summary-datetime" id="summary-lowest-datetime">-</span>
+                    <span class="summary-connector" id="summary-lowest-connector">-</span>
+                    <span class="summary-name" id="summary-lowest-name">-</span>
+                  </div>
+                </div>
+              </aside>
+              <div class="legend map-legend">
+                <span>PM2.5 (µg/m³)</span>
+                <div
+                  id="legend-scale"
+                  class="legend-scale"
+                  title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                  aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                >
+                  <span class="legend-value" id="legend-min">-</span>
+                  <div class="legend-bar-wrap" aria-hidden="true">
+                    <span class="legend-bar"></span>
+                    <span class="legend-tick" data-value="10"></span>
+                    <span class="legend-tick" data-value="20"></span>
+                    <span class="legend-tick" data-value="30"></span>
+                    <span class="legend-tick" data-value="40"></span>
+                    <span class="legend-tick-label" data-value="10">10</span>
+                    <span class="legend-tick-label" data-value="20">20</span>
+                    <span class="legend-tick-label" data-value="30">30</span>
+                    <span class="legend-tick-label" data-value="40">40</span>
+                  </div>
+                  <span class="legend-value" id="legend-max">-</span>
+                </div>
+                <span id="legend-label"></span>
+              </div>
+              <div class="map-settings-panel" id="map-settings-panel" role="dialog" aria-label="Sensor data settings">
+                <div class="map-settings-header">
+                  <span class="map-settings-title">Sensor Data</span>
+                  <button type="button" class="map-settings-close" id="map-settings-close" aria-label="Close colour scale">
+                    <img src="data/images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
+                  </button>
+                </div>
+                <div class="map-settings-section">
+                  <span class="map-settings-label">Updated within:</span>
+                  <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="2h" />
+                      <span class="window-text">2 Hours</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="6h" />
+                      <span class="window-text">6 Hours</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="1d" />
+                      <span class="window-text">1 Day</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="7d" />
+                      <span class="window-text">7 Days</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="all" checked />
+                      <span class="window-text">No limit</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="map-settings-section">
+                  <span class="map-settings-label">Averaging Method</span>
+                  <div class="map-settings-options metric-group" role="radiogroup" aria-label="Averaging method" data-active="mean">
+                    <span class="metric-toggle" aria-hidden="true"></span>
+                    <label class="colour-scale-option" data-value="mean">
+                      <input type="radio" name="metricSelect" value="mean" checked />
+                      <span class="colour-scale-text">Average (mean)</span>
+                    </label>
+                    <label class="colour-scale-option" data-value="median">
+                      <input type="radio" name="metricSelect" value="median" />
+                      <span class="colour-scale-text">Typical (median)</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="map-settings-section">
+                  <span class="map-settings-label">Colour Scale</span>
+                  <div class="map-settings-options colour-scale-group" role="radiogroup" aria-label="Colour scale options" data-active="power">
+                    <span class="colour-scale-toggle" aria-hidden="true"></span>
+                    <label class="colour-scale-option" data-value="power">
+                      <input type="radio" name="colourScale" value="power" />
+                      <span class="colour-scale-text">Power-eased</span>
+                    </label>
+                    <label class="colour-scale-option" data-value="linear">
+                      <input type="radio" name="colourScale" value="linear" />
+                      <span class="colour-scale-text">Linear</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
+                <img src="data/images/settings-cog.svg" alt="" aria-hidden="true" />
+              </button>
             </div>
           </div>
-          <aside class="summary-card">
-            <h3 class="summary-title">PM2.5 summary</h3>
-            <div class="summary-list">
-              <div class="summary-item">
-                <span class="summary-label">Number of stations</span>
-                <span class="summary-value" id="summary-stations">-</span>
+        </div>
+      </section>
+
+      <section class="card details-card" id="sensor-details">
+        <div class="card-header">
+          <h2 class="card-title" id="details-title">Constituency sensors</h2>
+          <span class="details-meta" id="details-meta">Click a hex to view sensors.</span>
+        </div>
+        <div class="network-summary" id="network-summary" hidden>
+          <div class="network-card">
+            <div class="network-card-header">
+              <h3 class="network-card-title">GOV.UK AURN</h3>
+              <span class="network-card-badge">Incl. UK AIR SOS</span>
+            </div>
+            <div class="network-card-grid">
+              <div>
+                <div class="network-card-label">Sensors</div>
+                <div class="network-card-value" id="network-aurn-sensors">-</div>
               </div>
-              <div class="summary-item">
-                <span class="summary-label">Highest PM2.5</span>
-                <span class="summary-value" id="summary-highest-value">-</span>
-                <span class="summary-connector" id="summary-highest-connector">-</span>
-                <span class="summary-name" id="summary-highest-name">-</span>
+              <div class="coverage-item">
+                <div
+                  class="coverage-tile"
+                  id="network-aurn-coverage-tile"
+                  role="img"
+                  aria-label="Coverage 0 out of 650 constituencies"
+                >
+                  <span class="coverage-top" id="network-aurn-covered">0</span>
+                  <span class="coverage-bottom" id="network-aurn-total">650</span>
+                </div>
+                <div class="coverage-meta">
+                  <div class="coverage-title">
+                    Coverage
+                    <span
+                      class="coverage-help"
+                      role="img"
+                      aria-label="Coverage help"
+                      title="Coverage counts a constituency if at least one site inside it is reporting for the current window."
+                    >?</span>
+                  </div>
+                  <div class="coverage-label">UK Parliamentary Constituencies</div>
+                  <div class="coverage-sublabel">≥1 reporting site (current window)</div>
+                </div>
               </div>
-              <div class="summary-item">
-                <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
-                <span class="summary-value" id="summary-lowest-value">-</span>
-                <span class="summary-connector" id="summary-lowest-connector">-</span>
-                <span class="summary-name" id="summary-lowest-name">-</span>
+              <div>
+                <div class="network-card-label">Average</div>
+                <div class="network-card-value" id="network-aurn-average">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Typical</div>
+                <div class="network-card-value" id="network-aurn-median">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Highest</div>
+                <div class="network-card-value" id="network-aurn-highest">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Lowest</div>
+                <div class="network-card-value" id="network-aurn-lowest">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Latest update</div>
+                <div class="network-card-value" id="network-aurn-latest">-</div>
               </div>
             </div>
-          </aside>
+          </div>
+        </div>
+        <div class="details-empty" id="details-empty">Select a constituency to see sensors.</div>
+        <div class="sensor-table-wrap" id="sensor-table-wrap" hidden>
+          <table class="sensor-table">
+            <thead>
+              <tr>
+                <th>Sensor</th>
+                <th>Network</th>
+                <th>PM2.5</th>
+                <th>Updated</th>
+                <th>Window</th>
+              </tr>
+            </thead>
+            <tbody id="sensor-table-body"></tbody>
+          </table>
         </div>
       </section>
     </main>
@@ -522,6 +1370,8 @@
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
       const metricParam = params.get("metric");
+      const colorScaleParam = params.get("color_scale");
+      const pollutantParam = params.get("pollutant");
       const mapDateParam = params.get("map_date");
       const pconVersionParam = params.get("pcon_version");
       const inferredProjectRef = inferProjectRefFromHost();
@@ -540,6 +1390,7 @@
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
         : "";
+      const activePollutant = pollutantParam || "PM2.5";
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
         {
@@ -561,11 +1412,28 @@
       const activeMap = pickMapConfig(mapDateKey);
       const HEX_DATA_URL = activeMap.hexUrl;
       const activePconVersion = pconVersionParam || activeMap.version;
-      const METRIC_LABELS = {
-        median: "Typical (median)",
-        mean: "Average (mean)",
-      };
+        const METRIC_LABELS = {
+          median: "Typical (median)",
+          mean: "Average (mean)",
+        };
       const MIN_VALID_PM25_VALUE = 0.09;
+      const MAX_VALID_PM25_VALUE = 500;
+      const WINDOW_OPTIONS = {
+        "2h": 2 * 60 * 60 * 1000,
+        "6h": 6 * 60 * 60 * 1000,
+        "1d": 24 * 60 * 60 * 1000,
+        "7d": 7 * 24 * 60 * 60 * 1000,
+        all: null,
+      };
+      const WINDOW_LABELS = {
+        "2h": "2 Hours",
+        "6h": "6 Hours",
+        "1d": "1 Day",
+        "7d": "7 Days",
+        all: "No limit",
+      };
+      const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
+      const TOTAL_PCON_COUNT = 650;
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
         { code: "sensorcommunity", label: "Sensor Community" },
@@ -609,21 +1477,53 @@
       const legendLabel = document.getElementById("legend-label");
       const legendMin = document.getElementById("legend-min");
       const legendMax = document.getElementById("legend-max");
+      const legendScale = document.getElementById("legend-scale");
+      const legendTicks = Array.from(document.querySelectorAll(".legend-tick"));
+      const legendTickLabels = Array.from(document.querySelectorAll(".legend-tick-label"));
       const summaryStations = document.getElementById("summary-stations");
       const summaryLowestValue = document.getElementById("summary-lowest-value");
+      const summaryLowestDatetime = document.getElementById("summary-lowest-datetime");
       const summaryLowestConnector = document.getElementById("summary-lowest-connector");
       const summaryLowestName = document.getElementById("summary-lowest-name");
       const summaryHighestValue = document.getElementById("summary-highest-value");
+      const summaryHighestDatetime = document.getElementById("summary-highest-datetime");
       const summaryHighestConnector = document.getElementById("summary-highest-connector");
       const summaryHighestName = document.getElementById("summary-highest-name");
       const tooltip = document.getElementById("tooltip");
+      const detailsTitle = document.getElementById("details-title");
+      const detailsMeta = document.getElementById("details-meta");
+      const detailsEmpty = document.getElementById("details-empty");
+      const detailsTableWrap = document.getElementById("sensor-table-wrap");
+      const detailsTableBody = document.getElementById("sensor-table-body");
+      const networkSummary = document.getElementById("network-summary");
+      const aurnSensors = document.getElementById("network-aurn-sensors");
+      const aurnCoverageTile = document.getElementById("network-aurn-coverage-tile");
+      const aurnCoverageCovered = document.getElementById("network-aurn-covered");
+      const aurnCoverageTotal = document.getElementById("network-aurn-total");
+      const aurnAverage = document.getElementById("network-aurn-average");
+      const aurnMedian = document.getElementById("network-aurn-median");
+      const aurnHighest = document.getElementById("network-aurn-highest");
+      const aurnLowest = document.getElementById("network-aurn-lowest");
+      const aurnLatest = document.getElementById("network-aurn-latest");
       const svg = d3.select("#hex-map");
-      const metricButtons = Array.from(document.querySelectorAll("[data-metric]"));
-      const connectorInputs = Array.from(document.querySelectorAll("input[data-connector]"));
-      const connectorAll = document.querySelector("input[data-connector='all']");
-      const connectorOptions = connectorInputs.filter((input) => input !== connectorAll);
+      const mapSettingsButton = document.querySelector(".map-settings");
+      const mapSettingsPanel = document.getElementById("map-settings-panel");
+      const mapSettingsClose = document.getElementById("map-settings-close");
+      const windowInputs = Array.from(document.querySelectorAll("input[name='averagingWindow']"));
+      const metricInputs = Array.from(document.querySelectorAll("input[name='metricSelect']"));
+      const metricGroup = document.querySelector(".metric-group");
+      const metricToggle = metricGroup ? metricGroup.querySelector(".metric-toggle") : null;
+      const colorScaleInputs = Array.from(document.querySelectorAll("input[name='colourScale']"));
+      const colorScaleGroup = document.querySelector(".colour-scale-group");
+      const colorScaleToggle = colorScaleGroup ? colorScaleGroup.querySelector(".colour-scale-toggle") : null;
+      const networkPanel = document.querySelector(".network-panel");
+      const networkList = document.getElementById("network-list");
+      const networkSelectAll = document.getElementById("network-select-all");
+      const networkDeselectAll = document.getElementById("network-deselect-all");
 
-      let currentMetric = metricParam === "mean" ? "mean" : "median";
+      let currentMetric = metricParam === "median" ? "median" : "mean";
+      let currentColorScale = colorScaleParam === "linear" ? "linear" : "power";
+      let currentWindow = "all";
       let hexData = null;
       let hexCells = [];
       let hexBounds = null;
@@ -636,9 +1536,13 @@
       let pconCodes = new Set();
       let boundaryPaths = [];
       let baseLatestRows = [];
+      let scopedLatestRows = [];
       let latestRows = [];
       let latestPollutant = null;
       let populationLookup = new Map();
+      let networkInputs = [];
+      let selectedPconCode = null;
+      let selectedCell = null;
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -678,11 +1582,36 @@
         return Number.isFinite(numeric) ? numeric : null;
       }
 
+      function clampPm25(value) {
+        const numeric = normalizeNumber(value);
+        if (numeric === null) {
+          return null;
+        }
+        if (numeric > MAX_VALID_PM25_VALUE) {
+          return null;
+        }
+        return numeric;
+      }
+
       function formatNumber(value) {
         if (value === null || value === undefined || Number.isNaN(value)) {
           return "-";
         }
         return value.toLocaleString();
+      }
+
+      function formatSensorCount(value) {
+        const count = Number.isFinite(value) ? value : 0;
+        const label = count === 1 ? "Sensor" : "Sensors";
+        return `${formatNumber(count)} ${label}`;
+      }
+
+      function formatCoveragePercent(covered, total) {
+        if (!total) {
+          return "0%";
+        }
+        const percent = (covered / total) * 100;
+        return `${percent.toFixed(1)}%`;
       }
 
       function formatValue(value) {
@@ -704,6 +1633,38 @@
         return parsed.toLocaleString();
       }
 
+      function formatShortTimestamp(value) {
+        if (!value) {
+          return "-";
+        }
+        const parsed = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return "-";
+        }
+        const day = String(parsed.getDate()).padStart(2, "0");
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const year = String(parsed.getFullYear()).slice(-2);
+        const hours = String(parsed.getHours()).padStart(2, "0");
+        const minutes = String(parsed.getMinutes()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+
+      function formatSummaryTimestamp(value) {
+        if (!value) {
+          return "-";
+        }
+        const parsed = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return "-";
+        }
+        const day = String(parsed.getDate()).padStart(2, "0");
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const year = String(parsed.getFullYear());
+        const hours = String(parsed.getHours()).padStart(2, "0");
+        const minutes = String(parsed.getMinutes()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+
       function parseDate(value) {
         if (!value) {
           return null;
@@ -715,6 +1676,118 @@
         return parsed;
       }
 
+      function normalizeWindowKey(value) {
+        if (!value || !(value in WINDOW_OPTIONS)) {
+          return "all";
+        }
+        return value;
+      }
+
+      function formatWindowLabel(value) {
+        return WINDOW_LABELS[value] || WINDOW_LABELS.all;
+      }
+
+      function getWindowCutoff() {
+        const windowMs = WINDOW_OPTIONS[currentWindow];
+        if (!windowMs) {
+          return null;
+        }
+        return Date.now() - windowMs;
+      }
+
+      function isTimestampInWindow(timestamp, cutoff) {
+        if (!cutoff) {
+          return true;
+        }
+        if (!timestamp) {
+          return false;
+        }
+        return timestamp.getTime() >= cutoff;
+      }
+
+      function setQueryParam(key, value) {
+        const url = new URL(window.location.href);
+        if (value === null || value === undefined || value === "") {
+          url.searchParams.delete(key);
+        } else {
+          url.searchParams.set(key, value);
+        }
+        window.history.replaceState({}, "", url);
+      }
+
+      function syncColorScaleInputs() {
+        colorScaleInputs.forEach((input) => {
+          input.checked = input.value === currentColorScale;
+        });
+        if (colorScaleGroup) {
+          colorScaleGroup.dataset.active = currentColorScale;
+        }
+      }
+
+      function applyColorScale(nextScale) {
+        if (!nextScale) {
+          return;
+        }
+        if (nextScale === currentColorScale) {
+          syncColorScaleInputs();
+          return;
+        }
+        currentColorScale = nextScale;
+        syncColorScaleInputs();
+        setQueryParam("color_scale", currentColorScale);
+        updateLegendScaleDescription();
+        renderMap();
+      }
+
+      function updateLegendScaleDescription() {
+        if (!legendScale) {
+          return;
+        }
+        const description = currentColorScale === "linear"
+          ? "Linear colour scale: values map directly; values above 50 are shown as 50+."
+          : "Power-eased colour scale: pulls low values toward mid-range; values above 50 are shown as 50+.";
+        legendScale.title = description;
+        legendScale.setAttribute("aria-label", description);
+      }
+
+      function openSettingsPanel() {
+        if (!mapSettingsPanel || !mapSettingsButton) {
+          return;
+        }
+        syncSettingsPanelWidth();
+        mapSettingsPanel.classList.add("open");
+        mapSettingsButton.setAttribute("aria-expanded", "true");
+      }
+
+      function closeSettingsPanel() {
+        if (!mapSettingsPanel || !mapSettingsButton) {
+          return;
+        }
+        mapSettingsPanel.classList.remove("open");
+        mapSettingsButton.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleSettingsPanel() {
+        if (!mapSettingsPanel) {
+          return;
+        }
+        if (mapSettingsPanel.classList.contains("open")) {
+          closeSettingsPanel();
+        } else {
+          openSettingsPanel();
+        }
+      }
+
+      function syncSettingsPanelWidth() {
+        if (!mapSettingsPanel || !networkPanel) {
+          return;
+        }
+        const panelWidth = networkPanel.getBoundingClientRect().width;
+        if (panelWidth > 0) {
+          mapSettingsPanel.style.width = `${panelWidth}px`;
+        }
+      }
+
       function resolveCssColor(name, fallback) {
         const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
         return value || fallback;
@@ -723,7 +1796,7 @@
       function resolveStationName(row) {
         return row?.display_name
           || row?.station?.display_name
-          || "Unknown station";
+          || "Unknown sensor";
       }
 
       function resolveConnectorCode(row) {
@@ -744,7 +1817,172 @@
           return label;
         }
         const code = resolveConnectorCode(row);
-        return code ? getConnectorLabelByCode(code) : "Unknown connector";
+        return code ? getConnectorLabelByCode(code) : "Unknown network";
+      }
+
+      function resolveNetworkMemberships(row) {
+        const memberships = row?.station?.station_network_memberships
+          || row?.station_network_memberships
+          || row?.station?.network_memberships
+          || row?.network_memberships
+          || [];
+        if (!Array.isArray(memberships)) {
+          return [];
+        }
+        return memberships.map((entry) => {
+          const code = entry?.network_code
+            || entry?.connector_code
+            || entry?.code
+            || null;
+          if (!code) {
+            return null;
+          }
+          return {
+            code,
+            label: entry?.network_label || entry?.label || null,
+            is_primary: Boolean(entry?.is_primary),
+          };
+        }).filter(Boolean);
+      }
+
+      function resolvePrimaryNetworkEntry(row) {
+        const memberships = resolveNetworkMemberships(row);
+        if (!memberships.length) {
+          return null;
+        }
+        const primary = memberships.find((entry) => entry.is_primary);
+        if (primary) {
+          return primary;
+        }
+        return memberships[0];
+      }
+
+      function resolvePrimaryNetworkLabel(row) {
+        const primary = resolvePrimaryNetworkEntry(row);
+        if (!primary) {
+          return null;
+        }
+        return primary.label || primary.code || null;
+      }
+
+      function resolveSecondaryNetworkLabels(row) {
+        const memberships = resolveNetworkMemberships(row);
+        if (memberships.length <= 1) {
+          return [];
+        }
+        const primary = resolvePrimaryNetworkEntry(row);
+        const primaryCode = primary?.code || null;
+        const primaryLabel = primary?.label || null;
+        const labels = memberships
+          .filter((entry) => {
+            if (!primary) {
+              return true;
+            }
+            if (primaryCode && entry.code === primaryCode) {
+              return false;
+            }
+            if (!primaryCode && primaryLabel && entry.label === primaryLabel) {
+              return false;
+            }
+            return entry !== primary;
+          })
+          .map((entry) => entry.label || entry.code)
+          .filter(Boolean);
+        return Array.from(new Set(labels));
+      }
+
+      function collectNetworkEntries(row) {
+        const memberships = resolveNetworkMemberships(row);
+        if (memberships.length) {
+          return memberships;
+        }
+        const fallbackCode = resolveConnectorCode(row);
+        if (!fallbackCode) {
+          return [];
+        }
+        return [{
+          code: fallbackCode,
+          label: row?.connector_label || row?.connector?.label || null,
+        }];
+      }
+
+      function buildNetworkDefs(rows) {
+        const byCode = new Map();
+        rows.forEach((row) => {
+          collectNetworkEntries(row).forEach((entry) => {
+            if (!entry.code || byCode.has(entry.code)) {
+              return;
+            }
+            byCode.set(entry.code, {
+              code: entry.code,
+              label: entry.label || entry.code,
+            });
+          });
+        });
+        return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
+      }
+
+      function getCurrentNetworkSelection() {
+        if (!networkInputs.length) {
+          return null;
+        }
+        return new Set(
+          networkInputs
+            .filter((input) => input.checked)
+            .map((input) => input.dataset.network)
+            .filter(Boolean)
+        );
+      }
+
+      function renderNetworkFilters(defs, selectedCodes, defaultAll) {
+        if (!networkList) {
+          return;
+        }
+        networkList.innerHTML = "";
+        networkInputs = [];
+        if (!defs.length) {
+          networkList.innerHTML = '<span class="network-empty">No networks available.</span>';
+          syncNetworkActionState();
+          return;
+        }
+        const fragment = document.createDocumentFragment();
+        const hasSelection = selectedCodes !== null && selectedCodes !== undefined;
+        defs.forEach((def) => {
+          const label = document.createElement("label");
+          label.className = "checkbox";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.dataset.network = def.code;
+          input.checked = defaultAll || (hasSelection ? selectedCodes.has(def.code) : true);
+          const text = document.createElement("span");
+          text.textContent = def.label;
+          label.append(input, text);
+          fragment.appendChild(label);
+        });
+        networkList.appendChild(fragment);
+        networkInputs = Array.from(networkList.querySelectorAll("input[data-network]"));
+        networkInputs.forEach((input) => input.addEventListener("change", handleNetworkToggle));
+        syncNetworkActionState();
+      }
+
+      function syncNetworkActionState() {
+        if (!networkSelectAll || !networkDeselectAll) {
+          return;
+        }
+        const hasNetworks = networkInputs.length > 0;
+        networkSelectAll.disabled = !hasNetworks;
+        networkDeselectAll.disabled = !hasNetworks;
+        if (!hasNetworks) {
+          return;
+        }
+        const allChecked = networkInputs.every((input) => input.checked);
+        const noneChecked = networkInputs.every((input) => !input.checked);
+        networkSelectAll.disabled = allChecked;
+        networkDeselectAll.disabled = noneChecked;
+      }
+
+      function resolveNetworkCodes(row) {
+        return collectNetworkEntries(row).map((entry) => entry.code);
       }
 
       function resolvePconCode(row) {
@@ -768,7 +2006,7 @@
       }
 
       function resolveLatestValue(row) {
-        return normalizeNumber(
+        return clampPm25(
           row?.last_value
           ?? row?.latest_value
           ?? row?.value
@@ -776,6 +2014,21 @@
           ?? row?.lastValue
           ?? row?.latestValue
         );
+      }
+
+      function resolveLatestTimestamp(row) {
+        return parseDate(row?.last_value_at || row?.observed_at || row?.latest_value_at);
+      }
+
+      function filterRowsByWindow(rows) {
+        const cutoff = getWindowCutoff();
+        if (!cutoff) {
+          return rows;
+        }
+        return rows.filter((row) => {
+          const timestamp = resolveLatestTimestamp(row);
+          return isTimestampInWindow(timestamp, cutoff);
+        });
       }
 
       function extractPollutantText(row) {
@@ -802,6 +2055,124 @@
         return isPm25Text(extractPollutantText(row));
       }
 
+      function getRowsForActivePollutant(rows) {
+        const pollutantHint = typeof latestPollutant === "string"
+          ? latestPollutant.toLowerCase()
+          : "";
+        const useAllPm25 = isPm25Text(pollutantHint) || (!pollutantHint && rows.length > 0);
+        return useAllPm25 ? rows : rows.filter((row) => isPm25Row(row));
+      }
+
+      function collectStationEntries(rows, pconCode) {
+        const stationMap = new Map();
+        rows.forEach((item, index) => {
+          if (resolvePconCode(item) !== pconCode) {
+            return;
+          }
+          const value = resolveLatestValue(item);
+          if (!Number.isFinite(value)) {
+            return;
+          }
+          const stationKey = resolveStationKey(item) || `${pconCode}-${index}`;
+          const timestamp = resolveLatestTimestamp(item);
+          const existing = stationMap.get(stationKey);
+          if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
+            stationMap.set(stationKey, { row: item, value, timestamp });
+          }
+        });
+        return Array.from(stationMap.values());
+      }
+
+      function rowMatchesNetwork(row, matchers) {
+        const entries = collectNetworkEntries(row);
+        return entries.some((entry) => {
+          const label = `${entry.code || ""} ${entry.label || ""}`.toLowerCase();
+          return matchers.some((token) => label.includes(token));
+        });
+      }
+
+      function collectNetworkEntriesByMatcher(rows, matchers) {
+        const stationMap = new Map();
+        rows.forEach((item, index) => {
+          if (!rowMatchesNetwork(item, matchers)) {
+            return;
+          }
+          const value = resolveLatestValue(item);
+          if (!Number.isFinite(value)) {
+            return;
+          }
+          const stationKey = resolveStationKey(item) || `network-${index}`;
+          const timestamp = resolveLatestTimestamp(item);
+          const existing = stationMap.get(stationKey);
+          if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
+            stationMap.set(stationKey, { row: item, value, timestamp });
+          }
+        });
+        return Array.from(stationMap.values());
+      }
+
+      function computeNetworkSummary(rows, matchers) {
+        const scopedRows = getRowsForActivePollutant(rows);
+        const entries = collectNetworkEntriesByMatcher(scopedRows, matchers);
+        const totalCount = entries.length;
+        const cutoff = getWindowCutoff();
+        const reportingEntries = entries.filter((entry) => entry.timestamp
+          && isTimestampInWindow(entry.timestamp, cutoff));
+        const values = reportingEntries.map((entry) => entry.value).filter((value) => Number.isFinite(value));
+        if (!values.length) {
+          return {
+            totalCount,
+            windowCount: reportingEntries.length,
+            mean: null,
+            median: null,
+            highest: null,
+            lowest: null,
+            coverage: 0,
+            latestTimestamp: null,
+          };
+        }
+        const sorted = [...values].sort((a, b) => a - b);
+        const midpoint = Math.floor(sorted.length / 2);
+        const median = sorted.length % 2 === 0
+          ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
+          : sorted[midpoint];
+        const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+        let highest = reportingEntries[0];
+        let lowest = reportingEntries[0];
+        reportingEntries.forEach((entry) => {
+          if (entry.value > highest.value) {
+            highest = entry;
+          }
+          if (entry.value < lowest.value) {
+            lowest = entry;
+          }
+        });
+        const coverage = new Set(
+          reportingEntries
+            .map((entry) => resolvePconCode(entry.row))
+            .filter(Boolean)
+        ).size;
+        const latestTimestamp = reportingEntries.reduce((latest, entry) => {
+          if (!entry.timestamp) {
+            return latest;
+          }
+          if (!latest || entry.timestamp > latest) {
+            return entry.timestamp;
+          }
+          return latest;
+        }, null);
+        return {
+          totalCount,
+          windowCount: reportingEntries.length,
+          mean,
+          median,
+          highest,
+          lowest,
+          coverage,
+          latestTimestamp,
+        };
+      }
+
       function updateSummary() {
         if (!pconRows.length) {
           summaryStations.textContent = "-";
@@ -813,17 +2184,21 @@
           summaryStations.textContent = formatNumber(totalStations);
         }
 
-        const pollutantHint = typeof latestPollutant === "string"
-          ? latestPollutant.toLowerCase()
-          : "";
-        const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && latestRows.length > 0);
-        const rowsForSummary = hasPm25Hint
-          ? latestRows
-          : latestRows.filter((row) => isPm25Row(row));
-        const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
+        const summaryBaseRows = filterRowsByWindow(scopedLatestRows);
+        const rowsForSummary = getRowsForActivePollutant(summaryBaseRows);
+        let rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
+        if (!rowsWithPcon.length && summaryBaseRows.length) {
+          const pollutantHint = typeof latestPollutant === "string"
+            ? latestPollutant.toLowerCase()
+            : "";
+          const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && summaryBaseRows.length > 0);
+          if (!hasPm25Hint) {
+            rowsWithPcon = summaryBaseRows.filter((row) => resolvePconCode(row));
+          }
+        }
         let candidates = rowsWithPcon
           .map((row) => {
-            const value = normalizeNumber(row.last_value);
+            const value = resolveLatestValue(row);
             if (!Number.isFinite(value)) {
               return null;
             }
@@ -831,27 +2206,13 @@
           })
           .filter(Boolean);
 
-        if (!candidates.length && latestRows.length && !hasPm25Hint) {
-          const fallback = latestRows
-            .filter((row) => resolvePconCode(row))
-            .map((row) => {
-              const value = normalizeNumber(row.last_value);
-              if (!Number.isFinite(value)) {
-                return null;
-              }
-              return { row, value };
-            })
-            .filter(Boolean);
-          if (fallback.length) {
-            candidates = fallback;
-          }
-        }
-
         if (!candidates.length) {
           summaryLowestValue.textContent = "-";
+          summaryLowestDatetime.textContent = "-";
           summaryLowestConnector.textContent = "-";
           summaryLowestName.textContent = "No PM2.5 data";
           summaryHighestValue.textContent = "-";
+          summaryHighestDatetime.textContent = "-";
           summaryHighestConnector.textContent = "-";
           summaryHighestName.textContent = "No PM2.5 data";
           return;
@@ -874,10 +2235,12 @@
           }
         }
 
-        summaryLowestValue.textContent = `${formatValue(lowest.value)} ug/m3`;
+        summaryLowestValue.textContent = `${formatValue(lowest.value)} µg/m³`;
+        summaryLowestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(lowest.row));
         summaryLowestConnector.textContent = resolveConnectorLabel(lowest.row);
         summaryLowestName.textContent = resolveStationName(lowest.row);
-        summaryHighestValue.textContent = `${formatValue(highest.value)} ug/m3`;
+        summaryHighestValue.textContent = `${formatValue(highest.value)} µg/m³`;
+        summaryHighestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(highest.row));
         summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
         summaryHighestName.textContent = resolveStationName(highest.row);
       }
@@ -887,16 +2250,158 @@
         rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
       }
 
-      function updateLegend(minValue, maxValue) {
-        if (minValue === null || maxValue === null) {
-          legendLabel.textContent = "No PM2.5 values";
+      function updateLegend(minValue, maxValue, capValue) {
+        legendLabel.textContent = `${METRIC_LABELS[currentMetric]} · Window: ${formatWindowLabel(currentWindow)}`;
+        if (minValue === null || maxValue === null || capValue === null) {
           legendMin.textContent = "-";
           legendMax.textContent = "-";
           return;
         }
-        legendLabel.textContent = METRIC_LABELS[currentMetric];
         legendMin.textContent = formatValue(minValue);
-        legendMax.textContent = formatValue(maxValue);
+        legendMax.textContent = `${formatValue(capValue)}+`;
+      }
+
+      function mapValueToT(value, capValue) {
+        if (!Number.isFinite(value) || !Number.isFinite(capValue) || capValue <= 0) {
+          return 0;
+        }
+        const clamped = Math.max(0, Math.min(capValue, value));
+        const ratio = clamped / capValue;
+        if (currentColorScale === "linear") {
+          return Math.max(0, Math.min(1, ratio));
+        }
+        const exponent = 0.8;
+        const base = Math.pow(ratio, exponent);
+        const boosted = base + 0.05 * base * base; // small top boost to keep 40 near ~87%
+        return Math.max(0, Math.min(1, boosted));
+      }
+
+      function updateLegendTicks(capValue) {
+        if (!legendTicks.length || !legendTickLabels.length) {
+          return;
+        }
+        const updatePosition = (element) => {
+          const value = Number(element.dataset.value);
+          if (!Number.isFinite(value)) {
+            return;
+          }
+          const t = mapValueToT(value, capValue);
+          element.style.left = `${(t * 100).toFixed(1)}%`;
+        };
+        legendTicks.forEach(updatePosition);
+        legendTickLabels.forEach(updatePosition);
+        if (legendScale) {
+          legendScale.classList.add("is-ready");
+        }
+      }
+
+      function setSelectedCell(cell) {
+        selectedCell = cell || null;
+        selectedPconCode = cell?.pcon_code || null;
+        updateDetailsPanel();
+      }
+
+      function updateDetailsPanel() {
+        if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
+          return;
+        }
+        if (!selectedPconCode) {
+          detailsTitle.textContent = "All Sensors";
+          detailsMeta.textContent = "Network summary for the current window.";
+          detailsEmpty.hidden = true;
+          detailsTableWrap.hidden = true;
+          networkSummary.hidden = false;
+          updateNetworkSummary();
+          detailsTableBody.innerHTML = "";
+          return;
+        }
+        networkSummary.hidden = true;
+        const row = pconLookup.get(selectedPconCode);
+        const areaName = selectedCell?.pcon_name || row?.pcon_name || selectedPconCode;
+        detailsTitle.textContent = areaName;
+        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
+        const stationEntries = collectStationEntries(scopedRows, selectedPconCode);
+        if (!stationEntries.length) {
+          detailsMeta.textContent = formatSensorCount(0);
+          detailsEmpty.textContent = "No sensors found for this constituency.";
+          detailsEmpty.hidden = false;
+          detailsTableWrap.hidden = true;
+          networkSummary.hidden = true;
+          detailsTableBody.innerHTML = "";
+          return;
+        }
+        const cutoff = getWindowCutoff();
+        const entries = stationEntries.map((entry) => ({
+          ...entry,
+          inWindow: isTimestampInWindow(entry.timestamp, cutoff),
+        }));
+        entries.sort((a, b) => {
+          if (a.inWindow !== b.inWindow) {
+            return a.inWindow ? -1 : 1;
+          }
+          return (b.value ?? -Infinity) - (a.value ?? -Infinity);
+        });
+        const excludedCount = entries.filter((entry) => !entry.inWindow).length;
+        detailsMeta.textContent = currentWindow === "all"
+          ? formatSensorCount(entries.length)
+          : `${formatSensorCount(entries.length)} (${formatNumber(excludedCount)} outside window)`;
+        detailsEmpty.hidden = true;
+        detailsTableWrap.hidden = false;
+        networkSummary.hidden = true;
+        detailsTableBody.innerHTML = entries.map((entry) => {
+          const stationName = resolveStationName(entry.row);
+          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const updatedText = formatSummaryTimestamp(entry.timestamp);
+          const windowLabel = entry.inWindow ? "Included" : "Outside window";
+          const rowClass = entry.inWindow ? "" : "sensor-row--excluded";
+          const statusClass = entry.inWindow
+            ? "sensor-status"
+            : "sensor-status sensor-status--excluded";
+          return `
+            <tr class="${rowClass}">
+              <td>${stationName}</td>
+              <td>${networkLabel}</td>
+              <td>${formatValue(entry.value)} µg/m³</td>
+              <td>${updatedText}</td>
+              <td class="${statusClass}">${windowLabel}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      function updateNetworkSummary() {
+        if (!aurnSensors || !aurnCoverageTile || !aurnCoverageCovered || !aurnCoverageTotal || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
+          return;
+        }
+        const summary = computeNetworkSummary(scopedLatestRows, GOVUK_NETWORK_MATCHERS);
+        const sensorLabel = currentWindow === "all"
+          ? formatNumber(summary.totalCount)
+          : `${formatNumber(summary.windowCount)} in window / ${formatNumber(summary.totalCount)} total`;
+        aurnSensors.textContent = summary.totalCount ? sensorLabel : "0";
+        const covered = summary.coverage;
+        const total = TOTAL_PCON_COUNT;
+        aurnCoverageCovered.textContent = formatNumber(covered);
+        aurnCoverageTotal.textContent = formatNumber(total);
+        aurnCoverageTile.setAttribute(
+          "aria-label",
+          `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} constituencies`
+        );
+        aurnCoverageTile.title = `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} constituencies (${formatCoveragePercent(covered, total)})`;
+        aurnAverage.textContent = Number.isFinite(summary.mean)
+          ? `${formatValue(summary.mean)} µg/m³`
+          : "-";
+        aurnMedian.textContent = Number.isFinite(summary.median)
+          ? `${formatValue(summary.median)} µg/m³`
+          : "-";
+        aurnHighest.textContent = summary.highest
+          ? `${formatValue(summary.highest.value)} µg/m³ · ${formatSummaryTimestamp(summary.highest.timestamp)}`
+          : "-";
+        aurnLowest.textContent = summary.lowest
+          ? `${formatValue(summary.lowest.value)} µg/m³ · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
+          : "-";
+        aurnLatest.textContent = summary.latestTimestamp
+          ? formatSummaryTimestamp(summary.latestTimestamp)
+          : "-";
       }
 
       function clearMap() {
@@ -1228,19 +2733,22 @@
       }
 
       function applyMetricState() {
-        metricButtons.forEach((button) => {
-          const isActive = button.dataset.metric === currentMetric;
-          button.classList.toggle("active", isActive);
+        metricInputs.forEach((input) => {
+          input.checked = input.value === currentMetric;
         });
+        if (metricGroup) {
+          metricGroup.dataset.active = currentMetric;
+        }
       }
 
       function getMetricValue(row) {
         if (!row) {
           return null;
         }
-        return currentMetric === "mean"
-          ? normalizeNumber(row.mean_value)
-          : normalizeNumber(row.median_value);
+        const raw = currentMetric === "mean"
+          ? row.mean_value
+          : row.median_value;
+        return clampPm25(raw);
       }
 
       function getStationCount(row) {
@@ -1251,48 +2759,30 @@
         return count === null ? 0 : count;
       }
 
-      function getActiveConnectorIds() {
-        if (!connectorAll) {
+      function getActiveNetworkIds() {
+        if (!networkInputs.length) {
           return null;
         }
-        const allSpecificChecked = connectorOptions.length
-          ? connectorOptions.every((input) => input.checked)
-          : false;
-        if (connectorAll.checked || allSpecificChecked) {
-          return null;
-        }
-        const active = connectorOptions
+        const active = networkInputs
           .filter((input) => input.checked)
-          .map((input) => input.dataset.connector)
+          .map((input) => input.dataset.network)
           .filter(Boolean);
+        if (!active.length) {
+          return new Set();
+        }
+        if (active.length === networkInputs.length) {
+          return null;
+        }
         return new Set(active);
       }
 
-      function syncConnectorAllState() {
-        if (!connectorAll) {
-          return;
-        }
-        const allChecked = connectorOptions.every((input) => input.checked);
-        connectorAll.checked = allChecked;
-      }
-
-      function filterLatestRowsByConnector(rows, connectorIds) {
+      function filterLatestRowsByNetwork(rows, networkIds) {
         if (!rows.length) {
           return [];
         }
         return rows.filter((row) => {
-          const connectorCode = resolveConnectorCode(row);
-          return connectorCode ? connectorIds.has(connectorCode) : false;
-        });
-      }
-
-      function filterPconRowsByConnector(rows, connectorIds) {
-        if (!rows.length) {
-          return [];
-        }
-        return rows.filter((row) => {
-          const connectorCode = resolveConnectorCode(row);
-          return connectorCode ? connectorIds.has(connectorCode) : false;
+          const codes = resolveNetworkCodes(row);
+          return codes.some((code) => networkIds.has(code));
         });
       }
 
@@ -1356,49 +2846,65 @@
         return rowsForMap;
       }
 
-      function applyConnectorFilters() {
+      function applyNetworkFilters() {
         if (!basePconRows.length && !baseLatestRows.length) {
           return;
         }
-        const connectorIds = getActiveConnectorIds();
-        if (connectorIds === null) {
-          pconRows = basePconRows;
-          latestRows = baseLatestRows;
-        } else if (connectorIds.size === 0) {
-          pconRows = [];
-          latestRows = [];
-        } else {
-          const filteredLatest = filterLatestRowsByConnector(baseLatestRows, connectorIds);
-          latestRows = filteredLatest;
-          const derived = buildPconRowsFromLatest(filteredLatest);
-          if (derived.length) {
-            pconRows = derived;
-          } else {
-            pconRows = filterPconRowsByConnector(basePconRows, connectorIds);
-          }
+        const networkIds = getActiveNetworkIds();
+        let filteredLatest = [];
+        if (networkIds === null) {
+          filteredLatest = baseLatestRows;
+        } else if (networkIds.size > 0) {
+          filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkIds);
         }
+        scopedLatestRows = filteredLatest;
+        latestRows = filterRowsByWindow(filteredLatest);
+        const derived = latestRows.length ? buildPconRowsFromLatest(latestRows) : [];
+        pconRows = derived;
         pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
         updateRowCountText();
         updateSummary();
         renderMap();
+        updateDetailsPanel();
       }
 
-      function handleConnectorToggle(event) {
-        if (!connectorAll) {
+      function positionTooltip(event) {
+        const left = event.clientX + 12;
+        const pointerY = event.clientY;
+        const viewportTop = 0;
+        const viewportBottom = window.innerHeight;
+        const tooltipHeight = tooltip.offsetHeight || 0;
+        let top = pointerY - 12;
+        if (top + tooltipHeight > viewportBottom) {
+          top = pointerY - tooltipHeight - 12;
+        }
+        if (top < viewportTop + 8) {
+          top = viewportTop + 8;
+        }
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function handleNetworkAction(event) {
+        if (!networkInputs.length) {
           return;
         }
-        if (event.target === connectorAll) {
-          if (connectorAll.checked) {
-            connectorOptions.forEach((input) => {
-              input.checked = true;
-            });
-          }
-        } else if (!event.target.checked && connectorAll.checked) {
-          connectorAll.checked = false;
-        } else {
-          syncConnectorAllState();
+        if (event.target === networkSelectAll) {
+          networkInputs.forEach((input) => {
+            input.checked = true;
+          });
+        } else if (event.target === networkDeselectAll) {
+          networkInputs.forEach((input) => {
+            input.checked = false;
+          });
         }
-        applyConnectorFilters();
+        syncNetworkActionState();
+        applyNetworkFilters();
+      }
+
+      function handleNetworkToggle() {
+        syncNetworkActionState();
+        applyNetworkFilters();
       }
 
       function renderMap() {
@@ -1420,12 +2926,12 @@
         );
         let colorScale = null;
         if (maxValue !== null) {
-          colorScale = d3.scaleSequential()
-            .domain([domainMin, domainMax])
-            .interpolator(d3.interpolateRgbBasis(palette))
-            .clamp(true);
+          const interpolate = d3.interpolateRgbBasis(palette);
+          colorScale = (value) => interpolate(mapValueToT(value, domainMax));
         }
-        updateLegend(maxValue === null ? null : domainMin, maxValue === null ? null : domainMax);
+        updateLegend(maxValue === null ? null : domainMin, maxValue, domainMax);
+        updateLegendScaleDescription();
+        updateLegendTicks(domainMax);
 
         const hexGroup = svg.append("g");
         hexGroup.selectAll("polygon")
@@ -1440,21 +2946,19 @@
             const row = pconLookup.get(cell.pcon_code);
             const value = getMetricValue(row);
             if (!colorScale || !Number.isFinite(value)) {
-              return "var(--clay)";
+              return "var(--no-data)";
             }
             return colorScale(value);
+          })
+          .on("click", (event, cell) => {
+            event.stopPropagation();
+            setSelectedCell(cell);
           })
           .on("mouseenter", (event, cell) => {
             const row = pconLookup.get(cell.pcon_code);
             const metricValue = getMetricValue(row);
             const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown constituency";
             const regionLabel = cell.region_name || cell.region_code || "Unknown region";
-            const stationCount = getStationCount(row);
-            const stationLabel = stationCount === 1
-              ? "single site"
-              : stationCount > 1
-                ? `${formatNumber(stationCount)} stations`
-                : "No stations";
             const populationEntry = populationLookup.get(cell.pcon_code);
             const populationValue = normalizeNumber(populationEntry?.population_value);
             const populationDate = parseDate(populationEntry?.reference_date);
@@ -1463,26 +2967,24 @@
               ? "Population: n/a"
               : `Population${populationYear ? ` (${populationYear})` : ""}: ${formatNumber(populationValue)}`;
             const valueLabel = Number.isFinite(metricValue)
-              ? `${formatValue(metricValue)} ug/m3`
+              ? `${formatValue(metricValue)} µg/m³`
               : "No PM2.5 data";
-            const updatedLabel = row?.latest_value_at
-              ? `Updated ${formatTimestamp(row.latest_value_at)}`
-              : "Updated unknown";
+            const rowsForTooltip = getRowsForActivePollutant(latestRows)
+              .filter((item) => resolvePconCode(item) === cell.pcon_code);
+            const stationEntries = collectStationEntries(rowsForTooltip, cell.pcon_code);
+            const sensorLabel = formatSensorCount(stationEntries.length);
             tooltip.innerHTML = `
-              <strong>${areaName}</strong><br />
-              Region: ${regionLabel}<br />
-              ${METRIC_LABELS[currentMetric]}: ${valueLabel}<br />
-              ${populationLabel}<br />
-              ${stationLabel}<br />
-              ${updatedLabel}
+              <div class="tooltip-title">${areaName}</div>
+              <div class="tooltip-line">Region: ${regionLabel}</div>
+              <div class="tooltip-line">${populationLabel}</div>
+              <div class="tooltip-line">Average: ${valueLabel}</div>
+              <div class="tooltip-line">${sensorLabel}</div>
             `;
             tooltip.classList.add("visible");
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY - 12}px`;
+            positionTooltip(event);
           })
           .on("mousemove", (event) => {
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY - 12}px`;
+            positionTooltip(event);
           })
           .on("mouseleave", () => {
             tooltip.classList.remove("visible");
@@ -1509,6 +3011,9 @@
         errorEl.textContent = "";
         latestPollutant = null;
         populationLookup = new Map();
+        const previousSelection = getCurrentNetworkSelection();
+        const hadAllSelected = networkInputs.length > 0
+          && networkInputs.every((input) => input.checked);
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
           statusEl.textContent = "Error";
@@ -1525,7 +3030,7 @@
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
           const latestUrl = new URL(LATEST_URL);
-          latestUrl.searchParams.set("pollutant", "PM2.5");
+          latestUrl.searchParams.set("pollutant", activePollutant);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
           const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
@@ -1580,12 +3085,18 @@
           }
           if (latestResponse && latestResponse.ok) {
             const latestPayload = await latestResponse.json();
-            baseLatestRows = latestPayload?.data || [];
+            const latestRaw = latestPayload?.data || [];
+            baseLatestRows = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
             latestPollutant = latestPayload?.pollutant || null;
             console.log("uk_aq_latest payload", latestPayload);
           } else {
             baseLatestRows = [];
           }
+          renderNetworkFilters(
+            buildNetworkDefs(baseLatestRows),
+            previousSelection,
+            hadAllSelected
+          );
           if (populationResponse && populationResponse.ok) {
             const populationPayload = await populationResponse.json();
             const populationRows = Array.isArray(populationPayload)
@@ -1603,7 +3114,7 @@
           } else {
             populationLookup = new Map();
           }
-          applyConnectorFilters();
+          applyNetworkFilters();
           statusEl.textContent = "Live";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -1612,9 +3123,12 @@
         }
       }
 
-      metricButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const metric = button.dataset.metric;
+      metricInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+          if (!input.checked) {
+            return;
+          }
+          const metric = input.value;
           if (!metric || metric === currentMetric) {
             return;
           }
@@ -1624,17 +3138,134 @@
         });
       });
 
-      connectorInputs.forEach((input) => {
-        input.addEventListener("change", handleConnectorToggle);
+      colorScaleInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            applyColorScale(input.value);
+          }
+        });
       });
+
+      windowInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+          if (!input.checked) {
+            return;
+          }
+          currentWindow = normalizeWindowKey(input.value);
+          applyNetworkFilters();
+        });
+      });
+
+      if (colorScaleToggle) {
+        colorScaleToggle.addEventListener("click", (event) => {
+          event.preventDefault();
+          const nextScale = currentColorScale === "power" ? "linear" : "power";
+          applyColorScale(nextScale);
+          const nextInput = colorScaleInputs.find((input) => input.value === nextScale);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        });
+      }
+
+      if (metricToggle) {
+        metricToggle.addEventListener("click", (event) => {
+          event.preventDefault();
+          const nextMetric = currentMetric === "mean" ? "median" : "mean";
+          currentMetric = nextMetric;
+          applyMetricState();
+          renderMap();
+          const nextInput = metricInputs.find((input) => input.value === nextMetric);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        });
+      }
+
+      if (colorScaleGroup) {
+        colorScaleGroup.addEventListener("keydown", (event) => {
+          if (event.key !== " " && event.key !== "Spacebar") {
+            return;
+          }
+          const activeElement = document.activeElement;
+          if (!activeElement || !colorScaleInputs.includes(activeElement)) {
+            return;
+          }
+          event.preventDefault();
+          const nextScale = currentColorScale === "power" ? "linear" : "power";
+          applyColorScale(nextScale);
+          const nextInput = colorScaleInputs.find((input) => input.value === nextScale);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        });
+      }
+
+      if (metricGroup) {
+        metricGroup.addEventListener("keydown", (event) => {
+          if (event.key !== " " && event.key !== "Spacebar") {
+            return;
+          }
+          const activeElement = document.activeElement;
+          if (!activeElement || !metricInputs.includes(activeElement)) {
+            return;
+          }
+          event.preventDefault();
+          const nextMetric = currentMetric === "mean" ? "median" : "mean";
+          currentMetric = nextMetric;
+          applyMetricState();
+          renderMap();
+          const nextInput = metricInputs.find((input) => input.value === nextMetric);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        });
+      }
+
+      if (mapSettingsButton) {
+        mapSettingsButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleSettingsPanel();
+        });
+      }
+
+      if (mapSettingsClose) {
+        mapSettingsClose.addEventListener("click", (event) => {
+          event.stopPropagation();
+          closeSettingsPanel();
+        });
+      }
+
+      document.addEventListener("click", (event) => {
+        if (!mapSettingsPanel || !mapSettingsPanel.classList.contains("open")) {
+          return;
+        }
+        const target = event.target;
+        if (mapSettingsPanel.contains(target) || (mapSettingsButton && mapSettingsButton.contains(target))) {
+          return;
+        }
+        closeSettingsPanel();
+      });
+
+      if (networkSelectAll) {
+        networkSelectAll.addEventListener("click", handleNetworkAction);
+      }
+      if (networkDeselectAll) {
+        networkDeselectAll.addEventListener("click", handleNetworkAction);
+      }
 
       document.getElementById("refresh").addEventListener("click", loadMapData);
       window.addEventListener("resize", () => {
         if (statusEl.textContent === "Live") {
           renderMap();
         }
+        syncSettingsPanelWidth();
       });
       applyMetricState();
+      currentWindow = normalizeWindowKey(windowInputs.find((input) => input.checked)?.value);
+      syncSettingsPanelWidth();
+      syncColorScaleInputs();
+      updateLegendScaleDescription();
       loadMapData();
       setInterval(loadMapData, 10 * 60 * 1000);
     </script>

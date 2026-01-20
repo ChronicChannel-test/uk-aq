@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LAD GeoJSON Side-by-Side</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Tiresias Infofont", "Tiresias", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f6f7f9;
+        color: #1c2330;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0 0 20px;
+        color: #445368;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+      }
+
+      .panel {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 12px 24px rgba(19, 29, 46, 0.08);
+        display: grid;
+        gap: 12px;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button,
+      .file-label {
+        border: 1px solid #d6dbe3;
+        background: #f6f8fb;
+        color: #1c2330;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .file-label input {
+        display: none;
+      }
+
+      .status {
+        font-size: 13px;
+        color: #596a84;
+      }
+
+      .meta {
+        font-size: 12px;
+        color: #6b7b94;
+      }
+
+      svg {
+        width: 100%;
+        height: 520px;
+        background: #eef1f5;
+        border-radius: 12px;
+      }
+
+      .map-path {
+        fill: #d8e4ef;
+        stroke: #31445d;
+        stroke-width: 0.6;
+        vector-effect: non-scaling-stroke;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        svg {
+          height: 480px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>LAD GeoJSON side-by-side</h1>
+      <p>Load each GeoJSON and compare shapes side by side.</p>
+
+      <div class="grid">
+        <section class="panel" data-panel="left">
+          <h2 class="panel-title">Current (2023) – uk_aq_la_hex_2023.json</h2>
+          <div class="controls">
+            <button type="button" data-action="load-default">Load default</button>
+            <label class="file-label">
+              Load file
+              <input type="file" accept=".json,.geojson" data-action="load-file" />
+            </label>
+          </div>
+          <div class="status" data-role="status">Waiting for file.</div>
+          <div class="meta" data-role="meta"></div>
+          <svg data-role="map" aria-label="Left GeoJSON preview"></svg>
+        </section>
+
+        <section class="panel" data-panel="right">
+          <h2 class="panel-title">Latest (2025) – LAD_MAY_2025_UK_BGC_V2.geojson</h2>
+          <div class="controls">
+            <button type="button" data-action="load-default">Load default</button>
+            <label class="file-label">
+              Load file
+              <input type="file" accept=".json,.geojson" data-action="load-file" />
+            </label>
+          </div>
+          <div class="status" data-role="status">Waiting for file.</div>
+          <div class="meta" data-role="meta"></div>
+          <svg data-role="map" aria-label="Right GeoJSON preview"></svg>
+        </section>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+    <script>
+      const DEFAULT_SOURCES = {
+        left: "data/LAD/uk_aq_la_hex_2023.json",
+        right: "data/LAD/LAD_MAY_2025_UK_BGC_V2_6173306121795233386.geojson",
+      };
+
+      const panels = Array.from(document.querySelectorAll("[data-panel]")).map((panel) => {
+        const id = panel.dataset.panel;
+        return {
+          id,
+          panel,
+          status: panel.querySelector("[data-role='status']"),
+          meta: panel.querySelector("[data-role='meta']"),
+          svg: panel.querySelector("[data-role='map']"),
+          defaultUrl: DEFAULT_SOURCES[id],
+        };
+      });
+
+      function summarizeGeojson(data) {
+        if (!data || data.type !== "FeatureCollection") {
+          return "Not a GeoJSON FeatureCollection.";
+        }
+        const features = Array.isArray(data.features) ? data.features : [];
+        if (!features.length) {
+          return "FeatureCollection with 0 features.";
+        }
+        const props = features[0].properties || {};
+        const keys = Object.keys(props).slice(0, 8);
+        const keyText = keys.length ? `Sample properties: ${keys.join(", ")}` : "No properties found.";
+        return `Features: ${features.length}. ${keyText}`;
+      }
+
+      function renderGeojson(target, data) {
+        const svg = d3.select(target.svg);
+        svg.selectAll("*").remove();
+        if (!data || data.type !== "FeatureCollection") {
+          target.status.textContent = "Unsupported file (expected GeoJSON FeatureCollection).";
+          target.meta.textContent = "";
+          return;
+        }
+        const width = target.svg.clientWidth || 600;
+        const height = target.svg.clientHeight || 520;
+        const projection = d3.geoIdentity().reflectY(true).fitSize([width, height], data);
+        const path = d3.geoPath(projection);
+        svg.append("g")
+          .selectAll("path")
+          .data(data.features || [])
+          .join("path")
+          .attr("class", "map-path")
+          .attr("d", path);
+        target.status.textContent = "Loaded.";
+        target.meta.textContent = summarizeGeojson(data);
+      }
+
+      async function loadFromUrl(target) {
+        target.status.textContent = `Loading ${target.defaultUrl}...`;
+        try {
+          const response = await fetch(target.defaultUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const data = await response.json();
+          renderGeojson(target, data);
+        } catch (error) {
+          target.status.textContent = `Failed to load default (${error.message || error}).`;
+          target.meta.textContent = "Use the file picker to load a local file.";
+        }
+      }
+
+      function loadFromFile(target, file) {
+        if (!file) {
+          return;
+        }
+        target.status.textContent = `Loading ${file.name}...`;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            renderGeojson(target, data);
+          } catch (error) {
+            target.status.textContent = "Invalid JSON file.";
+            target.meta.textContent = "";
+          }
+        };
+        reader.onerror = () => {
+          target.status.textContent = "Could not read file.";
+          target.meta.textContent = "";
+        };
+        reader.readAsText(file);
+      }
+
+      panels.forEach((panel) => {
+        const loadDefaultButton = panel.panel.querySelector("[data-action='load-default']");
+        const fileInput = panel.panel.querySelector("[data-action='load-file']");
+        loadDefaultButton.addEventListener("click", () => loadFromUrl(panel));
+        fileInput.addEventListener("change", (event) => {
+          const file = event.target.files && event.target.files[0];
+          loadFromFile(panel, file);
+        });
+      });
+    </script>
+  </body>
+</html>
