@@ -2557,15 +2557,17 @@
       }
 
       function getSortTooltip(columnKey, activeKey, activeDir) {
-        const direction = getSortDirection(columnKey, activeKey, activeDir);
+        const isActive = columnKey === activeKey;
+        const currentDir = getSortDirection(columnKey, activeKey, activeDir);
+        const nextDir = isActive ? (currentDir === "asc" ? "desc" : "asc") : currentDir;
         if (columnKey === "sensor" || columnKey === "network") {
-          return direction === "desc" ? "Sort Z→A" : "Sort A→Z";
+          return nextDir === "desc" ? "Click: Sort Z→A" : "Click: Sort A→Z";
         }
         if (columnKey === "pm25") {
-          return direction === "desc" ? "Sort high→low" : "Sort low→high";
+          return nextDir === "desc" ? "Click: Sort high→low" : "Click: Sort low→high";
         }
         if (columnKey === "updated") {
-          return direction === "desc" ? "Sort newest→oldest" : "Sort oldest→newest";
+          return nextDir === "desc" ? "Click: Sort newest→oldest" : "Click: Sort oldest→newest";
         }
         return "";
       }
