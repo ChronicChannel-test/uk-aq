@@ -467,10 +467,124 @@
       }
 
       .sensor-table th {
-        font-size: 0.72rem;
+        font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: var(--ink-soft);
+      }
+
+      .sort-header {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-start;
+        background: none;
+        border: none;
+        padding: 0;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        text-transform: inherit;
+        letter-spacing: inherit;
+        cursor: pointer;
+      }
+
+      .sort-header:focus-visible {
+        outline: 2px solid rgba(15, 139, 141, 0.45);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      .sort-header .sort-label {
+        font-weight: 600;
+      }
+
+      .sort-header.is-active .sort-label {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .sort-icon {
+        width: 20px;
+        height: 20px;
+        flex: 0 0 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        color: var(--ink-soft);
+        opacity: 1;
+      }
+
+      .sort-header.is-active .sort-icon {
+        color: var(--ink);
+        opacity: 1;
+      }
+
+      .sort-icon-img {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .sort-icon-letters {
+        display: inline-flex;
+        gap: 2px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      .sort-icon-chevron {
+        font-size: 0.6rem;
+        line-height: 1;
+        opacity: 0.45;
+      }
+
+      .sort-header.is-active .sort-icon-chevron {
+        opacity: 1;
+      }
+
+      .sort-icon-clock {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1.5px solid currentColor;
+        position: relative;
+        flex: 0 0 12px;
+      }
+
+      .sort-icon-clock::before {
+        content: "";
+        position: absolute;
+        width: 1px;
+        height: 4px;
+        background: currentColor;
+        left: 50%;
+        top: 2px;
+        transform: translateX(-50%);
+      }
+
+      .sort-icon-clock::after {
+        content: "";
+        position: absolute;
+        width: 4px;
+        height: 1px;
+        background: currentColor;
+        left: 50%;
+        top: 50%;
+        transform: translate(-10%, -50%);
+      }
+
+      .sort-icon--date .sort-icon-chevron {
+        font-size: 0.55rem;
+      }
+
+      .sort-icon--date.sort-icon--date-asc .sort-icon-chevron {
+        transform: translateY(2px);
+      }
+
+      .sort-icon--date.sort-icon--date-desc .sort-icon-chevron {
+        transform: translateY(-2px);
       }
 
       .sensor-table tbody tr {
@@ -502,6 +616,10 @@
         align-items: center;
       }
 
+      .map-header {
+        width: 100%;
+      }
+
       .card-title {
         font-family: "Inter", system-ui, -apple-system, sans-serif;
         margin: 0;
@@ -514,6 +632,39 @@
         align-items: center;
         font-size: 0.9rem;
         color: var(--ink-soft);
+      }
+
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pulse-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex: 0 0 12px;
+        background-color: #35b56a;
+        box-shadow: 0 0 0 0 rgba(53, 181, 106, 0.45);
+        display: none;
+      }
+
+      .status-indicator[data-state="live"] .pulse-dot {
+        display: inline-block;
+        animation: pulse-animation 1.5s ease-out infinite;
+      }
+
+      @keyframes pulse-animation {
+        0% {
+          box-shadow: 0 0 0 0 rgba(53, 181, 106, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(53, 181, 106, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(53, 181, 106, 0);
+        }
       }
 
       .actions button {
@@ -737,6 +888,31 @@
         width: 24px;
         height: 24px;
         display: block;
+      }
+
+      @media (min-width: 981px) {
+        .map-wrap .map-header {
+          grid-column: 1 / 3;
+          grid-row: 1;
+        }
+
+        .map-wrap .summary-card {
+          grid-column: 3;
+          grid-row: 1 / span 2;
+        }
+
+        .map-wrap .network-panel,
+        .map-wrap .map-aside {
+          grid-row: 2;
+        }
+
+        .map-wrap .map-canvas {
+          grid-row: 2;
+        }
+
+        .map-wrap .map-legend {
+          grid-row: 3;
+        }
       }
 
       .map-settings-options {
@@ -1274,28 +1450,31 @@
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">
         <section class="card">
-          <div class="card-header">
-            <h2 class="card-title">Latest PM2.5 by constituency</h2>
-            <div class="actions">
-              <span class="hint" id="status">Fetching from Supabase…</span>
-              <button id="refresh">Refresh</button>
-            </div>
-          </div>
-        <div class="hint" id="endpoint-hint" hidden></div>
-        <div class="error" id="error" hidden></div>
-        <div class="map-layout">
-          <div class="map-panel">
-            <div class="map-wrap">
-              <div class="tab-slot" data-tab-slot>
-                <div class="tab-bar" role="tablist" aria-label="Map views">
-                  <button type="button" class="tab-button" id="tab-uk" role="tab" aria-selected="true" aria-controls="tab-panel-uk">
-                    United Kingdom
-                  </button>
-                  <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">
-                    Countries & Regions
-                  </button>
+          <div class="hint" id="endpoint-hint" hidden></div>
+          <div class="error" id="error" hidden></div>
+          <div class="map-layout">
+            <div class="map-panel">
+              <div class="map-wrap">
+                <div class="card-header map-header">
+                  <h2 class="card-title">Latest PM2.5 by constituency</h2>
+                  <div class="actions">
+                    <span class="status-indicator" data-state="loading">
+                      <span class="pulse-dot" aria-hidden="true"></span>
+                    <span class="hint" id="status">Loading...</span>
+                    </span>
+                    <button id="refresh">Refresh</button>
+                  </div>
                 </div>
-              </div>
+                <div class="tab-slot" data-tab-slot>
+                  <div class="tab-bar" role="tablist" aria-label="Map views">
+                    <button type="button" class="tab-button" id="tab-uk" role="tab" aria-selected="true" aria-controls="tab-panel-uk">
+                      United Kingdom
+                    </button>
+                    <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">
+                      Countries & Regions
+                    </button>
+                  </div>
+                </div>
               <aside class="network-panel">
                 <div class="network-actions" role="group" aria-label="Network selection actions">
                   <button type="button" id="network-select-all">Select All</button>
@@ -1586,10 +1765,30 @@
           <table class="sensor-table">
             <thead>
               <tr>
-                <th>Sensor</th>
-                <th>Network</th>
-                <th>PM2.5</th>
-                <th>Updated</th>
+                <th scope="col" data-sort-key="sensor" aria-sort="none">
+                  <button type="button" class="sort-header" data-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
+                    <span class="sort-label">Sensor</span>
+                    <span class="sort-icon" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col" data-sort-key="network" aria-sort="none">
+                  <button type="button" class="sort-header" data-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
+                    <span class="sort-label">Network</span>
+                    <span class="sort-icon" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col" data-sort-key="pm25" aria-sort="none">
+                  <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
+                    <span class="sort-label">PM2.5</span>
+                    <span class="sort-icon" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col" data-sort-key="updated" aria-sort="none">
+                  <button type="button" class="sort-header" data-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
+                    <span class="sort-label">Updated</span>
+                    <span class="sort-icon" aria-hidden="true"></span>
+                  </button>
+                </th>
                 <th>Window</th>
               </tr>
             </thead>
@@ -1601,18 +1800,21 @@
 
       <div class="tab-panel" id="tab-panel-cr" role="tabpanel" aria-labelledby="tab-cr" hidden>
         <section class="card">
-          <div class="card-header">
-            <h2 class="card-title">Latest PM2.5 by local authority</h2>
-            <div class="actions">
-              <span class="hint" id="cr-status">Fetching from Supabase…</span>
-              <button id="cr-refresh">Refresh</button>
-            </div>
-          </div>
           <div class="hint" id="cr-endpoint-hint" hidden></div>
           <div class="error" id="cr-error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
               <div class="map-wrap">
+                <div class="card-header map-header">
+                  <h2 class="card-title">Latest PM2.5 by local authority</h2>
+                  <div class="actions">
+                    <span class="status-indicator" data-state="loading">
+                      <span class="pulse-dot" aria-hidden="true"></span>
+                    <span class="hint" id="cr-status">Loading...</span>
+                    </span>
+                    <button id="cr-refresh">Refresh</button>
+                  </div>
+                </div>
                 <div class="tab-slot" data-tab-slot></div>
                 <div class="map-aside">
                   <label class="map-select">
@@ -1834,10 +2036,30 @@
             <table class="sensor-table">
               <thead>
                 <tr>
-                  <th>Sensor</th>
-                  <th>Network</th>
-                  <th>PM2.5</th>
-                  <th>Updated</th>
+                  <th scope="col" data-sort-key="sensor" aria-sort="none">
+                    <button type="button" class="sort-header" data-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
+                      <span class="sort-label">Sensor</span>
+                      <span class="sort-icon" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort-key="network" aria-sort="none">
+                    <button type="button" class="sort-header" data-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
+                      <span class="sort-label">Network</span>
+                      <span class="sort-icon" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort-key="pm25" aria-sort="none">
+                    <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
+                      <span class="sort-label">PM2.5</span>
+                      <span class="sort-icon" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort-key="updated" aria-sort="none">
+                    <button type="button" class="sort-header" data-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
+                      <span class="sort-label">Updated</span>
+                      <span class="sort-icon" aria-hidden="true"></span>
+                    </button>
+                  </th>
                   <th>Window</th>
                 </tr>
               </thead>
@@ -1933,6 +2155,44 @@
         { code: "uk_air_sos", label: "UK AIR SOS" },
         { code: "sensorcommunity", label: "Sensor Community" },
       ];
+      const SORT_DEFAULTS = {
+        sensor: "asc",
+        network: "asc",
+        pm25: "desc",
+        updated: "desc",
+      };
+      const SORT_ICON_SOURCES = {
+        alpha: {
+          active: {
+            asc: "data/images/sort_icons/Sort Icons v3 Alpha.A-Z Green.png",
+            desc: "data/images/sort_icons/Sort Icons v3 Alpha.Z-A Green.png",
+          },
+          inactive: {
+            asc: "data/images/sort_icons/Sort Icons v3 Alpha.A-Z Grey.png",
+            desc: "data/images/sort_icons/Sort Icons v3 Alpha.Z-A Grey.png",
+          },
+        },
+        number: {
+          active: {
+            asc: "data/images/sort_icons/Sort Icons v3 Alpha.1-9 Green.png",
+            desc: "data/images/sort_icons/Sort Icons v3 Alpha.9-1 Green.png",
+          },
+          inactive: {
+            asc: "data/images/sort_icons/Sort Icons v3 Alpha.1-9 Grey.png",
+            desc: "data/images/sort_icons/Sort Icons v3 Alpha.9-1 Grey.png",
+          },
+        },
+        date: {
+          active: {
+            asc: "data/images/sort_icons/Sort Icons v3 Alpha.ClockAscGreen.png",
+            desc: "data/images/sort_icons/Sort Icons v3 Alpha.ClockDescGreen.png",
+          },
+          inactive: {
+            asc: "data/images/sort_icons/Sort Icons v3 Alpha.ClockAscGrey.png",
+            desc: "data/images/sort_icons/Sort Icons v3 Alpha.ClockDescGrey.png",
+          },
+        },
+      };
 
       function getConnectorLabelByCode(code) {
         const match = CONNECTOR_DEFS.find((def) => def.code === code);
@@ -1965,6 +2225,7 @@
       const EDGE_DIRECTION_CACHE = new Map();
 
       const statusEl = document.getElementById("status");
+      const statusIndicator = statusEl ? statusEl.closest(".status-indicator") : null;
       const errorEl = document.getElementById("error");
       const rowCount = document.getElementById("row-count");
       const lastUpdated = document.getElementById("last-updated");
@@ -2044,6 +2305,7 @@
       const mapSettingsButton = document.querySelector(".map-settings");
       const mapSettingsPanel = document.getElementById("map-settings-panel");
       const mapSettingsClose = document.getElementById("map-settings-close");
+      const mapPanel = document.querySelector(".map-panel");
       const windowInputs = Array.from(document.querySelectorAll("input[name='averagingWindow']"));
       const metricInputs = Array.from(document.querySelectorAll("input[name='metricSelect']"));
       const metricGroup = document.querySelector(".metric-group");
@@ -2055,10 +2317,18 @@
       const networkList = document.getElementById("network-list");
       const networkSelectAll = document.getElementById("network-select-all");
       const networkDeselectAll = document.getElementById("network-deselect-all");
+      const sortHeaders = detailsTableWrap
+        ? Array.from(detailsTableWrap.querySelectorAll("th[data-sort-key]"))
+        : [];
+      const sortHeaderButtons = sortHeaders
+        .map((header) => header.querySelector("button[data-sort-key]"))
+        .filter(Boolean);
 
       let currentMetric = metricParam === "median" ? "median" : "mean";
       let currentColorScale = colorScaleParam === "linear" ? "linear" : "power";
       let currentWindow = "all";
+      let sortKey = "pm25";
+      let sortDir = "desc";
       let hexData = null;
       let hexCells = [];
       let hexBounds = null;
@@ -2082,6 +2352,17 @@
       let selectedPconCode = null;
       let selectedCell = null;
       let pinnedTooltipCell = null;
+
+      function setStatus(value) {
+        if (!statusEl) {
+          return;
+        }
+        statusEl.textContent = value;
+        if (statusIndicator) {
+          const isLive = value === "Live";
+          statusIndicator.dataset.state = isLive ? "live" : "idle";
+        }
+      }
 
       endpointHint.textContent = REST_URL
         ? `Endpoint: ${REST_URL} (${activeMap.label})`
@@ -2252,6 +2533,41 @@
           url.searchParams.set(key, value);
         }
         window.history.replaceState({}, "", url);
+      }
+
+      function getDefaultSortDir(key) {
+        return SORT_DEFAULTS[key] || "asc";
+      }
+
+      function getSortDirection(columnKey, activeKey, activeDir) {
+        return columnKey === activeKey ? activeDir : getDefaultSortDir(columnKey);
+      }
+
+      function renderSortIcon(columnKey, columnType, activeKey, activeDir) {
+        const isActive = columnKey === activeKey;
+        const direction = getSortDirection(columnKey, activeKey, activeDir);
+        const sourceMap = SORT_ICON_SOURCES[columnType];
+        const stateKey = isActive ? "active" : "inactive";
+        const src = sourceMap?.[stateKey]?.[direction] || "";
+        if (!src) {
+          return "";
+        }
+        const encodedSrc = encodeURI(src);
+        return `<img class="sort-icon-img" src="${encodedSrc}" alt="" aria-hidden="true" />`;
+      }
+
+      function getSortTooltip(columnKey, activeKey, activeDir) {
+        const direction = getSortDirection(columnKey, activeKey, activeDir);
+        if (columnKey === "sensor" || columnKey === "network") {
+          return direction === "desc" ? "Sort Z→A" : "Sort A→Z";
+        }
+        if (columnKey === "pm25") {
+          return direction === "desc" ? "Sort high→low" : "Sort low→high";
+        }
+        if (columnKey === "updated") {
+          return direction === "desc" ? "Sort newest→oldest" : "Sort oldest→newest";
+        }
+        return "";
       }
 
       function syncColorScaleInputs() {
@@ -2967,6 +3283,107 @@
         updateDetailsPanel();
       }
 
+      function compareTextValues(a, b) {
+        const left = a ? String(a) : "";
+        const right = b ? String(b) : "";
+        if (!left && !right) {
+          return 0;
+        }
+        if (!left) {
+          return 1;
+        }
+        if (!right) {
+          return -1;
+        }
+        return left.localeCompare(right, undefined, { sensitivity: "base" });
+      }
+
+      function compareNumericValues(a, b) {
+        const left = Number.isFinite(a) ? a : null;
+        const right = Number.isFinite(b) ? b : null;
+        if (left === null && right === null) {
+          return 0;
+        }
+        if (left === null) {
+          return 1;
+        }
+        if (right === null) {
+          return -1;
+        }
+        return left - right;
+      }
+
+      function getEntrySortValue(entry, key) {
+        if (key === "sensor") {
+          return resolveStationName(entry.row) || "";
+        }
+        if (key === "network") {
+          return resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "";
+        }
+        if (key === "pm25") {
+          return entry.value;
+        }
+        if (key === "updated") {
+          return entry.timestamp instanceof Date ? entry.timestamp.getTime() : null;
+        }
+        return "";
+      }
+
+      function compareEntries(a, b, key) {
+        const left = getEntrySortValue(a, key);
+        const right = getEntrySortValue(b, key);
+        if (key === "sensor" || key === "network") {
+          return compareTextValues(left, right);
+        }
+        return compareNumericValues(left, right);
+      }
+
+      function sortDetailEntries(entries) {
+        const activeKey = sortKey;
+        const direction = sortDir;
+        entries.sort((a, b) => {
+          if (a.inWindow !== b.inWindow) {
+            return a.inWindow ? -1 : 1;
+          }
+          const cmp = compareEntries(a, b, activeKey);
+          if (cmp !== 0) {
+            return direction === "asc" ? cmp : -cmp;
+          }
+          return compareTextValues(
+            getEntrySortValue(a, "sensor"),
+            getEntrySortValue(b, "sensor")
+          );
+        });
+      }
+
+      function syncSortHeaders() {
+        sortHeaderButtons.forEach((button) => {
+          const key = button.dataset.sortKey;
+          const type = button.dataset.sortType;
+          if (!key || !type) {
+            return;
+          }
+          const isActive = key === sortKey;
+          const direction = getSortDirection(key, sortKey, sortDir);
+          const th = button.closest("th");
+          button.classList.toggle("is-active", isActive);
+          if (th) {
+            th.setAttribute(
+              "aria-sort",
+              isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+            );
+          }
+          const icon = button.querySelector(".sort-icon");
+          if (icon) {
+            icon.innerHTML = renderSortIcon(key, type, sortKey, sortDir);
+            icon.classList.toggle("sort-icon--date", type === "date");
+            icon.classList.toggle("sort-icon--date-asc", type === "date" && direction === "asc");
+            icon.classList.toggle("sort-icon--date-desc", type === "date" && direction === "desc");
+          }
+          button.title = getSortTooltip(key, sortKey, sortDir);
+        });
+      }
+
       function updateDetailsPanel() {
         if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
           return;
@@ -3000,12 +3417,7 @@
           ...entry,
           inWindow: isTimestampInWindow(entry.timestamp, cutoff),
         }));
-        entries.sort((a, b) => {
-          if (a.inWindow !== b.inWindow) {
-            return a.inWindow ? -1 : 1;
-          }
-          return (b.value ?? -Infinity) - (a.value ?? -Infinity);
-        });
+        sortDetailEntries(entries);
         const excludedCount = entries.filter((entry) => !entry.inWindow).length;
         detailsMeta.textContent = currentWindow === "all"
           ? formatSensorCount(entries.length)
@@ -3740,7 +4152,7 @@
       }
 
       async function loadMapData() {
-        statusEl.textContent = "Loading…";
+        setStatus("Loading...");
         errorEl.textContent = "";
         latestPollutant = null;
         populationLookup = new Map();
@@ -3749,12 +4161,12 @@
           && networkInputs.every((input) => input.checked);
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
-          statusEl.textContent = "Error";
+          setStatus("Error");
           return;
         }
         if (!anonKey) {
           errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
-          statusEl.textContent = "Error";
+          setStatus("Error");
           return;
         }
         try {
@@ -3848,11 +4260,11 @@
             populationLookup = new Map();
           }
           applyNetworkFilters();
-          statusEl.textContent = "Live";
+          setStatus("Live");
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           errorEl.textContent = message;
-          statusEl.textContent = "Error";
+          setStatus("Error");
         }
       }
 
@@ -3985,7 +4397,11 @@
           return;
         }
         const target = event.target;
-        if (target && typeof target.closest === "function" && target.closest("polygon.hex")) {
+        const targetElement = target instanceof Element ? target : target?.parentElement;
+        if (!targetElement || (mapPanel && !mapPanel.contains(targetElement))) {
+          return;
+        }
+        if (targetElement && typeof targetElement.closest === "function" && targetElement.closest("polygon.hex")) {
           return;
         }
         setSelectedCell(null);
@@ -3997,6 +4413,23 @@
       if (networkDeselectAll) {
         networkDeselectAll.addEventListener("click", handleNetworkAction);
       }
+      sortHeaderButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const nextKey = button.dataset.sortKey;
+          if (!nextKey) {
+            return;
+          }
+          if (sortKey === nextKey) {
+            sortDir = sortDir === "asc" ? "desc" : "asc";
+          } else {
+            sortKey = nextKey;
+            sortDir = getDefaultSortDir(nextKey);
+          }
+          syncSortHeaders();
+          updateDetailsPanel();
+        });
+      });
+      syncSortHeaders();
 
       document.getElementById("refresh").addEventListener("click", loadMapData);
       window.addEventListener("resize", () => {
@@ -4011,7 +4444,7 @@
       syncColorScaleInputs();
       updateLegendScaleDescription();
       loadMapData();
-      setInterval(loadMapData, 10 * 60 * 1000);
+      setInterval(loadMapData, 60 * 1000);
 
       window.ukMap = {
         render: () => {
@@ -4154,6 +4587,7 @@
 
       const mapSelect = byId("map-select");
       const statusEl = byId("status");
+      const statusIndicator = statusEl ? statusEl.closest(".status-indicator") : null;
       const errorEl = byId("error");
       const rowCount = byId("row-count");
       const lastUpdated = byId("last-updated");
@@ -4204,10 +4638,18 @@
       const networkList = byId("network-list");
       const networkSelectAll = byId("network-select-all");
       const networkDeselectAll = byId("network-deselect-all");
+      const sortHeaders = detailsTableWrap
+        ? Array.from(detailsTableWrap.querySelectorAll("th[data-sort-key]"))
+        : [];
+      const sortHeaderButtons = sortHeaders
+        .map((header) => header.querySelector("button[data-sort-key]"))
+        .filter(Boolean);
 
       let currentMetric = metricParam === "median" ? "median" : "mean";
       let currentColorScale = colorScaleParam === "linear" ? "linear" : "power";
       let currentWindow = "all";
+      let sortKey = "pm25";
+      let sortDir = "desc";
       let hexData = null;
       let hexCells = [];
       let hexBounds = null;
@@ -4230,6 +4672,17 @@
       let networkInputs = [];
       let selectedPconCode = null;
       let selectedCell = null;
+
+      function setStatus(value) {
+        if (!statusEl) {
+          return;
+        }
+        statusEl.textContent = value;
+        if (statusIndicator) {
+          const isLive = value === "Live";
+          statusIndicator.dataset.state = isLive ? "live" : "idle";
+        }
+      }
 
       function updateEndpointHint() {
         if (!endpointHint) {
@@ -5045,6 +5498,107 @@
         updateDetailsPanel();
       }
 
+      function compareTextValues(a, b) {
+        const left = a ? String(a) : "";
+        const right = b ? String(b) : "";
+        if (!left && !right) {
+          return 0;
+        }
+        if (!left) {
+          return 1;
+        }
+        if (!right) {
+          return -1;
+        }
+        return left.localeCompare(right, undefined, { sensitivity: "base" });
+      }
+
+      function compareNumericValues(a, b) {
+        const left = Number.isFinite(a) ? a : null;
+        const right = Number.isFinite(b) ? b : null;
+        if (left === null && right === null) {
+          return 0;
+        }
+        if (left === null) {
+          return 1;
+        }
+        if (right === null) {
+          return -1;
+        }
+        return left - right;
+      }
+
+      function getEntrySortValue(entry, key) {
+        if (key === "sensor") {
+          return resolveStationName(entry.row) || "";
+        }
+        if (key === "network") {
+          return resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "";
+        }
+        if (key === "pm25") {
+          return entry.value;
+        }
+        if (key === "updated") {
+          return entry.timestamp instanceof Date ? entry.timestamp.getTime() : null;
+        }
+        return "";
+      }
+
+      function compareEntries(a, b, key) {
+        const left = getEntrySortValue(a, key);
+        const right = getEntrySortValue(b, key);
+        if (key === "sensor" || key === "network") {
+          return compareTextValues(left, right);
+        }
+        return compareNumericValues(left, right);
+      }
+
+      function sortDetailEntries(entries) {
+        const activeKey = sortKey;
+        const direction = sortDir;
+        entries.sort((a, b) => {
+          if (a.inWindow !== b.inWindow) {
+            return a.inWindow ? -1 : 1;
+          }
+          const cmp = compareEntries(a, b, activeKey);
+          if (cmp !== 0) {
+            return direction === "asc" ? cmp : -cmp;
+          }
+          return compareTextValues(
+            getEntrySortValue(a, "sensor"),
+            getEntrySortValue(b, "sensor")
+          );
+        });
+      }
+
+      function syncSortHeaders() {
+        sortHeaderButtons.forEach((button) => {
+          const key = button.dataset.sortKey;
+          const type = button.dataset.sortType;
+          if (!key || !type) {
+            return;
+          }
+          const isActive = key === sortKey;
+          const direction = getSortDirection(key, sortKey, sortDir);
+          const th = button.closest("th");
+          button.classList.toggle("is-active", isActive);
+          if (th) {
+            th.setAttribute(
+              "aria-sort",
+              isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+            );
+          }
+          const icon = button.querySelector(".sort-icon");
+          if (icon) {
+            icon.innerHTML = renderSortIcon(key, type, sortKey, sortDir);
+            icon.classList.toggle("sort-icon--date", type === "date");
+            icon.classList.toggle("sort-icon--date-asc", type === "date" && direction === "asc");
+            icon.classList.toggle("sort-icon--date-desc", type === "date" && direction === "desc");
+          }
+          button.title = getSortTooltip(key, sortKey, sortDir);
+        });
+      }
+
       function updateDetailsPanel() {
         if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
           return;
@@ -5079,12 +5633,7 @@
           ...entry,
           inWindow: isTimestampInWindow(entry.timestamp, cutoff),
         }));
-        entries.sort((a, b) => {
-          if (a.inWindow !== b.inWindow) {
-            return a.inWindow ? -1 : 1;
-          }
-          return (b.value ?? -Infinity) - (a.value ?? -Infinity);
-        });
+        sortDetailEntries(entries);
         const excludedCount = entries.filter((entry) => !entry.inWindow).length;
         detailsMeta.textContent = currentWindow === "all"
           ? formatSensorCount(entries.length)
@@ -5910,7 +6459,7 @@
       }
 
       async function loadMapData() {
-        statusEl.textContent = "Loading…";
+        setStatus("Loading...");
         errorEl.textContent = "";
         latestPollutant = null;
         populationLookup = new Map();
@@ -5919,12 +6468,12 @@
           && networkInputs.every((input) => input.checked);
         if (!REST_URL) {
           errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
-          statusEl.textContent = "Error";
+          setStatus("Error");
           return;
         }
         if (!anonKey) {
           errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
-          statusEl.textContent = "Error";
+          setStatus("Error");
           return;
         }
         try {
@@ -6033,11 +6582,11 @@
             populationLookup = new Map();
           }
           applyNetworkFilters();
-          statusEl.textContent = "Live";
+          setStatus("Live");
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           errorEl.textContent = message;
-          statusEl.textContent = "Error";
+          setStatus("Error");
         }
       }
 
@@ -6171,6 +6720,23 @@
       if (networkDeselectAll) {
         networkDeselectAll.addEventListener("click", handleNetworkAction);
       }
+      sortHeaderButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const nextKey = button.dataset.sortKey;
+          if (!nextKey) {
+            return;
+          }
+          if (sortKey === nextKey) {
+            sortDir = sortDir === "asc" ? "desc" : "asc";
+          } else {
+            sortKey = nextKey;
+            sortDir = getDefaultSortDir(nextKey);
+          }
+          syncSortHeaders();
+          updateDetailsPanel();
+        });
+      });
+      syncSortHeaders();
 
       byId("refresh").addEventListener("click", loadMapData);
       window.addEventListener("resize", () => {
@@ -6185,7 +6751,7 @@
       syncColorScaleInputs();
       updateLegendScaleDescription();
       loadMapData();
-      setInterval(loadMapData, 10 * 60 * 1000);
+      setInterval(loadMapData, 60 * 1000);
 
       window.crMap = {
         render: () => {
