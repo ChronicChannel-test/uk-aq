@@ -178,50 +178,7 @@
       .coverage-item {
         grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: 72px minmax(0, 1fr);
-        gap: 12px;
-        align-items: center;
-      }
-
-      .coverage-tile {
-        width: 72px;
-        height: 72px;
-        border-radius: 12px;
-        background: #fff;
-        border: 1px solid rgba(20, 34, 37, 0.16);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .coverage-tile::after {
-        content: "";
-        position: absolute;
-        inset: 8px;
-        background: linear-gradient(
-          135deg,
-          transparent 49%,
-          rgba(20, 34, 37, 0.2) 50%,
-          transparent 51%
-        );
-        pointer-events: none;
-      }
-
-      .coverage-top {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--ink);
-      }
-
-      .coverage-bottom {
-        position: absolute;
-        bottom: 8px;
-        right: 8px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: var(--ink-soft);
+        gap: 6px;
       }
 
       .coverage-title {
@@ -246,6 +203,28 @@
         font-size: 0.65rem;
         color: var(--ink-soft);
         background: #fff;
+      }
+
+      .coverage-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .coverage-bar {
+        height: 6px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+        width: 220px;
+        max-width: 100%;
+      }
+
+      .coverage-bar-fill {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: #4c6fbf;
       }
 
       .coverage-label {
@@ -1296,28 +1275,25 @@
                 <div class="network-card-value" id="network-aurn-sensors">-</div>
               </div>
               <div class="coverage-item">
+                <div class="coverage-title">
+                  Coverage
+                  <span
+                    class="coverage-help"
+                    role="img"
+                    aria-label="Coverage help"
+                    title="Local authority counted if ≥1 active sensor"
+                  >?</span>
+                </div>
+                <div class="coverage-value" id="network-aurn-coverage-value">0% (0 / 33)</div>
                 <div
-                  class="coverage-tile"
-                  id="network-aurn-coverage-tile"
+                  class="coverage-bar"
+                  id="network-aurn-coverage-bar"
                   role="img"
-                  aria-label="Coverage 0 out of 33 local authorities"
+                  aria-label="Coverage 0% (0 / 33) local authorities"
                 >
-                  <span class="coverage-top" id="network-aurn-covered">0</span>
-                  <span class="coverage-bottom" id="network-aurn-total">33</span>
+                  <span class="coverage-bar-fill" id="network-aurn-coverage-fill"></span>
                 </div>
-                <div class="coverage-meta">
-                  <div class="coverage-title">
-                    Coverage
-                    <span
-                      class="coverage-help"
-                      role="img"
-                      aria-label="Coverage help"
-                      title="Coverage counts a local authority if at least one site inside it is reporting for the current window."
-                    >?</span>
-                  </div>
-                  <div class="coverage-label">London Local Authorities</div>
-                  <div class="coverage-sublabel">≥1 reporting site (current window)</div>
-                </div>
+                <div class="coverage-label">London Local Authorities</div>
               </div>
               <div>
                 <div class="network-card-label">Average</div>
@@ -1486,9 +1462,9 @@
       const detailsTableBody = document.getElementById("sensor-table-body");
       const networkSummary = document.getElementById("network-summary");
       const aurnSensors = document.getElementById("network-aurn-sensors");
-      const aurnCoverageTile = document.getElementById("network-aurn-coverage-tile");
-      const aurnCoverageCovered = document.getElementById("network-aurn-covered");
-      const aurnCoverageTotal = document.getElementById("network-aurn-total");
+      const aurnCoverageValue = document.getElementById("network-aurn-coverage-value");
+      const aurnCoverageBar = document.getElementById("network-aurn-coverage-bar");
+      const aurnCoverageFill = document.getElementById("network-aurn-coverage-fill");
       const aurnAverage = document.getElementById("network-aurn-average");
       const aurnMedian = document.getElementById("network-aurn-median");
       const aurnHighest = document.getElementById("network-aurn-highest");
@@ -1594,7 +1570,26 @@
           return "0%";
         }
         const percent = (covered / total) * 100;
-        return `${percent.toFixed(1)}%`;
+        return `${Math.round(percent)}%`;
+      }
+
+      function formatCoverageValue(covered, total) {
+        return `${formatCoveragePercent(covered, total)} (${formatNumber(covered)} / ${formatNumber(total)})`;
+      }
+
+      function updateCoverageElements(valueEl, fillEl, barEl, covered, total, areaLabel) {
+        if (!valueEl || !fillEl || !barEl) {
+          return;
+        }
+        const percentRaw = total ? (covered / total) * 100 : 0;
+        const percent = Math.max(0, Math.min(100, percentRaw));
+        const coverageLabel = formatCoverageValue(covered, total);
+        valueEl.textContent = coverageLabel;
+        fillEl.style.width = `${percent}%`;
+        const areaSuffix = areaLabel ? ` ${areaLabel}` : "";
+        const ariaLabel = `Coverage ${coverageLabel}${areaSuffix}`;
+        barEl.setAttribute("aria-label", ariaLabel);
+        barEl.title = ariaLabel;
       }
 
       function formatValue(value) {
@@ -2357,7 +2352,7 @@
       }
 
       function updateNetworkSummary() {
-        if (!aurnSensors || !aurnCoverageTile || !aurnCoverageCovered || !aurnCoverageTotal || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
+        if (!aurnSensors || !aurnCoverageValue || !aurnCoverageBar || !aurnCoverageFill || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
           return;
         }
         const summary = computeNetworkSummary(scopedLatestRows, GOVUK_NETWORK_MATCHERS);
@@ -2367,13 +2362,14 @@
         aurnSensors.textContent = summary.totalCount ? sensorLabel : "0";
         const covered = summary.coverage;
         const total = TOTAL_LONDON_LA_COUNT || pconCodes.size;
-        aurnCoverageCovered.textContent = formatNumber(covered);
-        aurnCoverageTotal.textContent = formatNumber(total);
-        aurnCoverageTile.setAttribute(
-          "aria-label",
-          `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} local authorities`
+        updateCoverageElements(
+          aurnCoverageValue,
+          aurnCoverageFill,
+          aurnCoverageBar,
+          covered,
+          total,
+          "London local authorities"
         );
-        aurnCoverageTile.title = `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} local authorities (${formatCoveragePercent(covered, total)})`;
         aurnAverage.textContent = Number.isFinite(summary.mean)
           ? `${formatValue(summary.mean)} µg/m³`
           : "-";

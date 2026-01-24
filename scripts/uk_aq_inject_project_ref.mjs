@@ -15,7 +15,7 @@ if (envText) {
 
 const projectRef = (process.env.SUPABASE_PROJECT_REF || "").trim();
 const anonKey = (
-  process.env.SUPABASE_ANON_JWT
+  process.env.SB_ANON_JWT
   || process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY
   || process.env.SUPABASE_ANON_KEY
   || ""
@@ -26,7 +26,7 @@ if (!projectRef) {
   process.exit(1);
 }
 if (!anonKey) {
-  console.error("SUPABASE_ANON_JWT is missing. Set it in .env or the environment.");
+  console.error("SB_ANON_JWT is missing. Set it in .env or the environment.");
   process.exit(1);
 }
 
@@ -50,7 +50,7 @@ updated = replacePlaceholder(
 
 if (updated !== html) {
   await fs.writeFile(TARGET_PATH, updated);
-  console.log("Injected SUPABASE_PROJECT_REF and SUPABASE_ANON_JWT into web/uk_aq_bristol.html");
+  console.log("Injected SUPABASE_PROJECT_REF and SB_ANON_JWT into web/uk_aq_bristol.html");
 } else {
   console.log("web/uk_aq_bristol.html already uses the configured SUPABASE project ref and anon key.");
 }

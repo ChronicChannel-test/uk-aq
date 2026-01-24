@@ -292,50 +292,7 @@
       .coverage-item {
         grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: 72px minmax(0, 1fr);
-        gap: 12px;
-        align-items: center;
-      }
-
-      .coverage-tile {
-        width: 72px;
-        height: 72px;
-        border-radius: 12px;
-        background: #fff;
-        border: 1px solid rgba(20, 34, 37, 0.16);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .coverage-tile::after {
-        content: "";
-        position: absolute;
-        inset: 8px;
-        background: linear-gradient(
-          135deg,
-          transparent 49%,
-          rgba(20, 34, 37, 0.2) 50%,
-          transparent 51%
-        );
-        pointer-events: none;
-      }
-
-      .coverage-top {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--ink);
-      }
-
-      .coverage-bottom {
-        position: absolute;
-        bottom: 8px;
-        right: 8px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: var(--ink-soft);
+        gap: 6px;
       }
 
       .coverage-title {
@@ -360,6 +317,28 @@
         font-size: 0.65rem;
         color: var(--ink-soft);
         background: #fff;
+      }
+
+      .coverage-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .coverage-bar {
+        height: 6px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+        width: 220px;
+        max-width: 100%;
+      }
+
+      .coverage-bar-fill {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: #4c6fbf;
       }
 
       .coverage-label {
@@ -1621,28 +1600,25 @@
                 <div class="network-card-value" id="network-aurn-sensors">-</div>
               </div>
               <div class="coverage-item">
+                <div class="coverage-title">
+                  Coverage
+                  <span
+                    class="coverage-help"
+                    role="img"
+                    aria-label="Coverage help"
+                    title="Constituency counted if ≥1 active sensor"
+                  >?</span>
+                </div>
+                <div class="coverage-value" id="network-aurn-coverage-value">0% (0 / 650)</div>
                 <div
-                  class="coverage-tile"
-                  id="network-aurn-coverage-tile"
+                  class="coverage-bar"
+                  id="network-aurn-coverage-bar"
                   role="img"
-                  aria-label="Coverage 0 out of 650 constituencies"
+                  aria-label="Coverage 0% (0 / 650) constituencies"
                 >
-                  <span class="coverage-top" id="network-aurn-covered">0</span>
-                  <span class="coverage-bottom" id="network-aurn-total">650</span>
+                  <span class="coverage-bar-fill" id="network-aurn-coverage-fill"></span>
                 </div>
-                <div class="coverage-meta">
-                  <div class="coverage-title">
-                    Coverage
-                    <span
-                      class="coverage-help"
-                      role="img"
-                      aria-label="Coverage help"
-                      title="Coverage counts a constituency if at least one site inside it is reporting for the current window."
-                    >?</span>
-                  </div>
-                  <div class="coverage-label">UK Parliamentary Constituencies</div>
-                  <div class="coverage-sublabel">≥1 reporting site (current window)</div>
-                </div>
+                <div class="coverage-label">UK Parliamentary Constituencies</div>
               </div>
               <div>
                 <div class="network-card-label">Average</div>
@@ -1675,6 +1651,27 @@
                 <div class="network-card-label">Sensors</div>
                 <div class="network-card-value" id="network-breathe-sensors">-</div>
               </div>
+              <div class="coverage-item">
+                <div class="coverage-title">
+                  Coverage
+                  <span
+                    class="coverage-help"
+                    role="img"
+                    aria-label="Coverage help"
+                    title="Constituency counted if ≥1 active sensor"
+                  >?</span>
+                </div>
+                <div class="coverage-value" id="network-breathe-coverage-value">0% (0 / 650)</div>
+                <div
+                  class="coverage-bar"
+                  id="network-breathe-coverage-bar"
+                  role="img"
+                  aria-label="Coverage 0% (0 / 650) constituencies"
+                >
+                  <span class="coverage-bar-fill" id="network-breathe-coverage-fill"></span>
+                </div>
+                <div class="coverage-label">UK Parliamentary Constituencies</div>
+              </div>
               <div>
                 <div class="network-card-label">Average</div>
                 <div class="network-card-value" id="network-breathe-average">-</div>
@@ -1706,6 +1703,27 @@
                 <div class="network-card-label">Sensors</div>
                 <div class="network-card-value" id="network-laqn-sensors">-</div>
               </div>
+              <div class="coverage-item">
+                <div class="coverage-title">
+                  Coverage
+                  <span
+                    class="coverage-help"
+                    role="img"
+                    aria-label="Coverage help"
+                    title="Constituency counted if ≥1 active sensor"
+                  >?</span>
+                </div>
+                <div class="coverage-value" id="network-laqn-coverage-value">0% (0 / 650)</div>
+                <div
+                  class="coverage-bar"
+                  id="network-laqn-coverage-bar"
+                  role="img"
+                  aria-label="Coverage 0% (0 / 650) constituencies"
+                >
+                  <span class="coverage-bar-fill" id="network-laqn-coverage-fill"></span>
+                </div>
+                <div class="coverage-label">UK Parliamentary Constituencies</div>
+              </div>
               <div>
                 <div class="network-card-label">Average</div>
                 <div class="network-card-value" id="network-laqn-average">-</div>
@@ -1736,6 +1754,27 @@
               <div>
                 <div class="network-card-label">Sensors</div>
                 <div class="network-card-value" id="network-sc-sensors">-</div>
+              </div>
+              <div class="coverage-item">
+                <div class="coverage-title">
+                  Coverage
+                  <span
+                    class="coverage-help"
+                    role="img"
+                    aria-label="Coverage help"
+                    title="Constituency counted if ≥1 active sensor"
+                  >?</span>
+                </div>
+                <div class="coverage-value" id="network-sc-coverage-value">0% (0 / 650)</div>
+                <div
+                  class="coverage-bar"
+                  id="network-sc-coverage-bar"
+                  role="img"
+                  aria-label="Coverage 0% (0 / 650) constituencies"
+                >
+                  <span class="coverage-bar-fill" id="network-sc-coverage-fill"></span>
+                </div>
+                <div class="coverage-label">UK Parliamentary Constituencies</div>
               </div>
               <div>
                 <div class="network-card-label">Average</div>
@@ -1985,28 +2024,25 @@
                   <div class="network-card-value" id="cr-network-aurn-sensors">-</div>
                 </div>
                 <div class="coverage-item">
+                  <div class="coverage-title">
+                    Coverage
+                    <span
+                      class="coverage-help"
+                      role="img"
+                      aria-label="Coverage help"
+                      title="Local authority counted if ≥1 active sensor"
+                    >?</span>
+                  </div>
+                  <div class="coverage-value" id="cr-network-aurn-coverage-value">0% (0 / 0)</div>
                   <div
-                    class="coverage-tile"
-                    id="cr-network-aurn-coverage-tile"
+                    class="coverage-bar"
+                    id="cr-network-aurn-coverage-bar"
                     role="img"
-                    aria-label="Coverage 0 out of 0 local authorities"
+                    aria-label="Coverage 0% (0 / 0) local authorities"
                   >
-                    <span class="coverage-top" id="cr-network-aurn-covered">0</span>
-                    <span class="coverage-bottom" id="cr-network-aurn-total">0</span>
+                    <span class="coverage-bar-fill" id="cr-network-aurn-coverage-fill"></span>
                   </div>
-                  <div class="coverage-meta">
-                    <div class="coverage-title">
-                      Coverage
-                      <span
-                        class="coverage-help"
-                        role="img"
-                        aria-label="Coverage help"
-                        title="Coverage counts a local authority if at least one site inside it is reporting for the current window."
-                      >?</span>
-                    </div>
-                    <div class="coverage-label">Local Authorities</div>
-                    <div class="coverage-sublabel">≥1 reporting site (current window)</div>
-                  </div>
+                  <div class="coverage-label">Local Authorities</div>
                 </div>
                 <div>
                   <div class="network-card-label">Average</div>
@@ -2253,6 +2289,9 @@
           matchers: BREATHE_LONDON_MATCHERS,
           elements: {
             sensors: document.getElementById("network-breathe-sensors"),
+            coverageValue: document.getElementById("network-breathe-coverage-value"),
+            coverageBar: document.getElementById("network-breathe-coverage-bar"),
+            coverageFill: document.getElementById("network-breathe-coverage-fill"),
             average: document.getElementById("network-breathe-average"),
             median: document.getElementById("network-breathe-median"),
             highest: document.getElementById("network-breathe-highest"),
@@ -2265,6 +2304,9 @@
           matchers: LAQN_NETWORK_MATCHERS,
           elements: {
             sensors: document.getElementById("network-laqn-sensors"),
+            coverageValue: document.getElementById("network-laqn-coverage-value"),
+            coverageBar: document.getElementById("network-laqn-coverage-bar"),
+            coverageFill: document.getElementById("network-laqn-coverage-fill"),
             average: document.getElementById("network-laqn-average"),
             median: document.getElementById("network-laqn-median"),
             highest: document.getElementById("network-laqn-highest"),
@@ -2277,6 +2319,9 @@
           matchers: SENSOR_COMMUNITY_MATCHERS,
           elements: {
             sensors: document.getElementById("network-sc-sensors"),
+            coverageValue: document.getElementById("network-sc-coverage-value"),
+            coverageBar: document.getElementById("network-sc-coverage-bar"),
+            coverageFill: document.getElementById("network-sc-coverage-fill"),
             average: document.getElementById("network-sc-average"),
             median: document.getElementById("network-sc-median"),
             highest: document.getElementById("network-sc-highest"),
@@ -2293,9 +2338,9 @@
       const detailsTableBody = document.getElementById("sensor-table-body");
       const networkSummary = document.getElementById("network-summary");
       const aurnSensors = document.getElementById("network-aurn-sensors");
-      const aurnCoverageTile = document.getElementById("network-aurn-coverage-tile");
-      const aurnCoverageCovered = document.getElementById("network-aurn-covered");
-      const aurnCoverageTotal = document.getElementById("network-aurn-total");
+      const aurnCoverageValue = document.getElementById("network-aurn-coverage-value");
+      const aurnCoverageBar = document.getElementById("network-aurn-coverage-bar");
+      const aurnCoverageFill = document.getElementById("network-aurn-coverage-fill");
       const aurnAverage = document.getElementById("network-aurn-average");
       const aurnMedian = document.getElementById("network-aurn-median");
       const aurnHighest = document.getElementById("network-aurn-highest");
@@ -2431,7 +2476,26 @@
           return "0%";
         }
         const percent = (covered / total) * 100;
-        return `${percent.toFixed(1)}%`;
+        return `${Math.round(percent)}%`;
+      }
+
+      function formatCoverageValue(covered, total) {
+        return `${formatCoveragePercent(covered, total)} (${formatNumber(covered)} / ${formatNumber(total)})`;
+      }
+
+      function updateCoverageElements(valueEl, fillEl, barEl, covered, total, areaLabel) {
+        if (!valueEl || !fillEl || !barEl) {
+          return;
+        }
+        const percentRaw = total ? (covered / total) * 100 : 0;
+        const percent = Math.max(0, Math.min(100, percentRaw));
+        const coverageLabel = formatCoverageValue(covered, total);
+        valueEl.textContent = coverageLabel;
+        fillEl.style.width = `${percent}%`;
+        const areaSuffix = areaLabel ? ` ${areaLabel}` : "";
+        const ariaLabel = `Coverage ${coverageLabel}${areaSuffix}`;
+        barEl.setAttribute("aria-label", ariaLabel);
+        barEl.title = ariaLabel;
       }
 
       function formatValue(value) {
@@ -3095,6 +3159,14 @@
           if (def.elements.sensors) {
             def.elements.sensors.textContent = sensorLabel;
           }
+          updateCoverageElements(
+            def.elements.coverageValue,
+            def.elements.coverageFill,
+            def.elements.coverageBar,
+            summary.coverage,
+            TOTAL_PCON_COUNT,
+            "constituencies"
+          );
           if (def.elements.average) {
             def.elements.average.textContent = Number.isFinite(summary.mean)
               ? `${formatValue(summary.mean)} µg/m³`
@@ -3449,7 +3521,7 @@
       }
 
       function updateNetworkSummary() {
-        if (!aurnSensors || !aurnCoverageTile || !aurnCoverageCovered || !aurnCoverageTotal || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
+        if (!aurnSensors || !aurnCoverageValue || !aurnCoverageBar || !aurnCoverageFill || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
           return;
         }
         const summary = computeNetworkSummary(scopedLatestRows, GOVUK_NETWORK_MATCHERS);
@@ -3459,13 +3531,14 @@
         aurnSensors.textContent = summary.totalCount ? sensorLabel : "0";
         const covered = summary.coverage;
         const total = TOTAL_PCON_COUNT;
-        aurnCoverageCovered.textContent = formatNumber(covered);
-        aurnCoverageTotal.textContent = formatNumber(total);
-        aurnCoverageTile.setAttribute(
-          "aria-label",
-          `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} constituencies`
+        updateCoverageElements(
+          aurnCoverageValue,
+          aurnCoverageFill,
+          aurnCoverageBar,
+          covered,
+          total,
+          "constituencies"
         );
-        aurnCoverageTile.title = `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} constituencies (${formatCoveragePercent(covered, total)})`;
         aurnAverage.textContent = Number.isFinite(summary.mean)
           ? `${formatValue(summary.mean)} µg/m³`
           : "-";
@@ -4617,9 +4690,9 @@
       const detailsTableBody = byId("sensor-table-body");
       const networkSummary = byId("network-summary");
       const aurnSensors = byId("network-aurn-sensors");
-      const aurnCoverageTile = byId("network-aurn-coverage-tile");
-      const aurnCoverageCovered = byId("network-aurn-covered");
-      const aurnCoverageTotal = byId("network-aurn-total");
+      const aurnCoverageValue = byId("network-aurn-coverage-value");
+      const aurnCoverageBar = byId("network-aurn-coverage-bar");
+      const aurnCoverageFill = byId("network-aurn-coverage-fill");
       const aurnAverage = byId("network-aurn-average");
       const aurnMedian = byId("network-aurn-median");
       const aurnHighest = byId("network-aurn-highest");
@@ -4782,7 +4855,26 @@
           return "0%";
         }
         const percent = (covered / total) * 100;
-        return `${percent.toFixed(1)}%`;
+        return `${Math.round(percent)}%`;
+      }
+
+      function formatCoverageValue(covered, total) {
+        return `${formatCoveragePercent(covered, total)} (${formatNumber(covered)} / ${formatNumber(total)})`;
+      }
+
+      function updateCoverageElements(valueEl, fillEl, barEl, covered, total, areaLabel) {
+        if (!valueEl || !fillEl || !barEl) {
+          return;
+        }
+        const percentRaw = total ? (covered / total) * 100 : 0;
+        const percent = Math.max(0, Math.min(100, percentRaw));
+        const coverageLabel = formatCoverageValue(covered, total);
+        valueEl.textContent = coverageLabel;
+        fillEl.style.width = `${percent}%`;
+        const areaSuffix = areaLabel ? ` ${areaLabel}` : "";
+        const ariaLabel = `Coverage ${coverageLabel}${areaSuffix}`;
+        barEl.setAttribute("aria-label", ariaLabel);
+        barEl.title = ariaLabel;
       }
 
       function formatValue(value) {
@@ -5665,7 +5757,7 @@
       }
 
       function updateNetworkSummary() {
-        if (!aurnSensors || !aurnCoverageTile || !aurnCoverageCovered || !aurnCoverageTotal || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
+        if (!aurnSensors || !aurnCoverageValue || !aurnCoverageBar || !aurnCoverageFill || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
           return;
         }
         const summary = computeNetworkSummary(scopedLatestRows, GOVUK_NETWORK_MATCHERS);
@@ -5675,13 +5767,14 @@
         aurnSensors.textContent = summary.totalCount ? sensorLabel : "0";
         const covered = summary.coverage;
         const total = pconCodes.size || 0;
-        aurnCoverageCovered.textContent = formatNumber(covered);
-        aurnCoverageTotal.textContent = formatNumber(total);
-        aurnCoverageTile.setAttribute(
-          "aria-label",
-          `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} ${AREA_LABEL_PLURAL}`
+        updateCoverageElements(
+          aurnCoverageValue,
+          aurnCoverageFill,
+          aurnCoverageBar,
+          covered,
+          total,
+          AREA_LABEL_PLURAL
         );
-        aurnCoverageTile.title = `Coverage ${formatNumber(covered)} out of ${formatNumber(total)} ${AREA_LABEL_PLURAL} (${formatCoveragePercent(covered, total)})`;
         aurnAverage.textContent = Number.isFinite(summary.mean)
           ? `${formatValue(summary.mean)} µg/m³`
           : "-";
