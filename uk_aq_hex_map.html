@@ -1862,6 +1862,7 @@
                       <optgroup label="Countries">
                         <option value="Northern Ireland">Northern Ireland</option>
                         <option value="Scotland">Scotland</option>
+                        <option value="Scotland IZ">Scotland IZ</option>
                         <option value="Wales">Wales</option>
                       </optgroup>
                       <optgroup label="English Regions">
@@ -4001,6 +4002,14 @@
 
       function applyNetworkFilters() {
         if (!basePconRows.length && !baseLatestRows.length) {
+          scopedLatestRows = [];
+          latestRows = [];
+          pconRows = [];
+          pconLookup = new Map();
+          updateRowCountText();
+          updateSummary();
+          renderMap();
+          updateDetailsPanel();
           return;
         }
         const networkIds = getActiveNetworkIds();
@@ -4576,10 +4585,13 @@
         hexUrl: "data/LAD/uk_aq_la_hex_2023.json",
         version: "2023",
       };
+      const SCOTLAND_IZ_LABEL = "Scotland IZ";
+      const SCOTLAND_IZ_HEX_URL = "data/IZ/Intermediate_Zones_(December_2011)_Names_and_Codes_in_Scotland.geojson";
       const DEFAULT_REGION = "London";
       const REGION_OPTIONS = [
         "Northern Ireland",
         "Scotland",
+        "Scotland IZ",
         "Wales",
         "East Midlands",
         "East of England",
@@ -4601,7 +4613,6 @@
       let activeRegion = initialRegion;
       mapState.lastCrMap = activeRegion;
       const mapDateKey = normalizeDateKey(mapDateParam);
-      const HEX_DATA_URL = LA_CONFIG.hexUrl;
       const activeLaVersion = laVersionParam || LA_CONFIG.version;
       const METRIC_LABELS = {
         median: "Typical (median)",
@@ -4815,6 +4826,14 @@
           return null;
         }
         return REGION_LOOKUP.get(lower) || null;
+      }
+
+      function isScotlandIz(region) {
+        return region === SCOTLAND_IZ_LABEL;
+      }
+
+      function getHexUrlForRegion(region) {
+        return isScotlandIz(region) ? SCOTLAND_IZ_HEX_URL : LA_CONFIG.hexUrl;
       }
 
 
@@ -5925,20 +5944,27 @@
         const cells = [];
         features.forEach((feature, index) => {
           const props = feature?.properties || {};
+          const laCode = typeof props.la_code === "string" ? props.la_code.trim() : "";
+          const laName = typeof props.la_name === "string" ? props.la_name.trim() : "";
+          const izCode = typeof props.IZ11CD === "string" ? props.IZ11CD.trim() : "";
+          const izName = typeof props.IZ11NM === "string" ? props.IZ11NM.trim() : "";
+          const isIz = isScotlandIz(activeRegion);
           const regionName = typeof props.region_nation === "string"
             ? props.region_nation.trim()
-            : "";
-          if (activeRegion && regionName !== activeRegion) {
+            : (isIz ? "Scotland" : "");
+          if (activeRegion && !isIz && regionName !== activeRegion) {
             return;
           }
           const rings = extractOuterRings(feature?.geometry);
           if (!rings.length) {
             return;
           }
+          const code = laCode || izCode || laName || izName || `la-${index}`;
+          const name = laName || izName || code;
           cells.push({
-            id: props.la_code || props.la_name || `la-${index}`,
-            pcon_code: props.la_code || null,
-            pcon_name: props.la_name || null,
+            id: code,
+            pcon_code: code || null,
+            pcon_name: name || null,
             region_name: regionName || null,
             paths: rings,
           });
@@ -6561,120 +6587,142 @@
         const previousSelection = getCurrentNetworkSelection();
         const hadAllSelected = networkInputs.length > 0
           && networkInputs.every((input) => input.checked);
-        if (!REST_URL) {
-          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
-          setStatus("Error");
-          return;
-        }
-        if (!anonKey) {
-          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
-          setStatus("Error");
-          return;
+        const isIzRegion = isScotlandIz(activeRegion);
+        const hasCredentials = Boolean(REST_URL) && Boolean(anonKey);
+        const canLoadData = !isIzRegion && hasCredentials;
+        if (!hasCredentials && !isIzRegion) {
+          errorEl.textContent = "Missing project ref or anon key. Showing boundaries only.";
         }
         try {
-          const laUrl = new URL(REST_URL);
-          if (activeLaVersion) {
-            laUrl.searchParams.set("la_version", activeLaVersion);
-          }
-          if (activeRegion) {
-            laUrl.searchParams.set("region", activeRegion);
-          }
-          const latestUrl = new URL(LATEST_URL);
-          latestUrl.searchParams.set("pollutant", activePollutant);
-          latestUrl.searchParams.set("scope", "all");
-          latestUrl.searchParams.set("limit", "10000");
-          const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
-          if (populationUrl) {
-            populationUrl.searchParams.set("geo_type", "LAD");
-            if (mapDateKey) {
-              populationUrl.searchParams.set("reference_date", mapDateKey);
+          const hexUrl = getHexUrlForRegion(activeRegion);
+          const hexPromise = fetch(hexUrl);
+          let laPromise = Promise.resolve(null);
+          let latestPromise = Promise.resolve(null);
+          let populationPromise = Promise.resolve(null);
+          if (canLoadData) {
+            const laUrl = new URL(REST_URL);
+            if (activeLaVersion) {
+              laUrl.searchParams.set("la_version", activeLaVersion);
             }
-            populationUrl.searchParams.set("limit", "2000");
-          }
-          const [hexResponse, laResponse, latestResponse, populationResponse] = await Promise.all([
-            fetch(HEX_DATA_URL),
-            fetch(laUrl.toString(), {
+            if (activeRegion) {
+              laUrl.searchParams.set("region", activeRegion);
+            }
+            const latestUrl = new URL(LATEST_URL);
+            latestUrl.searchParams.set("pollutant", activePollutant);
+            latestUrl.searchParams.set("scope", "all");
+            latestUrl.searchParams.set("limit", "10000");
+            const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
+            if (populationUrl) {
+              populationUrl.searchParams.set("geo_type", "LAD");
+              if (mapDateKey) {
+                populationUrl.searchParams.set("reference_date", mapDateKey);
+              }
+              populationUrl.searchParams.set("limit", "2000");
+            }
+            laPromise = fetch(laUrl.toString(), {
               headers: {
                 Authorization: `Bearer ${anonKey}`,
                 apikey: anonKey,
               },
-            }),
-            fetch(latestUrl.toString(), {
+            });
+            latestPromise = fetch(latestUrl.toString(), {
               headers: {
                 Authorization: `Bearer ${anonKey}`,
                 apikey: anonKey,
               },
-            }).catch(() => null),
-            populationUrl
+            }).catch(() => null);
+            populationPromise = populationUrl
               ? fetch(populationUrl.toString(), {
                 headers: {
                   Authorization: `Bearer ${anonKey}`,
                   apikey: anonKey,
                 },
               }).catch(() => null)
-              : Promise.resolve(null),
+              : Promise.resolve(null);
+          }
+          const [hexResponse, laResponse, latestResponse, populationResponse] = await Promise.all([
+            hexPromise,
+            laPromise,
+            latestPromise,
+            populationPromise,
           ]);
           if (!hexResponse.ok) {
             throw new Error(`Hex data request failed: ${hexResponse.status}`);
           }
-          if (!laResponse.ok) {
-            throw new Error(`Local authority request failed: ${laResponse.status}`);
-          }
           hexData = await hexResponse.json();
           prepareHexGrid();
           pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
-          const payload = await laResponse.json();
-          const rawRows = payload?.data || [];
-          basePconRows = rawRows.map((row) => ({
-            ...row,
-            pcon_code: row?.pcon_code || row?.la_code || null,
-            pcon_name: row?.pcon_name || row?.la_name || null,
-            region_name: row?.region_name || row?.region_nation || row?.region || null,
-          })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
-          basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
-          pconRows = basePconRows;
-          pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
-          if (lastUpdated) {
-            if (payload?.last_updated) {
-              lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
-            } else {
-              lastUpdated.textContent = "Latest data unavailable";
+          if (canLoadData) {
+            if (!laResponse || !laResponse.ok) {
+              throw new Error(`Local authority request failed: ${laResponse?.status ?? "unknown"}`);
             }
-          }
-          if (latestResponse && latestResponse.ok) {
-            const latestPayload = await latestResponse.json();
-            const latestRaw = latestPayload?.data || [];
-            const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
-            baseLatestRows = cleanedLatest.filter((row) => {
-              const code = resolvePconCode(row);
-              return !pconCodes.size || (code && pconCodes.has(code));
-            });
-            latestPollutant = latestPayload?.pollutant || null;
-            console.log("uk_aq_latest payload", latestPayload);
-          } else {
-            baseLatestRows = [];
-          }
-          renderNetworkFilters(
-            buildNetworkDefs(baseLatestRows),
-            previousSelection,
-            hadAllSelected
-          );
-          if (populationResponse && populationResponse.ok) {
-            const populationPayload = await populationResponse.json();
-            const populationRows = Array.isArray(populationPayload)
-              ? populationPayload
-              : populationPayload?.data || [];
-            const lookup = new Map();
-            populationRows.forEach((row) => {
-              const code = row?.geo_code;
-              if (!code || lookup.has(code)) {
-                return;
+            const payload = await laResponse.json();
+            const rawRows = payload?.data || [];
+            basePconRows = rawRows.map((row) => ({
+              ...row,
+              pcon_code: row?.pcon_code || row?.la_code || null,
+              pcon_name: row?.pcon_name || row?.la_name || null,
+              region_name: row?.region_name || row?.region_nation || row?.region || null,
+            })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
+            basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
+            pconRows = basePconRows;
+            pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+            if (lastUpdated) {
+              if (payload?.last_updated) {
+                lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
+              } else {
+                lastUpdated.textContent = "Latest data unavailable";
               }
-              lookup.set(code, row);
-            });
-            populationLookup = lookup;
+            }
+            if (latestResponse && latestResponse.ok) {
+              const latestPayload = await latestResponse.json();
+              const latestRaw = latestPayload?.data || [];
+              const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
+              baseLatestRows = cleanedLatest.filter((row) => {
+                const code = resolvePconCode(row);
+                return !pconCodes.size || (code && pconCodes.has(code));
+              });
+              latestPollutant = latestPayload?.pollutant || null;
+              console.log("uk_aq_latest payload", latestPayload);
+            } else {
+              baseLatestRows = [];
+            }
+            renderNetworkFilters(
+              buildNetworkDefs(baseLatestRows),
+              previousSelection,
+              hadAllSelected
+            );
+            if (populationResponse && populationResponse.ok) {
+              const populationPayload = await populationResponse.json();
+              const populationRows = Array.isArray(populationPayload)
+                ? populationPayload
+                : populationPayload?.data || [];
+              const lookup = new Map();
+              populationRows.forEach((row) => {
+                const code = row?.geo_code;
+                if (!code || lookup.has(code)) {
+                  return;
+                }
+                lookup.set(code, row);
+              });
+              populationLookup = lookup;
+            } else {
+              populationLookup = new Map();
+            }
           } else {
+            basePconRows = [];
+            basePconLookup = new Map();
+            pconRows = [];
+            pconLookup = new Map();
+            baseLatestRows = [];
+            scopedLatestRows = [];
+            latestRows = [];
+            latestPollutant = null;
             populationLookup = new Map();
+            renderNetworkFilters([], previousSelection, false);
+            if (lastUpdated) {
+              lastUpdated.textContent = "Boundary only (no sensor data yet)";
+            }
           }
           applyNetworkFilters();
           setStatus("Live");
@@ -6883,6 +6931,7 @@
   const REGION_OPTIONS = [
     "Northern Ireland",
     "Scotland",
+    "Scotland IZ",
     "Wales",
     "East Midlands",
     "East of England",
