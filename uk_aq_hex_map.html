@@ -6624,7 +6624,7 @@
                 Authorization: `Bearer ${anonKey}`,
                 apikey: anonKey,
               },
-            });
+            }).catch(() => null);
             latestPromise = fetch(latestUrl.toString(), {
               headers: {
                 Authorization: `Bearer ${anonKey}`,
@@ -6652,10 +6652,8 @@
           hexData = await hexResponse.json();
           prepareHexGrid();
           pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
-          if (canLoadData) {
-            if (!laResponse || !laResponse.ok) {
-              throw new Error(`Local authority request failed: ${laResponse?.status ?? "unknown"}`);
-            }
+          const laOk = Boolean(canLoadData && laResponse && laResponse.ok);
+          if (laOk) {
             const payload = await laResponse.json();
             const rawRows = payload?.data || [];
             basePconRows = rawRows.map((row) => ({
@@ -6710,6 +6708,9 @@
               populationLookup = new Map();
             }
           } else {
+            if (canLoadData) {
+              errorEl.textContent = "Local authority data unavailable. Showing boundaries only.";
+            }
             basePconRows = [];
             basePconLookup = new Map();
             pconRows = [];
