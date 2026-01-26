@@ -2348,6 +2348,15 @@
       const aurnLowest = document.getElementById("network-aurn-lowest");
       const aurnLatest = document.getElementById("network-aurn-latest");
       const svg = d3.select("#hex-map");
+      const mapResizeTarget = svg.node()?.parentElement || svg.node();
+      if (mapResizeTarget && typeof ResizeObserver !== "undefined") {
+        const mapResizeObserver = new ResizeObserver(() => {
+          if (statusEl.textContent === "Live") {
+            renderMapIfReady();
+          }
+        });
+        mapResizeObserver.observe(mapResizeTarget);
+      }
       const mapSettingsButton = document.querySelector(".map-settings");
       const mapSettingsPanel = document.getElementById("map-settings-panel");
       const mapSettingsClose = document.getElementById("map-settings-close");
@@ -2909,10 +2918,7 @@
 
       function resolvePconCode(row) {
         return row?.pcon_code
-          || row?.pcon
           || row?.station?.pcon_code
-          || row?.station?.pcon
-          || row?.station?.pconCode
           || null;
       }
 
@@ -4237,19 +4243,28 @@
 
       async function loadMapData() {
         setStatus("Loading...");
-        errorEl.textContent = "";
+        if (errorEl) {
+          errorEl.textContent = "";
+          errorEl.hidden = true;
+        }
         latestPollutant = null;
         populationLookup = new Map();
         const previousSelection = getCurrentNetworkSelection();
         const hadAllSelected = networkInputs.length > 0
           && networkInputs.every((input) => input.checked);
         if (!REST_URL) {
-          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+          if (errorEl) {
+            errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+            errorEl.hidden = false;
+          }
           setStatus("Error");
           return;
         }
         if (!anonKey) {
-          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
+          if (errorEl) {
+            errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
+            errorEl.hidden = false;
+          }
           setStatus("Error");
           return;
         }
@@ -4312,12 +4327,16 @@
           } else {
             lastUpdated.textContent = "Latest data unavailable";
           }
+          let latestPayload = null;
+          if (latestResponse) {
+            latestPayload = latestResponse.ok
+              ? await latestResponse.json()
+              : await latestResponse.text();
+          }
           if (latestResponse && latestResponse.ok) {
-            const latestPayload = await latestResponse.json();
             const latestRaw = latestPayload?.data || [];
             baseLatestRows = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
             latestPollutant = latestPayload?.pollutant || null;
-            console.log("uk_aq_latest payload", latestPayload);
           } else {
             baseLatestRows = [];
           }
@@ -4347,7 +4366,11 @@
           setStatus("Live");
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          errorEl.textContent = message;
+          console.error("uk_aq UK map load error", error);
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.hidden = false;
+          }
           setStatus("Error");
         }
       }
@@ -4710,6 +4733,15 @@
       const aurnLowest = byId("network-aurn-lowest");
       const aurnLatest = byId("network-aurn-latest");
       const svg = d3.select("#cr-hex-map");
+      const mapResizeTarget = svg.node()?.parentElement || svg.node();
+      if (mapResizeTarget && typeof ResizeObserver !== "undefined") {
+        const mapResizeObserver = new ResizeObserver(() => {
+          if (statusEl.textContent === "Live") {
+            renderMapIfReady();
+          }
+        });
+        mapResizeObserver.observe(mapResizeTarget);
+      }
       const mapSettingsButton = query(".map-settings");
       const mapSettingsPanel = byId("map-settings-panel");
       const mapSettingsClose = byId("map-settings-close");
@@ -5267,15 +5299,8 @@
       }
 
       function resolvePconCode(row) {
-        return row?.pcon_code
-          || row?.la_code
-          || row?.pcon
-          || row?.la
-          || row?.station?.pcon_code
+        return row?.la_code
           || row?.station?.la_code
-          || row?.station?.pcon
-          || row?.station?.la
-          || row?.station?.pconCode
           || null;
       }
 
@@ -6581,7 +6606,10 @@
 
       async function loadMapData() {
         setStatus("Loading...");
-        errorEl.textContent = "";
+        if (errorEl) {
+          errorEl.textContent = "";
+          errorEl.hidden = true;
+        }
         latestPollutant = null;
         populationLookup = new Map();
         const previousSelection = getCurrentNetworkSelection();
@@ -6591,7 +6619,10 @@
         const hasCredentials = Boolean(REST_URL) && Boolean(anonKey);
         const canLoadData = !isIzRegion && hasCredentials;
         if (!hasCredentials && !isIzRegion) {
-          errorEl.textContent = "Missing project ref or anon key. Showing boundaries only.";
+          if (errorEl) {
+            errorEl.textContent = "Missing project ref or anon key. Showing boundaries only.";
+            errorEl.hidden = false;
+          }
         }
         try {
           const hexUrl = getHexUrlForRegion(activeRegion);
@@ -6658,7 +6689,7 @@
             const rawRows = payload?.data || [];
             basePconRows = rawRows.map((row) => ({
               ...row,
-              pcon_code: row?.pcon_code || row?.la_code || null,
+              pcon_code: row?.la_code || null,
               pcon_name: row?.pcon_name || row?.la_name || null,
               region_name: row?.region_name || row?.region_nation || row?.region || null,
             })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
@@ -6672,8 +6703,13 @@
                 lastUpdated.textContent = "Latest data unavailable";
               }
             }
+            let latestPayload = null;
+            if (latestResponse) {
+              latestPayload = latestResponse.ok
+                ? await latestResponse.json()
+                : await latestResponse.text();
+            }
             if (latestResponse && latestResponse.ok) {
-              const latestPayload = await latestResponse.json();
               const latestRaw = latestPayload?.data || [];
               const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
               baseLatestRows = cleanedLatest.filter((row) => {
@@ -6681,7 +6717,6 @@
                 return !pconCodes.size || (code && pconCodes.has(code));
               });
               latestPollutant = latestPayload?.pollutant || null;
-              console.log("uk_aq_latest payload", latestPayload);
             } else {
               baseLatestRows = [];
             }
@@ -6709,7 +6744,10 @@
             }
           } else {
             if (canLoadData) {
-              errorEl.textContent = "Local authority data unavailable. Showing boundaries only.";
+              if (errorEl) {
+                errorEl.textContent = "Local authority data unavailable. Showing boundaries only.";
+                errorEl.hidden = false;
+              }
             }
             basePconRows = [];
             basePconLookup = new Map();
@@ -6729,7 +6767,11 @@
           setStatus("Live");
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          errorEl.textContent = message;
+          console.error("uk_aq CR map load error", error);
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.hidden = false;
+          }
           setStatus("Error");
         }
       }
