@@ -9,5 +9,8 @@ When proposing plans, offer more than one option when possible, list pros/cons f
 ## Archive
 Files in `archive/` can be referenced for context but must never be modified once created. Adding new files/directories under `archive/` is allowed.
 
+## External Archive Policy
+For `/Users/mikehinford/Library/CloudStorage/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC-test-uk-aq-schema/uk-aq-schema`, edits are allowed for any file except under `archive/` directories. Archive files are read-only; new files may be added under `archive/` but must never be modified once created.
+
 ## Documentation Hygiene
 When adding or updating agent/project notes, also update relevant files under `system_docs` if they need to stay in sync.

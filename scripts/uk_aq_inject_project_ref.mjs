@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const ENV_PATH = path.join(REPO_ROOT, ".env");
-const TARGET_PATH = path.join(REPO_ROOT, "web", "uk_aq_bristol.html");
+const DEFAULT_TARGETS = [
+  "uk_aq_hex_map.html",
+  "index.html",
+  "uk_aq_bristol.html",
+];
 
 const envText = await readFileIfExists(ENV_PATH);
 if (envText) {
@@ -16,6 +20,7 @@ if (envText) {
 const projectRef = (process.env.SUPABASE_PROJECT_REF || "").trim();
 const anonKey = (
   process.env.SB_ANON_JWT
+  || process.env.SUPABASE_ANON_JWT
   || process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY
   || process.env.SUPABASE_ANON_KEY
   || ""
@@ -26,38 +31,46 @@ if (!projectRef) {
   process.exit(1);
 }
 if (!anonKey) {
-  console.error("SB_ANON_JWT is missing. Set it in .env or the environment.");
+  console.error("Anon key is missing. Set SB_ANON_JWT or SUPABASE_ANON_JWT in .env or the environment.");
   process.exit(1);
 }
 
-const html = await fs.readFile(TARGET_PATH, "utf8");
-const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/;
-const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/;
+const cliTargets = process.argv.slice(2).filter(Boolean);
+const targets = (cliTargets.length ? cliTargets : DEFAULT_TARGETS)
+  .map((target) => (path.isAbsolute(target) ? target : path.join(REPO_ROOT, target)));
+const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
+const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/g;
 
-let updated = html;
-updated = replacePlaceholder(
-  updated,
-  refPattern,
-  `const PROJECT_REF_PLACEHOLDER = "${projectRef}";`,
-  "PROJECT_REF_PLACEHOLDER",
-);
-updated = replacePlaceholder(
-  updated,
-  anonPattern,
-  `const ANON_KEY_PLACEHOLDER = "${anonKey}";`,
-  "ANON_KEY_PLACEHOLDER",
-);
+for (const targetPath of targets) {
+  const html = await fs.readFile(targetPath, "utf8");
+  let updated = html;
+  updated = replacePlaceholder(
+    updated,
+    refPattern,
+    `const PROJECT_REF_PLACEHOLDER = "${projectRef}";`,
+    "PROJECT_REF_PLACEHOLDER",
+    targetPath,
+  );
+  updated = replacePlaceholder(
+    updated,
+    anonPattern,
+    `const ANON_KEY_PLACEHOLDER = "${anonKey}";`,
+    "ANON_KEY_PLACEHOLDER",
+    targetPath,
+  );
 
-if (updated !== html) {
-  await fs.writeFile(TARGET_PATH, updated);
-  console.log("Injected SUPABASE_PROJECT_REF and SB_ANON_JWT into web/uk_aq_bristol.html");
-} else {
-  console.log("web/uk_aq_bristol.html already uses the configured SUPABASE project ref and anon key.");
+  if (updated !== html) {
+    await fs.writeFile(targetPath, updated);
+    console.log(`Injected SUPABASE_PROJECT_REF and anon key into ${path.relative(REPO_ROOT, targetPath)}`);
+  } else {
+    console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref and anon key.`);
+  }
 }
 
-function replacePlaceholder(text, pattern, replacement, label) {
-  if (!pattern.test(text)) {
-    console.error(`Could not find ${label} in web/uk_aq_bristol.html`);
+function replacePlaceholder(text, pattern, replacement, label, targetPath) {
+  const matches = text.match(pattern);
+  if (!matches) {
+    console.error(`Could not find ${label} in ${path.relative(REPO_ROOT, targetPath)}`);
     process.exit(1);
   }
   return text.replace(pattern, replacement);

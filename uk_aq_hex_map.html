@@ -597,6 +597,16 @@
 
       .map-header {
         width: 100%;
+        align-items: flex-start;
+      }
+
+      .map-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 280px;
+        align-items: flex-start;
       }
 
       .card-title {
@@ -611,6 +621,24 @@
         align-items: center;
         font-size: 0.9rem;
         color: var(--ink-soft);
+      }
+
+      .pollutant-selector {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .map-header-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .map-header-controls:empty {
+        display: none;
       }
 
       .status-indicator {
@@ -646,7 +674,8 @@
         }
       }
 
-      .actions button {
+      .actions button,
+      .pill-button {
         border: none;
         background: var(--teal);
         color: white;
@@ -654,12 +683,24 @@
         border-radius: 999px;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
       }
 
-      .actions button:hover {
+      .actions button:hover,
+      .pill-button:hover {
         transform: translateY(-1px);
         box-shadow: 0 8px 18px rgba(15, 139, 141, 0.25);
+      }
+
+      .pill-button:focus-visible {
+        outline: 2px solid rgba(15, 139, 141, 0.5);
+        outline-offset: 2px;
+      }
+
+      .pill-button[aria-checked="false"] {
+        background: var(--clay);
+        color: var(--ink);
+        opacity: 0.55;
       }
 
       .filters {
@@ -766,6 +807,11 @@
         gap: 16px;
         align-items: start;
         position: relative;
+      }
+
+      .map-wrap.is-loading .map-canvas svg {
+        opacity: 0.35;
+        filter: grayscale(0.35);
       }
 
 
@@ -1059,6 +1105,7 @@
         width: 100%;
         height: 560px;
         display: block;
+        transition: opacity 0.2s ease, filter 0.2s ease;
       }
 
       .hex {
@@ -1435,7 +1482,23 @@
             <div class="map-panel">
               <div class="map-wrap">
                 <div class="card-header map-header">
-                  <h2 class="card-title">Latest PM2.5 by constituency</h2>
+                  <div class="map-header-left">
+                    <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
+                    <div class="pollutant-slot" data-pollutant-slot>
+                      <div class="pollutant-selector" id="pollutant-selector" role="radiogroup" aria-label="Pollutant">
+                        <button type="button" class="pill-button" data-pollutant="pm25" role="radio" aria-checked="true" tabindex="0">
+                          PM2.5
+                        </button>
+                        <button type="button" class="pill-button" data-pollutant="pm10" role="radio" aria-checked="false" tabindex="-1">
+                          PM10
+                        </button>
+                        <button type="button" class="pill-button" data-pollutant="no2" role="radio" aria-checked="false" tabindex="-1">
+                          NO2
+                        </button>
+                      </div>
+                    </div>
+                    <div class="map-header-controls" data-scope-controls></div>
+                  </div>
                   <div class="actions">
                     <span class="status-indicator" data-state="loading">
                       <span class="pulse-dot" aria-hidden="true"></span>
@@ -1475,14 +1538,14 @@
                     <span class="summary-value" id="summary-stations">-</span>
                   </div>
                   <div class="summary-item">
-                    <span class="summary-label">Highest PM2.5</span>
+                    <span class="summary-label" id="summary-highest-label">Highest PM2.5</span>
                     <span class="summary-value" id="summary-highest-value">-</span>
                     <span class="summary-datetime" id="summary-highest-datetime">-</span>
                     <span class="summary-connector" id="summary-highest-connector">-</span>
                     <span class="summary-name" id="summary-highest-name">-</span>
                   </div>
                   <div class="summary-item">
-                    <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
+                    <span class="summary-label" id="summary-lowest-label">Lowest PM2.5 (Non-zero)</span>
                     <span class="summary-value" id="summary-lowest-value">-</span>
                     <span class="summary-datetime" id="summary-lowest-datetime">-</span>
                     <span class="summary-connector" id="summary-lowest-connector">-</span>
@@ -1491,7 +1554,7 @@
                 </div>
               </aside>
               <div class="legend map-legend">
-                <span>PM2.5 (µg/m³)</span>
+                <span id="legend-pollutant">PM2.5 (µg/m³)</span>
                 <div
                   id="legend-scale"
                   class="legend-scale"
@@ -1812,16 +1875,16 @@
                 </th>
                 <th scope="col" data-sort-key="network" aria-sort="none">
                   <button type="button" class="sort-header" data-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
-                    <span class="sort-label">Network</span>
-                    <span class="sort-icon" aria-hidden="true"></span>
-                  </button>
-                </th>
-                <th scope="col" data-sort-key="pm25" aria-sort="none">
-                  <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
-                    <span class="sort-label">PM2.5</span>
-                    <span class="sort-icon" aria-hidden="true"></span>
-                  </button>
-                </th>
+                  <span class="sort-label">Network</span>
+                  <span class="sort-icon" aria-hidden="true"></span>
+                </button>
+              </th>
+              <th scope="col" data-sort-key="pm25" aria-sort="none">
+                <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
+                  <span class="sort-label" id="sensor-value-label">PM2.5</span>
+                  <span class="sort-icon" aria-hidden="true"></span>
+                </button>
+              </th>
                 <th scope="col" data-sort-key="updated" aria-sort="none">
                   <button type="button" class="sort-header" data-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
                     <span class="sort-label">Updated</span>
@@ -1845,7 +1908,34 @@
             <div class="map-panel">
               <div class="map-wrap">
                 <div class="card-header map-header">
-                  <h2 class="card-title">Latest PM2.5 by local authority</h2>
+                  <div class="map-header-left">
+                    <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
+                    <div class="pollutant-slot" data-pollutant-slot></div>
+                    <div class="map-header-controls" data-scope-controls>
+                      <label class="map-select">
+                        <span>Country or Region</span>
+                        <select id="cr-map-select">
+                          <optgroup label="Countries">
+                            <option value="Northern Ireland">Northern Ireland</option>
+                            <option value="Scotland">Scotland</option>
+                            <option value="Scotland IZ">Scotland IZ</option>
+                            <option value="Wales">Wales</option>
+                          </optgroup>
+                          <optgroup label="English Regions">
+                            <option value="East Midlands">East Midlands</option>
+                            <option value="East of England">East of England</option>
+                            <option value="London" selected>London</option>
+                            <option value="North East">North East</option>
+                            <option value="North West">North West</option>
+                            <option value="South East">South East</option>
+                            <option value="South West">South West</option>
+                            <option value="West Midlands">West Midlands</option>
+                            <option value="Yorkshire and The Humber">Yorkshire and The Humber</option>
+                          </optgroup>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
                   <div class="actions">
                     <span class="status-indicator" data-state="loading">
                       <span class="pulse-dot" aria-hidden="true"></span>
@@ -1856,28 +1946,6 @@
                 </div>
                 <div class="tab-slot" data-tab-slot></div>
                 <div class="map-aside">
-                  <label class="map-select">
-                    <span>Country or Region</span>
-                    <select id="cr-map-select">
-                      <optgroup label="Countries">
-                        <option value="Northern Ireland">Northern Ireland</option>
-                        <option value="Scotland">Scotland</option>
-                        <option value="Scotland IZ">Scotland IZ</option>
-                        <option value="Wales">Wales</option>
-                      </optgroup>
-                      <optgroup label="English Regions">
-                        <option value="East Midlands">East Midlands</option>
-                        <option value="East of England">East of England</option>
-                        <option value="London" selected>London</option>
-                        <option value="North East">North East</option>
-                        <option value="North West">North West</option>
-                        <option value="South East">South East</option>
-                        <option value="South West">South West</option>
-                        <option value="West Midlands">West Midlands</option>
-                        <option value="Yorkshire and The Humber">Yorkshire and The Humber</option>
-                      </optgroup>
-                    </select>
-                  </label>
                   <aside class="network-panel">
                     <div class="network-actions" role="group" aria-label="Network selection actions">
                       <button type="button" id="cr-network-select-all">Select All</button>
@@ -1893,21 +1961,21 @@
                   <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
                 </div>
                 <aside class="summary-card">
-                  <h3 class="summary-title">PM2.5 summary</h3>
+                  <h3 class="summary-title" id="cr-summary-overall-title">PM2.5 summary</h3>
                   <div class="summary-list">
                     <div class="summary-item">
                       <span class="summary-label">Number of sensors</span>
                       <span class="summary-value" id="cr-summary-stations">-</span>
                     </div>
                     <div class="summary-item">
-                      <span class="summary-label">Highest PM2.5</span>
+                      <span class="summary-label" id="cr-summary-highest-label">Highest PM2.5</span>
                       <span class="summary-value" id="cr-summary-highest-value">-</span>
                       <span class="summary-datetime" id="cr-summary-highest-datetime">-</span>
                       <span class="summary-connector" id="cr-summary-highest-connector">-</span>
                       <span class="summary-name" id="cr-summary-highest-name">-</span>
                     </div>
                     <div class="summary-item">
-                      <span class="summary-label">Lowest PM2.5 (Non-zero)</span>
+                      <span class="summary-label" id="cr-summary-lowest-label">Lowest PM2.5 (Non-zero)</span>
                       <span class="summary-value" id="cr-summary-lowest-value">-</span>
                       <span class="summary-datetime" id="cr-summary-lowest-datetime">-</span>
                       <span class="summary-connector" id="cr-summary-lowest-connector">-</span>
@@ -1916,7 +1984,7 @@
                   </div>
                 </aside>
                 <div class="legend map-legend">
-                  <span>PM2.5 (µg/m³)</span>
+                  <span id="cr-legend-pollutant">PM2.5 (µg/m³)</span>
                   <div
                     id="cr-legend-scale"
                     class="legend-scale"
@@ -2081,16 +2149,16 @@
                   </th>
                   <th scope="col" data-sort-key="network" aria-sort="none">
                     <button type="button" class="sort-header" data-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
-                      <span class="sort-label">Network</span>
-                      <span class="sort-icon" aria-hidden="true"></span>
-                    </button>
-                  </th>
-                  <th scope="col" data-sort-key="pm25" aria-sort="none">
-                    <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
-                      <span class="sort-label">PM2.5</span>
-                      <span class="sort-icon" aria-hidden="true"></span>
-                    </button>
-                  </th>
+                    <span class="sort-label">Network</span>
+                    <span class="sort-icon" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col" data-sort-key="pm25" aria-sort="none">
+                  <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
+                    <span class="sort-label" id="cr-sensor-value-label">PM2.5</span>
+                    <span class="sort-icon" aria-hidden="true"></span>
+                  </button>
+                </th>
                   <th scope="col" data-sort-key="updated" aria-sort="none">
                     <button type="button" class="sort-header" data-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
                       <span class="sort-label">Updated</span>
@@ -2112,8 +2180,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
     <script>
-      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
-      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
+      const PROJECT_REF_PLACEHOLDER = "wdbmpleeesfqnwgaaned";
+      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkYm1wbGVlZXNmcW53Z2FhbmVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NDk2NzcsImV4cCI6MjA4MjUyNTY3N30.m5seQ-J_KTgznH2Nhh2GKoCv5ArnfCMU1441PfThZMA";
       const params = new URLSearchParams(window.location.search);
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
@@ -2122,6 +2190,53 @@
       const pollutantParam = params.get("pollutant");
       const mapDateParam = params.get("map_date");
       const pconVersionParam = params.get("pcon_version");
+      const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
+      const initialMetric = (metricParam === "mean" || metricParam === "median")
+        ? metricParam
+        : (sharedSettings.metric || "mean");
+      const initialColorScale = (colorScaleParam === "linear" || colorScaleParam === "power")
+        ? colorScaleParam
+        : (sharedSettings.colorScale || "power");
+      const initialWindow = sharedSettings.window || "all";
+      sharedSettings.metric = initialMetric;
+      sharedSettings.colorScale = initialColorScale;
+      sharedSettings.window = initialWindow;
+      window.updateMapSettings = (partial, source) => {
+        if (!partial) {
+          return;
+        }
+        const nextMetric = (partial.metric === "mean" || partial.metric === "median")
+          ? partial.metric
+          : sharedSettings.metric;
+        const nextColorScale = (partial.colorScale === "linear" || partial.colorScale === "power")
+          ? partial.colorScale
+          : sharedSettings.colorScale;
+        const nextWindow = (partial.window && partial.window in WINDOW_OPTIONS)
+          ? partial.window
+          : sharedSettings.window;
+        const hasChanged = nextMetric !== sharedSettings.metric
+          || nextColorScale !== sharedSettings.colorScale
+          || nextWindow !== sharedSettings.window;
+        sharedSettings.metric = nextMetric;
+        sharedSettings.colorScale = nextColorScale;
+        sharedSettings.window = nextWindow;
+        if (partial.metric) {
+          setQueryParam("metric", sharedSettings.metric);
+        }
+        if (partial.colorScale) {
+          setQueryParam("color_scale", sharedSettings.colorScale);
+        }
+        if (hasChanged) {
+          window.dispatchEvent(new CustomEvent("mapsettingschange", {
+            detail: {
+              metric: sharedSettings.metric,
+              colorScale: sharedSettings.colorScale,
+              window: sharedSettings.window,
+              source,
+            },
+          }));
+        }
+      };
       const inferredProjectRef = inferProjectRefFromHost();
       const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
         ? (projectRefParam || inferredProjectRef || "")
@@ -2138,7 +2253,14 @@
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
         : "";
-      const activePollutant = pollutantParam || "PM2.5";
+      const POLLUTANT_OPTIONS = [
+        { key: "pm25", label: "PM2.5", unit: "µg/m³" },
+        { key: "pm10", label: "PM10", unit: "µg/m³" },
+        { key: "no2", label: "NO2", unit: "µg/m³" },
+      ];
+      let activePollutant = normalizePollutantKey(pollutantParam) || "pm25";
+      const POLLUTANT_CACHE_TTL = 60 * 1000;
+      const pollutantCache = new Map();
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
         {
@@ -2267,6 +2389,12 @@
       const rowCount = document.getElementById("row-count");
       const lastUpdated = document.getElementById("last-updated");
       const endpointHint = document.getElementById("endpoint-hint");
+      const mapTitle = document.getElementById("map-title");
+      const pollutantSelector = document.getElementById("pollutant-selector");
+      const pollutantButtons = pollutantSelector
+        ? Array.from(pollutantSelector.querySelectorAll("button[data-pollutant]"))
+        : [];
+      const legendPollutantLabel = document.getElementById("legend-pollutant");
       const legendLabel = document.getElementById("legend-label");
       const legendMin = document.getElementById("legend-min");
       const legendMax = document.getElementById("legend-max");
@@ -2274,6 +2402,8 @@
       const legendTicks = Array.from(document.querySelectorAll(".legend-tick"));
       const legendTickLabels = Array.from(document.querySelectorAll(".legend-tick-label"));
       const summaryStations = document.getElementById("summary-stations");
+      const summaryHighestLabel = document.getElementById("summary-highest-label");
+      const summaryLowestLabel = document.getElementById("summary-lowest-label");
       const summaryLowestValue = document.getElementById("summary-lowest-value");
       const summaryLowestDatetime = document.getElementById("summary-lowest-datetime");
       const summaryLowestConnector = document.getElementById("summary-lowest-connector");
@@ -2282,6 +2412,7 @@
       const summaryHighestDatetime = document.getElementById("summary-highest-datetime");
       const summaryHighestConnector = document.getElementById("summary-highest-connector");
       const summaryHighestName = document.getElementById("summary-highest-name");
+      const sensorValueLabel = document.getElementById("sensor-value-label");
       const overallSummaryCard = document.getElementById("overall-summary");
       const overallSummaryTitle = document.getElementById("summary-overall-title");
       const extraNetworkSummaryDefs = [
@@ -2347,6 +2478,7 @@
       const aurnHighest = document.getElementById("network-aurn-highest");
       const aurnLowest = document.getElementById("network-aurn-lowest");
       const aurnLatest = document.getElementById("network-aurn-latest");
+      const mapSvg = document.getElementById("hex-map");
       const svg = d3.select("#hex-map");
       const mapResizeTarget = svg.node()?.parentElement || svg.node();
       if (mapResizeTarget && typeof ResizeObserver !== "undefined") {
@@ -2361,6 +2493,7 @@
       const mapSettingsPanel = document.getElementById("map-settings-panel");
       const mapSettingsClose = document.getElementById("map-settings-close");
       const mapPanel = document.querySelector(".map-panel");
+      const mapWrap = document.querySelector("#tab-panel-uk .map-wrap");
       const windowInputs = Array.from(document.querySelectorAll("input[name='averagingWindow']"));
       const metricInputs = Array.from(document.querySelectorAll("input[name='metricSelect']"));
       const metricGroup = document.querySelector(".metric-group");
@@ -2379,9 +2512,9 @@
         .map((header) => header.querySelector("button[data-sort-key]"))
         .filter(Boolean);
 
-      let currentMetric = metricParam === "median" ? "median" : "mean";
-      let currentColorScale = colorScaleParam === "linear" ? "linear" : "power";
-      let currentWindow = "all";
+      let currentMetric = initialMetric;
+      let currentColorScale = initialColorScale;
+      let currentWindow = initialWindow;
       let sortKey = "pm25";
       let sortDir = "desc";
       let hexData = null;
@@ -2457,12 +2590,12 @@
         return Number.isFinite(numeric) ? numeric : null;
       }
 
-      function clampPm25(value) {
+      function clampValue(value, pollutantKey) {
         const numeric = normalizeNumber(value);
         if (numeric === null) {
           return null;
         }
-        if (numeric > MAX_VALID_PM25_VALUE) {
+        if (pollutantKey === "pm25" && numeric > MAX_VALID_PM25_VALUE) {
           return null;
         }
         return numeric;
@@ -2577,8 +2710,167 @@
         return value;
       }
 
+      function setWindow(nextWindow, options = {}) {
+        const normalized = normalizeWindowKey(nextWindow);
+        if (!normalized) {
+          return;
+        }
+        if (normalized === currentWindow) {
+          syncWindowInputs();
+          return;
+        }
+        currentWindow = normalized;
+        syncWindowInputs();
+        applyNetworkFilters();
+        if (!options.silent) {
+          window.updateMapSettings?.({ window: currentWindow }, "uk");
+        }
+      }
+
       function formatWindowLabel(value) {
         return WINDOW_LABELS[value] || WINDOW_LABELS.all;
+      }
+
+      function getPollutantLabel(key) {
+        const match = POLLUTANT_OPTIONS.find((option) => option.key === key);
+        return match ? match.label : "PM2.5";
+      }
+
+      function getPollutantUnits(key) {
+        const match = POLLUTANT_OPTIONS.find((option) => option.key === key);
+        return match ? match.unit : "µg/m³";
+      }
+
+      function getNonZeroThreshold() {
+        return activePollutant === "pm25" ? MIN_VALID_PM25_VALUE : 0;
+      }
+
+      function updatePollutantLabels() {
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        const pollutantUnits = getPollutantUnits(activePollutant);
+        if (mapTitle) {
+          mapTitle.textContent = `Latest ${pollutantLabel} by constituency`;
+        }
+        if (legendPollutantLabel) {
+          legendPollutantLabel.textContent = `${pollutantLabel} (${pollutantUnits})`;
+        }
+        if (overallSummaryTitle) {
+          overallSummaryTitle.textContent = `${pollutantLabel} summary`;
+        }
+        if (summaryHighestLabel) {
+          summaryHighestLabel.textContent = `Highest ${pollutantLabel}`;
+        }
+        if (summaryLowestLabel) {
+          summaryLowestLabel.textContent = `Lowest ${pollutantLabel} (Non-zero)`;
+        }
+        if (sensorValueLabel) {
+          sensorValueLabel.textContent = pollutantLabel;
+        }
+        if (mapSvg) {
+          mapSvg.setAttribute("aria-label", `Hex cartogram of ${pollutantLabel} by constituency`);
+        }
+      }
+
+      function setMapLoading(isLoading) {
+        if (!mapWrap) {
+          return;
+        }
+        mapWrap.classList.toggle("is-loading", isLoading);
+        if (isLoading && tooltip) {
+          tooltip.classList.remove("visible");
+        }
+      }
+
+      function getPollutantCache(key) {
+        const cached = pollutantCache.get(key);
+        if (!cached) {
+          return null;
+        }
+        if (Date.now() - cached.timestamp > POLLUTANT_CACHE_TTL) {
+          return null;
+        }
+        return cached;
+      }
+
+      function applyCachedPollutant(key) {
+        const cached = getPollutantCache(key);
+        if (!cached) {
+          return false;
+        }
+        const previousSelection = getCurrentNetworkSelection();
+        const hadAllSelected = networkInputs.length > 0
+          && networkInputs.every((input) => input.checked);
+        baseLatestRows = cached.latestRows;
+        latestPollutant = cached.latestPollutant || key;
+        renderNetworkFilters(
+          buildNetworkDefs(baseLatestRows),
+          previousSelection,
+          hadAllSelected
+        );
+        applyNetworkFilters();
+        requestAnimationFrame(() => {
+          setMapLoading(false);
+        });
+        return true;
+      }
+
+      function syncPollutantButtons() {
+        if (!pollutantButtons.length) {
+          return;
+        }
+        pollutantButtons.forEach((button) => {
+          const key = button.dataset.pollutant;
+          const isActive = key === activePollutant;
+          button.setAttribute("aria-checked", isActive ? "true" : "false");
+          button.tabIndex = isActive ? 0 : -1;
+        });
+      }
+
+      function setActivePollutant(nextPollutant, options = {}) {
+        if (!nextPollutant) {
+          return;
+        }
+        const normalized = normalizePollutantKey(nextPollutant);
+        if (!normalized || normalized === activePollutant) {
+          syncPollutantButtons();
+          updatePollutantLabels();
+          return;
+        }
+        activePollutant = normalized;
+        updatePollutantLabels();
+        syncPollutantButtons();
+        setQueryParam("pollutant", activePollutant);
+        window.dispatchEvent(new CustomEvent("pollutantchange", { detail: { pollutant: activePollutant } }));
+        if (options.deferFetch) {
+          return;
+        }
+        setMapLoading(true);
+        if (applyCachedPollutant(activePollutant)) {
+          return;
+        }
+        loadMapData();
+      }
+
+      function handlePollutantKeydown(event) {
+        if (!pollutantButtons.length) {
+          return;
+        }
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+          return;
+        }
+        event.preventDefault();
+        const currentIndex = pollutantButtons.findIndex((button) => button.dataset.pollutant === activePollutant);
+        if (currentIndex === -1) {
+          return;
+        }
+        const direction = (event.key === "ArrowLeft" || event.key === "ArrowUp") ? -1 : 1;
+        const nextIndex = (currentIndex + direction + pollutantButtons.length) % pollutantButtons.length;
+        const nextButton = pollutantButtons[nextIndex];
+        if (!nextButton) {
+          return;
+        }
+        setActivePollutant(nextButton.dataset.pollutant);
+        nextButton.focus();
       }
 
       function getWindowCutoff() {
@@ -2655,7 +2947,13 @@
         }
       }
 
-      function applyColorScale(nextScale) {
+      function syncWindowInputs() {
+        windowInputs.forEach((input) => {
+          input.checked = input.value === currentWindow;
+        });
+      }
+
+      function setColorScale(nextScale, options = {}) {
         if (!nextScale) {
           return;
         }
@@ -2667,6 +2965,9 @@
         syncColorScaleInputs();
         updateLegendScaleDescription();
         renderMap();
+        if (!options.silent) {
+          window.updateMapSettings?.({ colorScale: currentColorScale }, "uk");
+        }
       }
 
       function updateLegendScaleDescription() {
@@ -2934,14 +3235,14 @@
       }
 
       function resolveLatestValue(row) {
-        return clampPm25(
-          row?.last_value
+        const raw = row?.last_value
           ?? row?.latest_value
           ?? row?.value
           ?? row?.observed_value
           ?? row?.lastValue
-          ?? row?.latestValue
-        );
+          ?? row?.latestValue;
+        const pollutantKey = getPollutantKeyFromRow(row) || activePollutant;
+        return clampValue(raw, pollutantKey);
       }
 
       function resolveLatestTimestamp(row) {
@@ -2961,6 +3262,7 @@
 
       function extractPollutantText(row) {
         return [
+          row?.pollutant,
           row?.pollutant_label,
           row?.phenomenon_label,
           row?.phenomenon?.pollutant_label,
@@ -2979,23 +3281,89 @@
           || (value.includes("particulate") && /2\s*\.?\s*5/.test(value));
       }
 
+      function isPm10Text(value) {
+        if (!value) {
+          return false;
+        }
+        return /pm\s*10/.test(value)
+          || value.includes("pm10")
+          || value.includes("pm_10")
+          || (value.includes("particulate") && /10/.test(value));
+      }
+
+      function isNo2Text(value) {
+        if (!value) {
+          return false;
+        }
+        return /no\s*2/.test(value)
+          || value.includes("no2")
+          || value.includes("no_2")
+          || value.includes("nitrogen dioxide");
+      }
+
+      function getPollutantKeyFromText(value) {
+        if (!value) {
+          return null;
+        }
+        if (isPm25Text(value)) {
+          return "pm25";
+        }
+        if (isPm10Text(value)) {
+          return "pm10";
+        }
+        if (isNo2Text(value)) {
+          return "no2";
+        }
+        return null;
+      }
+
+      function getPollutantKeyFromRow(row) {
+        return getPollutantKeyFromText(extractPollutantText(row));
+      }
+
+      function normalizePollutantKey(value) {
+        if (!value) {
+          return null;
+        }
+        const trimmed = String(value).trim().toLowerCase();
+        if (!trimmed) {
+          return null;
+        }
+        return getPollutantKeyFromText(trimmed);
+      }
+
       function isPm25Row(row) {
         return isPm25Text(extractPollutantText(row));
       }
 
+      function rowMatchesPollutant(row, pollutantKey) {
+        if (!pollutantKey) {
+          return false;
+        }
+        const key = getPollutantKeyFromRow(row);
+        return key === pollutantKey;
+      }
+
       function getRowsForActivePollutant(rows) {
-        const pollutantHint = typeof latestPollutant === "string"
-          ? latestPollutant.toLowerCase()
-          : "";
-        const useAllPm25 = isPm25Text(pollutantHint) || (!pollutantHint && rows.length > 0);
-        return useAllPm25 ? rows : rows.filter((row) => isPm25Row(row));
+        if (!rows.length) {
+          return rows;
+        }
+        const hintKey = latestPollutant;
+        if (hintKey && hintKey === activePollutant) {
+          return rows;
+        }
+        const hasLabels = rows.some((row) => extractPollutantText(row));
+        if (!hintKey && !hasLabels) {
+          return rows;
+        }
+        return rows.filter((row) => rowMatchesPollutant(row, activePollutant));
       }
 
       function remapGovUkNetworksForPm25(row, entries) {
         if (!entries.length) {
           return entries;
         }
-        const hasPm25Context = isPm25Text(activePollutant) || isPm25Row(row);
+        const hasPm25Context = activePollutant === "pm25" || getPollutantKeyFromRow(row) === "pm25";
         if (!hasPm25Context) {
           return entries;
         }
@@ -3156,6 +3524,7 @@
         if (!extraNetworkSummaryDefs.length) {
           return;
         }
+        const pollutantUnits = getPollutantUnits(activePollutant);
         extraNetworkSummaryDefs.forEach((def) => {
           const summary = computeNetworkSummary(scopedLatestRows, def.matchers);
           const sensorLabel = summary.totalCount
@@ -3176,22 +3545,22 @@
           );
           if (def.elements.average) {
             def.elements.average.textContent = Number.isFinite(summary.mean)
-              ? `${formatValue(summary.mean)} µg/m³`
+              ? `${formatValue(summary.mean)} ${pollutantUnits}`
               : "-";
           }
           if (def.elements.median) {
             def.elements.median.textContent = Number.isFinite(summary.median)
-              ? `${formatValue(summary.median)} µg/m³`
+              ? `${formatValue(summary.median)} ${pollutantUnits}`
               : "-";
           }
           if (def.elements.highest) {
             def.elements.highest.textContent = summary.highest
-              ? `${formatValue(summary.highest.value)} µg/m³ · ${formatSummaryTimestamp(summary.highest.timestamp)}`
+              ? `${formatValue(summary.highest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.highest.timestamp)}`
               : "-";
           }
           if (def.elements.lowest) {
             def.elements.lowest.textContent = summary.lowest
-              ? `${formatValue(summary.lowest.value)} µg/m³ · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
+              ? `${formatValue(summary.lowest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
               : "-";
           }
           if (def.elements.latest) {
@@ -3208,8 +3577,11 @@
           || !summaryHighestConnector || !summaryHighestName) {
           return;
         }
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        const pollutantUnits = getPollutantUnits(activePollutant);
+        updatePollutantLabels();
         if (overallSummaryTitle) {
-          overallSummaryTitle.textContent = "PM2.5 summary";
+          overallSummaryTitle.textContent = `${pollutantLabel} summary`;
         }
         if (!pconRows.length) {
           summaryStations.textContent = "-";
@@ -3223,16 +3595,7 @@
 
         const summaryBaseRows = filterRowsByWindow(scopedLatestRows);
         const rowsForSummary = getRowsForActivePollutant(summaryBaseRows);
-        let rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
-        if (!rowsWithPcon.length && summaryBaseRows.length) {
-          const pollutantHint = typeof latestPollutant === "string"
-            ? latestPollutant.toLowerCase()
-            : "";
-          const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && summaryBaseRows.length > 0);
-          if (!hasPm25Hint) {
-            rowsWithPcon = summaryBaseRows.filter((row) => resolvePconCode(row));
-          }
-        }
+        const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
         let candidates = rowsWithPcon
           .map((row) => {
             const value = resolveLatestValue(row);
@@ -3247,15 +3610,16 @@
           summaryLowestValue.textContent = "-";
           summaryLowestDatetime.textContent = "-";
           summaryLowestConnector.textContent = "-";
-          summaryLowestName.textContent = "No PM2.5 data";
+          summaryLowestName.textContent = `No ${pollutantLabel} data`;
           summaryHighestValue.textContent = "-";
           summaryHighestDatetime.textContent = "-";
           summaryHighestConnector.textContent = "-";
-          summaryHighestName.textContent = "No PM2.5 data";
+          summaryHighestName.textContent = `No ${pollutantLabel} data`;
           return;
         }
 
-        const candidatesForLowest = candidates.filter(({ value }) => value > MIN_VALID_PM25_VALUE);
+        const nonZeroThreshold = getNonZeroThreshold();
+        const candidatesForLowest = candidates.filter(({ value }) => value > nonZeroThreshold);
         const lowestPool = candidatesForLowest.length ? candidatesForLowest : candidates;
 
         let lowest = lowestPool[0];
@@ -3272,11 +3636,11 @@
           }
         }
 
-        summaryLowestValue.textContent = `${formatValue(lowest.value)} µg/m³`;
+        summaryLowestValue.textContent = `${formatValue(lowest.value)} ${pollutantUnits}`;
         summaryLowestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(lowest.row));
         summaryLowestConnector.textContent = resolveConnectorLabel(lowest.row);
         summaryLowestName.textContent = resolveStationName(lowest.row);
-        summaryHighestValue.textContent = `${formatValue(highest.value)} µg/m³`;
+        summaryHighestValue.textContent = `${formatValue(highest.value)} ${pollutantUnits}`;
         summaryHighestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(highest.row));
         summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
         summaryHighestName.textContent = resolveStationName(highest.row);
@@ -3288,7 +3652,8 @@
 
       function updateRowCountText() {
         const withData = pconRows.filter((row) => getStationCount(row) > 0);
-        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with PM2.5 data`;
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with ${pollutantLabel} data`;
       }
 
       function updateLegend(minValue, maxValue, capValue) {
@@ -3469,6 +3834,7 @@
         if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
           return;
         }
+        const pollutantUnits = getPollutantUnits(activePollutant);
         if (!selectedPconCode) {
           detailsTitle.textContent = "All Sensors";
           detailsMeta.textContent = "Network summary for the current window.";
@@ -3519,7 +3885,7 @@
             <tr class="${rowClass}">
               <td>${stationName}</td>
               <td>${networkLabel}</td>
-              <td>${formatValue(entry.value)} µg/m³</td>
+              <td>${formatValue(entry.value)} ${pollutantUnits}</td>
               <td>${updatedText}</td>
               <td class="${statusClass}">${windowLabel}</td>
             </tr>
@@ -3531,6 +3897,7 @@
         if (!aurnSensors || !aurnCoverageValue || !aurnCoverageBar || !aurnCoverageFill || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
           return;
         }
+        const pollutantUnits = getPollutantUnits(activePollutant);
         const summary = computeNetworkSummary(scopedLatestRows, GOVUK_NETWORK_MATCHERS);
         const sensorLabel = currentWindow === "all"
           ? formatNumber(summary.totalCount)
@@ -3547,16 +3914,16 @@
           "constituencies"
         );
         aurnAverage.textContent = Number.isFinite(summary.mean)
-          ? `${formatValue(summary.mean)} µg/m³`
+          ? `${formatValue(summary.mean)} ${pollutantUnits}`
           : "-";
         aurnMedian.textContent = Number.isFinite(summary.median)
-          ? `${formatValue(summary.median)} µg/m³`
+          ? `${formatValue(summary.median)} ${pollutantUnits}`
           : "-";
         aurnHighest.textContent = summary.highest
-          ? `${formatValue(summary.highest.value)} µg/m³ · ${formatSummaryTimestamp(summary.highest.timestamp)}`
+          ? `${formatValue(summary.highest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.highest.timestamp)}`
           : "-";
         aurnLowest.textContent = summary.lowest
-          ? `${formatValue(summary.lowest.value)} µg/m³ · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
+          ? `${formatValue(summary.lowest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
           : "-";
         aurnLatest.textContent = summary.latestTimestamp
           ? formatSummaryTimestamp(summary.latestTimestamp)
@@ -3901,6 +4268,38 @@
         }
       }
 
+      function setMetric(nextMetric, options = {}) {
+        if (!nextMetric) {
+          return;
+        }
+        if (nextMetric === currentMetric) {
+          applyMetricState();
+          return;
+        }
+        currentMetric = nextMetric;
+        applyMetricState();
+        renderMap();
+        if (!options.silent) {
+          window.updateMapSettings?.({ metric: currentMetric }, "cr");
+        }
+      }
+
+      function setMetric(nextMetric, options = {}) {
+        if (!nextMetric) {
+          return;
+        }
+        if (nextMetric === currentMetric) {
+          applyMetricState();
+          return;
+        }
+        currentMetric = nextMetric;
+        applyMetricState();
+        renderMap();
+        if (!options.silent) {
+          window.updateMapSettings?.({ metric: currentMetric }, "uk");
+        }
+      }
+
       function getMetricValue(row) {
         if (!row) {
           return null;
@@ -3908,7 +4307,7 @@
         const raw = currentMetric === "mean"
           ? row.mean_value
           : row.median_value;
-        return clampPm25(raw);
+        return clampValue(raw, activePollutant);
       }
 
       function getStationCount(row) {
@@ -3951,11 +4350,8 @@
           return [];
         }
         const groups = new Map();
-        rows.forEach((row, index) => {
-          const pollutantText = extractPollutantText(row);
-          if (pollutantText && !isPm25Text(pollutantText)) {
-            return;
-          }
+        const scopedRows = getRowsForActivePollutant(rows);
+        scopedRows.forEach((row, index) => {
           const pconCode = resolvePconCode(row);
           if (!pconCode) {
             return;
@@ -4042,6 +4438,8 @@
         const metricValue = getMetricValue(row);
         const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown constituency";
         const regionLabel = cell.region_name || cell.region_code || "Unknown region";
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        const pollutantUnits = getPollutantUnits(activePollutant);
         const populationEntry = populationLookup.get(cell.pcon_code);
         const populationValue = normalizeNumber(populationEntry?.population_value);
         const populationDate = parseDate(populationEntry?.reference_date);
@@ -4050,8 +4448,8 @@
           ? "Population: n/a"
           : `Population${populationYear ? ` (${populationYear})` : ""}: ${formatNumber(populationValue)}`;
         const valueLabel = Number.isFinite(metricValue)
-          ? `${formatValue(metricValue)} µg/m³`
-          : "No PM2.5 data";
+          ? `${formatValue(metricValue)} ${pollutantUnits}`
+          : `No ${pollutantLabel} data`;
         const rowsForTooltip = getRowsForActivePollutant(latestRows)
           .filter((item) => resolvePconCode(item) === cell.pcon_code);
         const stationEntries = collectStationEntries(rowsForTooltip, cell.pcon_code);
@@ -4258,6 +4656,7 @@
             errorEl.hidden = false;
           }
           setStatus("Error");
+          setMapLoading(false);
           return;
         }
         if (!anonKey) {
@@ -4266,6 +4665,7 @@
             errorEl.hidden = false;
           }
           setStatus("Error");
+          setMapLoading(false);
           return;
         }
         try {
@@ -4277,14 +4677,14 @@
           latestUrl.searchParams.set("pollutant", activePollutant);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
-          const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
-          if (populationUrl) {
-            populationUrl.searchParams.set("geo_type", "PCON");
-            if (mapDateKey) {
-              populationUrl.searchParams.set("reference_date", mapDateKey);
-            }
-            populationUrl.searchParams.set("limit", "2000");
-          }
+          // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
+          // if (populationUrl) {
+          //   populationUrl.searchParams.set("geo_type", "PCON");
+          //   if (mapDateKey) {
+          //     populationUrl.searchParams.set("reference_date", mapDateKey);
+          //   }
+          //   populationUrl.searchParams.set("limit", "2000");
+          // }
           const [hexResponse, pconResponse, latestResponse, populationResponse] = await Promise.all([
             fetch(HEX_DATA_URL),
             fetch(pconUrl.toString(), {
@@ -4299,14 +4699,15 @@
                 apikey: anonKey,
               },
             }).catch(() => null),
-            populationUrl
-              ? fetch(populationUrl.toString(), {
-                headers: {
-                  Authorization: `Bearer ${anonKey}`,
-                  apikey: anonKey,
-                },
-              }).catch(() => null)
-              : Promise.resolve(null),
+            // populationUrl
+            //   ? fetch(populationUrl.toString(), {
+            //     headers: {
+            //       Authorization: `Bearer ${anonKey}`,
+            //       apikey: anonKey,
+            //     },
+            //   }).catch(() => null)
+            //   : Promise.resolve(null),
+            Promise.resolve(null),
           ]);
           if (!hexResponse.ok) {
             throw new Error(`Hex data request failed: ${hexResponse.status}`);
@@ -4336,7 +4737,12 @@
           if (latestResponse && latestResponse.ok) {
             const latestRaw = latestPayload?.data || [];
             baseLatestRows = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
-            latestPollutant = latestPayload?.pollutant || null;
+            latestPollutant = normalizePollutantKey(latestPayload?.pollutant) || null;
+            pollutantCache.set(activePollutant, {
+              timestamp: Date.now(),
+              latestRows: baseLatestRows,
+              latestPollutant,
+            });
           } else {
             baseLatestRows = [];
           }
@@ -4372,6 +4778,8 @@
             errorEl.hidden = false;
           }
           setStatus("Error");
+        } finally {
+          setMapLoading(false);
         }
       }
 
@@ -4381,19 +4789,17 @@
             return;
           }
           const metric = input.value;
-          if (!metric || metric === currentMetric) {
+          if (!metric) {
             return;
           }
-          currentMetric = metric;
-          applyMetricState();
-          renderMap();
+          setMetric(metric);
         });
       });
 
       colorScaleInputs.forEach((input) => {
         input.addEventListener("change", () => {
           if (input.checked) {
-            applyColorScale(input.value);
+            setColorScale(input.value);
           }
         });
       });
@@ -4403,8 +4809,7 @@
           if (!input.checked) {
             return;
           }
-          currentWindow = normalizeWindowKey(input.value);
-          applyNetworkFilters();
+          setWindow(input.value);
         });
       });
 
@@ -4412,7 +4817,7 @@
         colorScaleToggle.addEventListener("click", (event) => {
           event.preventDefault();
           const nextScale = currentColorScale === "power" ? "linear" : "power";
-          applyColorScale(nextScale);
+          setColorScale(nextScale);
           const nextInput = colorScaleInputs.find((input) => input.value === nextScale);
           if (nextInput) {
             nextInput.focus();
@@ -4424,9 +4829,7 @@
         metricToggle.addEventListener("click", (event) => {
           event.preventDefault();
           const nextMetric = currentMetric === "mean" ? "median" : "mean";
-          currentMetric = nextMetric;
-          applyMetricState();
-          renderMap();
+          setMetric(nextMetric);
           const nextInput = metricInputs.find((input) => input.value === nextMetric);
           if (nextInput) {
             nextInput.focus();
@@ -4445,7 +4848,7 @@
           }
           event.preventDefault();
           const nextScale = currentColorScale === "power" ? "linear" : "power";
-          applyColorScale(nextScale);
+          setColorScale(nextScale);
           const nextInput = colorScaleInputs.find((input) => input.value === nextScale);
           if (nextInput) {
             nextInput.focus();
@@ -4464,9 +4867,7 @@
           }
           event.preventDefault();
           const nextMetric = currentMetric === "mean" ? "median" : "mean";
-          currentMetric = nextMetric;
-          applyMetricState();
-          renderMap();
+          setMetric(nextMetric);
           const nextInput = metricInputs.find((input) => input.value === nextMetric);
           if (nextInput) {
             nextInput.focus();
@@ -4499,6 +4900,22 @@
         closeSettingsPanel();
       });
 
+      window.addEventListener("mapsettingschange", (event) => {
+        const detail = event.detail || {};
+        if (detail.source === "uk") {
+          return;
+        }
+        if (detail.metric) {
+          setMetric(detail.metric, { silent: true });
+        }
+        if (detail.colorScale) {
+          setColorScale(detail.colorScale, { silent: true });
+        }
+        if (detail.window) {
+          setWindow(detail.window, { silent: true });
+        }
+      });
+
       document.addEventListener("click", (event) => {
         if (!selectedPconCode) {
           return;
@@ -4513,6 +4930,15 @@
         }
         setSelectedCell(null);
       });
+
+      pollutantButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          setActivePollutant(button.dataset.pollutant);
+        });
+      });
+      if (pollutantSelector) {
+        pollutantSelector.addEventListener("keydown", handlePollutantKeydown);
+      }
 
       if (networkSelectAll) {
         networkSelectAll.addEventListener("click", handleNetworkAction);
@@ -4546,7 +4972,10 @@
         syncSettingsPanelWidth();
       });
       applyMetricState();
-      currentWindow = normalizeWindowKey(windowInputs.find((input) => input.checked)?.value);
+      syncPollutantButtons();
+      updatePollutantLabels();
+      currentWindow = normalizeWindowKey(sharedSettings.window || currentWindow);
+      syncWindowInputs();
       syncSettingsPanelWidth();
       syncColorScaleInputs();
       updateLegendScaleDescription();
@@ -4575,8 +5004,8 @@
   const query = (selector) => root.querySelector(selector);
   const queryAll = (selector) => Array.from(root.querySelectorAll(selector));
 
-      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
-      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
+      const PROJECT_REF_PLACEHOLDER = "wdbmpleeesfqnwgaaned";
+      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkYm1wbGVlZXNmcW53Z2FhbmVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NDk2NzcsImV4cCI6MjA4MjUyNTY3N30.m5seQ-J_KTgznH2Nhh2GKoCv5ArnfCMU1441PfThZMA";
       const params = new URLSearchParams(window.location.search);
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
@@ -4585,6 +5014,16 @@
       const pollutantParam = params.get("pollutant");
       const mapDateParam = params.get("map_date");
       const laVersionParam = params.get("la_version");
+      const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
+      if (!sharedSettings.metric) {
+        sharedSettings.metric = (metricParam === "mean" || metricParam === "median") ? metricParam : "mean";
+      }
+      if (!sharedSettings.colorScale) {
+        sharedSettings.colorScale = (colorScaleParam === "linear" || colorScaleParam === "power") ? colorScaleParam : "power";
+      }
+      if (!sharedSettings.window) {
+        sharedSettings.window = "all";
+      }
       const inferredProjectRef = inferProjectRefFromHost();
       const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
         ? (projectRefParam || inferredProjectRef || "")
@@ -4601,7 +5040,12 @@
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
         : "";
-      const activePollutant = pollutantParam || "PM2.5";
+      const POLLUTANT_OPTIONS = [
+        { key: "pm25", label: "PM2.5", unit: "µg/m³" },
+        { key: "pm10", label: "PM10", unit: "µg/m³" },
+        { key: "no2", label: "NO2", unit: "µg/m³" },
+      ];
+      let activePollutant = normalizePollutantKey(pollutantParam) || "pm25";
       const LA_CONFIG = {
         id: "la23",
         label: "2023 local authorities",
@@ -4701,6 +5145,8 @@
       const rowCount = byId("row-count");
       const lastUpdated = byId("last-updated");
       const endpointHint = byId("endpoint-hint");
+      const mapTitle = byId("map-title");
+      const legendPollutantLabel = byId("legend-pollutant");
       const legendLabel = byId("legend-label");
       const legendMin = byId("legend-min");
       const legendMax = byId("legend-max");
@@ -4708,6 +5154,8 @@
       const legendTicks = Array.from(queryAll(".legend-tick"));
       const legendTickLabels = Array.from(queryAll(".legend-tick-label"));
       const summaryStations = byId("summary-stations");
+      const summaryHighestLabel = byId("summary-highest-label");
+      const summaryLowestLabel = byId("summary-lowest-label");
       const summaryLowestValue = byId("summary-lowest-value");
       const summaryLowestDatetime = byId("summary-lowest-datetime");
       const summaryLowestConnector = byId("summary-lowest-connector");
@@ -4716,6 +5164,8 @@
       const summaryHighestDatetime = byId("summary-highest-datetime");
       const summaryHighestConnector = byId("summary-highest-connector");
       const summaryHighestName = byId("summary-highest-name");
+      const overallSummaryTitle = byId("summary-overall-title");
+      const sensorValueLabel = byId("sensor-value-label");
       const tooltip = byId("tooltip");
       const detailsTitle = byId("details-title");
       const detailsMeta = byId("details-meta");
@@ -4732,6 +5182,7 @@
       const aurnHighest = byId("network-aurn-highest");
       const aurnLowest = byId("network-aurn-lowest");
       const aurnLatest = byId("network-aurn-latest");
+      const mapSvg = byId("hex-map");
       const svg = d3.select("#cr-hex-map");
       const mapResizeTarget = svg.node()?.parentElement || svg.node();
       if (mapResizeTarget && typeof ResizeObserver !== "undefined") {
@@ -4745,6 +5196,7 @@
       const mapSettingsButton = query(".map-settings");
       const mapSettingsPanel = byId("map-settings-panel");
       const mapSettingsClose = byId("map-settings-close");
+      const mapWrap = query(".map-wrap");
       const windowInputs = Array.from(queryAll("input[name='cr-averagingWindow']"));
       const metricInputs = Array.from(queryAll("input[name='cr-metricSelect']"));
       const metricGroup = query(".metric-group");
@@ -4763,9 +5215,9 @@
         .map((header) => header.querySelector("button[data-sort-key]"))
         .filter(Boolean);
 
-      let currentMetric = metricParam === "median" ? "median" : "mean";
-      let currentColorScale = colorScaleParam === "linear" ? "linear" : "power";
-      let currentWindow = "all";
+      let currentMetric = sharedSettings.metric;
+      let currentColorScale = sharedSettings.colorScale;
+      let currentWindow = sharedSettings.window;
       let sortKey = "pm25";
       let sortDir = "desc";
       let hexData = null;
@@ -4877,12 +5329,12 @@
         return Number.isFinite(numeric) ? numeric : null;
       }
 
-      function clampPm25(value) {
+      function clampValue(value, pollutantKey) {
         const numeric = normalizeNumber(value);
         if (numeric === null) {
           return null;
         }
-        if (numeric > MAX_VALID_PM25_VALUE) {
+        if (pollutantKey === "pm25" && numeric > MAX_VALID_PM25_VALUE) {
           return null;
         }
         return numeric;
@@ -4997,8 +5449,129 @@
         return value;
       }
 
+      function setWindow(nextWindow, options = {}) {
+        const normalized = normalizeWindowKey(nextWindow);
+        if (!normalized) {
+          return;
+        }
+        if (normalized === currentWindow) {
+          syncWindowInputs();
+          return;
+        }
+        currentWindow = normalized;
+        syncWindowInputs();
+        applyNetworkFilters();
+        if (!options.silent) {
+          window.updateMapSettings?.({ window: currentWindow }, "cr");
+        }
+      }
+
       function formatWindowLabel(value) {
         return WINDOW_LABELS[value] || WINDOW_LABELS.all;
+      }
+
+      function getPollutantLabel(key) {
+        const match = POLLUTANT_OPTIONS.find((option) => option.key === key);
+        return match ? match.label : "PM2.5";
+      }
+
+      function getPollutantUnits(key) {
+        const match = POLLUTANT_OPTIONS.find((option) => option.key === key);
+        return match ? match.unit : "µg/m³";
+      }
+
+      function getNonZeroThreshold() {
+        return activePollutant === "pm25" ? MIN_VALID_PM25_VALUE : 0;
+      }
+
+      function updatePollutantLabels() {
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        const pollutantUnits = getPollutantUnits(activePollutant);
+        if (mapTitle) {
+          mapTitle.textContent = `Latest ${pollutantLabel} by local authority`;
+        }
+        if (legendPollutantLabel) {
+          legendPollutantLabel.textContent = `${pollutantLabel} (${pollutantUnits})`;
+        }
+        if (overallSummaryTitle) {
+          overallSummaryTitle.textContent = `${pollutantLabel} summary`;
+        }
+        if (summaryHighestLabel) {
+          summaryHighestLabel.textContent = `Highest ${pollutantLabel}`;
+        }
+        if (summaryLowestLabel) {
+          summaryLowestLabel.textContent = `Lowest ${pollutantLabel} (Non-zero)`;
+        }
+        if (sensorValueLabel) {
+          sensorValueLabel.textContent = pollutantLabel;
+        }
+        if (mapSvg) {
+          mapSvg.setAttribute("aria-label", `Hex cartogram of ${pollutantLabel} by local authority`);
+        }
+      }
+
+      function setMapLoading(isLoading) {
+        if (!mapWrap) {
+          return;
+        }
+        mapWrap.classList.toggle("is-loading", isLoading);
+        if (isLoading && tooltip) {
+          tooltip.classList.remove("visible");
+        }
+      }
+
+      function getPollutantCache(key) {
+        const cached = pollutantCache.get(key);
+        if (!cached) {
+          return null;
+        }
+        if (Date.now() - cached.timestamp > POLLUTANT_CACHE_TTL) {
+          return null;
+        }
+        return cached;
+      }
+
+      function applyCachedPollutant(key) {
+        const cached = getPollutantCache(key);
+        if (!cached) {
+          return false;
+        }
+        const previousSelection = getCurrentNetworkSelection();
+        const hadAllSelected = networkInputs.length > 0
+          && networkInputs.every((input) => input.checked);
+        baseLatestRows = cached.latestRows;
+        latestPollutant = cached.latestPollutant || key;
+        renderNetworkFilters(
+          buildNetworkDefs(baseLatestRows),
+          previousSelection,
+          hadAllSelected
+        );
+        applyNetworkFilters();
+        requestAnimationFrame(() => {
+          setMapLoading(false);
+        });
+        return true;
+      }
+
+      function setActivePollutant(nextPollutant, options = {}) {
+        if (!nextPollutant) {
+          return;
+        }
+        const normalized = normalizePollutantKey(nextPollutant);
+        if (!normalized || normalized === activePollutant) {
+          updatePollutantLabels();
+          return;
+        }
+        activePollutant = normalized;
+        updatePollutantLabels();
+        if (options.deferFetch) {
+          return;
+        }
+        setMapLoading(true);
+        if (applyCachedPollutant(activePollutant)) {
+          return;
+        }
+        loadMapData();
       }
 
       function getWindowCutoff() {
@@ -5038,7 +5611,13 @@
         }
       }
 
-      function applyColorScale(nextScale) {
+      function syncWindowInputs() {
+        windowInputs.forEach((input) => {
+          input.checked = input.value === currentWindow;
+        });
+      }
+
+      function setColorScale(nextScale, options = {}) {
         if (!nextScale) {
           return;
         }
@@ -5050,6 +5629,9 @@
         syncColorScaleInputs();
         updateLegendScaleDescription();
         renderMap();
+        if (!options.silent) {
+          window.updateMapSettings?.({ colorScale: currentColorScale }, "cr");
+        }
       }
 
       function updateLegendScaleDescription() {
@@ -5300,7 +5882,17 @@
 
       function resolvePconCode(row) {
         return row?.la_code
+          || row?.lad_code
+          || row?.la
+          || row?.lad
+          || row?.local_authority_code
+          || row?.local_authority
           || row?.station?.la_code
+          || row?.station?.lad_code
+          || row?.station?.la
+          || row?.station?.lad
+          || row?.station?.local_authority_code
+          || row?.station?.local_authority
           || null;
       }
 
@@ -5316,14 +5908,14 @@
       }
 
       function resolveLatestValue(row) {
-        return clampPm25(
-          row?.last_value
+        const raw = row?.last_value
           ?? row?.latest_value
           ?? row?.value
           ?? row?.observed_value
           ?? row?.lastValue
-          ?? row?.latestValue
-        );
+          ?? row?.latestValue;
+        const pollutantKey = getPollutantKeyFromRow(row) || activePollutant;
+        return clampValue(raw, pollutantKey);
       }
 
       function resolveLatestTimestamp(row) {
@@ -5343,6 +5935,7 @@
 
       function extractPollutantText(row) {
         return [
+          row?.pollutant,
           row?.pollutant_label,
           row?.phenomenon_label,
           row?.phenomenon?.pollutant_label,
@@ -5361,16 +5954,82 @@
           || (value.includes("particulate") && /2\s*\.?\s*5/.test(value));
       }
 
+      function isPm10Text(value) {
+        if (!value) {
+          return false;
+        }
+        return /pm\s*10/.test(value)
+          || value.includes("pm10")
+          || value.includes("pm_10")
+          || (value.includes("particulate") && /10/.test(value));
+      }
+
+      function isNo2Text(value) {
+        if (!value) {
+          return false;
+        }
+        return /no\s*2/.test(value)
+          || value.includes("no2")
+          || value.includes("no_2")
+          || value.includes("nitrogen dioxide");
+      }
+
+      function getPollutantKeyFromText(value) {
+        if (!value) {
+          return null;
+        }
+        if (isPm25Text(value)) {
+          return "pm25";
+        }
+        if (isPm10Text(value)) {
+          return "pm10";
+        }
+        if (isNo2Text(value)) {
+          return "no2";
+        }
+        return null;
+      }
+
+      function getPollutantKeyFromRow(row) {
+        return getPollutantKeyFromText(extractPollutantText(row));
+      }
+
+      function normalizePollutantKey(value) {
+        if (!value) {
+          return null;
+        }
+        const trimmed = String(value).trim().toLowerCase();
+        if (!trimmed) {
+          return null;
+        }
+        return getPollutantKeyFromText(trimmed);
+      }
+
       function isPm25Row(row) {
         return isPm25Text(extractPollutantText(row));
       }
 
+      function rowMatchesPollutant(row, pollutantKey) {
+        if (!pollutantKey) {
+          return false;
+        }
+        const key = getPollutantKeyFromRow(row);
+        return key === pollutantKey;
+      }
+
       function getRowsForActivePollutant(rows) {
-        const pollutantHint = typeof latestPollutant === "string"
-          ? latestPollutant.toLowerCase()
-          : "";
-        const useAllPm25 = isPm25Text(pollutantHint) || (!pollutantHint && rows.length > 0);
-        return useAllPm25 ? rows : rows.filter((row) => isPm25Row(row));
+        if (!rows.length) {
+          return rows;
+        }
+        const hintKey = latestPollutant;
+        if (hintKey && hintKey === activePollutant) {
+          return rows;
+        }
+        const hasLabels = rows.some((row) => extractPollutantText(row));
+        if (!hintKey && !hasLabels) {
+          return rows;
+        }
+        return rows.filter((row) => rowMatchesPollutant(row, activePollutant));
       }
 
       function collectStationEntries(rows, pconCode) {
@@ -5484,6 +6143,9 @@
       }
 
       function updateSummary() {
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        const pollutantUnits = getPollutantUnits(activePollutant);
+        updatePollutantLabels();
         if (!pconRows.length) {
           summaryStations.textContent = "-";
         } else {
@@ -5496,16 +6158,7 @@
 
         const summaryBaseRows = filterRowsByWindow(scopedLatestRows);
         const rowsForSummary = getRowsForActivePollutant(summaryBaseRows);
-        let rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
-        if (!rowsWithPcon.length && summaryBaseRows.length) {
-          const pollutantHint = typeof latestPollutant === "string"
-            ? latestPollutant.toLowerCase()
-            : "";
-          const hasPm25Hint = isPm25Text(pollutantHint) || (!pollutantHint && summaryBaseRows.length > 0);
-          if (!hasPm25Hint) {
-            rowsWithPcon = summaryBaseRows.filter((row) => resolvePconCode(row));
-          }
-        }
+        const rowsWithPcon = rowsForSummary.filter((row) => resolvePconCode(row));
         let candidates = rowsWithPcon
           .map((row) => {
             const value = resolveLatestValue(row);
@@ -5520,15 +6173,16 @@
           summaryLowestValue.textContent = "-";
           summaryLowestDatetime.textContent = "-";
           summaryLowestConnector.textContent = "-";
-          summaryLowestName.textContent = "No PM2.5 data";
+          summaryLowestName.textContent = `No ${pollutantLabel} data`;
           summaryHighestValue.textContent = "-";
           summaryHighestDatetime.textContent = "-";
           summaryHighestConnector.textContent = "-";
-          summaryHighestName.textContent = "No PM2.5 data";
+          summaryHighestName.textContent = `No ${pollutantLabel} data`;
           return;
         }
 
-        const candidatesForLowest = candidates.filter(({ value }) => value > MIN_VALID_PM25_VALUE);
+        const nonZeroThreshold = getNonZeroThreshold();
+        const candidatesForLowest = candidates.filter(({ value }) => value > nonZeroThreshold);
         const lowestPool = candidatesForLowest.length ? candidatesForLowest : candidates;
 
         let lowest = lowestPool[0];
@@ -5545,11 +6199,11 @@
           }
         }
 
-        summaryLowestValue.textContent = `${formatValue(lowest.value)} µg/m³`;
+        summaryLowestValue.textContent = `${formatValue(lowest.value)} ${pollutantUnits}`;
         summaryLowestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(lowest.row));
         summaryLowestConnector.textContent = resolveConnectorLabel(lowest.row);
         summaryLowestName.textContent = resolveStationName(lowest.row);
-        summaryHighestValue.textContent = `${formatValue(highest.value)} µg/m³`;
+        summaryHighestValue.textContent = `${formatValue(highest.value)} ${pollutantUnits}`;
         summaryHighestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(highest.row));
         summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
         summaryHighestName.textContent = resolveStationName(highest.row);
@@ -5560,7 +6214,8 @@
           return;
         }
         const withData = pconRows.filter((row) => getStationCount(row) > 0);
-        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} local authorities with PM2.5 data`;
+        const pollutantLabel = getPollutantLabel(activePollutant);
+        rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} local authorities with ${pollutantLabel} data`;
       }
 
       function updateLegend(minValue, maxValue, capValue) {
@@ -5741,6 +6396,7 @@
         if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
           return;
         }
+        const pollutantUnits = getPollutantUnits(activePollutant);
         if (!selectedPconCode) {
           detailsTitle.textContent = "All Sensors";
           detailsMeta.textContent = "Network summary for the current window.";
@@ -5792,7 +6448,7 @@
             <tr class="${rowClass}">
               <td>${stationName}</td>
               <td>${networkLabel}</td>
-              <td>${formatValue(entry.value)} µg/m³</td>
+              <td>${formatValue(entry.value)} ${pollutantUnits}</td>
               <td>${updatedText}</td>
               <td class="${statusClass}">${windowLabel}</td>
             </tr>
@@ -5804,6 +6460,7 @@
         if (!aurnSensors || !aurnCoverageValue || !aurnCoverageBar || !aurnCoverageFill || !aurnAverage || !aurnMedian || !aurnHighest || !aurnLowest || !aurnLatest) {
           return;
         }
+        const pollutantUnits = getPollutantUnits(activePollutant);
         const summary = computeNetworkSummary(scopedLatestRows, GOVUK_NETWORK_MATCHERS);
         const sensorLabel = currentWindow === "all"
           ? formatNumber(summary.totalCount)
@@ -5820,16 +6477,16 @@
           AREA_LABEL_PLURAL
         );
         aurnAverage.textContent = Number.isFinite(summary.mean)
-          ? `${formatValue(summary.mean)} µg/m³`
+          ? `${formatValue(summary.mean)} ${pollutantUnits}`
           : "-";
         aurnMedian.textContent = Number.isFinite(summary.median)
-          ? `${formatValue(summary.median)} µg/m³`
+          ? `${formatValue(summary.median)} ${pollutantUnits}`
           : "-";
         aurnHighest.textContent = summary.highest
-          ? `${formatValue(summary.highest.value)} µg/m³ · ${formatSummaryTimestamp(summary.highest.timestamp)}`
+          ? `${formatValue(summary.highest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.highest.timestamp)}`
           : "-";
         aurnLowest.textContent = summary.lowest
-          ? `${formatValue(summary.lowest.value)} µg/m³ · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
+          ? `${formatValue(summary.lowest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
           : "-";
         aurnLatest.textContent = summary.latestTimestamp
           ? formatSummaryTimestamp(summary.latestTimestamp)
@@ -6287,7 +6944,7 @@
         const raw = currentMetric === "mean"
           ? row.mean_value
           : row.median_value;
-        return clampPm25(raw);
+        return clampValue(raw, activePollutant);
       }
 
       function getStationCount(row) {
@@ -6330,11 +6987,8 @@
           return [];
         }
         const groups = new Map();
-        rows.forEach((row, index) => {
-          const pollutantText = extractPollutantText(row);
-          if (pollutantText && !isPm25Text(pollutantText)) {
-            return;
-          }
+        const scopedRows = getRowsForActivePollutant(rows);
+        scopedRows.forEach((row, index) => {
           const pconCode = resolvePconCode(row);
           if (!pconCode) {
             return;
@@ -6516,6 +7170,8 @@
             const metricValue = getMetricValue(row);
             const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown local authority";
             const regionLabel = cell.region_name || cell.region_code || "Unknown region";
+            const pollutantLabel = getPollutantLabel(activePollutant);
+            const pollutantUnits = getPollutantUnits(activePollutant);
             const populationEntry = populationLookup.get(cell.pcon_code);
             const populationValue = normalizeNumber(populationEntry?.population_value);
             const populationDate = parseDate(populationEntry?.reference_date);
@@ -6524,8 +7180,8 @@
               ? "Population: n/a"
               : `Population${populationYear ? ` (${populationYear})` : ""}: ${formatNumber(populationValue)}`;
             const valueLabel = Number.isFinite(metricValue)
-              ? `${formatValue(metricValue)} µg/m³`
-              : "No PM2.5 data";
+              ? `${formatValue(metricValue)} ${pollutantUnits}`
+              : `No ${pollutantLabel} data`;
             const rowsForTooltip = getRowsForActivePollutant(latestRows)
               .filter((item) => resolvePconCode(item) === cell.pcon_code);
             const stationEntries = collectStationEntries(rowsForTooltip, cell.pcon_code);
@@ -6642,14 +7298,14 @@
             latestUrl.searchParams.set("pollutant", activePollutant);
             latestUrl.searchParams.set("scope", "all");
             latestUrl.searchParams.set("limit", "10000");
-            const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
-            if (populationUrl) {
-              populationUrl.searchParams.set("geo_type", "LAD");
-              if (mapDateKey) {
-                populationUrl.searchParams.set("reference_date", mapDateKey);
-              }
-              populationUrl.searchParams.set("limit", "2000");
-            }
+            // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
+            // if (populationUrl) {
+            //   populationUrl.searchParams.set("geo_type", "LAD");
+            //   if (mapDateKey) {
+            //     populationUrl.searchParams.set("reference_date", mapDateKey);
+            //   }
+            //   populationUrl.searchParams.set("limit", "2000");
+            // }
             laPromise = fetch(laUrl.toString(), {
               headers: {
                 Authorization: `Bearer ${anonKey}`,
@@ -6662,14 +7318,14 @@
                 apikey: anonKey,
               },
             }).catch(() => null);
-            populationPromise = populationUrl
-              ? fetch(populationUrl.toString(), {
-                headers: {
-                  Authorization: `Bearer ${anonKey}`,
-                  apikey: anonKey,
-                },
-              }).catch(() => null)
-              : Promise.resolve(null);
+            // populationPromise = populationUrl
+            //   ? fetch(populationUrl.toString(), {
+            //     headers: {
+            //       Authorization: `Bearer ${anonKey}`,
+            //       apikey: anonKey,
+            //     },
+            //   }).catch(() => null)
+            //   : Promise.resolve(null);
           }
           const [hexResponse, laResponse, latestResponse, populationResponse] = await Promise.all([
             hexPromise,
@@ -6716,7 +7372,12 @@
                 const code = resolvePconCode(row);
                 return !pconCodes.size || (code && pconCodes.has(code));
               });
-              latestPollutant = latestPayload?.pollutant || null;
+              latestPollutant = normalizePollutantKey(latestPayload?.pollutant) || null;
+              pollutantCache.set(activePollutant, {
+                timestamp: Date.now(),
+                latestRows: baseLatestRows,
+                latestPollutant,
+              });
             } else {
               baseLatestRows = [];
             }
@@ -6773,6 +7434,8 @@
             errorEl.hidden = false;
           }
           setStatus("Error");
+        } finally {
+          setMapLoading(false);
         }
       }
 
@@ -6782,19 +7445,17 @@
             return;
           }
           const metric = input.value;
-          if (!metric || metric === currentMetric) {
+          if (!metric) {
             return;
           }
-          currentMetric = metric;
-          applyMetricState();
-          renderMap();
+          setMetric(metric);
         });
       });
 
       colorScaleInputs.forEach((input) => {
         input.addEventListener("change", () => {
           if (input.checked) {
-            applyColorScale(input.value);
+            setColorScale(input.value);
           }
         });
       });
@@ -6804,8 +7465,7 @@
           if (!input.checked) {
             return;
           }
-          currentWindow = normalizeWindowKey(input.value);
-          applyNetworkFilters();
+          setWindow(input.value);
         });
       });
 
@@ -6813,7 +7473,7 @@
         colorScaleToggle.addEventListener("click", (event) => {
           event.preventDefault();
           const nextScale = currentColorScale === "power" ? "linear" : "power";
-          applyColorScale(nextScale);
+          setColorScale(nextScale);
           const nextInput = colorScaleInputs.find((input) => input.value === nextScale);
           if (nextInput) {
             nextInput.focus();
@@ -6825,9 +7485,7 @@
         metricToggle.addEventListener("click", (event) => {
           event.preventDefault();
           const nextMetric = currentMetric === "mean" ? "median" : "mean";
-          currentMetric = nextMetric;
-          applyMetricState();
-          renderMap();
+          setMetric(nextMetric);
           const nextInput = metricInputs.find((input) => input.value === nextMetric);
           if (nextInput) {
             nextInput.focus();
@@ -6846,7 +7504,7 @@
           }
           event.preventDefault();
           const nextScale = currentColorScale === "power" ? "linear" : "power";
-          applyColorScale(nextScale);
+          setColorScale(nextScale);
           const nextInput = colorScaleInputs.find((input) => input.value === nextScale);
           if (nextInput) {
             nextInput.focus();
@@ -6865,9 +7523,7 @@
           }
           event.preventDefault();
           const nextMetric = currentMetric === "mean" ? "median" : "mean";
-          currentMetric = nextMetric;
-          applyMetricState();
-          renderMap();
+          setMetric(nextMetric);
           const nextInput = metricInputs.find((input) => input.value === nextMetric);
           if (nextInput) {
             nextInput.focus();
@@ -6898,6 +7554,30 @@
           return;
         }
         closeSettingsPanel();
+      });
+
+      window.addEventListener("pollutantchange", (event) => {
+        const nextPollutant = normalizePollutantKey(event.detail?.pollutant);
+        if (!nextPollutant) {
+          return;
+        }
+        setActivePollutant(nextPollutant);
+      });
+
+      window.addEventListener("mapsettingschange", (event) => {
+        const detail = event.detail || {};
+        if (detail.source === "cr") {
+          return;
+        }
+        if (detail.metric) {
+          setMetric(detail.metric, { silent: true });
+        }
+        if (detail.colorScale) {
+          setColorScale(detail.colorScale, { silent: true });
+        }
+        if (detail.window) {
+          setWindow(detail.window, { silent: true });
+        }
       });
 
       if (networkSelectAll) {
@@ -6932,7 +7612,9 @@
         syncSettingsPanelWidth();
       });
       applyMetricState();
-      currentWindow = normalizeWindowKey(windowInputs.find((input) => input.checked)?.value);
+      updatePollutantLabels();
+      currentWindow = normalizeWindowKey(sharedSettings.window || currentWindow);
+      syncWindowInputs();
       syncSettingsPanelWidth();
       syncColorScaleInputs();
       updateLegendScaleDescription();
@@ -6969,6 +7651,11 @@
   const tabSlots = {
     uk: panelUk.querySelector("[data-tab-slot]"),
     cr: panelCr.querySelector("[data-tab-slot]"),
+  };
+  const pollutantSelector = document.getElementById("pollutant-selector");
+  const pollutantSlots = {
+    uk: panelUk.querySelector("[data-pollutant-slot]"),
+    cr: panelCr.querySelector("[data-pollutant-slot]"),
   };
 
   const REGION_OPTIONS = [
@@ -7031,6 +7718,10 @@
     const targetSlot = isUk ? tabSlots.uk : tabSlots.cr;
     if (tabBar && targetSlot && tabBar.parentElement !== targetSlot) {
       targetSlot.appendChild(tabBar);
+    }
+    const pollutantSlot = isUk ? pollutantSlots.uk : pollutantSlots.cr;
+    if (pollutantSelector && pollutantSlot && pollutantSelector.parentElement !== pollutantSlot) {
+      pollutantSlot.appendChild(pollutantSelector);
     }
     panelUk.hidden = !isUk;
     panelCr.hidden = isUk;
