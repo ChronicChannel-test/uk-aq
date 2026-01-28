@@ -71,6 +71,12 @@
         align-items: start;
       }
 
+      .logo {
+        width: 120px;
+        height: auto;
+        margin-bottom: 8px;
+      }
+
       .title {
         font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: clamp(2rem, 2.6vw, 3.25rem);
@@ -338,7 +344,7 @@
         display: block;
         height: 100%;
         width: 0%;
-        background: #4c6fbf;
+        background: #3c78ac;
       }
 
       .coverage-label {
@@ -416,18 +422,24 @@
         display: grid;
         grid-template-columns: 1fr;
         gap: 14px;
+        align-items: stretch;
       }
 
       @media (min-width: 720px) {
         .selected-networks-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-areas:
+            "coverage coverage share"
+            "sensors freshness share";
         }
       }
 
       @media (min-width: 980px) {
         .selected-networks-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          align-items: start;
+          grid-template-areas:
+            "coverage coverage share share"
+            "sensors freshness share share";
         }
       }
 
@@ -446,13 +458,14 @@
       }
 
       .network-summary-value {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
+        line-height: 1;
         font-weight: 700;
         color: var(--ink);
       }
 
       .network-summary-accent {
-        color: #4c6fbf;
+        color: #3c78ac;
       }
 
       .network-summary-subtext {
@@ -479,9 +492,9 @@
       }
 
       .network-summary-number {
-        font-size: 1.1rem;
+        font-size: 1.3rem;
         font-weight: 700;
-        color: var(--ink);
+        color: #3c78ac;
       }
 
       .network-summary-bar {
@@ -496,7 +509,7 @@
         display: block;
         height: 100%;
         width: 0%;
-        background: #4c6fbf;
+        background: #3c78ac;
       }
 
       .network-summary-empty {
@@ -508,11 +521,27 @@
       .selected-network-pill {
         background: var(--mist);
         border: 1px solid var(--fog);
-        border-radius: 16px;
-        padding: 16px;
+        border-radius: 22px;
+        padding: 18px;
         display: grid;
         gap: 6px;
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      }
+
+      .selected-network-pill--coverage {
+        grid-area: coverage;
+      }
+
+      .selected-network-pill--sensors {
+        grid-area: sensors;
+      }
+
+      .selected-network-pill--share {
+        grid-area: share;
+      }
+
+      .selected-network-pill--freshness {
+        grid-area: freshness;
       }
 
       .selected-network-label {
@@ -541,9 +570,11 @@
 
       .sensor-share-title {
         margin: 0;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--ink);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(20, 34, 37, 0.8);
+        font-weight: 700;
       }
 
       .sensor-share-list {
@@ -570,14 +601,15 @@
 
       .sensor-share-percent,
       .sensor-share-count {
-        color: #4c6fbf;
+        color: #3c78ac;
         font-weight: 700;
       }
 
       .sensor-share-bar-row {
         position: relative;
-        display: grid;
-        gap: 8px;
+        display: block;
+        height: 18px;
+        overflow: visible;
       }
 
       .sensor-share-bar {
@@ -594,29 +626,38 @@
         width: var(--bar-width, 0%);
         min-width: var(--bar-min-width, 0%);
         border-radius: 6px;
-        background: #4c6fbf;
+        background: #3c78ac;
       }
 
       .sensor-share-count {
         position: absolute;
-        top: 50%;
-        left: calc(var(--bar-width, 0%) + 12px);
-        transform: translateY(-50%);
-        font-size: 0.9rem;
+        top: 0;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        left: calc(var(--bar-width, 0%) + 8px);
+        font-size: 1.3rem;
+        line-height: 1;
         white-space: nowrap;
       }
 
       .sensor-share-item.is-stacked .sensor-share-count {
-        position: static;
-        transform: none;
-        justify-self: end;
+        position: absolute;
+        top: 0;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        left: calc(var(--bar-width, 0%) + 8px);
       }
 
       @media (max-width: 720px) {
         .sensor-share-count {
-          position: static;
-          transform: none;
-          justify-self: end;
+          position: absolute;
+          top: 0;
+          height: 100%;
+          display: inline-flex;
+          align-items: center;
+          left: calc(var(--bar-width, 0%) + 8px);
         }
 
         .sensor-share-item {
@@ -917,7 +958,7 @@
       .actions button,
       .pill-button {
         border: none;
-        background: var(--teal);
+        background: #3c78ac;
         color: white;
         padding: 8px 14px;
         border-radius: 999px;
@@ -929,11 +970,11 @@
       .actions button:hover,
       .pill-button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 18px rgba(15, 139, 141, 0.25);
+        box-shadow: 0 8px 18px rgba(76, 111, 191, 0.25);
       }
 
       .pill-button:focus-visible {
-        outline: 2px solid rgba(15, 139, 141, 0.5);
+        outline: 2px solid rgba(76, 111, 191, 0.5);
         outline-offset: 2px;
       }
 
@@ -1020,7 +1061,7 @@
       .network-panel input[type="checkbox"] {
         width: 14px;
         height: 14px;
-        accent-color: var(--teal);
+        accent-color: #3c78ac;
       }
 
       .network-list {
@@ -1703,15 +1744,7 @@
   <body>
     <main>
       <header>
-        <p class="badge">Hex Cartogram</p>
-        <h1 class="title">UK AQ hex map – Power 0.8</h1>
-        <p class="subtitle">
-          Power-eased colour scale (exponent 0.8 with a small top boost) to pull low values closer to mid-range colours.
-        </p>
-        <div class="meta">
-          <span id="row-count">Loading…</span>
-          <span id="last-updated">Waiting for data</span>
-        </div>
+        <img src="data/images/UK-AQ-logo-alpha-v2.svg" alt="UK AQ Logo" class="logo" />
       </header>
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">
@@ -1892,19 +1925,19 @@
           <p class="selected-networks-card-subtitle">Updates as you toggle networks on the map.</p>
         </div>
         <div class="selected-networks-grid" role="list">
-          <article class="selected-network-pill" role="listitem">
+          <article class="selected-network-pill selected-network-pill--coverage" role="listitem">
             <div class="network-summary-content" id="network-summary-coverage"></div>
           </article>
-          <article class="selected-network-pill" role="listitem">
+          <article class="selected-network-pill selected-network-pill--sensors" role="listitem">
             <div class="network-summary-content" id="network-summary-sensors"></div>
           </article>
-          <article class="selected-network-pill" role="listitem">
+          <article class="selected-network-pill selected-network-pill--share" role="listitem">
             <section class="sensor-share" aria-label="Sensor share of selected networks">
               <h3 class="sensor-share-title">Sensor share of selected networks</h3>
               <ul class="sensor-share-list" id="sensor-share-list"></ul>
             </section>
           </article>
-          <article class="selected-network-pill" role="listitem">
+          <article class="selected-network-pill selected-network-pill--freshness" role="listitem">
             <div class="network-summary-content" id="network-summary-freshness"></div>
           </article>
         </div>
@@ -2460,7 +2493,7 @@
       const initialColorScale = (colorScaleParam === "linear" || colorScaleParam === "power")
         ? colorScaleParam
         : (sharedSettings.colorScale || "power");
-      const initialWindow = sharedSettings.window || "all";
+      const initialWindow = sharedSettings.window || "6h";
       sharedSettings.metric = initialMetric;
       sharedSettings.colorScale = initialColorScale;
       sharedSettings.window = initialWindow;
@@ -2820,9 +2853,11 @@
         }
       }
 
-      endpointHint.textContent = REST_URL
-        ? `Endpoint: ${REST_URL} (${activeMap.label})`
-        : "Missing project ref. Add ?project_ref=... to the URL.";
+      if (endpointHint) {
+        endpointHint.textContent = REST_URL
+          ? `Endpoint: ${REST_URL} (${activeMap.label})`
+          : "Missing project ref. Add ?project_ref=... to the URL.";
+      }
 
       function inferProjectRefFromHost() {
         const host = window.location.hostname || "";
@@ -2995,7 +3030,7 @@
 
           const subtext = document.createElement("div");
           subtext.className = "network-summary-subtext";
-          subtext.textContent = `${formatNumber(covered)} / ${formatNumber(total)} PCONs`;
+          subtext.textContent = `${formatNumber(covered)} / ${formatNumber(total)} constituencies`;
 
           const bar = document.createElement("div");
           bar.className = "network-summary-bar";
@@ -3035,7 +3070,7 @@
           avgBlock.className = "network-summary-metric";
           const avgLabel = document.createElement("div");
           avgLabel.className = "network-summary-label";
-          avgLabel.textContent = "Average Sensors per covered PCON";
+          avgLabel.textContent = "Average sensors per covered constituency";
           const avgValue = document.createElement("div");
           avgValue.className = "network-summary-number";
           avgValue.textContent = Number.isFinite(avgSensors) ? avgSensors.toFixed(1) : "-";
@@ -4265,6 +4300,9 @@
       }
 
       function updateRowCountText() {
+        if (!rowCount) {
+          return;
+        }
         const withData = pconRows.filter((row) => getStationCount(row) > 0);
         const pollutantLabel = getPollutantLabel(activePollutant);
         rowCount.textContent = `${formatNumber(withData.length)} of ${formatNumber(pconCodes.size)} constituencies with ${pollutantLabel} data`;
@@ -5348,10 +5386,12 @@
           pconRows = basePconRows;
           pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
           pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
-          if (payload?.last_updated) {
-            lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
-          } else {
-            lastUpdated.textContent = "Latest data unavailable";
+          if (lastUpdated) {
+            if (payload?.last_updated) {
+              lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
+            } else {
+              lastUpdated.textContent = "Latest data unavailable";
+            }
           }
           let latestPayload = null;
           if (latestResponse) {
