@@ -922,41 +922,6 @@
         display: none;
       }
 
-      @media (min-width: 721px) {
-        #tab-panel-cr .map-header-left {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          grid-template-areas:
-            "title title"
-            "pollutant controls";
-          column-gap: 16px;
-          row-gap: 8px;
-          align-items: center;
-        }
-
-        #tab-panel-cr .map-header-left .card-title {
-          grid-area: title;
-        }
-
-        #tab-panel-cr .map-header-left .pollutant-slot {
-          grid-area: pollutant;
-        }
-
-        #tab-panel-cr .map-header-left .map-header-controls {
-          grid-area: controls;
-          justify-self: end;
-        }
-
-        #tab-panel-cr .map-header-controls .map-select {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        #tab-panel-cr .map-header-controls .map-select span {
-          white-space: nowrap;
-        }
-      }
 
       .status-indicator {
         display: inline-flex;
@@ -1006,7 +971,7 @@
       .actions button:hover,
       .pill-button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 18px rgba(76, 111, 191, 0.25);
+        box-shadow: 0 8px 14px rgba(20, 34, 37, 0.12);
       }
 
       .pill-button:focus-visible {
@@ -1017,7 +982,12 @@
       .pill-button[aria-checked="false"] {
         background: var(--clay);
         color: var(--ink);
-        opacity: 0.55;
+        opacity: 1;
+        box-shadow: none;
+      }
+
+      .pill-button[aria-checked="false"]:hover {
+        box-shadow: 0 8px 14px rgba(20, 34, 37, 0.12);
       }
 
       .filters {
@@ -1051,6 +1021,12 @@
         border: 1px solid rgba(20, 34, 37, 0.12);
         display: grid;
         gap: 12px;
+      }
+
+      .network-heading {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+        font-weight: 600;
       }
 
       .network-actions {
@@ -2244,29 +2220,7 @@
                   <div class="map-header-left">
                     <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
                     <div class="pollutant-slot" data-pollutant-slot></div>
-                    <div class="map-header-controls" data-scope-controls>
-                      <label class="map-select">
-                        <span>Country or Region</span>
-                        <select id="cr-map-select">
-                          <optgroup label="Countries">
-                            <option value="Northern Ireland">Northern Ireland</option>
-                            <option value="Scotland">Scotland</option>
-                            <option value="Wales">Wales</option>
-                          </optgroup>
-                          <optgroup label="English Regions">
-                            <option value="East Midlands">East Midlands</option>
-                            <option value="East of England">East of England</option>
-                            <option value="London" selected>London</option>
-                            <option value="North East">North East</option>
-                            <option value="North West">North West</option>
-                            <option value="South East">South East</option>
-                            <option value="South West">South West</option>
-                            <option value="West Midlands">West Midlands</option>
-                            <option value="Yorkshire and The Humber">Yorkshire and The Humber</option>
-                          </optgroup>
-                        </select>
-                      </label>
-                    </div>
+                    <div class="map-header-controls" data-scope-controls></div>
                   </div>
                   <div class="actions">
                     <span class="status-indicator" data-state="loading">
@@ -2277,18 +2231,37 @@
                   </div>
                 </div>
                 <div class="tab-slot" data-tab-slot></div>
-                <div class="map-aside">
-                  <aside class="network-panel">
-                    <div class="network-actions" role="group" aria-label="Network selection actions">
-                      <button type="button" id="cr-network-select-all">Select All</button>
-                      <button type="button" id="cr-network-deselect-all">Deselect All</button>
-                    </div>
-                    <span class="hint">Networks</span>
-                    <div class="network-list" id="cr-network-list">
-                      <span class="network-empty">Loading networks...</span>
-                    </div>
-                  </aside>
-                </div>
+                <aside class="network-panel">
+                  <label class="map-select">
+                    <span>Country or Region</span>
+                    <select id="cr-map-select">
+                      <optgroup label="Countries">
+                        <option value="Northern Ireland">Northern Ireland</option>
+                        <option value="Scotland">Scotland</option>
+                        <option value="Wales">Wales</option>
+                      </optgroup>
+                      <optgroup label="English Regions">
+                        <option value="East Midlands">East Midlands</option>
+                        <option value="East of England">East of England</option>
+                        <option value="London" selected>London</option>
+                        <option value="North East">North East</option>
+                        <option value="North West">North West</option>
+                        <option value="South East">South East</option>
+                        <option value="South West">South West</option>
+                        <option value="West Midlands">West Midlands</option>
+                        <option value="Yorkshire and The Humber">Yorkshire and The Humber</option>
+                      </optgroup>
+                    </select>
+                  </label>
+                  <span class="network-heading">Networks</span>
+                  <div class="network-actions" role="group" aria-label="Network selection actions">
+                    <button type="button" id="cr-network-select-all">Select All</button>
+                    <button type="button" id="cr-network-deselect-all">Deselect All</button>
+                  </div>
+                  <div class="network-list" id="cr-network-list">
+                    <span class="network-empty">Loading networks...</span>
+                  </div>
+                </aside>
                 <div class="map-canvas">
                   <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
                 </div>
@@ -2524,7 +2497,7 @@
       const pconVersionParam = params.get("pcon_version");
       const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
       const mapNetworkState = (window.mapNetworkState = window.mapNetworkState || {});
-      const MAP_KEY = "uk";
+      const MAP_KEY = "shared";
       if (!mapNetworkState[MAP_KEY]) {
         mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
       }
@@ -2879,6 +2852,7 @@
       let latestPollutant = null;
       let populationLookup = new Map();
       let networkInputs = [];
+      let networkSelectionMismatch = false;
       let selectedPconCode = null;
       let selectedCell = null;
       let pinnedTooltipCell = null;
@@ -3853,6 +3827,9 @@
         if (!networkInputs.length) {
           return;
         }
+        if (networkSelectionMismatch && networkInputs.every((input) => !input.checked)) {
+          return;
+        }
         const allSelected = networkInputs.every((input) => input.checked);
         if (allSelected) {
           mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
@@ -3863,6 +3840,37 @@
           selected: selection ? Array.from(selection) : [],
           allSelected: false,
         };
+      }
+
+      function applyStoredNetworkSelection() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const stored = getStoredNetworkSelection();
+        if (stored.selectedCodes) {
+          const matches = networkInputs.filter((input) => stored.selectedCodes.has(input.dataset.network));
+          networkSelectionMismatch = stored.selectedCodes.size > 0 && matches.length === 0;
+          if (stored.selectedCodes.size === 0 || networkSelectionMismatch) {
+            networkInputs.forEach((input) => {
+              input.checked = false;
+            });
+          } else if (matches.length) {
+            networkInputs.forEach((input) => {
+              input.checked = stored.selectedCodes.has(input.dataset.network);
+            });
+          }
+        } else if (stored.defaultAll) {
+          networkSelectionMismatch = false;
+          networkInputs.forEach((input) => {
+            input.checked = true;
+          });
+        } else {
+          networkSelectionMismatch = false;
+          networkInputs.forEach((input) => {
+            input.checked = false;
+          });
+        }
+        syncNetworkActionState();
       }
 
       function getStoredNetworkSelection() {
@@ -3880,6 +3888,9 @@
         if (!networkInputs.length) {
           return;
         }
+        if (networkSelectionMismatch && networkInputs.every((input) => !input.checked)) {
+          return;
+        }
         const allSelected = networkInputs.every((input) => input.checked);
         if (allSelected) {
           mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
@@ -3890,6 +3901,37 @@
           selected: selection ? Array.from(selection) : [],
           allSelected: false,
         };
+      }
+
+      function applyStoredNetworkSelection() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const stored = getStoredNetworkSelection();
+        if (stored.selectedCodes) {
+          const matches = networkInputs.filter((input) => stored.selectedCodes.has(input.dataset.network));
+          networkSelectionMismatch = stored.selectedCodes.size > 0 && matches.length === 0;
+          if (stored.selectedCodes.size === 0 || networkSelectionMismatch) {
+            networkInputs.forEach((input) => {
+              input.checked = false;
+            });
+          } else if (matches.length) {
+            networkInputs.forEach((input) => {
+              input.checked = stored.selectedCodes.has(input.dataset.network);
+            });
+          }
+        } else if (stored.defaultAll) {
+          networkSelectionMismatch = false;
+          networkInputs.forEach((input) => {
+            input.checked = true;
+          });
+        } else {
+          networkSelectionMismatch = false;
+          networkInputs.forEach((input) => {
+            input.checked = false;
+          });
+        }
+        syncNetworkActionState();
       }
 
       function renderNetworkFilters(defs, selectedCodes, defaultAll) {
@@ -5275,6 +5317,7 @@
         if (!networkInputs.length) {
           return;
         }
+        networkSelectionMismatch = false;
         if (event.target === networkSelectAll) {
           networkInputs.forEach((input) => {
             input.checked = true;
@@ -5289,6 +5332,7 @@
       }
 
       function handleNetworkToggle() {
+        networkSelectionMismatch = false;
         syncNetworkActionState();
         applyNetworkFilters();
       }
@@ -5783,6 +5827,10 @@
           }
           syncSettingsPanelWidth();
         },
+        restoreNetworks: () => {
+          applyStoredNetworkSelection();
+          applyNetworkFilters();
+        },
       };
     </script>
     <script>
@@ -5808,7 +5856,7 @@
       const laVersionParam = params.get("la_version");
       const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
       const mapNetworkState = (window.mapNetworkState = window.mapNetworkState || {});
-      const MAP_KEY = "cr";
+      const MAP_KEY = "shared";
       if (!mapNetworkState[MAP_KEY]) {
         mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
       }
@@ -6037,6 +6085,7 @@
       let latestPollutant = null;
       let populationLookup = new Map();
       let networkInputs = [];
+      let networkSelectionMismatch = false;
       let selectedPconCode = null;
       let selectedCell = null;
 
@@ -8484,6 +8533,10 @@
           }
           syncSettingsPanelWidth();
         },
+        restoreNetworks: () => {
+          applyStoredNetworkSelection();
+          applyNetworkFilters();
+        },
         setRegion: (region, options) => {
           setActiveRegion(region, options);
         },
@@ -8580,8 +8633,10 @@
     panelCr.hidden = isUk;
     if (isUk) {
       window.ukMap?.render();
+      window.ukMap?.restoreNetworks();
     } else {
       window.crMap?.render();
+      window.crMap?.restoreNetworks();
     }
   }
 
