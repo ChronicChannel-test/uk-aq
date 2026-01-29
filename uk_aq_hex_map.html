@@ -922,6 +922,42 @@
         display: none;
       }
 
+      @media (min-width: 721px) {
+        #tab-panel-cr .map-header-left {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          grid-template-areas:
+            "title title"
+            "pollutant controls";
+          column-gap: 16px;
+          row-gap: 8px;
+          align-items: center;
+        }
+
+        #tab-panel-cr .map-header-left .card-title {
+          grid-area: title;
+        }
+
+        #tab-panel-cr .map-header-left .pollutant-slot {
+          grid-area: pollutant;
+        }
+
+        #tab-panel-cr .map-header-left .map-header-controls {
+          grid-area: controls;
+          justify-self: end;
+        }
+
+        #tab-panel-cr .map-header-controls .map-select {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        #tab-panel-cr .map-header-controls .map-select span {
+          white-space: nowrap;
+        }
+      }
+
       .status-indicator {
         display: inline-flex;
         align-items: center;
@@ -2487,6 +2523,11 @@
       const mapDateParam = params.get("map_date");
       const pconVersionParam = params.get("pcon_version");
       const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
+      const mapNetworkState = (window.mapNetworkState = window.mapNetworkState || {});
+      const MAP_KEY = "uk";
+      if (!mapNetworkState[MAP_KEY]) {
+        mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
+      }
       const initialMetric = (metricParam === "mean" || metricParam === "median")
         ? metricParam
         : (sharedSettings.metric || "mean");
@@ -3797,6 +3838,60 @@
         );
       }
 
+      function getStoredNetworkSelection() {
+        const state = mapNetworkState[MAP_KEY];
+        if (!state) {
+          return { selectedCodes: null, defaultAll: false };
+        }
+        return {
+          selectedCodes: Array.isArray(state.selected) ? new Set(state.selected) : null,
+          defaultAll: Boolean(state.allSelected),
+        };
+      }
+
+      function persistNetworkSelection() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const allSelected = networkInputs.every((input) => input.checked);
+        if (allSelected) {
+          mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
+          return;
+        }
+        const selection = getCurrentNetworkSelection();
+        mapNetworkState[MAP_KEY] = {
+          selected: selection ? Array.from(selection) : [],
+          allSelected: false,
+        };
+      }
+
+      function getStoredNetworkSelection() {
+        const state = mapNetworkState[MAP_KEY];
+        if (!state) {
+          return { selectedCodes: null, defaultAll: false };
+        }
+        return {
+          selectedCodes: Array.isArray(state.selected) ? new Set(state.selected) : null,
+          defaultAll: Boolean(state.allSelected),
+        };
+      }
+
+      function persistNetworkSelection() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const allSelected = networkInputs.every((input) => input.checked);
+        if (allSelected) {
+          mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
+          return;
+        }
+        const selection = getCurrentNetworkSelection();
+        mapNetworkState[MAP_KEY] = {
+          selected: selection ? Array.from(selection) : [],
+          allSelected: false,
+        };
+      }
+
       function renderNetworkFilters(defs, selectedCodes, defaultAll) {
         if (!networkList) {
           return;
@@ -5055,9 +5150,11 @@
       }
 
       function applyNetworkFilters() {
-        const previousSelection = getCurrentNetworkSelection();
+        const storedSelection = getStoredNetworkSelection();
+        const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
-          && networkInputs.every((input) => input.checked);
+          ? networkInputs.every((input) => input.checked)
+          : storedSelection.defaultAll;
         const windowNetworkDefs = buildNetworkDefs(getNetworkRowsForWindow());
         renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
         if (!basePconRows.length && !baseLatestRows.length) {
@@ -5069,6 +5166,7 @@
           updateSummary();
           renderMap();
           updateDetailsPanel();
+          persistNetworkSelection();
           return;
         }
         const networkIds = getActiveNetworkIds();
@@ -5088,6 +5186,7 @@
         renderMap();
         updateDetailsPanel();
         refreshPinnedTooltip();
+        persistNetworkSelection();
       }
 
       function buildTooltipHtml(cell) {
@@ -5708,6 +5807,11 @@
       const mapDateParam = params.get("map_date");
       const laVersionParam = params.get("la_version");
       const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
+      const mapNetworkState = (window.mapNetworkState = window.mapNetworkState || {});
+      const MAP_KEY = "cr";
+      if (!mapNetworkState[MAP_KEY]) {
+        mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
+      }
       if (!sharedSettings.metric) {
         sharedSettings.metric = (metricParam === "mean" || metricParam === "median") ? metricParam : "mean";
       }
@@ -7750,12 +7854,15 @@
       }
 
       function applyNetworkFilters() {
-        const previousSelection = getCurrentNetworkSelection();
+        const storedSelection = getStoredNetworkSelection();
+        const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
-          && networkInputs.every((input) => input.checked);
+          ? networkInputs.every((input) => input.checked)
+          : storedSelection.defaultAll;
         const windowNetworkDefs = buildNetworkDefs(getNetworkRowsForWindow());
         renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
         if (!basePconRows.length && !baseLatestRows.length) {
+          persistNetworkSelection();
           return;
         }
         const networkIds = getActiveNetworkIds();
@@ -7774,6 +7881,7 @@
         updateSummary();
         renderMap();
         updateDetailsPanel();
+        persistNetworkSelection();
       }
 
       function positionTooltip(event) {
