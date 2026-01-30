@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UK Air Surbiton Snapshot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #142225;
+        --ink-soft: #334449;
+        --mist: #f6f1e9;
+        --teal: #0f8b8d;
+        --teal-deep: #0a5d61;
+        --sun: #f4b942;
+        --clay: #e8dcc7;
+        --fog: rgba(20, 34, 37, 0.08);
+        --card: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
+          radial-gradient(circle at 88% 18%, #d6f1ef 0%, transparent 50%),
+          linear-gradient(135deg, #f7f2e8, #f0f7f6);
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: linear-gradient(120deg, rgba(20, 34, 37, 0.05) 1px, transparent 1px);
+        background-size: 32px 32px;
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      main {
+        position: relative;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 48px 24px 64px;
+        display: grid;
+        gap: 24px;
+      }
+
+      header {
+        display: grid;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .title {
+        font-family: "Fraunces", serif;
+        font-size: clamp(2rem, 2.6vw, 3.25rem);
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 1.05rem;
+        max-width: 640px;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .badge {
+        background: var(--clay);
+        color: var(--ink);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(20, 34, 37, 0.12);
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+        animation: floatIn 0.6s ease-out;
+      }
+
+      .card-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .card-title {
+        font-family: "Fraunces", serif;
+        margin: 0;
+        font-size: 1.4rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      .filters label {
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .filters select {
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.15);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        color: var(--ink);
+      }
+
+      button {
+        border: none;
+        background: var(--teal);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 139, 141, 0.25);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        padding: 12px 10px;
+        text-align: left;
+        border-bottom: 1px solid rgba(20, 34, 37, 0.08);
+      }
+
+      th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-soft);
+      }
+
+      tbody tr {
+        transition: background 0.2s ease;
+      }
+
+      tbody tr:hover {
+        background: rgba(15, 139, 141, 0.06);
+      }
+
+      .value {
+        font-weight: 600;
+      }
+
+      .stale {
+        color: #a65f2d;
+      }
+
+      .error {
+        color: #8b1e3f;
+        font-weight: 600;
+      }
+
+      .hint {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .chart-wrap {
+        position: relative;
+        background: #fbf7ef;
+        border-radius: 16px;
+        padding: 12px;
+        border: 1px solid rgba(20, 34, 37, 0.08);
+      }
+
+      #line-chart {
+        width: 100%;
+        height: 360px;
+        display: block;
+        transition: opacity 0.2s ease, filter 0.2s ease;
+      }
+
+      .chart-wrap.is-loading #line-chart {
+        opacity: 0.35;
+        filter: grayscale(0.35);
+      }
+
+      .chart-wrap.is-loading .chart-tooltip.visible {
+        opacity: 0;
+      }
+
+      .chart-axis path,
+      .chart-axis line {
+        stroke: rgba(20, 34, 37, 0.2);
+      }
+
+      .chart-axis text {
+        fill: var(--ink-soft);
+        font-size: 0.75rem;
+      }
+
+      .chart-line {
+        fill: none;
+        stroke: var(--teal);
+        stroke-width: 2.5px;
+      }
+
+      .chart-guideline {
+        stroke: #d24b3e;
+        stroke-width: 2px;
+        stroke-dasharray: 6 6;
+        opacity: 0.85;
+      }
+
+      .chart-guideline-label {
+        fill: #d24b3e;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .chart-dot {
+        fill: var(--sun);
+        stroke: var(--teal-deep);
+        stroke-width: 1.5px;
+      }
+
+      .chart-tooltip {
+        position: absolute;
+        pointer-events: none;
+        background: rgba(20, 34, 37, 0.9);
+        color: #fff;
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 0.78rem;
+        line-height: 1.3;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        z-index: 2;
+      }
+
+      .chart-tooltip.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @keyframes floatIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 36px 18px 48px;
+        }
+
+        .card {
+          padding: 18px;
+        }
+
+        th,
+        td {
+          padding: 10px 6px;
+        }
+
+        #line-chart {
+          height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="badge" id="region-badge">Region</p>
+        <h1 class="title">UK Air latest readings</h1>
+        <p class="subtitle">
+          A lightweight view of the most recent measurements for stations in the selected region.
+          Update the region via the query string or keep it on Surbiton for a quick snapshot.
+        </p>
+        <div class="meta">
+          <span id="row-count">Loading…</span>
+          <span id="last-updated">Waiting for data</span>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Latest values</h2>
+          <div class="actions">
+            <span class="hint" id="status">Fetching from Edge Function…</span>
+            <button id="refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="hint" id="endpoint-hint"></div>
+        <div class="filters">
+          <label for="pollutant-filter">Pollutant</label>
+          <select id="pollutant-filter">
+            <option value="">All pollutants</option>
+          </select>
+        </div>
+        <div class="error" id="error"></div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Station</th>
+                <th>Pollutant</th>
+                <th>Value</th>
+                <th>Unit</th>
+                <th>Observed</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Station trend</h2>
+          <div class="actions">
+            <span class="hint" id="chart-status">Waiting for series…</span>
+            <button id="chart-refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="filters">
+          <label for="station-select">Station</label>
+          <select id="station-select"></select>
+          <label for="window-select">Window</label>
+          <select id="window-select">
+            <option value="12h">Last 12 hours</option>
+            <option value="24h" selected>Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+        </div>
+        <div class="hint" id="chart-hint">Line chart of raw observations for the selected station.</div>
+        <div class="error" id="chart-error"></div>
+        <div class="chart-wrap">
+          <svg id="line-chart" role="img" aria-label="PM2.5 trend for the selected station"></svg>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+    <script>
+      const PROJECT_REF_PLACEHOLDER = "wdbmpleeesfqnwgaaned";
+      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkYm1wbGVlZXNmcW53Z2FhbmVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NDk2NzcsImV4cCI6MjA4MjUyNTY3N30.m5seQ-J_KTgznH2Nhh2GKoCv5ArnfCMU1441PfThZMA";
+      const params = new URLSearchParams(window.location.search);
+      const regionParam = params.get("region");
+      const region = regionParam || "Surbiton";
+      const stationLike = params.get("station_like") || "surbiton";
+      const limitParam = params.get("limit");
+      const projectRefParam = params.get("project_ref");
+      const anonKeyParam = params.get("anon_key");
+      const inferredProjectRef = inferProjectRefFromHost();
+      const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
+        ? (projectRefParam || inferredProjectRef || "")
+        : PROJECT_REF_PLACEHOLDER;
+      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SUPABASE_ANON_KEY__")
+        ? (anonKeyParam || "")
+        : ANON_KEY_PLACEHOLDER;
+      const EDGE_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_surbiton_latest`
+        : "";
+
+      const statusEl = document.getElementById("status");
+      const errorEl = document.getElementById("error");
+      const tableBody = document.getElementById("table-body");
+      const rowCount = document.getElementById("row-count");
+      const lastUpdated = document.getElementById("last-updated");
+      const regionBadge = document.getElementById("region-badge");
+      const endpointHint = document.getElementById("endpoint-hint");
+      const pollutantSelect = document.getElementById("pollutant-filter");
+      const SERIES_EDGE_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_timeseries`
+        : "";
+      const stationSelect = document.getElementById("station-select");
+      const windowSelect = document.getElementById("window-select");
+      const chartStatusEl = document.getElementById("chart-status");
+      const chartErrorEl = document.getElementById("chart-error");
+      const chartHintEl = document.getElementById("chart-hint");
+      const chartTooltip = document.getElementById("chart-tooltip");
+      const chartSvg = d3.select("#line-chart");
+      const chartWrap = document.querySelector(".chart-wrap");
+      let cachedRows = [];
+      let selectedSeriesId = null;
+      let seriesLookup = new Map();
+
+      regionBadge.textContent = region;
+      endpointHint.textContent = EDGE_URL
+        ? `Endpoint: ${EDGE_URL}`
+        : "Missing project ref. Add ?project_ref=... to the URL.";
+      if (chartHintEl) {
+        chartHintEl.textContent = SERIES_EDGE_URL
+          ? `Endpoint: ${SERIES_EDGE_URL}`
+          : "Missing project ref. Add ?project_ref=... to the URL.";
+      }
+
+      function formatValue(value) {
+        if (value === null || value === undefined) {
+          return "—";
+        }
+        const number = Number(value);
+        if (Number.isNaN(number)) {
+          return String(value);
+        }
+        return number.toFixed(2);
+      }
+
+      function formatGuidelineValue(value) {
+        if (value === null || value === undefined) {
+          return "—";
+        }
+        const number = Number(value);
+        if (!Number.isFinite(number)) {
+          return String(value);
+        }
+        if (Number.isInteger(number)) {
+          return String(number);
+        }
+        const text = number.toString();
+        if (text.includes("e")) {
+          return number.toFixed(2).replace(/\.?0+$/, "");
+        }
+        return text.replace(/\.?0+$/, "");
+      }
+
+      function formatTime(value) {
+        if (!value) {
+          return "—";
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return String(value);
+        }
+        return date.toLocaleString();
+      }
+
+      function isStale(timestamp) {
+        if (!timestamp) {
+          return false;
+        }
+        const value = new Date(timestamp).getTime();
+        if (Number.isNaN(value)) {
+          return false;
+        }
+        return Date.now() - value > 2 * 60 * 60 * 1000;
+      }
+
+      function getPollutantLabel(row) {
+        return row.pollutant_label
+          || row.phenomenon?.pollutant_label
+          || row.phenomenon?.label
+          || row.phenomenon_label
+          || "Unknown";
+      }
+
+      function formatStationLabel(row) {
+        const stationBase = row.display_name
+          || row.station?.display_name
+          || "";
+        let base = stationBase;
+        if (!base) {
+          return "Unknown station";
+        }
+        base = stripMissingFolio(base);
+        base = dedupeSegments(base);
+        return base;
+      }
+
+      function extractSeriesStation(label) {
+        if (!label) {
+          return "";
+        }
+        const withoutUrl = label.replace(/^https?:\/\/\S+\s*-\s*/i, "");
+        const firstChunk = withoutUrl.split(",").map((part) => part.trim()).filter(Boolean)[0] || "";
+        return stripMissingFolio(firstChunk);
+      }
+
+      function stripMissingFolio(value) {
+        return value.replace(/,?\s*GB_SamplingFeature_missingFOI\b/gi, "").trim();
+      }
+
+      function dedupeSegments(value) {
+        const parts = value.split(",").map((part) => part.trim()).filter(Boolean);
+        if (parts.length <= 1) {
+          return value;
+        }
+        const unique = [];
+        const seen = new Set();
+        parts.forEach((part) => {
+          const key = part.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(part);
+          }
+        });
+        return unique.join(", ");
+      }
+
+      function sortRows(rows) {
+        return [...rows].sort((a, b) => {
+          const aPollutant = getPollutantLabel(a);
+          const bPollutant = getPollutantLabel(b);
+          const pollutantCompare = aPollutant.localeCompare(bPollutant);
+          if (pollutantCompare !== 0) {
+            return pollutantCompare;
+          }
+          const aStation = formatStationLabel(a);
+          const bStation = formatStationLabel(b);
+          return aStation.localeCompare(bStation);
+        });
+      }
+
+      function updatePollutantOptions(rows) {
+        if (!pollutantSelect) {
+          return;
+        }
+        const current = pollutantSelect.value;
+        const options = Array.from(new Set(rows.map((row) => getPollutantLabel(row))))
+          .filter((label) => label && label !== "Unknown")
+          .sort((a, b) => a.localeCompare(b));
+        pollutantSelect.innerHTML = "";
+        const allOption = document.createElement("option");
+        allOption.value = "";
+        allOption.textContent = "All pollutants";
+        pollutantSelect.appendChild(allOption);
+        options.forEach((label) => {
+          const option = document.createElement("option");
+          option.value = label;
+          option.textContent = label;
+          pollutantSelect.appendChild(option);
+        });
+        if (current && options.includes(current)) {
+          pollutantSelect.value = current;
+        }
+      }
+
+      function renderRows(rows) {
+        const selected = pollutantSelect ? pollutantSelect.value : "";
+        const filtered = selected
+          ? rows.filter((row) => getPollutantLabel(row) === selected)
+          : rows;
+        const ordered = sortRows(filtered);
+        tableBody.innerHTML = "";
+
+        ordered.forEach((row) => {
+          const tr = document.createElement("tr");
+          const station = formatStationLabel(row);
+          const pollutant = getPollutantLabel(row);
+          const value = formatValue(row.last_value);
+          const unit = row.uom_display || row.uom || "";
+          const observed = formatTime(row.last_value_at);
+
+          const stationCell = document.createElement("td");
+          stationCell.textContent = station;
+
+          const pollutantCell = document.createElement("td");
+          pollutantCell.textContent = pollutant;
+
+          const valueCell = document.createElement("td");
+          valueCell.className = `value ${isStale(row.last_value_at) ? "stale" : ""}`;
+          valueCell.textContent = value;
+
+          const unitCell = document.createElement("td");
+          unitCell.textContent = unit;
+
+          const observedCell = document.createElement("td");
+          observedCell.textContent = observed;
+
+          tr.appendChild(stationCell);
+          tr.appendChild(pollutantCell);
+          tr.appendChild(valueCell);
+          tr.appendChild(unitCell);
+          tr.appendChild(observedCell);
+
+          tableBody.appendChild(tr);
+        });
+
+        rowCount.textContent = `${ordered.length} series`;
+      }
+
+      function buildSeriesOptions(rows) {
+        if (!stationSelect) {
+          return;
+        }
+        const unique = new Map();
+        rows.forEach((row) => {
+          if (row.id === null || row.id === undefined) {
+            return;
+          }
+          const id = String(row.id);
+          if (unique.has(id)) {
+            return;
+          }
+          const baseLabel = formatStationLabel(row);
+          const pollutant = getPollutantLabel(row);
+          const label = baseLabel && pollutant && pollutant !== "Unknown"
+            ? `${baseLabel} — ${pollutant}`
+            : baseLabel || pollutant || "Unknown station";
+          unique.set(id, {
+            id,
+            label,
+            pollutant,
+            uom: row.uom_display || row.uom || "",
+          });
+        });
+        const options = Array.from(unique.values())
+          .sort((a, b) => a.label.localeCompare(b.label));
+        stationSelect.innerHTML = "";
+        options.forEach((option) => {
+          const el = document.createElement("option");
+          el.value = option.id;
+          el.textContent = option.label;
+          stationSelect.appendChild(el);
+        });
+        seriesLookup = new Map(options.map((option) => [option.id, option]));
+        if (options.length === 0) {
+          selectedSeriesId = null;
+          return;
+        }
+        if (!selectedSeriesId || !seriesLookup.has(selectedSeriesId)) {
+          selectedSeriesId = options[0].id;
+        }
+        stationSelect.value = selectedSeriesId;
+      }
+
+      function clearSeriesChart(message) {
+        chartSvg.selectAll("*").remove();
+        if (!message) {
+          return;
+        }
+        const width = chartSvg.node()?.clientWidth || 640;
+        const height = chartSvg.node()?.clientHeight || 360;
+        chartSvg
+          .attr("viewBox", `0 0 ${width} ${height}`)
+          .append("text")
+          .attr("x", width / 2)
+          .attr("y", height / 2)
+          .attr("text-anchor", "middle")
+          .attr("fill", "rgba(20, 34, 37, 0.5)")
+          .style("font-size", "0.9rem")
+          .text(message);
+      }
+
+      function setChartLoading(isLoading) {
+        if (!chartWrap) {
+          return;
+        }
+        chartWrap.classList.toggle("is-loading", isLoading);
+      }
+
+      function renderSeriesChart(points, meta, windowLabel, guideline) {
+        chartSvg.selectAll("*").remove();
+        const width = chartSvg.node()?.clientWidth || 960;
+        const height = chartSvg.node()?.clientHeight || 360;
+        const margin = { top: 24, right: 24, bottom: 40, left: 56 };
+        chartSvg.attr("viewBox", `0 0 ${width} ${height}`);
+
+        if (!points.length) {
+          clearSeriesChart("No observations in this window.");
+          return;
+        }
+
+        const xExtent = d3.extent(points, (d) => d.date);
+        const yExtent = d3.extent(points, (d) => d.value);
+        const minValue = Number.isFinite(yExtent[0]) ? yExtent[0] : 0;
+        const maxValue = Number.isFinite(yExtent[1]) ? yExtent[1] : 1;
+        const guidelineValue = guideline ? Number(guideline.limit_value) : null;
+        const hasGuideline = Number.isFinite(guidelineValue);
+        let yMin = Math.min(0, minValue);
+        let yMax = minValue === maxValue ? minValue + 1 : maxValue;
+        if (hasGuideline) {
+          yMin = Math.min(yMin, guidelineValue);
+          yMax = Math.max(yMax, guidelineValue);
+          if (yMin === yMax) {
+            yMax = yMin + 1;
+          }
+        }
+
+        const xScale = d3.scaleTime()
+          .domain(xExtent)
+          .range([margin.left, width - margin.right]);
+        const yScale = d3.scaleLinear()
+          .domain([yMin, yMax])
+          .nice()
+          .range([height - margin.bottom, margin.top]);
+
+        const tickCount = windowLabel === "12h" ? 6 : windowLabel === "24h" ? 8 : 7;
+        const xAxis = d3.axisBottom(xScale).ticks(tickCount).tickSizeOuter(0);
+        const yAxis = d3.axisLeft(yScale).ticks(5).tickSizeOuter(0);
+
+        chartSvg.append("g")
+          .attr("class", "chart-axis")
+          .attr("transform", `translate(0, ${height - margin.bottom})`)
+          .call(xAxis);
+
+        chartSvg.append("g")
+          .attr("class", "chart-axis")
+          .attr("transform", `translate(${margin.left}, 0)`)
+          .call(yAxis);
+
+        if (hasGuideline) {
+          chartSvg.append("line")
+            .attr("class", "chart-guideline")
+            .attr("x1", margin.left)
+            .attr("x2", width - margin.right)
+            .attr("y1", yScale(guidelineValue))
+            .attr("y2", yScale(guidelineValue));
+
+          const guidelineLabel = guideline?.level_label
+            ? `WHO ${guideline.level_label.replace("_", " ")}`
+            : "WHO AQG 2021";
+          const guidelinePeriod = guideline?.averaging_period_label || "24-hour";
+          const guidelineUnit = guideline?.uom ? ` ${guideline.uom}` : "";
+          const guidelineText = `${guidelineLabel} ${guidelinePeriod} — ${formatGuidelineValue(guidelineValue)}${guidelineUnit}`;
+          const labelY = Math.min(
+            Math.max(yScale(guidelineValue) - 6, margin.top + 12),
+            height - margin.bottom - 6
+          );
+          chartSvg.append("text")
+            .attr("class", "chart-guideline-label")
+            .attr("x", width - margin.right - 4)
+            .attr("y", labelY)
+            .attr("text-anchor", "end")
+            .text(guidelineText);
+        }
+
+        const line = d3.line()
+          .defined((d) => Number.isFinite(d.value))
+          .x((d) => xScale(d.date))
+          .y((d) => yScale(d.value));
+
+        chartSvg.append("path")
+          .datum(points)
+          .attr("class", "chart-line")
+          .attr("d", line);
+
+        const dot = chartSvg.append("circle")
+          .attr("class", "chart-dot")
+          .attr("r", 5)
+          .style("opacity", 0);
+
+        const overlay = chartSvg.append("rect")
+          .attr("x", margin.left)
+          .attr("y", margin.top)
+          .attr("width", width - margin.left - margin.right)
+          .attr("height", height - margin.top - margin.bottom)
+          .attr("fill", "transparent");
+
+        const bisect = d3.bisector((d) => d.date).left;
+
+        overlay
+          .on("mousemove", (event) => {
+            const [mx] = d3.pointer(event);
+            const targetDate = xScale.invert(mx);
+            const index = bisect(points, targetDate, 1);
+            const prev = points[index - 1];
+            const next = points[index];
+            const closest = !next || targetDate - prev.date < next.date - targetDate ? prev : next;
+            if (!closest) {
+              return;
+            }
+            dot
+              .attr("cx", xScale(closest.date))
+              .attr("cy", yScale(closest.value))
+              .style("opacity", 1);
+
+            if (chartTooltip) {
+              const chartRect = chartSvg.node()?.getBoundingClientRect();
+              const label = meta?.label || "Selected station";
+              const unit = meta?.uom ? ` ${meta.uom}` : "";
+              chartTooltip.innerHTML = `
+                <strong>${label}</strong><br />
+                ${formatTime(closest.date.toISOString())}<br />
+                ${formatValue(closest.value)}${unit}
+              `;
+              if (chartRect) {
+                chartTooltip.style.left = `${event.clientX - chartRect.left + 12}px`;
+                chartTooltip.style.top = `${event.clientY - chartRect.top - 12}px`;
+              }
+              chartTooltip.classList.add("visible");
+            }
+          })
+          .on("mouseleave", () => {
+            dot.style("opacity", 0);
+            if (chartTooltip) {
+              chartTooltip.classList.remove("visible");
+            }
+          });
+      }
+
+      async function loadSeriesData() {
+        if (!chartStatusEl) {
+          return;
+        }
+        setChartLoading(true);
+        chartStatusEl.textContent = "Loading…";
+        if (chartErrorEl) {
+          chartErrorEl.textContent = "";
+        }
+        if (!SERIES_EDGE_URL) {
+          if (chartErrorEl) {
+            chartErrorEl.textContent = "Missing project ref for series endpoint.";
+          }
+          chartStatusEl.textContent = "Error";
+          clearSeriesChart("Series endpoint missing.");
+          setChartLoading(false);
+          return;
+        }
+        if (!anonKey) {
+          if (chartErrorEl) {
+            chartErrorEl.textContent = "Missing anon key.";
+          }
+          chartStatusEl.textContent = "Error";
+          clearSeriesChart("Missing anon key.");
+          setChartLoading(false);
+          return;
+        }
+        if (!selectedSeriesId) {
+          chartStatusEl.textContent = "No station selected";
+          clearSeriesChart("Select a station to view a trend.");
+          setChartLoading(false);
+          return;
+        }
+        try {
+          const windowValue = windowSelect?.value || "24h";
+          const url = new URL(SERIES_EDGE_URL);
+          url.searchParams.set("timeseries_id", selectedSeriesId);
+          url.searchParams.set("window", windowValue);
+          const response = await fetch(url.toString(), {
+            headers: {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            },
+          });
+          if (!response.ok) {
+            throw new Error(`Series request failed: ${response.status}`);
+          }
+          const payload = await response.json();
+          const raw = Array.isArray(payload?.data) ? payload.data : [];
+          const guideline = payload?.guideline || null;
+          const points = raw
+            .map((row) => ({
+              date: new Date(row.observed_at),
+              value: Number(row.value),
+            }))
+            .filter(
+              (row) =>
+                Number.isFinite(row.date?.getTime()) &&
+                Number.isFinite(row.value) &&
+                row.value >= 0
+            );
+          const meta = seriesLookup.get(selectedSeriesId) || null;
+          renderSeriesChart(points, meta, windowValue, guideline);
+          chartStatusEl.textContent = "Live";
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (chartErrorEl) {
+            chartErrorEl.textContent = message;
+          }
+          chartStatusEl.textContent = "Error";
+          clearSeriesChart("Unable to load series.");
+        } finally {
+          setChartLoading(false);
+        }
+      }
+
+      function buildEndpoint() {
+        if (!EDGE_URL) {
+          return "";
+        }
+        const url = new URL(EDGE_URL);
+        if (regionParam) {
+          url.searchParams.set("region", region);
+        }
+        if (stationLike) {
+          url.searchParams.set("station_like", stationLike);
+        }
+        if (limitParam) {
+          url.searchParams.set("limit", limitParam);
+        } else {
+          url.searchParams.set("limit", "1000");
+        }
+        return url.toString();
+      }
+
+      async function loadData() {
+        statusEl.textContent = "Loading…";
+        errorEl.textContent = "";
+        const endpoint = buildEndpoint();
+        if (!endpoint) {
+          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        if (!anonKey) {
+          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        try {
+          const response = await fetch(endpoint, {
+            headers: {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            },
+          });
+          if (!response.ok) {
+            throw new Error(`Request failed: ${response.status}`);
+          }
+          const payload = await response.json();
+          cachedRows = payload.data || [];
+          updatePollutantOptions(cachedRows);
+          renderRows(cachedRows);
+          buildSeriesOptions(cachedRows);
+          await loadSeriesData();
+          lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+          statusEl.textContent = "Live";
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          errorEl.textContent = message;
+          statusEl.textContent = "Error";
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", loadData);
+      const chartRefreshBtn = document.getElementById("chart-refresh");
+      if (chartRefreshBtn) {
+        chartRefreshBtn.addEventListener("click", loadSeriesData);
+      }
+      if (pollutantSelect) {
+        pollutantSelect.addEventListener("change", () => renderRows(cachedRows));
+      }
+      if (stationSelect) {
+        stationSelect.addEventListener("change", () => {
+          selectedSeriesId = stationSelect.value || null;
+          loadSeriesData();
+        });
+      }
+      if (windowSelect) {
+        windowSelect.addEventListener("change", () => {
+          loadSeriesData();
+        });
+      }
+      loadData();
+      setInterval(loadData, 5 * 60 * 1000);
+
+      function inferProjectRefFromHost() {
+        const host = window.location.hostname || "";
+        if (host.endsWith(".supabase.co")) {
+          return host.split(".")[0];
+        }
+        return null;
+      }
+    </script>
+  </body>
+</html>
