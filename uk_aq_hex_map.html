@@ -3873,67 +3873,6 @@
         syncNetworkActionState();
       }
 
-      function getStoredNetworkSelection() {
-        const state = mapNetworkState[MAP_KEY];
-        if (!state) {
-          return { selectedCodes: null, defaultAll: false };
-        }
-        return {
-          selectedCodes: Array.isArray(state.selected) ? new Set(state.selected) : null,
-          defaultAll: Boolean(state.allSelected),
-        };
-      }
-
-      function persistNetworkSelection() {
-        if (!networkInputs.length) {
-          return;
-        }
-        if (networkSelectionMismatch && networkInputs.every((input) => !input.checked)) {
-          return;
-        }
-        const allSelected = networkInputs.every((input) => input.checked);
-        if (allSelected) {
-          mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
-          return;
-        }
-        const selection = getCurrentNetworkSelection();
-        mapNetworkState[MAP_KEY] = {
-          selected: selection ? Array.from(selection) : [],
-          allSelected: false,
-        };
-      }
-
-      function applyStoredNetworkSelection() {
-        if (!networkInputs.length) {
-          return;
-        }
-        const stored = getStoredNetworkSelection();
-        if (stored.selectedCodes) {
-          const matches = networkInputs.filter((input) => stored.selectedCodes.has(input.dataset.network));
-          networkSelectionMismatch = stored.selectedCodes.size > 0 && matches.length === 0;
-          if (stored.selectedCodes.size === 0 || networkSelectionMismatch) {
-            networkInputs.forEach((input) => {
-              input.checked = false;
-            });
-          } else if (matches.length) {
-            networkInputs.forEach((input) => {
-              input.checked = stored.selectedCodes.has(input.dataset.network);
-            });
-          }
-        } else if (stored.defaultAll) {
-          networkSelectionMismatch = false;
-          networkInputs.forEach((input) => {
-            input.checked = true;
-          });
-        } else {
-          networkSelectionMismatch = false;
-          networkInputs.forEach((input) => {
-            input.checked = false;
-          });
-        }
-        syncNetworkActionState();
-      }
-
       function renderNetworkFilters(defs, selectedCodes, defaultAll) {
         if (!networkList) {
           return;
@@ -6695,6 +6634,68 @@
         );
       }
 
+
+      function getStoredNetworkSelection() {
+        const state = mapNetworkState[MAP_KEY];
+        if (!state) {
+          return { selectedCodes: null, defaultAll: false };
+        }
+        return {
+          selectedCodes: Array.isArray(state.selected) ? new Set(state.selected) : null,
+          defaultAll: Boolean(state.allSelected),
+        };
+      }
+
+      function persistNetworkSelection() {
+        if (!networkInputs.length) {
+          return;
+        }
+        if (networkSelectionMismatch && networkInputs.every((input) => !input.checked)) {
+          return;
+        }
+        const allSelected = networkInputs.every((input) => input.checked);
+        if (allSelected) {
+          mapNetworkState[MAP_KEY] = { selected: null, allSelected: true };
+          return;
+        }
+        const selection = getCurrentNetworkSelection();
+        mapNetworkState[MAP_KEY] = {
+          selected: selection ? Array.from(selection) : [],
+          allSelected: false,
+        };
+      }
+
+      function applyStoredNetworkSelection() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const stored = getStoredNetworkSelection();
+        if (stored.selectedCodes) {
+          const matches = networkInputs.filter((input) => stored.selectedCodes.has(input.dataset.network));
+          networkSelectionMismatch = stored.selectedCodes.size > 0 && matches.length === 0;
+          if (stored.selectedCodes.size === 0 || networkSelectionMismatch) {
+            networkInputs.forEach((input) => {
+              input.checked = false;
+            });
+          } else if (matches.length) {
+            networkInputs.forEach((input) => {
+              input.checked = stored.selectedCodes.has(input.dataset.network);
+            });
+          }
+        } else if (stored.defaultAll) {
+          networkSelectionMismatch = false;
+          networkInputs.forEach((input) => {
+            input.checked = true;
+          });
+        } else {
+          networkSelectionMismatch = false;
+          networkInputs.forEach((input) => {
+            input.checked = false;
+          });
+        }
+        syncNetworkActionState();
+      }
+
       function renderNetworkFilters(defs, selectedCodes, defaultAll) {
         if (!networkList) {
           return;
@@ -7954,6 +7955,7 @@
         if (!networkInputs.length) {
           return;
         }
+        networkSelectionMismatch = false;
         if (event.target === networkSelectAll) {
           networkInputs.forEach((input) => {
             input.checked = true;
@@ -7968,6 +7970,7 @@
       }
 
       function handleNetworkToggle() {
+        networkSelectionMismatch = false;
         syncNetworkActionState();
         applyNetworkFilters();
       }
