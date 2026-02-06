@@ -3346,10 +3346,17 @@
         }
         currentWindow = normalized;
         syncWindowInputs();
-        applyNetworkFilters();
         if (!options.silent) {
           window.updateMapSettings?.({ window: currentWindow }, "uk");
         }
+        if (!isUkMapVisible()) {
+          return;
+        }
+        setMapLoading(true);
+        if (applyCachedPollutant(getLatestCacheKey(activePollutant, currentWindow))) {
+          return;
+        }
+        loadMapData();
       }
 
       function formatWindowLabel(value) {
@@ -3442,6 +3449,10 @@
         }
       }
 
+      function getLatestCacheKey(pollutantKey = activePollutant, windowKey = currentWindow) {
+        return `${pollutantKey || "all"}::${windowKey || "all"}`;
+      }
+
       function getPollutantCache(key) {
         const cached = pollutantCache.get(key);
         if (!cached) {
@@ -3462,7 +3473,7 @@
         const hadAllSelected = networkInputs.length > 0
           && networkInputs.every((input) => input.checked);
         baseLatestRows = cached.latestRows;
-        latestPollutant = cached.latestPollutant || key;
+        latestPollutant = cached.latestPollutant || activePollutant;
         renderNetworkFiltersIfNeeded(
           buildNetworkDefs(getNetworkRowsForWindow()),
           previousSelection,
@@ -3509,7 +3520,7 @@
           return;
         }
         setMapLoading(true);
-        if (applyCachedPollutant(activePollutant)) {
+        if (applyCachedPollutant(getLatestCacheKey(activePollutant, currentWindow))) {
           return;
         }
         loadMapData();
@@ -5425,8 +5436,12 @@
           return;
         }
         const requestPollutant = activePollutant;
+        const requestWindow = currentWindow;
         const requestId = ++latestLoadId;
-        const isStale = () => requestId !== latestLoadId || requestPollutant !== activePollutant;
+        const isStale = () =>
+          requestId !== latestLoadId
+          || requestPollutant !== activePollutant
+          || requestWindow !== currentWindow;
         setStatus("Loading...");
         if (errorEl) {
           errorEl.textContent = "";
@@ -5462,6 +5477,7 @@
           }
           const latestUrl = new URL(LATEST_URL);
           latestUrl.searchParams.set("pollutant", activePollutant);
+          latestUrl.searchParams.set("window", currentWindow);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
           // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
@@ -5533,7 +5549,7 @@
             if (!isStale()) {
               baseLatestRows = cleanedLatest;
               latestPollutant = responsePollutant;
-              pollutantCache.set(requestPollutant, {
+              pollutantCache.set(getLatestCacheKey(requestPollutant, requestWindow), {
                 timestamp: Date.now(),
                 latestRows: cleanedLatest,
                 latestPollutant,
@@ -6292,10 +6308,17 @@
         }
         currentWindow = normalized;
         syncWindowInputs();
-        applyNetworkFilters();
         if (!options.silent) {
           window.updateMapSettings?.({ window: currentWindow }, "cr");
         }
+        if (!isCrMapVisible()) {
+          return;
+        }
+        setMapLoading(true);
+        if (applyCachedPollutant(getLatestCacheKey(activePollutant, currentWindow))) {
+          return;
+        }
+        loadMapData();
       }
 
       function formatWindowLabel(value) {
@@ -6388,6 +6411,14 @@
         }
       }
 
+      function getLatestCacheKey(
+        pollutantKey = activePollutant,
+        windowKey = currentWindow,
+        regionKey = activeRegion
+      ) {
+        return `${pollutantKey || "all"}::${windowKey || "all"}::${regionKey || "all"}`;
+      }
+
       function getPollutantCache(key) {
         const cached = pollutantCache.get(key);
         if (!cached) {
@@ -6408,7 +6439,7 @@
         const hadAllSelected = networkInputs.length > 0
           && networkInputs.every((input) => input.checked);
         baseLatestRows = cached.latestRows;
-        latestPollutant = cached.latestPollutant || key;
+        latestPollutant = cached.latestPollutant || activePollutant;
         renderNetworkFiltersIfNeeded(
           buildNetworkDefs(getNetworkRowsForWindow()),
           previousSelection,
@@ -6439,7 +6470,7 @@
           return;
         }
         setMapLoading(true);
-        if (applyCachedPollutant(activePollutant)) {
+        if (applyCachedPollutant(getLatestCacheKey(activePollutant, currentWindow, activeRegion))) {
           return;
         }
         loadMapData();
@@ -8240,8 +8271,14 @@
           return;
         }
         const requestPollutant = activePollutant;
+        const requestWindow = currentWindow;
+        const requestRegion = activeRegion;
         const requestId = ++latestLoadId;
-        const isStale = () => requestId !== latestLoadId || requestPollutant !== activePollutant;
+        const isStale = () =>
+          requestId !== latestLoadId
+          || requestPollutant !== activePollutant
+          || requestWindow !== currentWindow
+          || requestRegion !== activeRegion;
         setStatus("Loading...");
         if (errorEl) {
           errorEl.textContent = "";
@@ -8261,7 +8298,7 @@
           }
         }
         try {
-          const hexUrl = getHexUrlForRegion(activeRegion);
+          const hexUrl = getHexUrlForRegion(requestRegion);
           const hexPromise = fetch(hexUrl);
           let laPromise = Promise.resolve(null);
           let latestPromise = Promise.resolve(null);
@@ -8271,11 +8308,15 @@
             if (activeLaVersion) {
               laUrl.searchParams.set("la_version", activeLaVersion);
             }
-            if (activeRegion) {
-              laUrl.searchParams.set("region", activeRegion);
+            if (requestRegion) {
+              laUrl.searchParams.set("region", requestRegion);
             }
             const latestUrl = new URL(LATEST_URL);
             latestUrl.searchParams.set("pollutant", activePollutant);
+            latestUrl.searchParams.set("window", currentWindow);
+            if (requestRegion) {
+              latestUrl.searchParams.set("region", requestRegion);
+            }
             latestUrl.searchParams.set("scope", "all");
             latestUrl.searchParams.set("limit", "10000");
             // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
@@ -8359,7 +8400,7 @@
               if (!isStale()) {
                 baseLatestRows = scopedLatest;
                 latestPollutant = responsePollutant;
-                pollutantCache.set(requestPollutant, {
+                pollutantCache.set(getLatestCacheKey(requestPollutant, requestWindow, requestRegion), {
                   timestamp: Date.now(),
                   latestRows: scopedLatest,
                   latestPollutant,
