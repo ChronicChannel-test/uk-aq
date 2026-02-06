@@ -2804,6 +2804,7 @@
         });
         mapResizeObserver.observe(mapResizeTarget);
       }
+      const ukRoot = document.getElementById("tab-panel-uk");
       const mapSettingsButton = document.querySelector(".map-settings");
       const mapSettingsPanel = document.getElementById("map-settings-panel");
       const mapSettingsClose = document.getElementById("map-settings-close");
@@ -2850,6 +2851,8 @@
       let scopedLatestRows = [];
       let latestRows = [];
       let latestPollutant = null;
+      let ukRefreshTimer = null;
+      let ukWasHidden = true;
       let populationLookup = new Map();
       let networkInputs = [];
       let networkSelectionMismatch = false;
@@ -3403,6 +3406,42 @@
         }
       }
 
+      function isUkMapVisible() {
+        return !document.hidden && !ukRoot?.hidden;
+      }
+
+      function clearUkRefreshTimer() {
+        if (ukRefreshTimer) {
+          clearInterval(ukRefreshTimer);
+          ukRefreshTimer = null;
+        }
+      }
+
+      function startUkRefreshTimer() {
+        clearUkRefreshTimer();
+        if (!isUkMapVisible()) {
+          return;
+        }
+        ukRefreshTimer = setInterval(() => {
+          if (isUkMapVisible()) {
+            loadMapData();
+          }
+        }, 60 * 1000);
+      }
+
+      function syncUkPollingOnVisibility() {
+        if (!isUkMapVisible()) {
+          clearUkRefreshTimer();
+          ukWasHidden = true;
+          return;
+        }
+        startUkRefreshTimer();
+        if (ukWasHidden) {
+          loadMapData();
+          ukWasHidden = false;
+        }
+      }
+
       function getPollutantCache(key) {
         const cached = pollutantCache.get(key);
         if (!cached) {
@@ -3464,6 +3503,9 @@
         setQueryParam("pollutant", activePollutant);
         window.dispatchEvent(new CustomEvent("pollutantchange", { detail: { pollutant: activePollutant } }));
         if (options.deferFetch) {
+          return;
+        }
+        if (!isUkMapVisible()) {
           return;
         }
         setMapLoading(true);
@@ -5379,6 +5421,9 @@
       }
 
       async function loadMapData() {
+        if (!isUkMapVisible()) {
+          return;
+        }
         const requestPollutant = activePollutant;
         const requestId = ++latestLoadId;
         const isStale = () => requestId !== latestLoadId || requestPollutant !== activePollutant;
@@ -5740,6 +5785,11 @@
       });
 
       document.getElementById("refresh").addEventListener("click", loadMapData);
+      document.addEventListener("visibilitychange", syncUkPollingOnVisibility);
+      if (ukRoot && typeof MutationObserver !== "undefined") {
+        const ukVisibilityObserver = new MutationObserver(syncUkPollingOnVisibility);
+        ukVisibilityObserver.observe(ukRoot, { attributes: true, attributeFilter: ["hidden"] });
+      }
       window.addEventListener("resize", () => {
         if (statusEl.textContent === "Live") {
           renderMap();
@@ -5754,8 +5804,7 @@
       syncSettingsPanelWidth();
       syncColorScaleInputs();
       updateLegendScaleDescription();
-      loadMapData();
-      setInterval(loadMapData, 60 * 1000);
+      syncUkPollingOnVisibility();
 
       window.ukMap = {
         render: () => {
@@ -6022,6 +6071,8 @@
       let scopedLatestRows = [];
       let latestRows = [];
       let latestPollutant = null;
+      let crRefreshTimer = null;
+      let crWasHidden = true;
       let populationLookup = new Map();
       let networkInputs = [];
       let networkSelectionMismatch = false;
@@ -6301,6 +6352,42 @@
         }
       }
 
+      function isCrMapVisible() {
+        return !document.hidden && !root?.hidden;
+      }
+
+      function clearCrRefreshTimer() {
+        if (crRefreshTimer) {
+          clearInterval(crRefreshTimer);
+          crRefreshTimer = null;
+        }
+      }
+
+      function startCrRefreshTimer() {
+        clearCrRefreshTimer();
+        if (!isCrMapVisible()) {
+          return;
+        }
+        crRefreshTimer = setInterval(() => {
+          if (isCrMapVisible()) {
+            loadMapData();
+          }
+        }, 60 * 1000);
+      }
+
+      function syncCrPollingOnVisibility() {
+        if (!isCrMapVisible()) {
+          clearCrRefreshTimer();
+          crWasHidden = true;
+          return;
+        }
+        startCrRefreshTimer();
+        if (crWasHidden) {
+          loadMapData();
+          crWasHidden = false;
+        }
+      }
+
       function getPollutantCache(key) {
         const cached = pollutantCache.get(key);
         if (!cached) {
@@ -6346,6 +6433,9 @@
         activePollutant = normalized;
         updatePollutantLabels();
         if (options.deferFetch) {
+          return;
+        }
+        if (!isCrMapVisible()) {
           return;
         }
         setMapLoading(true);
@@ -8146,6 +8236,9 @@
       }
 
       async function loadMapData() {
+        if (!isCrMapVisible()) {
+          return;
+        }
         const requestPollutant = activePollutant;
         const requestId = ++latestLoadId;
         const isStale = () => requestId !== latestLoadId || requestPollutant !== activePollutant;
@@ -8511,6 +8604,11 @@
       syncSortHeaders();
 
       byId("refresh").addEventListener("click", loadMapData);
+      document.addEventListener("visibilitychange", syncCrPollingOnVisibility);
+      if (root && typeof MutationObserver !== "undefined") {
+        const crVisibilityObserver = new MutationObserver(syncCrPollingOnVisibility);
+        crVisibilityObserver.observe(root, { attributes: true, attributeFilter: ["hidden"] });
+      }
       window.addEventListener("resize", () => {
         if (statusEl.textContent === "Live") {
           renderMap();
@@ -8524,8 +8622,7 @@
       syncSettingsPanelWidth();
       syncColorScaleInputs();
       updateLegendScaleDescription();
-      loadMapData();
-      setInterval(loadMapData, 60 * 1000);
+      syncCrPollingOnVisibility();
 
       window.crMap = {
         render: () => {
