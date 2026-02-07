@@ -442,6 +442,8 @@
       let cachedRows = [];
       let selectedSeriesId = null;
       let seriesLookup = new Map();
+      const seriesSinceByKey = new Map();
+      const seriesPointCacheByKey = new Map();
 
       regionBadge.textContent = region;
       endpointHint.textContent = EDGE_URL
@@ -707,6 +709,38 @@
         chartWrap.classList.toggle("is-loading", isLoading);
       }
 
+      function normalizeIsoTimestamp(value) {
+        if (!value) {
+          return null;
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        return parsed.toISOString();
+      }
+
+      function getSeriesCacheKey(seriesId, windowLabel) {
+        return `${seriesId || ""}::${windowLabel || ""}`;
+      }
+
+      function mergeSeriesPoints(existingPoints, incomingPoints) {
+        const merged = new Map();
+        existingPoints.forEach((point) => {
+          const key = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+          if (Number.isFinite(key)) {
+            merged.set(key, point);
+          }
+        });
+        incomingPoints.forEach((point) => {
+          const key = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+          if (Number.isFinite(key)) {
+            merged.set(key, point);
+          }
+        });
+        return Array.from(merged.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+      }
+
       function renderSeriesChart(points, meta, windowLabel, guideline) {
         chartSvg.selectAll("*").remove();
         const width = chartSvg.node()?.clientWidth || 960;
@@ -882,9 +916,14 @@
         }
         try {
           const windowValue = windowSelect?.value || "24h";
+          const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
+          const since = seriesSinceByKey.get(seriesKey) || null;
           const url = new URL(SERIES_EDGE_URL);
           url.searchParams.set("timeseries_id", selectedSeriesId);
           url.searchParams.set("window", windowValue);
+          if (since) {
+            url.searchParams.set("since", since);
+          }
           const response = await fetch(url.toString(), {
             headers: {
               Authorization: `Bearer ${anonKey}`,
@@ -897,7 +936,7 @@
           const payload = await response.json();
           const raw = Array.isArray(payload?.data) ? payload.data : [];
           const guideline = payload?.guideline || null;
-          const points = raw
+          const deltaPoints = raw
             .map((row) => ({
               date: new Date(row.observed_at),
               value: Number(row.value),
@@ -908,6 +947,15 @@
                 Number.isFinite(row.value) &&
                 row.value >= 0
             );
+          const cachedPoints = since ? (seriesPointCacheByKey.get(seriesKey) || []) : [];
+          const points = since ? mergeSeriesPoints(cachedPoints, deltaPoints) : deltaPoints;
+          seriesPointCacheByKey.set(seriesKey, points);
+          const nextSince = normalizeIsoTimestamp(payload?.next_since);
+          if (nextSince) {
+            seriesSinceByKey.set(seriesKey, nextSince);
+          } else if (!since) {
+            seriesSinceByKey.delete(seriesKey);
+          }
           const meta = seriesLookup.get(selectedSeriesId) || null;
           renderSeriesChart(points, meta, windowValue, guideline);
           chartStatusEl.textContent = "Live";

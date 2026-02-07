@@ -2571,6 +2571,7 @@
       let activePollutant = normalizePollutantKey(pollutantParam) || "pm25";
       const POLLUTANT_CACHE_TTL = 60 * 1000;
       const pollutantCache = new Map();
+      const latestSinceByKey = new Map();
       let latestLoadId = 0;
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
@@ -3451,6 +3452,42 @@
 
       function getLatestCacheKey(pollutantKey = activePollutant, windowKey = currentWindow) {
         return `${pollutantKey || "all"}::${windowKey || "all"}`;
+      }
+
+      function normalizeIsoTimestamp(value) {
+        if (!value) {
+          return null;
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        return parsed.toISOString();
+      }
+
+      function resolveLatestRowKey(row) {
+        return row?.id
+          ?? row?.timeseries_id
+          ?? row?.timeseries_ref
+          ?? (resolveStationKey(row) && getPollutantKeyFromRow(row)
+            ? `${resolveStationKey(row)}::${getPollutantKeyFromRow(row)}`
+            : null);
+      }
+
+      function mergeLatestRows(existingRows, incomingRows) {
+        const merged = new Map();
+        const extras = [];
+        const upsert = (row) => {
+          const key = resolveLatestRowKey(row);
+          if (key === null || key === undefined || key === "") {
+            extras.push(row);
+            return;
+          }
+          merged.set(String(key), row);
+        };
+        existingRows.forEach(upsert);
+        incomingRows.forEach(upsert);
+        return [...merged.values(), ...extras];
       }
 
       function getPollutantCache(key) {
@@ -5476,10 +5513,15 @@
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
           const latestUrl = new URL(LATEST_URL);
+          const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow);
+          const latestSince = latestSinceByKey.get(latestCacheKey) || null;
           latestUrl.searchParams.set("pollutant", activePollutant);
           latestUrl.searchParams.set("window", currentWindow);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
+          if (latestSince) {
+            latestUrl.searchParams.set("since", latestSince);
+          }
           // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
           // if (populationUrl) {
           //   populationUrl.searchParams.set("geo_type", "PCON");
@@ -5546,14 +5588,25 @@
             const latestRaw = latestPayload?.data || [];
             const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
             const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
+            const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
+            const existingLatest = latestSince
+              ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
+              : [];
+            const mergedLatest = latestSince
+              ? mergeLatestRows(existingLatest, cleanedLatest)
+              : cleanedLatest;
             if (!isStale()) {
-              baseLatestRows = cleanedLatest;
+              baseLatestRows = mergedLatest;
               latestPollutant = responsePollutant;
-              pollutantCache.set(getLatestCacheKey(requestPollutant, requestWindow), {
+              pollutantCache.set(latestCacheKey, {
                 timestamp: Date.now(),
-                latestRows: cleanedLatest,
+                latestRows: mergedLatest,
                 latestPollutant,
+                nextSince,
               });
+              if (nextSince) {
+                latestSinceByKey.set(latestCacheKey, nextSince);
+              }
             }
           } else if (!isStale()) {
             baseLatestRows = [];
@@ -5897,6 +5950,7 @@
       let activePollutant = normalizePollutantKey(pollutantParam) || "pm25";
       const POLLUTANT_CACHE_TTL = 60 * 1000;
       const pollutantCache = new Map();
+      const latestSinceByKey = new Map();
       let latestLoadId = 0;
       const LA_CONFIG = {
         id: "la23",
@@ -6417,6 +6471,42 @@
         regionKey = activeRegion
       ) {
         return `${pollutantKey || "all"}::${windowKey || "all"}::${regionKey || "all"}`;
+      }
+
+      function normalizeIsoTimestamp(value) {
+        if (!value) {
+          return null;
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        return parsed.toISOString();
+      }
+
+      function resolveLatestRowKey(row) {
+        return row?.id
+          ?? row?.timeseries_id
+          ?? row?.timeseries_ref
+          ?? (resolveStationKey(row) && getPollutantKeyFromRow(row)
+            ? `${resolveStationKey(row)}::${getPollutantKeyFromRow(row)}`
+            : null);
+      }
+
+      function mergeLatestRows(existingRows, incomingRows) {
+        const merged = new Map();
+        const extras = [];
+        const upsert = (row) => {
+          const key = resolveLatestRowKey(row);
+          if (key === null || key === undefined || key === "") {
+            extras.push(row);
+            return;
+          }
+          merged.set(String(key), row);
+        };
+        existingRows.forEach(upsert);
+        incomingRows.forEach(upsert);
+        return [...merged.values(), ...extras];
       }
 
       function getPollutantCache(key) {
@@ -8312,6 +8402,8 @@
               laUrl.searchParams.set("region", requestRegion);
             }
             const latestUrl = new URL(LATEST_URL);
+            const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
+            const latestSince = latestSinceByKey.get(latestCacheKey) || null;
             latestUrl.searchParams.set("pollutant", activePollutant);
             latestUrl.searchParams.set("window", currentWindow);
             if (requestRegion) {
@@ -8319,6 +8411,9 @@
             }
             latestUrl.searchParams.set("scope", "all");
             latestUrl.searchParams.set("limit", "10000");
+            if (latestSince) {
+              latestUrl.searchParams.set("since", latestSince);
+            }
             // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
             // if (populationUrl) {
             //   populationUrl.searchParams.set("geo_type", "LAD");
@@ -8397,14 +8492,27 @@
                 return !pconCodes.size || (code && pconCodes.has(code));
               });
               const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
+              const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
+              const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+              const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
+              const existingLatest = latestSince
+                ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
+                : [];
+              const mergedLatest = latestSince
+                ? mergeLatestRows(existingLatest, scopedLatest)
+                : scopedLatest;
               if (!isStale()) {
-                baseLatestRows = scopedLatest;
+                baseLatestRows = mergedLatest;
                 latestPollutant = responsePollutant;
-                pollutantCache.set(getLatestCacheKey(requestPollutant, requestWindow, requestRegion), {
+                pollutantCache.set(latestCacheKey, {
                   timestamp: Date.now(),
-                  latestRows: scopedLatest,
+                  latestRows: mergedLatest,
                   latestPollutant,
+                  nextSince,
                 });
+                if (nextSince) {
+                  latestSinceByKey.set(latestCacheKey, nextSince);
+                }
               }
             } else if (!isStale()) {
               baseLatestRows = [];
