@@ -263,6 +263,10 @@
         gap: 10px;
       }
 
+      .network-card[hidden] {
+        display: none;
+      }
+
       .network-card-header {
         display: flex;
         flex-wrap: wrap;
@@ -301,7 +305,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 6px 10px;
+        padding: 6px 24px 6px 10px;
         border-radius: 10px;
         flex: 0 0 auto;
       }
@@ -309,6 +313,7 @@
       .network-card-logo-link {
         text-decoration: none;
         cursor: pointer;
+        position: relative;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
@@ -355,9 +360,17 @@
       }
 
       .network-card-link-icon {
-        display: block;
-        width: auto;
-        height: 0.82rem;
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        width: 14px;
+        height: 14px;
+        flex: 0 0 auto;
+        pointer-events: none;
+      }
+
+      .network-card-logo-box--dark .network-card-link-icon {
+        filter: invert(1);
       }
 
       .network-card-grid {
@@ -2050,7 +2063,7 @@
                   href="https://uk-air.defra.gov.uk/interactive-map?network=aurn"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Open GOV.UK AURN map"
+                  aria-label="Open GOV.UK AURN website (external link)"
                 >GOV.UK AURN<img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" /></a>
               </div>
             </div>
@@ -2110,9 +2123,10 @@
                 href="https://explore.openaq.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open OpenAQ network page placeholder"
+                aria-label="Open OpenAQ website (external link)"
               >
                 <img class="network-card-logo" src="data/images/openaq_logo.svg" alt="OpenAQ logo" />
+                <img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" />
               </a>
             </div>
             <div class="network-card-grid">
@@ -2171,9 +2185,10 @@
                 href="https://www.breathelondon.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open Breathe London network page placeholder"
+                aria-label="Open Breathe London website (external link)"
               >
                 <img class="network-card-logo network-card-logo--breathe" src="data/images/breathelondon_logo_v2.svg" alt="Breathe London logo" />
+                <img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" />
               </a>
             </div>
             <div class="network-card-grid">
@@ -2284,9 +2299,10 @@
                 href="https://sensor.community/en/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open Sensor.Community network page placeholder"
+                aria-label="Open Sensor.Community website (external link)"
               >
                 <img class="network-card-logo" src="data/images/scomm_logo-sw.svg" alt="Sensor.Community logo" />
+                <img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" />
               </a>
             </div>
             <div class="network-card-grid">
@@ -2564,7 +2580,7 @@
                     href="https://uk-air.defra.gov.uk/interactive-map?network=aurn"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Open GOV.UK AURN map"
+                    aria-label="Open GOV.UK AURN website (external link)"
                   >GOV.UK AURN<img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" /></a>
                 </div>
               </div>
@@ -2624,9 +2640,10 @@
                   href="https://explore.openaq.org"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Open OpenAQ network page placeholder"
+                  aria-label="Open OpenAQ website (external link)"
                 >
                   <img class="network-card-logo" src="data/images/openaq_logo.svg" alt="OpenAQ logo" />
+                  <img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" />
                 </a>
               </div>
               <div class="network-card-grid">
@@ -2674,6 +2691,182 @@
                 <div>
                   <div class="network-card-label">Latest update</div>
                   <div class="network-card-value" id="cr-network-openaq-latest">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="network-card">
+              <div class="network-card-header">
+                <h3 class="network-card-title">Breathe London</h3>
+                <a
+                  class="network-card-logo-link network-card-logo-box network-card-logo-box--light"
+                  href="https://www.breathelondon.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Breathe London website (external link)"
+                >
+                  <img class="network-card-logo network-card-logo--breathe" src="data/images/breathelondon_logo_v2.svg" alt="Breathe London logo" />
+                  <img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" />
+                </a>
+              </div>
+              <div class="network-card-grid">
+                <div>
+                  <div class="network-card-label">Sensors</div>
+                  <div class="network-card-value" id="cr-network-breathe-sensors">-</div>
+                </div>
+                <div class="coverage-item">
+                  <div class="coverage-title">
+                    Coverage
+                    <span
+                      class="coverage-help"
+                      role="img"
+                      aria-label="Coverage help"
+                      title="Local authority counted if ≥1 active sensor"
+                    >?</span>
+                  </div>
+                  <div class="coverage-value" id="cr-network-breathe-coverage-value">0% (0 / 0)</div>
+                  <div
+                    class="coverage-bar"
+                    id="cr-network-breathe-coverage-bar"
+                    role="img"
+                    aria-label="Coverage 0% (0 / 0) local authorities"
+                  >
+                    <span class="coverage-bar-fill" id="cr-network-breathe-coverage-fill"></span>
+                  </div>
+                  <div class="coverage-label">Local Authorities</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Average</div>
+                  <div class="network-card-value" id="cr-network-breathe-average">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Typical</div>
+                  <div class="network-card-value" id="cr-network-breathe-median">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Highest</div>
+                  <div class="network-card-value" id="cr-network-breathe-highest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Lowest</div>
+                  <div class="network-card-value" id="cr-network-breathe-lowest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Latest update</div>
+                  <div class="network-card-value" id="cr-network-breathe-latest">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="network-card">
+              <div class="network-card-header">
+                <h3 class="network-card-title">London Air LAQN</h3>
+              </div>
+              <div class="network-card-grid">
+                <div>
+                  <div class="network-card-label">Sensors</div>
+                  <div class="network-card-value" id="cr-network-laqn-sensors">-</div>
+                </div>
+                <div class="coverage-item">
+                  <div class="coverage-title">
+                    Coverage
+                    <span
+                      class="coverage-help"
+                      role="img"
+                      aria-label="Coverage help"
+                      title="Local authority counted if ≥1 active sensor"
+                    >?</span>
+                  </div>
+                  <div class="coverage-value" id="cr-network-laqn-coverage-value">0% (0 / 0)</div>
+                  <div
+                    class="coverage-bar"
+                    id="cr-network-laqn-coverage-bar"
+                    role="img"
+                    aria-label="Coverage 0% (0 / 0) local authorities"
+                  >
+                    <span class="coverage-bar-fill" id="cr-network-laqn-coverage-fill"></span>
+                  </div>
+                  <div class="coverage-label">Local Authorities</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Average</div>
+                  <div class="network-card-value" id="cr-network-laqn-average">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Typical</div>
+                  <div class="network-card-value" id="cr-network-laqn-median">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Highest</div>
+                  <div class="network-card-value" id="cr-network-laqn-highest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Lowest</div>
+                  <div class="network-card-value" id="cr-network-laqn-lowest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Latest update</div>
+                  <div class="network-card-value" id="cr-network-laqn-latest">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="network-card">
+              <div class="network-card-header">
+                <h3 class="network-card-title">Sensor.Community</h3>
+                <a
+                  class="network-card-logo-link network-card-logo-box network-card-logo-box--dark"
+                  href="https://sensor.community/en/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Sensor.Community website (external link)"
+                >
+                  <img class="network-card-logo" src="data/images/scomm_logo-sw.svg" alt="Sensor.Community logo" />
+                  <img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" />
+                </a>
+              </div>
+              <div class="network-card-grid">
+                <div>
+                  <div class="network-card-label">Sensors</div>
+                  <div class="network-card-value" id="cr-network-sc-sensors">-</div>
+                </div>
+                <div class="coverage-item">
+                  <div class="coverage-title">
+                    Coverage
+                    <span
+                      class="coverage-help"
+                      role="img"
+                      aria-label="Coverage help"
+                      title="Local authority counted if ≥1 active sensor"
+                    >?</span>
+                  </div>
+                  <div class="coverage-value" id="cr-network-sc-coverage-value">0% (0 / 0)</div>
+                  <div
+                    class="coverage-bar"
+                    id="cr-network-sc-coverage-bar"
+                    role="img"
+                    aria-label="Coverage 0% (0 / 0) local authorities"
+                  >
+                    <span class="coverage-bar-fill" id="cr-network-sc-coverage-fill"></span>
+                  </div>
+                  <div class="coverage-label">Local Authorities</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Average</div>
+                  <div class="network-card-value" id="cr-network-sc-average">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Typical</div>
+                  <div class="network-card-value" id="cr-network-sc-median">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Highest</div>
+                  <div class="network-card-value" id="cr-network-sc-highest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Lowest</div>
+                  <div class="network-card-value" id="cr-network-sc-lowest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Latest update</div>
+                  <div class="network-card-value" id="cr-network-sc-latest">-</div>
                 </div>
               </div>
             </div>
@@ -2809,6 +3002,7 @@
       const POLLUTANT_CACHE_TTL = 60 * 1000;
       const pollutantCache = new Map();
       const latestSinceByKey = new Map();
+      const latestEtagByKey = new Map();
       let latestLoadId = 0;
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
@@ -3607,9 +3801,12 @@
           return;
         }
         setMapLoading(true);
-        if (applyCachedPollutant(getLatestCacheKey(activePollutant, currentWindow))) {
-          return;
-        }
+        const latestCacheKey = getLatestCacheKey(activePollutant, currentWindow);
+        // Window switches must compare like-for-like snapshots. Drop incremental
+        // state for the target window so we always fetch a fresh full window.
+        latestSinceByKey.delete(latestCacheKey);
+        latestEtagByKey.delete(latestCacheKey);
+        pollutantCache.delete(latestCacheKey);
         loadMapData();
       }
 
@@ -3759,9 +3956,11 @@
         if (!cached) {
           return false;
         }
-        const previousSelection = getCurrentNetworkSelection();
+        const storedSelection = getStoredNetworkSelection();
+        const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
-          && networkInputs.every((input) => input.checked);
+          ? networkInputs.every((input) => input.checked)
+          : storedSelection.defaultAll;
         baseLatestRows = cached.latestRows;
         latestPollutant = cached.latestPollutant || activePollutant;
         renderNetworkFiltersIfNeeded(
@@ -5406,6 +5605,59 @@
         return new Set(active);
       }
 
+      function getCheckedNetworkEntries() {
+        if (!networkInputs.length) {
+          return [];
+        }
+        return networkInputs
+          .filter((input) => input.checked)
+          .map((input) => {
+            const code = String(input.dataset.network || "").toLowerCase();
+            const label = String(
+              input.closest("label")?.querySelector("span")?.textContent || ""
+            ).toLowerCase();
+            return { code, label };
+          });
+      }
+
+      function selectionIncludesMatcher(entries, matchers) {
+        if (!entries.length || !Array.isArray(matchers) || !matchers.length) {
+          return false;
+        }
+        return entries.some((entry) => {
+          if (entry.label) {
+            return matchers.some((token) => entry.label.includes(token));
+          }
+          if (entry.code) {
+            return matchers.some((token) => entry.code.includes(token));
+          }
+          return false;
+        });
+      }
+
+      function updateNetworkSummaryCardVisibility() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const entries = getCheckedNetworkEntries();
+        const cardDefs = [
+          {
+            card: aurnSensors?.closest(".network-card"),
+            matchers: GOVUK_NETWORK_MATCHERS,
+          },
+          ...extraNetworkSummaryDefs.map((def) => ({
+            card: def.elements?.sensors?.closest(".network-card"),
+            matchers: def.matchers,
+          })),
+        ];
+        cardDefs.forEach((def) => {
+          if (!def.card) {
+            return;
+          }
+          def.card.hidden = !selectionIncludesMatcher(entries, def.matchers);
+        });
+      }
+
       function filterLatestRowsByNetwork(rows, networkIds) {
         if (!rows.length) {
           return [];
@@ -5481,6 +5733,7 @@
           : storedSelection.defaultAll;
         const windowNetworkDefs = buildNetworkDefs(getNetworkRowsForWindow());
         renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
+        updateNetworkSummaryCardVisibility();
         if (!basePconRows.length && !baseLatestRows.length) {
           scopedLatestRows = [];
           latestRows = [];
@@ -5739,9 +5992,11 @@
         }
         latestPollutant = null;
         populationLookup = new Map();
-        const previousSelection = getCurrentNetworkSelection();
+        const storedSelection = getStoredNetworkSelection();
+        const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
-          && networkInputs.every((input) => input.checked);
+          ? networkInputs.every((input) => input.checked)
+          : storedSelection.defaultAll;
         if (!REST_URL) {
           if (errorEl) {
             errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
@@ -5768,12 +6023,20 @@
           const latestUrl = new URL(LATEST_URL);
           const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow);
           const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+          const latestEtag = latestEtagByKey.get(latestCacheKey) || null;
           latestUrl.searchParams.set("pollutant", activePollutant);
           latestUrl.searchParams.set("window", currentWindow);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
           if (latestSince) {
             latestUrl.searchParams.set("since", latestSince);
+          }
+          const latestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
+          if (latestEtag) {
+            latestHeaders["If-None-Match"] = latestEtag;
           }
           // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
           // if (populationUrl) {
@@ -5792,10 +6055,7 @@
               },
             }),
             fetch(latestUrl.toString(), {
-              headers: {
-                Authorization: `Bearer ${anonKey}`,
-                apikey: anonKey,
-              },
+              headers: latestHeaders,
             }).catch(() => null),
             // populationUrl
             //   ? fetch(populationUrl.toString(), {
@@ -5831,13 +6091,27 @@
               lastUpdated.textContent = "Latest data unavailable";
             }
           }
-          let latestPayload = null;
           if (latestResponse) {
-            latestPayload = latestResponse.ok
-              ? await latestResponse.json()
-              : await latestResponse.text();
+            const responseEtag = latestResponse.headers.get("ETag");
+            if (responseEtag) {
+              latestEtagByKey.set(latestCacheKey, responseEtag);
+            }
           }
-          if (latestResponse && latestResponse.ok) {
+          if (latestResponse && latestResponse.status === 304) {
+            const cachedLatest = pollutantCache.get(latestCacheKey);
+            if (cachedLatest) {
+              baseLatestRows = cachedLatest.latestRows || [];
+              latestPollutant = cachedLatest.latestPollutant || requestPollutant;
+              const cachedSince = normalizeIsoTimestamp(cachedLatest.nextSince) || latestSince;
+              if (cachedSince) {
+                latestSinceByKey.set(latestCacheKey, cachedSince);
+              }
+            } else {
+              baseLatestRows = [];
+              latestPollutant = requestPollutant;
+            }
+          } else if (latestResponse && latestResponse.ok) {
+            const latestPayload = await latestResponse.json();
             const latestRaw = latestPayload?.data || [];
             const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
             const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
@@ -6204,6 +6478,7 @@
       const POLLUTANT_CACHE_TTL = 60 * 1000;
       const pollutantCache = new Map();
       const latestSinceByKey = new Map();
+      const latestEtagByKey = new Map();
       let latestLoadId = 0;
       const LA_CONFIG = {
         id: "la23",
@@ -6259,6 +6534,9 @@
       };
       const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
       const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
+      const BREATHE_LONDON_MATCHERS = ["breathe london", "breathe-london", "breathe_london"];
+      const LAQN_NETWORK_MATCHERS = ["laqn", "london air"];
+      const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity", "sensor community", "sensor.community"];
       const AREA_LABEL_PLURAL = "local authorities";
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
@@ -6348,6 +6626,80 @@
       const openaqHighest = byId("network-openaq-highest");
       const openaqLowest = byId("network-openaq-lowest");
       const openaqLatest = byId("network-openaq-latest");
+      const breatheSensors = byId("network-breathe-sensors");
+      const breatheCoverageValue = byId("network-breathe-coverage-value");
+      const breatheCoverageBar = byId("network-breathe-coverage-bar");
+      const breatheCoverageFill = byId("network-breathe-coverage-fill");
+      const breatheAverage = byId("network-breathe-average");
+      const breatheMedian = byId("network-breathe-median");
+      const breatheHighest = byId("network-breathe-highest");
+      const breatheLowest = byId("network-breathe-lowest");
+      const breatheLatest = byId("network-breathe-latest");
+      const laqnSensors = byId("network-laqn-sensors");
+      const laqnCoverageValue = byId("network-laqn-coverage-value");
+      const laqnCoverageBar = byId("network-laqn-coverage-bar");
+      const laqnCoverageFill = byId("network-laqn-coverage-fill");
+      const laqnAverage = byId("network-laqn-average");
+      const laqnMedian = byId("network-laqn-median");
+      const laqnHighest = byId("network-laqn-highest");
+      const laqnLowest = byId("network-laqn-lowest");
+      const laqnLatest = byId("network-laqn-latest");
+      const scSensors = byId("network-sc-sensors");
+      const scCoverageValue = byId("network-sc-coverage-value");
+      const scCoverageBar = byId("network-sc-coverage-bar");
+      const scCoverageFill = byId("network-sc-coverage-fill");
+      const scAverage = byId("network-sc-average");
+      const scMedian = byId("network-sc-median");
+      const scHighest = byId("network-sc-highest");
+      const scLowest = byId("network-sc-lowest");
+      const scLatest = byId("network-sc-latest");
+      const extraNetworkSummaryDefs = [
+        {
+          key: "breathe-london",
+          matchers: BREATHE_LONDON_MATCHERS,
+          elements: {
+            sensors: breatheSensors,
+            coverageValue: breatheCoverageValue,
+            coverageBar: breatheCoverageBar,
+            coverageFill: breatheCoverageFill,
+            average: breatheAverage,
+            median: breatheMedian,
+            highest: breatheHighest,
+            lowest: breatheLowest,
+            latest: breatheLatest,
+          },
+        },
+        {
+          key: "laqn",
+          matchers: LAQN_NETWORK_MATCHERS,
+          elements: {
+            sensors: laqnSensors,
+            coverageValue: laqnCoverageValue,
+            coverageBar: laqnCoverageBar,
+            coverageFill: laqnCoverageFill,
+            average: laqnAverage,
+            median: laqnMedian,
+            highest: laqnHighest,
+            lowest: laqnLowest,
+            latest: laqnLatest,
+          },
+        },
+        {
+          key: "sensor-community",
+          matchers: SENSOR_COMMUNITY_MATCHERS,
+          elements: {
+            sensors: scSensors,
+            coverageValue: scCoverageValue,
+            coverageBar: scCoverageBar,
+            coverageFill: scCoverageFill,
+            average: scAverage,
+            median: scMedian,
+            highest: scHighest,
+            lowest: scLowest,
+            latest: scLatest,
+          },
+        },
+      ];
       const mapSvg = byId("hex-map");
       const svg = d3.select("#cr-hex-map");
       const mapResizeTarget = svg.node()?.parentElement || svg.node();
@@ -6632,9 +6984,12 @@
           return;
         }
         setMapLoading(true);
-        if (applyCachedPollutant(getLatestCacheKey(activePollutant, currentWindow))) {
-          return;
-        }
+        const latestCacheKey = getLatestCacheKey(activePollutant, currentWindow, activeRegion);
+        // Window switches must compare like-for-like snapshots. Drop incremental
+        // state for the target window so we always fetch a fresh full window.
+        latestSinceByKey.delete(latestCacheKey);
+        latestEtagByKey.delete(latestCacheKey);
+        pollutantCache.delete(latestCacheKey);
         loadMapData();
       }
 
@@ -6788,9 +7143,11 @@
         if (!cached) {
           return false;
         }
-        const previousSelection = getCurrentNetworkSelection();
+        const storedSelection = getStoredNetworkSelection();
+        const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
-          && networkInputs.every((input) => input.checked);
+          ? networkInputs.every((input) => input.checked)
+          : storedSelection.defaultAll;
         baseLatestRows = cached.latestRows;
         latestPollutant = cached.latestPollutant || activePollutant;
         renderNetworkFiltersIfNeeded(
@@ -7483,6 +7840,58 @@
         };
       }
 
+      function updateExtraNetworkSummaries() {
+        if (!extraNetworkSummaryDefs.length) {
+          return;
+        }
+        const pollutantUnits = getPollutantUnits(activePollutant);
+        const total = pconCodes.size || 0;
+        extraNetworkSummaryDefs.forEach((def) => {
+          const summary = computeNetworkSummary(scopedLatestRows, def.matchers);
+          const sensorLabel = summary.totalCount
+            ? (currentWindow === "all"
+              ? formatNumber(summary.totalCount)
+              : `${formatNumber(summary.windowCount)} in window / ${formatNumber(summary.totalCount)} total`)
+            : "0";
+          if (def.elements.sensors) {
+            def.elements.sensors.textContent = sensorLabel;
+          }
+          updateCoverageElements(
+            def.elements.coverageValue,
+            def.elements.coverageFill,
+            def.elements.coverageBar,
+            summary.coverage,
+            total,
+            AREA_LABEL_PLURAL
+          );
+          if (def.elements.average) {
+            def.elements.average.textContent = Number.isFinite(summary.mean)
+              ? `${formatValue(summary.mean)} ${pollutantUnits}`
+              : "-";
+          }
+          if (def.elements.median) {
+            def.elements.median.textContent = Number.isFinite(summary.median)
+              ? `${formatValue(summary.median)} ${pollutantUnits}`
+              : "-";
+          }
+          if (def.elements.highest) {
+            def.elements.highest.textContent = summary.highest
+              ? `${formatValue(summary.highest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.highest.timestamp)}`
+              : "-";
+          }
+          if (def.elements.lowest) {
+            def.elements.lowest.textContent = summary.lowest
+              ? `${formatValue(summary.lowest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(summary.lowest.timestamp)}`
+              : "-";
+          }
+          if (def.elements.latest) {
+            def.elements.latest.textContent = summary.latestTimestamp
+              ? formatSummaryTimestamp(summary.latestTimestamp)
+              : "-";
+          }
+        });
+      }
+
       function updateSummary() {
         const pollutantLabel = getPollutantLabel(activePollutant);
         const pollutantUnits = getPollutantUnits(activePollutant);
@@ -7865,6 +8274,7 @@
         openaqLatest.textContent = openaqSummary.latestTimestamp
           ? formatSummaryTimestamp(openaqSummary.latestTimestamp)
           : "-";
+        updateExtraNetworkSummaries();
       }
 
       function clearMap() {
@@ -8343,6 +8753,63 @@
         return new Set(active);
       }
 
+      function getCheckedNetworkEntries() {
+        if (!networkInputs.length) {
+          return [];
+        }
+        return networkInputs
+          .filter((input) => input.checked)
+          .map((input) => {
+            const code = String(input.dataset.network || "").toLowerCase();
+            const label = String(
+              input.closest("label")?.querySelector("span")?.textContent || ""
+            ).toLowerCase();
+            return { code, label };
+          });
+      }
+
+      function selectionIncludesMatcher(entries, matchers) {
+        if (!entries.length || !Array.isArray(matchers) || !matchers.length) {
+          return false;
+        }
+        return entries.some((entry) => {
+          if (entry.label) {
+            return matchers.some((token) => entry.label.includes(token));
+          }
+          if (entry.code) {
+            return matchers.some((token) => entry.code.includes(token));
+          }
+          return false;
+        });
+      }
+
+      function updateNetworkSummaryCardVisibility() {
+        if (!networkInputs.length) {
+          return;
+        }
+        const entries = getCheckedNetworkEntries();
+        const cardDefs = [
+          {
+            card: aurnSensors?.closest(".network-card"),
+            matchers: GOVUK_NETWORK_MATCHERS,
+          },
+          {
+            card: openaqSensors?.closest(".network-card"),
+            matchers: OPENAQ_NETWORK_MATCHERS,
+          },
+          ...extraNetworkSummaryDefs.map((def) => ({
+            card: def.elements?.sensors?.closest(".network-card"),
+            matchers: def.matchers,
+          })),
+        ];
+        cardDefs.forEach((def) => {
+          if (!def.card) {
+            return;
+          }
+          def.card.hidden = !selectionIncludesMatcher(entries, def.matchers);
+        });
+      }
+
       function filterLatestRowsByNetwork(rows, networkIds) {
         if (!rows.length) {
           return [];
@@ -8418,6 +8885,7 @@
           : storedSelection.defaultAll;
         const windowNetworkDefs = buildNetworkDefs(getNetworkRowsForWindow());
         renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
+        updateNetworkSummaryCardVisibility();
         if (!basePconRows.length && !baseLatestRows.length) {
           persistNetworkSelection();
           return;
@@ -8672,9 +9140,11 @@
         }
         latestPollutant = null;
         populationLookup = new Map();
-        const previousSelection = getCurrentNetworkSelection();
+        const storedSelection = getStoredNetworkSelection();
+        const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
-          && networkInputs.every((input) => input.checked);
+          ? networkInputs.every((input) => input.checked)
+          : storedSelection.defaultAll;
         const hasCredentials = Boolean(REST_URL) && Boolean(anonKey);
         const canLoadData = hasCredentials;
         if (!hasCredentials) {
@@ -8700,6 +9170,7 @@
             const latestUrl = new URL(LATEST_URL);
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
             const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+            const latestEtag = latestEtagByKey.get(latestCacheKey) || null;
             latestUrl.searchParams.set("pollutant", activePollutant);
             latestUrl.searchParams.set("window", currentWindow);
             // Do not apply region filter at uk_aq_latest level for C&R:
@@ -8709,6 +9180,13 @@
             latestUrl.searchParams.set("limit", "10000");
             if (latestSince) {
               latestUrl.searchParams.set("since", latestSince);
+            }
+            const latestHeaders = {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            };
+            if (latestEtag) {
+              latestHeaders["If-None-Match"] = latestEtag;
             }
             // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
             // if (populationUrl) {
@@ -8725,10 +9203,7 @@
               },
             }).catch(() => null);
             latestPromise = fetch(latestUrl.toString(), {
-              headers: {
-                Authorization: `Bearer ${anonKey}`,
-                apikey: anonKey,
-              },
+              headers: latestHeaders,
             }).catch(() => null);
             // populationPromise = populationUrl
             //   ? fetch(populationUrl.toString(), {
@@ -8774,13 +9249,29 @@
                 lastUpdated.textContent = "Latest data unavailable";
               }
             }
-            let latestPayload = null;
+            const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
+            const latestSince = latestSinceByKey.get(latestCacheKey) || null;
             if (latestResponse) {
-              latestPayload = latestResponse.ok
-                ? await latestResponse.json()
-                : await latestResponse.text();
+              const responseEtag = latestResponse.headers.get("ETag");
+              if (responseEtag) {
+                latestEtagByKey.set(latestCacheKey, responseEtag);
+              }
             }
-            if (latestResponse && latestResponse.ok) {
+            if (latestResponse && latestResponse.status === 304) {
+              const cachedLatest = pollutantCache.get(latestCacheKey);
+              if (cachedLatest) {
+                baseLatestRows = cachedLatest.latestRows || [];
+                latestPollutant = cachedLatest.latestPollutant || requestPollutant;
+                const cachedSince = normalizeIsoTimestamp(cachedLatest.nextSince) || latestSince;
+                if (cachedSince) {
+                  latestSinceByKey.set(latestCacheKey, cachedSince);
+                }
+              } else {
+                baseLatestRows = [];
+                latestPollutant = requestPollutant;
+              }
+            } else if (latestResponse && latestResponse.ok) {
+              const latestPayload = await latestResponse.json();
               const latestRaw = latestPayload?.data || [];
               const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
               const scopedLatest = cleanedLatest.filter((row) => {
@@ -8788,8 +9279,6 @@
                 return !pconCodes.size || (code && pconCodes.has(code));
               });
               const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
-              const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
-              const latestSince = latestSinceByKey.get(latestCacheKey) || null;
               const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
               const existingLatest = latestSince
                 ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
