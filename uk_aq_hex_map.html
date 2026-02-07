@@ -271,6 +271,14 @@
         justify-content: space-between;
       }
 
+      .network-card-header-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
       .network-card-title {
         margin: 0;
         font-size: 0.95rem;
@@ -287,6 +295,69 @@
         background: var(--clay);
         color: var(--ink);
         font-weight: 600;
+      }
+
+      .network-card-logo-box {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border-radius: 10px;
+        flex: 0 0 auto;
+      }
+
+      .network-card-logo-link {
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .network-card-logo-link:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 14px rgba(20, 34, 37, 0.12);
+      }
+
+      .network-card-logo-link:focus-visible {
+        outline: 2px solid rgba(76, 111, 191, 0.5);
+        outline-offset: 2px;
+      }
+
+      .network-card-logo-box--light {
+        background: #fff;
+        border: 1px solid rgba(20, 34, 37, 0.14);
+      }
+
+      .network-card-logo-box--dark {
+        background: #111;
+        border: 1px solid #111;
+      }
+
+      .network-card-logo {
+        display: block;
+        height: 2.85rem;
+        width: auto;
+      }
+
+      .network-card-logo--breathe {
+        -webkit-clip-path: none;
+        clip-path: none;
+        height: 2.45rem;
+        max-width: 100%;
+      }
+
+      .network-card-logo-box--text {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #111;
+        line-height: 1;
+        white-space: nowrap;
+        gap: 6px;
+      }
+
+      .network-card-link-icon {
+        display: block;
+        width: auto;
+        height: 0.82rem;
       }
 
       .network-card-grid {
@@ -1972,7 +2043,16 @@
           <div class="network-card">
             <div class="network-card-header">
               <h3 class="network-card-title">GOV.UK AURN</h3>
-              <span class="network-card-badge">Incl. UK AIR SOS</span>
+              <div class="network-card-header-actions">
+                <span class="network-card-badge">Incl. UK AIR SOS</span>
+                <a
+                  class="network-card-logo-link network-card-logo-box network-card-logo-box--light network-card-logo-box--text"
+                  href="https://uk-air.defra.gov.uk/interactive-map?network=aurn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open GOV.UK AURN map"
+                >GOV.UK AURN<img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" /></a>
+              </div>
             </div>
             <div class="network-card-grid">
               <div>
@@ -2025,6 +2105,15 @@
           <div class="network-card">
             <div class="network-card-header">
               <h3 class="network-card-title">OpenAQ</h3>
+              <a
+                class="network-card-logo-link network-card-logo-box network-card-logo-box--light"
+                href="https://explore.openaq.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open OpenAQ network page placeholder"
+              >
+                <img class="network-card-logo" src="data/images/openaq_logo.svg" alt="OpenAQ logo" />
+              </a>
             </div>
             <div class="network-card-grid">
               <div>
@@ -2077,6 +2166,15 @@
           <div class="network-card">
             <div class="network-card-header">
               <h3 class="network-card-title">Breathe London</h3>
+              <a
+                class="network-card-logo-link network-card-logo-box network-card-logo-box--light"
+                href="https://www.breathelondon.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open Breathe London network page placeholder"
+              >
+                <img class="network-card-logo network-card-logo--breathe" src="data/images/breathelondon_logo_v2.svg" alt="Breathe London logo" />
+              </a>
             </div>
             <div class="network-card-grid">
               <div>
@@ -2181,6 +2279,15 @@
           <div class="network-card">
             <div class="network-card-header">
               <h3 class="network-card-title">Sensor.Community</h3>
+              <a
+                class="network-card-logo-link network-card-logo-box network-card-logo-box--dark"
+                href="https://sensor.community/en/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open Sensor.Community network page placeholder"
+              >
+                <img class="network-card-logo" src="data/images/scomm_logo-sw.svg" alt="Sensor.Community logo" />
+              </a>
             </div>
             <div class="network-card-grid">
               <div>
@@ -2450,7 +2557,16 @@
             <div class="network-card">
               <div class="network-card-header">
                 <h3 class="network-card-title">GOV.UK AURN</h3>
-                <span class="network-card-badge">Incl. UK AIR SOS</span>
+                <div class="network-card-header-actions">
+                  <span class="network-card-badge">Incl. UK AIR SOS</span>
+                  <a
+                    class="network-card-logo-link network-card-logo-box network-card-logo-box--light network-card-logo-box--text"
+                    href="https://uk-air.defra.gov.uk/interactive-map?network=aurn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open GOV.UK AURN map"
+                  >GOV.UK AURN<img class="network-card-link-icon" src="data/images/Link Icon.svg" alt="" aria-hidden="true" /></a>
+                </div>
               </div>
               <div class="network-card-grid">
                 <div>
@@ -2503,6 +2619,15 @@
             <div class="network-card">
               <div class="network-card-header">
                 <h3 class="network-card-title">OpenAQ</h3>
+                <a
+                  class="network-card-logo-link network-card-logo-box network-card-logo-box--light"
+                  href="https://explore.openaq.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open OpenAQ network page placeholder"
+                >
+                  <img class="network-card-logo" src="data/images/openaq_logo.svg" alt="OpenAQ logo" />
+                </a>
               </div>
               <div class="network-card-grid">
                 <div>
@@ -8577,9 +8702,9 @@
             const latestSince = latestSinceByKey.get(latestCacheKey) || null;
             latestUrl.searchParams.set("pollutant", activePollutant);
             latestUrl.searchParams.set("window", currentWindow);
-            if (requestRegion) {
-              latestUrl.searchParams.set("region", requestRegion);
-            }
+            // Do not apply region filter at uk_aq_latest level for C&R:
+            // some stations have inconsistent region labels, but we always
+            // scope to the selected LA hex codes immediately after fetch.
             latestUrl.searchParams.set("scope", "all");
             latestUrl.searchParams.set("limit", "10000");
             if (latestSince) {
