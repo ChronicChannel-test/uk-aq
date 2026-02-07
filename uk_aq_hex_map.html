@@ -1058,9 +1058,12 @@
       }
 
       .network-panel .checkbox {
-        display: inline-flex;
+        display: flex;
         align-items: center;
         gap: 6px;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
         padding: 6px 10px;
         border-radius: 10px;
         border: 1px solid rgba(20, 34, 37, 0.12);
@@ -1068,6 +1071,10 @@
         font-weight: 600;
         color: var(--ink);
         font-size: 0.85rem;
+      }
+
+      .network-panel .checkbox span {
+        min-width: 0;
       }
 
       .network-panel input[type="checkbox"] {
@@ -1081,6 +1088,7 @@
         gap: 8px;
         max-height: 360px;
         overflow-y: auto;
+        overflow-x: hidden;
         padding-right: 4px;
       }
 
@@ -2016,6 +2024,58 @@
           </div>
           <div class="network-card">
             <div class="network-card-header">
+              <h3 class="network-card-title">OpenAQ</h3>
+            </div>
+            <div class="network-card-grid">
+              <div>
+                <div class="network-card-label">Sensors</div>
+                <div class="network-card-value" id="network-openaq-sensors">-</div>
+              </div>
+              <div class="coverage-item">
+                <div class="coverage-title">
+                  Coverage
+                  <span
+                    class="coverage-help"
+                    role="img"
+                    aria-label="Coverage help"
+                    title="Constituency counted if ≥1 active sensor"
+                  >?</span>
+                </div>
+                <div class="coverage-value" id="network-openaq-coverage-value">0% (0 / 650)</div>
+                <div
+                  class="coverage-bar"
+                  id="network-openaq-coverage-bar"
+                  role="img"
+                  aria-label="Coverage 0% (0 / 650) constituencies"
+                >
+                  <span class="coverage-bar-fill" id="network-openaq-coverage-fill"></span>
+                </div>
+                <div class="coverage-label">UK Parliamentary Constituencies</div>
+              </div>
+              <div>
+                <div class="network-card-label">Average</div>
+                <div class="network-card-value" id="network-openaq-average">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Typical</div>
+                <div class="network-card-value" id="network-openaq-median">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Highest</div>
+                <div class="network-card-value" id="network-openaq-highest">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Lowest</div>
+                <div class="network-card-value" id="network-openaq-lowest">-</div>
+              </div>
+              <div>
+                <div class="network-card-label">Latest update</div>
+                <div class="network-card-value" id="network-openaq-latest">-</div>
+              </div>
+            </div>
+          </div>
+          <div class="network-card">
+            <div class="network-card-header">
               <h3 class="network-card-title">Breathe London</h3>
             </div>
             <div class="network-card-grid">
@@ -2440,6 +2500,58 @@
                 </div>
               </div>
             </div>
+            <div class="network-card">
+              <div class="network-card-header">
+                <h3 class="network-card-title">OpenAQ</h3>
+              </div>
+              <div class="network-card-grid">
+                <div>
+                  <div class="network-card-label">Sensors</div>
+                  <div class="network-card-value" id="cr-network-openaq-sensors">-</div>
+                </div>
+                <div class="coverage-item">
+                  <div class="coverage-title">
+                    Coverage
+                    <span
+                      class="coverage-help"
+                      role="img"
+                      aria-label="Coverage help"
+                      title="Local authority counted if ≥1 active sensor"
+                    >?</span>
+                  </div>
+                  <div class="coverage-value" id="cr-network-openaq-coverage-value">0% (0 / 0)</div>
+                  <div
+                    class="coverage-bar"
+                    id="cr-network-openaq-coverage-bar"
+                    role="img"
+                    aria-label="Coverage 0% (0 / 0) local authorities"
+                  >
+                    <span class="coverage-bar-fill" id="cr-network-openaq-coverage-fill"></span>
+                  </div>
+                  <div class="coverage-label">Local Authorities</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Average</div>
+                  <div class="network-card-value" id="cr-network-openaq-average">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Typical</div>
+                  <div class="network-card-value" id="cr-network-openaq-median">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Highest</div>
+                  <div class="network-card-value" id="cr-network-openaq-highest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Lowest</div>
+                  <div class="network-card-value" id="cr-network-openaq-lowest">-</div>
+                </div>
+                <div>
+                  <div class="network-card-label">Latest update</div>
+                  <div class="network-card-value" id="cr-network-openaq-latest">-</div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="details-empty" id="cr-details-empty">Select a local authority to see sensors.</div>
           <div class="sensor-table-wrap" id="cr-sensor-table-wrap" hidden>
@@ -2618,6 +2730,7 @@
       const GOVUK_AURN_CODE = "aurn";
       const GOVUK_AURN_LABEL = "GOV.UK AURN";
       const GOVUK_REMAP_MATCHERS = ["uk air sos", "uk-air-sos", "uk_air_sos", "gov.uk", "govuk"];
+      const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
       const BREATHE_LONDON_MATCHERS = ["breathe london", "breathe-london", "breathe_london"];
       const LAQN_NETWORK_MATCHERS = ["laqn", "london air"];
       const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity", "sensor community", "sensor.community"];
@@ -2728,6 +2841,21 @@
       const overallSummaryCard = document.getElementById("overall-summary");
       const overallSummaryTitle = document.getElementById("summary-overall-title");
       const extraNetworkSummaryDefs = [
+        {
+          key: "openaq",
+          matchers: OPENAQ_NETWORK_MATCHERS,
+          elements: {
+            sensors: document.getElementById("network-openaq-sensors"),
+            coverageValue: document.getElementById("network-openaq-coverage-value"),
+            coverageBar: document.getElementById("network-openaq-coverage-bar"),
+            coverageFill: document.getElementById("network-openaq-coverage-fill"),
+            average: document.getElementById("network-openaq-average"),
+            median: document.getElementById("network-openaq-median"),
+            highest: document.getElementById("network-openaq-highest"),
+            lowest: document.getElementById("network-openaq-lowest"),
+            latest: document.getElementById("network-openaq-latest"),
+          },
+        },
         {
           key: "breathe-london",
           matchers: BREATHE_LONDON_MATCHERS,
@@ -6005,6 +6133,7 @@
         all: "No limit",
       };
       const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
+      const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
       const AREA_LABEL_PLURAL = "local authorities";
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
@@ -6085,6 +6214,15 @@
       const aurnHighest = byId("network-aurn-highest");
       const aurnLowest = byId("network-aurn-lowest");
       const aurnLatest = byId("network-aurn-latest");
+      const openaqSensors = byId("network-openaq-sensors");
+      const openaqCoverageValue = byId("network-openaq-coverage-value");
+      const openaqCoverageBar = byId("network-openaq-coverage-bar");
+      const openaqCoverageFill = byId("network-openaq-coverage-fill");
+      const openaqAverage = byId("network-openaq-average");
+      const openaqMedian = byId("network-openaq-median");
+      const openaqHighest = byId("network-openaq-highest");
+      const openaqLowest = byId("network-openaq-lowest");
+      const openaqLatest = byId("network-openaq-latest");
       const mapSvg = byId("hex-map");
       const svg = d3.select("#cr-hex-map");
       const mapResizeTarget = svg.node()?.parentElement || svg.node();
@@ -7568,6 +7706,39 @@
           : "-";
         aurnLatest.textContent = summary.latestTimestamp
           ? formatSummaryTimestamp(summary.latestTimestamp)
+          : "-";
+
+        if (!openaqSensors || !openaqCoverageValue || !openaqCoverageBar || !openaqCoverageFill
+          || !openaqAverage || !openaqMedian || !openaqHighest || !openaqLowest || !openaqLatest) {
+          return;
+        }
+        const openaqSummary = computeNetworkSummary(scopedLatestRows, OPENAQ_NETWORK_MATCHERS);
+        const openaqSensorLabel = currentWindow === "all"
+          ? formatNumber(openaqSummary.totalCount)
+          : `${formatNumber(openaqSummary.windowCount)} in window / ${formatNumber(openaqSummary.totalCount)} total`;
+        openaqSensors.textContent = openaqSummary.totalCount ? openaqSensorLabel : "0";
+        updateCoverageElements(
+          openaqCoverageValue,
+          openaqCoverageFill,
+          openaqCoverageBar,
+          openaqSummary.coverage,
+          total,
+          AREA_LABEL_PLURAL
+        );
+        openaqAverage.textContent = Number.isFinite(openaqSummary.mean)
+          ? `${formatValue(openaqSummary.mean)} ${pollutantUnits}`
+          : "-";
+        openaqMedian.textContent = Number.isFinite(openaqSummary.median)
+          ? `${formatValue(openaqSummary.median)} ${pollutantUnits}`
+          : "-";
+        openaqHighest.textContent = openaqSummary.highest
+          ? `${formatValue(openaqSummary.highest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(openaqSummary.highest.timestamp)}`
+          : "-";
+        openaqLowest.textContent = openaqSummary.lowest
+          ? `${formatValue(openaqSummary.lowest.value)} ${pollutantUnits} · ${formatSummaryTimestamp(openaqSummary.lowest.timestamp)}`
+          : "-";
+        openaqLatest.textContent = openaqSummary.latestTimestamp
+          ? formatSummaryTimestamp(openaqSummary.latestTimestamp)
           : "-";
       }
 
