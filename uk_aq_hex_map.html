@@ -3002,6 +3002,7 @@
       const POLLUTANT_CACHE_TTL = 60 * 1000;
       const pollutantCache = new Map();
       const latestSinceByKey = new Map();
+      const latestSinceIdByKey = new Map();
       const latestEtagByKey = new Map();
       let latestLoadId = 0;
       const MAP_CUTOVER = "2023-11-29";
@@ -3805,6 +3806,7 @@
         // Window switches must compare like-for-like snapshots. Drop incremental
         // state for the target window so we always fetch a fresh full window.
         latestSinceByKey.delete(latestCacheKey);
+        latestSinceIdByKey.delete(latestCacheKey);
         latestEtagByKey.delete(latestCacheKey);
         pollutantCache.delete(latestCacheKey);
         loadMapData();
@@ -3913,6 +3915,17 @@
           return null;
         }
         return parsed.toISOString();
+      }
+
+      function normalizeCursorId(value) {
+        if (value === null || value === undefined || value === "") {
+          return null;
+        }
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          return null;
+        }
+        return Math.trunc(parsed);
       }
 
       function resolveLatestRowKey(row) {
@@ -6023,6 +6036,7 @@
           const latestUrl = new URL(LATEST_URL);
           const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow);
           const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+          const latestSinceId = normalizeCursorId(latestSinceIdByKey.get(latestCacheKey));
           const latestEtag = latestEtagByKey.get(latestCacheKey) || null;
           latestUrl.searchParams.set("pollutant", activePollutant);
           latestUrl.searchParams.set("window", currentWindow);
@@ -6030,6 +6044,9 @@
           latestUrl.searchParams.set("limit", "10000");
           if (latestSince) {
             latestUrl.searchParams.set("since", latestSince);
+            if (latestSinceId !== null) {
+              latestUrl.searchParams.set("since_id", String(latestSinceId));
+            }
           }
           const latestHeaders = {
             Authorization: `Bearer ${anonKey}`,
@@ -6097,30 +6114,37 @@
               latestEtagByKey.set(latestCacheKey, responseEtag);
             }
           }
-          if (latestResponse && latestResponse.status === 304) {
-            const cachedLatest = pollutantCache.get(latestCacheKey);
-            if (cachedLatest) {
-              baseLatestRows = cachedLatest.latestRows || [];
-              latestPollutant = cachedLatest.latestPollutant || requestPollutant;
-              const cachedSince = normalizeIsoTimestamp(cachedLatest.nextSince) || latestSince;
-              if (cachedSince) {
-                latestSinceByKey.set(latestCacheKey, cachedSince);
+            if (latestResponse && latestResponse.status === 304) {
+              const cachedLatest = pollutantCache.get(latestCacheKey);
+              if (cachedLatest) {
+                baseLatestRows = cachedLatest.latestRows || [];
+                latestPollutant = cachedLatest.latestPollutant || requestPollutant;
+                const cachedSince = normalizeIsoTimestamp(cachedLatest.nextSince) || latestSince;
+                const cachedSinceId = normalizeCursorId(cachedLatest.nextSinceId)
+                  ?? latestSinceId
+                  ?? 0;
+                if (cachedSince) {
+                  latestSinceByKey.set(latestCacheKey, cachedSince);
+                  latestSinceIdByKey.set(latestCacheKey, cachedSinceId);
+                }
+              } else {
+                baseLatestRows = [];
+                latestPollutant = requestPollutant;
               }
-            } else {
-              baseLatestRows = [];
-              latestPollutant = requestPollutant;
-            }
-          } else if (latestResponse && latestResponse.ok) {
-            const latestPayload = await latestResponse.json();
-            const latestRaw = latestPayload?.data || [];
-            const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
-            const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
-            const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
-            const existingLatest = latestSince
-              ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
-              : [];
-            const mergedLatest = latestSince
-              ? mergeLatestRows(existingLatest, cleanedLatest)
+            } else if (latestResponse && latestResponse.ok) {
+              const latestPayload = await latestResponse.json();
+              const latestRaw = latestPayload?.data || [];
+              const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
+              const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
+              const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
+              const nextSinceId = normalizeCursorId(latestPayload?.next_since_id)
+                ?? latestSinceId
+                ?? 0;
+              const existingLatest = latestSince
+                ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
+                : [];
+              const mergedLatest = latestSince
+                ? mergeLatestRows(existingLatest, cleanedLatest)
               : cleanedLatest;
             if (!isStale()) {
               baseLatestRows = mergedLatest;
@@ -6130,9 +6154,11 @@
                 latestRows: mergedLatest,
                 latestPollutant,
                 nextSince,
+                nextSinceId,
               });
               if (nextSince) {
                 latestSinceByKey.set(latestCacheKey, nextSince);
+                latestSinceIdByKey.set(latestCacheKey, nextSinceId);
               }
             }
           } else if (!isStale()) {
@@ -6478,6 +6504,7 @@
       const POLLUTANT_CACHE_TTL = 60 * 1000;
       const pollutantCache = new Map();
       const latestSinceByKey = new Map();
+      const latestSinceIdByKey = new Map();
       const latestEtagByKey = new Map();
       let latestLoadId = 0;
       const LA_CONFIG = {
@@ -6988,6 +7015,7 @@
         // Window switches must compare like-for-like snapshots. Drop incremental
         // state for the target window so we always fetch a fresh full window.
         latestSinceByKey.delete(latestCacheKey);
+        latestSinceIdByKey.delete(latestCacheKey);
         latestEtagByKey.delete(latestCacheKey);
         pollutantCache.delete(latestCacheKey);
         loadMapData();
@@ -7100,6 +7128,17 @@
           return null;
         }
         return parsed.toISOString();
+      }
+
+      function normalizeCursorId(value) {
+        if (value === null || value === undefined || value === "") {
+          return null;
+        }
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          return null;
+        }
+        return Math.trunc(parsed);
       }
 
       function resolveLatestRowKey(row) {
@@ -9170,6 +9209,7 @@
             const latestUrl = new URL(LATEST_URL);
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
             const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+            const latestSinceId = normalizeCursorId(latestSinceIdByKey.get(latestCacheKey));
             const latestEtag = latestEtagByKey.get(latestCacheKey) || null;
             latestUrl.searchParams.set("pollutant", activePollutant);
             latestUrl.searchParams.set("window", currentWindow);
@@ -9180,6 +9220,9 @@
             latestUrl.searchParams.set("limit", "10000");
             if (latestSince) {
               latestUrl.searchParams.set("since", latestSince);
+              if (latestSinceId !== null) {
+                latestUrl.searchParams.set("since_id", String(latestSinceId));
+              }
             }
             const latestHeaders = {
               Authorization: `Bearer ${anonKey}`,
@@ -9251,6 +9294,7 @@
             }
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
             const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+            const latestSinceId = normalizeCursorId(latestSinceIdByKey.get(latestCacheKey));
             if (latestResponse) {
               const responseEtag = latestResponse.headers.get("ETag");
               if (responseEtag) {
@@ -9263,8 +9307,12 @@
                 baseLatestRows = cachedLatest.latestRows || [];
                 latestPollutant = cachedLatest.latestPollutant || requestPollutant;
                 const cachedSince = normalizeIsoTimestamp(cachedLatest.nextSince) || latestSince;
+                const cachedSinceId = normalizeCursorId(cachedLatest.nextSinceId)
+                  ?? latestSinceId
+                  ?? 0;
                 if (cachedSince) {
                   latestSinceByKey.set(latestCacheKey, cachedSince);
+                  latestSinceIdByKey.set(latestCacheKey, cachedSinceId);
                 }
               } else {
                 baseLatestRows = [];
@@ -9280,6 +9328,9 @@
               });
               const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
               const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
+              const nextSinceId = normalizeCursorId(latestPayload?.next_since_id)
+                ?? latestSinceId
+                ?? 0;
               const existingLatest = latestSince
                 ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
                 : [];
@@ -9294,9 +9345,11 @@
                   latestRows: mergedLatest,
                   latestPollutant,
                   nextSince,
+                  nextSinceId,
                 });
                 if (nextSince) {
                   latestSinceByKey.set(latestCacheKey, nextSince);
+                  latestSinceIdByKey.set(latestCacheKey, nextSinceId);
                 }
               }
             } else if (!isStale()) {
