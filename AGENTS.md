@@ -1,5 +1,8 @@
 # AGENTS
 
+## Main Repo
+- `CIC-test-uk-aq-ingest` is the main repo for this project and the default starting point for cross-repo work.
+
 ## Planning Requests
 When proposing plans, offer more than one option when possible, list pros/cons for each, and recommend which to pick with a brief rationale.
 
