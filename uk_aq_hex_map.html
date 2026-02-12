@@ -3004,6 +3004,7 @@
       const latestSinceByKey = new Map();
       const latestSinceIdByKey = new Map();
       const latestEtagByKey = new Map();
+      const pconEtagByKey = new Map();
       let latestLoadId = 0;
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
@@ -3929,12 +3930,15 @@
       }
 
       function resolveLatestRowKey(row) {
+        const stationId = row?.station_id ?? row?.station?.id ?? null;
+        const pollutantKey = getPollutantKeyFromRow(row);
+        if (stationId !== null && stationId !== undefined && pollutantKey) {
+          return `${stationId}::${pollutantKey}`;
+        }
         return row?.id
           ?? row?.timeseries_id
           ?? row?.timeseries_ref
-          ?? (resolveStationKey(row) && getPollutantKeyFromRow(row)
-            ? `${resolveStationKey(row)}::${getPollutantKeyFromRow(row)}`
-            : null);
+          ?? null;
       }
 
       function mergeLatestRows(existingRows, incomingRows) {
@@ -4147,13 +4151,18 @@
         }
       }
 
+      function getLegendCapValue() {
+        return activePollutant === "no2" ? 100 : 50;
+      }
+
       function updateLegendScaleDescription() {
         if (!legendScale) {
           return;
         }
+        const capValue = getLegendCapValue();
         const description = currentColorScale === "linear"
-          ? "Linear colour scale: values map directly; values above 50 are shown as 50+."
-          : "Power-eased colour scale: pulls low values toward mid-range; values above 50 are shown as 50+.";
+          ? `Linear colour scale: values map directly; values above ${capValue} are shown as ${capValue}+.`
+          : `Power-eased colour scale: pulls low values toward mid-range; values above ${capValue} are shown as ${capValue}+.`;
         legendScale.title = description;
         legendScale.setAttribute("aria-label", description);
       }
@@ -4969,6 +4978,22 @@
         if (!legendTicks.length || !legendTickLabels.length) {
           return;
         }
+        const tickValues = capValue >= 100 ? [20, 40, 60, 80] : [10, 20, 30, 40];
+        legendTicks.forEach((element, index) => {
+          const value = tickValues[index] ?? null;
+          if (value === null) {
+            return;
+          }
+          element.dataset.value = String(value);
+        });
+        legendTickLabels.forEach((element, index) => {
+          const value = tickValues[index] ?? null;
+          if (value === null) {
+            return;
+          }
+          element.dataset.value = String(value);
+          element.textContent = String(value);
+        });
         const updatePosition = (element) => {
           const value = Number(element.dataset.value);
           if (!Number.isFinite(value)) {
@@ -5916,7 +5941,7 @@
           .filter((value) => Number.isFinite(value));
         const maxValue = values.length ? d3.max(values) : null;
         const domainMin = 0;
-        const domainMax = 50;
+        const domainMax = getLegendCapValue();
         const palette = HEAT_STOPS.map((name, index) =>
           resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
         );
@@ -6033,6 +6058,15 @@
           if (activePconVersion) {
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
+          const pconCacheKey = pconUrl.toString();
+          const pconEtag = pconEtagByKey.get(pconCacheKey) || null;
+          const pconHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
+          if (pconEtag) {
+            pconHeaders["If-None-Match"] = pconEtag;
+          }
           const latestUrl = new URL(LATEST_URL);
           const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow);
           const latestSince = latestSinceByKey.get(latestCacheKey) || null;
@@ -6066,10 +6100,7 @@
           const [hexResponse, pconResponse, latestResponse, populationResponse] = await Promise.all([
             fetch(HEX_DATA_URL),
             fetch(pconUrl.toString(), {
-              headers: {
-                Authorization: `Bearer ${anonKey}`,
-                apikey: anonKey,
-              },
+              headers: pconHeaders,
             }),
             fetch(latestUrl.toString(), {
               headers: latestHeaders,
@@ -6090,24 +6121,33 @@
           if (!hexResponse.ok) {
             throw new Error(`Hex data request failed: ${hexResponse.status}`);
           }
-          if (!pconResponse.ok) {
+          if (!pconResponse.ok && pconResponse.status !== 304) {
             throw new Error(`Constituency request failed: ${pconResponse.status}`);
           }
           hexData = await hexResponse.json();
           prepareHexGrid();
-          const payload = await pconResponse.json();
-          basePconRows = payload?.data || [];
-          basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
-          pconRows = basePconRows;
-          pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
-          pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
-          if (lastUpdated) {
-            if (payload?.last_updated) {
-              lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
-            } else {
-              lastUpdated.textContent = "Latest data unavailable";
+          const pconResponseEtag = pconResponse.headers.get("ETag");
+          if (pconResponseEtag) {
+            pconEtagByKey.set(pconCacheKey, pconResponseEtag);
+          }
+          if (pconResponse.status === 304) {
+            pconRows = basePconRows;
+            pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+          } else {
+            const payload = await pconResponse.json();
+            basePconRows = payload?.data || [];
+            basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
+            pconRows = basePconRows;
+            pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+            if (lastUpdated) {
+              if (payload?.last_updated) {
+                lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
+              } else {
+                lastUpdated.textContent = "Latest data unavailable";
+              }
             }
           }
+          pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
           if (latestResponse) {
             const responseEtag = latestResponse.headers.get("ETag");
             if (responseEtag) {
@@ -6506,6 +6546,7 @@
       const latestSinceByKey = new Map();
       const latestSinceIdByKey = new Map();
       const latestEtagByKey = new Map();
+      const laEtagByKey = new Map();
       let latestLoadId = 0;
       const LA_CONFIG = {
         id: "la23",
@@ -7142,12 +7183,15 @@
       }
 
       function resolveLatestRowKey(row) {
+        const stationId = row?.station_id ?? row?.station?.id ?? null;
+        const pollutantKey = getPollutantKeyFromRow(row);
+        if (stationId !== null && stationId !== undefined && pollutantKey) {
+          return `${stationId}::${pollutantKey}`;
+        }
         return row?.id
           ?? row?.timeseries_id
           ?? row?.timeseries_ref
-          ?? (resolveStationKey(row) && getPollutantKeyFromRow(row)
-            ? `${resolveStationKey(row)}::${getPollutantKeyFromRow(row)}`
-            : null);
+          ?? null;
       }
 
       function mergeLatestRows(existingRows, incomingRows) {
@@ -7285,13 +7329,18 @@
         }
       }
 
+      function getLegendCapValue() {
+        return activePollutant === "no2" ? 100 : 50;
+      }
+
       function updateLegendScaleDescription() {
         if (!legendScale) {
           return;
         }
+        const capValue = getLegendCapValue();
         const description = currentColorScale === "linear"
-          ? "Linear colour scale: values map directly; values above 50 are shown as 50+."
-          : "Power-eased colour scale: pulls low values toward mid-range; values above 50 are shown as 50+.";
+          ? `Linear colour scale: values map directly; values above ${capValue} are shown as ${capValue}+.`
+          : `Power-eased colour scale: pulls low values toward mid-range; values above ${capValue} are shown as ${capValue}+.`;
         legendScale.title = description;
         legendScale.setAttribute("aria-label", description);
       }
@@ -8037,6 +8086,22 @@
         if (!legendTicks.length || !legendTickLabels.length) {
           return;
         }
+        const tickValues = capValue >= 100 ? [20, 40, 60, 80] : [10, 20, 30, 40];
+        legendTicks.forEach((element, index) => {
+          const value = tickValues[index] ?? null;
+          if (value === null) {
+            return;
+          }
+          element.dataset.value = String(value);
+        });
+        legendTickLabels.forEach((element, index) => {
+          const value = tickValues[index] ?? null;
+          if (value === null) {
+            return;
+          }
+          element.dataset.value = String(value);
+          element.textContent = String(value);
+        });
         const updatePosition = (element) => {
           const value = Number(element.dataset.value);
           if (!Number.isFinite(value)) {
@@ -9020,7 +9085,7 @@
           .filter((value) => Number.isFinite(value));
         const maxValue = values.length ? d3.max(values) : null;
         const domainMin = 0;
-        const domainMax = 50;
+        const domainMax = getLegendCapValue();
         const palette = HEAT_STOPS.map((name, index) =>
           resolveCssColor(name, HEAT_STOP_FALLBACKS[index])
         );
@@ -9196,6 +9261,7 @@
           const hexUrl = getHexUrlForRegion(requestRegion);
           const hexPromise = fetch(hexUrl);
           let laPromise = Promise.resolve(null);
+          let laCacheKey = null;
           let latestPromise = Promise.resolve(null);
           let populationPromise = Promise.resolve(null);
           if (canLoadData) {
@@ -9205,6 +9271,15 @@
             }
             if (requestRegion) {
               laUrl.searchParams.set("region", requestRegion);
+            }
+            laCacheKey = laUrl.toString();
+            const laEtag = laEtagByKey.get(laCacheKey) || null;
+            const laHeaders = {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            };
+            if (laEtag) {
+              laHeaders["If-None-Match"] = laEtag;
             }
             const latestUrl = new URL(LATEST_URL);
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
@@ -9240,10 +9315,7 @@
             //   populationUrl.searchParams.set("limit", "2000");
             // }
             laPromise = fetch(laUrl.toString(), {
-              headers: {
-                Authorization: `Bearer ${anonKey}`,
-                apikey: anonKey,
-              },
+              headers: laHeaders,
             }).catch(() => null);
             latestPromise = fetch(latestUrl.toString(), {
               headers: latestHeaders,
@@ -9272,24 +9344,36 @@
           hexData = await hexResponse.json();
           prepareHexGrid();
           pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
-          const laOk = Boolean(canLoadData && laResponse && laResponse.ok);
+          const laNotModified = Boolean(canLoadData && laResponse && laResponse.status === 304);
+          const laOk = Boolean(canLoadData && laResponse && (laResponse.ok || laNotModified));
           if (laOk) {
-            const payload = await laResponse.json();
-            const rawRows = payload?.data || [];
-            basePconRows = rawRows.map((row) => ({
-              ...row,
-              pcon_code: row?.la_code || null,
-              pcon_name: row?.pcon_name || row?.la_name || null,
-              region_name: row?.region_name || row?.region_nation || row?.region || null,
-            })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
-            basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
-            pconRows = basePconRows;
-            pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
-            if (lastUpdated) {
-              if (payload?.last_updated) {
-                lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
-              } else {
-                lastUpdated.textContent = "Latest data unavailable";
+            if (laCacheKey && laResponse) {
+              const responseEtag = laResponse.headers.get("ETag");
+              if (responseEtag) {
+                laEtagByKey.set(laCacheKey, responseEtag);
+              }
+            }
+            if (laResponse && laResponse.status === 304) {
+              pconRows = basePconRows;
+              pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+            } else {
+              const payload = await laResponse.json();
+              const rawRows = payload?.data || [];
+              basePconRows = rawRows.map((row) => ({
+                ...row,
+                pcon_code: row?.la_code || null,
+                pcon_name: row?.pcon_name || row?.la_name || null,
+                region_name: row?.region_name || row?.region_nation || row?.region || null,
+              })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
+              basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
+              pconRows = basePconRows;
+              pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+              if (lastUpdated) {
+                if (payload?.last_updated) {
+                  lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
+                } else {
+                  lastUpdated.textContent = "Latest data unavailable";
+                }
               }
             }
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
