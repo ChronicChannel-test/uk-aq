@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Trigger deploy 
+
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
