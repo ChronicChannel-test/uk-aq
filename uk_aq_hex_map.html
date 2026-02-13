@@ -3007,6 +3007,7 @@
       const latestSinceIdByKey = new Map();
       const latestEtagByKey = new Map();
       const pconEtagByKey = new Map();
+      const pconSinceByKey = new Map();
       let latestLoadId = 0;
       const MAP_CUTOVER = "2023-11-29";
       const MAP_CONFIGS = [
@@ -3949,6 +3950,22 @@
         const upsert = (row) => {
           const key = resolveLatestRowKey(row);
           if (key === null || key === undefined || key === "") {
+            extras.push(row);
+            return;
+          }
+          merged.set(String(key), row);
+        };
+        existingRows.forEach(upsert);
+        incomingRows.forEach(upsert);
+        return [...merged.values(), ...extras];
+      }
+
+      function mergePconRows(existingRows, incomingRows) {
+        const merged = new Map();
+        const extras = [];
+        const upsert = (row) => {
+          const key = row?.pcon_code;
+          if (!key) {
             extras.push(row);
             return;
           }
@@ -6061,6 +6078,10 @@
             pconUrl.searchParams.set("pcon_version", activePconVersion);
           }
           const pconCacheKey = pconUrl.toString();
+          const pconSince = normalizeIsoTimestamp(pconSinceByKey.get(pconCacheKey));
+          if (pconSince) {
+            pconUrl.searchParams.set("since", pconSince);
+          }
           const pconEtag = pconEtagByKey.get(pconCacheKey) || null;
           const pconHeaders = {
             Authorization: `Bearer ${anonKey}`,
@@ -6137,10 +6158,20 @@
             pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
           } else {
             const payload = await pconResponse.json();
-            basePconRows = payload?.data || [];
+            const incomingRows = payload?.data || [];
+            const mergedRows = pconSince
+              ? mergePconRows(basePconRows, incomingRows)
+              : incomingRows;
+            basePconRows = mergedRows;
             basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
             pconRows = basePconRows;
             pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+            const nextSince = normalizeIsoTimestamp(payload?.next_since) || pconSince;
+            if (nextSince) {
+              pconSinceByKey.set(pconCacheKey, nextSince);
+            } else {
+              pconSinceByKey.delete(pconCacheKey);
+            }
             if (lastUpdated) {
               if (payload?.last_updated) {
                 lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;
@@ -6549,6 +6580,7 @@
       const latestSinceIdByKey = new Map();
       const latestEtagByKey = new Map();
       const laEtagByKey = new Map();
+      const laSinceByKey = new Map();
       let latestLoadId = 0;
       const LA_CONFIG = {
         id: "la23",
@@ -7202,6 +7234,22 @@
         const upsert = (row) => {
           const key = resolveLatestRowKey(row);
           if (key === null || key === undefined || key === "") {
+            extras.push(row);
+            return;
+          }
+          merged.set(String(key), row);
+        };
+        existingRows.forEach(upsert);
+        incomingRows.forEach(upsert);
+        return [...merged.values(), ...extras];
+      }
+
+      function mergePconRows(existingRows, incomingRows) {
+        const merged = new Map();
+        const extras = [];
+        const upsert = (row) => {
+          const key = row?.pcon_code;
+          if (!key) {
             extras.push(row);
             return;
           }
@@ -9275,6 +9323,10 @@
               laUrl.searchParams.set("region", requestRegion);
             }
             laCacheKey = laUrl.toString();
+            const laSince = normalizeIsoTimestamp(laSinceByKey.get(laCacheKey));
+            if (laSince) {
+              laUrl.searchParams.set("since", laSince);
+            }
             const laEtag = laEtagByKey.get(laCacheKey) || null;
             const laHeaders = {
               Authorization: `Bearer ${anonKey}`,
@@ -9360,16 +9412,28 @@
               pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
             } else {
               const payload = await laResponse.json();
+              const laSince = laCacheKey ? normalizeIsoTimestamp(laSinceByKey.get(laCacheKey)) : null;
               const rawRows = payload?.data || [];
-              basePconRows = rawRows.map((row) => ({
+              const incomingRows = rawRows.map((row) => ({
                 ...row,
                 pcon_code: row?.la_code || null,
                 pcon_name: row?.pcon_name || row?.la_name || null,
                 region_name: row?.region_name || row?.region_nation || row?.region || null,
               })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
+              basePconRows = laSince
+                ? mergePconRows(basePconRows, incomingRows)
+                : incomingRows;
               basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
               pconRows = basePconRows;
               pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+              const nextSince = normalizeIsoTimestamp(payload?.next_since) || laSince;
+              if (laCacheKey) {
+                if (nextSince) {
+                  laSinceByKey.set(laCacheKey, nextSince);
+                } else {
+                  laSinceByKey.delete(laCacheKey);
+                }
+              }
               if (lastUpdated) {
                 if (payload?.last_updated) {
                   lastUpdated.textContent = `Latest data ${formatTimestamp(payload.last_updated)}`;

@@ -445,6 +445,10 @@
       const seriesSinceByKey = new Map();
       const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
+      const seriesGuidelineByKey = new Map();
+      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v1:${projectRef || "unknown"}`;
+      const SERIES_CACHE_MAX_KEYS = 30;
+      const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
 
       regionBadge.textContent = region;
       endpointHint.textContent = EDGE_URL
@@ -725,6 +729,127 @@
         return `${seriesId || ""}::${windowLabel || ""}`;
       }
 
+      function parseSeriesPayloadPoints(payload) {
+        const raw = Array.isArray(payload?.data) ? payload.data : [];
+        const dataFormat = String(payload?.data_format || "").toLowerCase();
+        const columns = Array.isArray(payload?.columns) ? payload.columns : [];
+        const observedIndex = columns.indexOf("observed_at");
+        const valueIndex = columns.indexOf("value");
+        const mapped = raw.map((row) => {
+          if (dataFormat === "compact" && Array.isArray(row)) {
+            const observedAt = observedIndex >= 0 ? row[observedIndex] : row[0];
+            const value = valueIndex >= 0 ? row[valueIndex] : row[1];
+            return {
+              date: new Date(observedAt),
+              value: Number(value),
+            };
+          }
+          return {
+            date: new Date(row?.observed_at),
+            value: Number(row?.value),
+          };
+        });
+        return mapped.filter(
+          (row) =>
+            Number.isFinite(row.date?.getTime()) &&
+            Number.isFinite(row.value) &&
+            row.value >= 0
+        );
+      }
+
+      function loadSeriesCacheFromStorage() {
+        if (!window.localStorage) {
+          return;
+        }
+        try {
+          const raw = localStorage.getItem(SERIES_CACHE_STORAGE_KEY);
+          if (!raw) {
+            return;
+          }
+          const parsed = JSON.parse(raw);
+          const sinceByKey = parsed?.since_by_key || {};
+          const etagByKey = parsed?.etag_by_key || {};
+          const pointsByKey = parsed?.points_by_key || {};
+          const guidelineByKey = parsed?.guideline_by_key || {};
+          Object.entries(sinceByKey).forEach(([key, value]) => {
+            const normalized = normalizeIsoTimestamp(value);
+            if (normalized) {
+              seriesSinceByKey.set(key, normalized);
+            }
+          });
+          Object.entries(etagByKey).forEach(([key, value]) => {
+            if (typeof value === "string" && value.trim()) {
+              seriesEtagByKey.set(key, value);
+            }
+          });
+          Object.entries(guidelineByKey).forEach(([key, value]) => {
+            if (value && typeof value === "object") {
+              seriesGuidelineByKey.set(key, value);
+            }
+          });
+          Object.entries(pointsByKey).forEach(([key, rows]) => {
+            if (!Array.isArray(rows)) {
+              return;
+            }
+            const restored = rows
+              .map((entry) => {
+                if (!Array.isArray(entry) || entry.length < 2) {
+                  return null;
+                }
+                const date = new Date(entry[0]);
+                const value = Number(entry[1]);
+                if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) {
+                  return null;
+                }
+                return { date, value };
+              })
+              .filter(Boolean);
+            if (restored.length) {
+              seriesPointCacheByKey.set(key, restored);
+            }
+          });
+        } catch (_error) {
+          // Ignore local cache read errors.
+        }
+      }
+
+      function persistSeriesCacheToStorage() {
+        if (!window.localStorage) {
+          return;
+        }
+        try {
+          const keys = Array.from(seriesPointCacheByKey.keys()).slice(-SERIES_CACHE_MAX_KEYS);
+          const pointsByKey = {};
+          const sinceByKey = {};
+          const etagByKey = {};
+          const guidelineByKey = {};
+          keys.forEach((key) => {
+            const points = (seriesPointCacheByKey.get(key) || []).slice(-SERIES_CACHE_MAX_POINTS_PER_KEY);
+            pointsByKey[key] = points.map((point) => [point.date.toISOString(), point.value]);
+            if (seriesSinceByKey.has(key)) {
+              sinceByKey[key] = seriesSinceByKey.get(key);
+            }
+            if (seriesEtagByKey.has(key)) {
+              etagByKey[key] = seriesEtagByKey.get(key);
+            }
+            if (seriesGuidelineByKey.has(key)) {
+              guidelineByKey[key] = seriesGuidelineByKey.get(key);
+            }
+          });
+          const payload = {
+            version: 1,
+            saved_at: new Date().toISOString(),
+            since_by_key: sinceByKey,
+            etag_by_key: etagByKey,
+            points_by_key: pointsByKey,
+            guideline_by_key: guidelineByKey,
+          };
+          localStorage.setItem(SERIES_CACHE_STORAGE_KEY, JSON.stringify(payload));
+        } catch (_error) {
+          // Ignore local cache write errors.
+        }
+      }
+
       function mergeSeriesPoints(existingPoints, incomingPoints) {
         const merged = new Map();
         existingPoints.forEach((point) => {
@@ -919,9 +1044,12 @@
           const windowValue = windowSelect?.value || "24h";
           const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
           const since = seriesSinceByKey.get(seriesKey) || null;
+          const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
           const url = new URL(SERIES_EDGE_URL);
           url.searchParams.set("timeseries_id", selectedSeriesId);
           url.searchParams.set("window", windowValue);
+          url.searchParams.set("format", "compact");
+          url.searchParams.set("include_status", "false");
           if (since) {
             url.searchParams.set("since", since);
           }
@@ -937,6 +1065,11 @@
             headers: requestHeaders,
           });
           if (response.status === 304) {
+            const meta = seriesLookup.get(selectedSeriesId) || null;
+            const guideline = seriesGuidelineByKey.get(seriesKey) || null;
+            if (cachedPoints.length) {
+              renderSeriesChart(cachedPoints, meta, windowValue, guideline);
+            }
             chartStatusEl.textContent = "Live";
             return;
           }
@@ -948,20 +1081,9 @@
             seriesEtagByKey.set(seriesKey, responseEtag);
           }
           const payload = await response.json();
-          const raw = Array.isArray(payload?.data) ? payload.data : [];
           const guideline = payload?.guideline || null;
-          const deltaPoints = raw
-            .map((row) => ({
-              date: new Date(row.observed_at),
-              value: Number(row.value),
-            }))
-            .filter(
-              (row) =>
-                Number.isFinite(row.date?.getTime()) &&
-                Number.isFinite(row.value) &&
-                row.value >= 0
-            );
-          const cachedPoints = since ? (seriesPointCacheByKey.get(seriesKey) || []) : [];
+          seriesGuidelineByKey.set(seriesKey, guideline);
+          const deltaPoints = parseSeriesPayloadPoints(payload);
           const points = since ? mergeSeriesPoints(cachedPoints, deltaPoints) : deltaPoints;
           seriesPointCacheByKey.set(seriesKey, points);
           const nextSince = normalizeIsoTimestamp(payload?.next_since);
@@ -970,6 +1092,7 @@
           } else if (!since) {
             seriesSinceByKey.delete(seriesKey);
           }
+          persistSeriesCacheToStorage();
           const meta = seriesLookup.get(selectedSeriesId) || null;
           renderSeriesChart(points, meta, windowValue, guideline);
           chartStatusEl.textContent = "Live";
@@ -1062,6 +1185,7 @@
           loadSeriesData();
         });
       }
+      loadSeriesCacheFromStorage();
       loadData();
       setInterval(loadData, 5 * 60 * 1000);
 
