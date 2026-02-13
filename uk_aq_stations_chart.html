@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UK Air Bristol Snapshot</title>
+    <title>UK AQ Station Chart</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -142,7 +142,8 @@
         color: var(--ink);
       }
 
-      .filters select {
+      .filters select,
+      .filters input[type="search"] {
         background: #fff;
         border: 1px solid rgba(20, 34, 37, 0.15);
         border-radius: 999px;
@@ -326,11 +327,10 @@
   <body>
     <main>
       <header>
-        <p class="badge" id="region-badge">Region</p>
-        <h1 class="title">UK Air latest readings</h1>
+        <p class="badge" id="region-badge">Station Search</p>
+        <h1 class="title">UK AQ station chart</h1>
         <p class="subtitle">
-          A lightweight view of the most recent measurements for stations in the selected region.
-          Update the region via the query string or keep it on Bristol for a quick snapshot.
+          Search by station name (for example Bristol or Surbiton) and view latest readings with trend charts.
         </p>
         <div class="meta">
           <span id="row-count">Loading…</span>
@@ -348,6 +348,9 @@
         </div>
         <div class="hint" id="endpoint-hint"></div>
         <div class="filters">
+          <label for="station-search">Station search</label>
+          <input id="station-search" type="search" placeholder="Bristol / Surbiton / station name" />
+          <button id="search-submit">Search</button>
           <label for="pollutant-filter">Pollutant</label>
           <select id="pollutant-filter">
             <option value="">All pollutants</option>
@@ -403,9 +406,8 @@
       const PROJECT_REF_PLACEHOLDER = "dhkpqsjibdnizkulfujv";
       const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoa3Bxc2ppYmRuaXprdWxmdWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyMzE3NzQsImV4cCI6MjA4NTgwNzc3NH0.xYdtJ9CXgni82i-rTCc6kPMl4RcYxVbbC5X4s21canY";
       const params = new URLSearchParams(window.location.search);
-      const regionParam = params.get("region");
-      const region = regionParam || "Bristol";
-      const stationLike = params.get("station_like") || (regionParam ? null : region);
+      const stationLikeParam = params.get("station_like") || params.get("q");
+      let currentStationLike = normalizeStationLike(stationLikeParam) || "Bristol";
       const limitParam = params.get("limit");
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
@@ -417,7 +419,7 @@
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
       const EDGE_URL = projectRef
-        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_bristol_latest`
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_stations_chart`
         : "";
 
       const statusEl = document.getElementById("status");
@@ -427,6 +429,8 @@
       const lastUpdated = document.getElementById("last-updated");
       const regionBadge = document.getElementById("region-badge");
       const endpointHint = document.getElementById("endpoint-hint");
+      const stationSearchInput = document.getElementById("station-search");
+      const stationSearchBtn = document.getElementById("search-submit");
       const pollutantSelect = document.getElementById("pollutant-filter");
       const SERIES_EDGE_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_timeseries`
@@ -442,10 +446,15 @@
       let cachedRows = [];
       let selectedSeriesId = null;
       let seriesLookup = new Map();
+      const latestEtagBySearch = new Map();
       const seriesSinceByKey = new Map();
+      const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
 
-      regionBadge.textContent = region;
+      if (stationSearchInput) {
+        stationSearchInput.value = currentStationLike;
+      }
+      regionBadge.textContent = `Search: ${currentStationLike}`;
       endpointHint.textContent = EDGE_URL
         ? `Endpoint: ${EDGE_URL}`
         : "Missing project ref. Add ?project_ref=... to the URL.";
@@ -924,14 +933,27 @@
           if (since) {
             url.searchParams.set("since", since);
           }
+          const etag = seriesEtagByKey.get(seriesKey) || null;
+          const requestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
+          if (etag) {
+            requestHeaders["If-None-Match"] = etag;
+          }
           const response = await fetch(url.toString(), {
-            headers: {
-              Authorization: `Bearer ${anonKey}`,
-              apikey: anonKey,
-            },
+            headers: requestHeaders,
           });
+          if (response.status === 304) {
+            chartStatusEl.textContent = "Live";
+            return;
+          }
           if (!response.ok) {
             throw new Error(`Series request failed: ${response.status}`);
+          }
+          const responseEtag = response.headers.get("etag");
+          if (responseEtag) {
+            seriesEtagByKey.set(seriesKey, responseEtag);
           }
           const payload = await response.json();
           const raw = Array.isArray(payload?.data) ? payload.data : [];
@@ -976,18 +998,12 @@
           return "";
         }
         const url = new URL(EDGE_URL);
-        if (regionParam) {
-          url.searchParams.set("region", region);
-        }
-        if (stationLike) {
-          url.searchParams.set("station_like", stationLike);
-        }
+        url.searchParams.set("station_like", currentStationLike);
         if (limitParam) {
           url.searchParams.set("limit", limitParam);
         } else {
           url.searchParams.set("limit", "1000");
         }
-        url.searchParams.set("debug", "false");
         return url.toString();
       }
 
@@ -1006,14 +1022,30 @@
           return;
         }
         try {
+          const searchKey = currentStationLike.toLowerCase();
+          const etag = latestEtagBySearch.get(searchKey) || null;
+          const requestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
+          if (etag) {
+            requestHeaders["If-None-Match"] = etag;
+          }
           const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${anonKey}`,
-              apikey: anonKey,
-            },
+            headers: requestHeaders,
           });
+          if (response.status === 304) {
+            await loadSeriesData();
+            lastUpdated.textContent = `Unchanged ${new Date().toLocaleTimeString()}`;
+            statusEl.textContent = "Live";
+            return;
+          }
           if (!response.ok) {
             throw new Error(`Request failed: ${response.status}`);
+          }
+          const responseEtag = response.headers.get("etag");
+          if (responseEtag) {
+            latestEtagBySearch.set(searchKey, responseEtag);
           }
           const payload = await response.json();
           cachedRows = payload.data || [];
@@ -1030,7 +1062,53 @@
         }
       }
 
+      function normalizeStationLike(value) {
+        if (!value) {
+          return null;
+        }
+        const trimmed = String(value).trim();
+        return trimmed ? trimmed : null;
+      }
+
+      async function runStationSearch() {
+        const rawValue = stationSearchInput ? stationSearchInput.value : "";
+        const normalized = normalizeStationLike(rawValue);
+        if (!normalized) {
+          errorEl.textContent = "Enter a station search term.";
+          return;
+        }
+        if (normalized === currentStationLike) {
+          await loadData();
+          return;
+        }
+        currentStationLike = normalized;
+        if (regionBadge) {
+          regionBadge.textContent = `Search: ${currentStationLike}`;
+        }
+        seriesSinceByKey.clear();
+        seriesEtagByKey.clear();
+        seriesPointCacheByKey.clear();
+        const nextParams = new URLSearchParams(window.location.search);
+        nextParams.set("station_like", currentStationLike);
+        nextParams.delete("q");
+        const nextQuery = nextParams.toString();
+        const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+        window.history.replaceState(null, "", nextUrl);
+        await loadData();
+      }
+
       document.getElementById("refresh").addEventListener("click", loadData);
+      if (stationSearchBtn) {
+        stationSearchBtn.addEventListener("click", runStationSearch);
+      }
+      if (stationSearchInput) {
+        stationSearchInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            runStationSearch();
+          }
+        });
+      }
       const chartRefreshBtn = document.getElementById("chart-refresh");
       if (chartRefreshBtn) {
         chartRefreshBtn.addEventListener("click", loadSeriesData);

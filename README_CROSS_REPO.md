@@ -10,8 +10,8 @@ It does not ingest data itself; it relies on the ingest and population repos (Ed
 
 ## Repo layout
 - `index.html`: Main dashboard page (latest station table + trend chart).
+- `uk_aq_stations_chart.html`: Station-search dashboard page (latest station table + trend chart).
 - `uk_aq_hex_map.html`: Primary hex-map UI.
-- `uk_aq_bristol.html`, `uk_aq_surbiton.html`: Region-specific variants of the dashboard.
 - `hex_map_test*.html`: Hex-map test variants.
 - `scripts/`: Build-time helper ([scripts/uk_aq_inject_project_ref.mjs](scripts/uk_aq_inject_project_ref.mjs)).
 - `data/`: Local datasets and hex grids used by the UI.
@@ -37,8 +37,7 @@ Data flow across repos:
 - **PostgREST**: none found (no direct `/rest/v1` usage in this repo).
 - **RPC**: none found.
 - **Edge Functions**:
-  - [index.html](index.html) and [uk_aq_bristol.html](uk_aq_bristol.html): `uk_aq_bristol_latest`, `uk_aq_timeseries`.
-  - [uk_aq_surbiton.html](uk_aq_surbiton.html): `uk_aq_surbiton_latest`, `uk_aq_timeseries`.
+  - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html): `uk_aq_stations_chart`, `uk_aq_timeseries`.
   - [uk_aq_hex_map.html](uk_aq_hex_map.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_la_hex`, `uk_aq_population`.
   - [hex_map_test.html](hex_map_test.html), [hex_map_test1.html](hex_map_test1.html), [hex_map_test2.html](hex_map_test2.html), [hex_map_test3.html](hex_map_test3.html), [hex_map_test_met1.html](hex_map_test_met1.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_population` (varies per file).
 - **Storage**: none found.
@@ -78,7 +77,7 @@ Data flow across repos:
   - [../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_pop_schema.sql](../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_pop_schema.sql)
 
 ## Egress-relevant notes (FACTUAL, no solutions)
-- [index.html](index.html), [uk_aq_bristol.html](uk_aq_bristol.html), and [uk_aq_surbiton.html](uk_aq_surbiton.html) poll live data every 5 minutes via Edge Functions.
+- [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html) poll live data every 5 minutes via Edge Functions.
 - [uk_aq_hex_map.html](uk_aq_hex_map.html) polls live data every 60 seconds and sets `limit=10000` on `uk_aq_latest` requests.
 - [hex_map_test.html](hex_map_test.html), [hex_map_test1.html](hex_map_test1.html), [hex_map_test2.html](hex_map_test2.html), [hex_map_test3.html](hex_map_test3.html), and [hex_map_test_met1.html](hex_map_test_met1.html) poll live data every 10 minutes.
 - The pages above use repeated fetches for Edge Functions on load and on refresh actions.

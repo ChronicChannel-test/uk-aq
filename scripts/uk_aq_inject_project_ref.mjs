@@ -10,8 +10,7 @@ const ENV_PATH = path.join(REPO_ROOT, ".env");
 const DEFAULT_TARGETS = [
   "uk_aq_hex_map.html",
   "index.html",
-  "uk_aq_bristol.html",
-  "uk_aq_surbiton.html",
+  "uk_aq_stations_chart.html",
 ];
 
 const envText = await readFileIfExists(ENV_PATH);

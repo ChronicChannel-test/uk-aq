@@ -405,7 +405,7 @@
       const params = new URLSearchParams(window.location.search);
       const regionParam = params.get("region");
       const region = regionParam || "Bristol";
-      const stationLike = params.get("station_like") || region;
+      const stationLike = params.get("station_like") || (regionParam ? null : region);
       const limitParam = params.get("limit");
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
@@ -417,7 +417,7 @@
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
       const EDGE_URL = projectRef
-        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_stations_chart`
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_bristol_latest`
         : "";
 
       const statusEl = document.getElementById("status");
@@ -1001,6 +1001,7 @@
         } else {
           url.searchParams.set("limit", "1000");
         }
+        url.searchParams.set("debug", "false");
         return url.toString();
       }
 

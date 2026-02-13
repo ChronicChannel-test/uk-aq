@@ -443,6 +443,7 @@
       let selectedSeriesId = null;
       let seriesLookup = new Map();
       const seriesSinceByKey = new Map();
+      const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
 
       regionBadge.textContent = region;
@@ -924,14 +925,27 @@
           if (since) {
             url.searchParams.set("since", since);
           }
+          const etag = seriesEtagByKey.get(seriesKey) || null;
+          const requestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
+          if (etag) {
+            requestHeaders["If-None-Match"] = etag;
+          }
           const response = await fetch(url.toString(), {
-            headers: {
-              Authorization: `Bearer ${anonKey}`,
-              apikey: anonKey,
-            },
+            headers: requestHeaders,
           });
+          if (response.status === 304) {
+            chartStatusEl.textContent = "Live";
+            return;
+          }
           if (!response.ok) {
             throw new Error(`Series request failed: ${response.status}`);
+          }
+          const responseEtag = response.headers.get("etag");
+          if (responseEtag) {
+            seriesEtagByKey.set(seriesKey, responseEtag);
           }
           const payload = await response.json();
           const raw = Array.isArray(payload?.data) ? payload.data : [];

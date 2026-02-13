@@ -4,7 +4,7 @@ Static web UI for CIC UK Air Quality Networks.
 
 ## Structure
 - `uk_aq_hex_map.html` main hex map UI.
-- `uk_aq_bristol.html` Bristol variant.
+- `uk_aq_stations_chart.html` station-search chart page.
 - `data/` reference datasets and hex grids.
 - `data/WHO-guidelines/` reference copy of the WHO GAQG 2021 CSV loaded into Supabase.
 
