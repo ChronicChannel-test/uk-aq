@@ -875,6 +875,28 @@
         return Array.from(merged.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
       }
 
+      function pruneSeriesPointsToWindow(points, windowLabel, endIso = null) {
+        if (!Array.isArray(points) || !points.length) {
+          return [];
+        }
+        const windowMsByLabel = {
+          "12h": 12 * 60 * 60 * 1000,
+          "24h": 24 * 60 * 60 * 1000,
+          "7d": 7 * 24 * 60 * 60 * 1000,
+          "30d": 30 * 24 * 60 * 60 * 1000,
+        };
+        const windowMs = windowMsByLabel[windowLabel] || windowMsByLabel["24h"];
+        const parsedEnd = endIso ? new Date(endIso) : null;
+        const endMs = Number.isFinite(parsedEnd?.getTime())
+          ? parsedEnd.getTime()
+          : Date.now();
+        const startMs = endMs - windowMs;
+        return points.filter((point) => {
+          const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+          return Number.isFinite(pointMs) && pointMs >= startMs && pointMs <= endMs;
+        });
+      }
+
       function renderSeriesChart(points, meta, windowLabel, guideline) {
         chartSvg.selectAll("*").remove();
         const width = chartSvg.node()?.clientWidth || 960;
@@ -1053,6 +1075,11 @@
           const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
           const since = seriesSinceByKey.get(seriesKey) || null;
           const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
+          const cachedWindowPoints = pruneSeriesPointsToWindow(cachedPoints, windowValue);
+          if (cachedWindowPoints.length !== cachedPoints.length) {
+            seriesPointCacheByKey.set(seriesKey, cachedWindowPoints);
+            persistSeriesCacheToStorage();
+          }
           const url = new URL(SERIES_EDGE_URL);
           url.searchParams.set("timeseries_id", selectedSeriesId);
           url.searchParams.set("window", windowValue);
@@ -1075,8 +1102,8 @@
           if (response.status === 304) {
             const meta = seriesLookup.get(selectedSeriesId) || null;
             const guideline = seriesGuidelineByKey.get(seriesKey) || null;
-            if (cachedPoints.length) {
-              renderSeriesChart(cachedPoints, meta, windowValue, guideline);
+            if (cachedWindowPoints.length) {
+              renderSeriesChart(cachedWindowPoints, meta, windowValue, guideline);
             }
             chartStatusEl.textContent = "Live";
             return;
@@ -1092,7 +1119,8 @@
           const guideline = payload?.guideline || null;
           seriesGuidelineByKey.set(seriesKey, guideline);
           const deltaPoints = parseSeriesPayloadPoints(payload);
-          const points = since ? mergeSeriesPoints(cachedPoints, deltaPoints) : deltaPoints;
+          const mergedPoints = since ? mergeSeriesPoints(cachedWindowPoints, deltaPoints) : deltaPoints;
+          const points = pruneSeriesPointsToWindow(mergedPoints, windowValue, payload?.end || null);
           seriesPointCacheByKey.set(seriesKey, points);
           const nextSince = normalizeIsoTimestamp(payload?.next_since);
           if (nextSince) {
