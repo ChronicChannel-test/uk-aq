@@ -698,7 +698,7 @@
       const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
         ? (projectRefParam || inferredProjectRef || "")
         : PROJECT_REF_PLACEHOLDER;
-      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SUPABASE_ANON_KEY__")
+      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
       const REST_URL = projectRef

@@ -38,20 +38,14 @@ async function main() {
   }
 
   const projectRef = (nodeProcess.env.SUPABASE_PROJECT_REF || "").trim();
-  const anonKey = (
-    nodeProcess.env.SB_ANON_JWT
-    || nodeProcess.env.SUPABASE_ANON_JWT
-    || nodeProcess.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY
-    || nodeProcess.env.SUPABASE_ANON_KEY
-    || ""
-  ).trim();
+  const publishableKey = (nodeProcess.env.SB_PUBLISHABLE_DEFAULT_KEY || "").trim();
 
   if (!projectRef) {
     console.error("SUPABASE_PROJECT_REF is missing. Set it in .env or the environment.");
     nodeProcess.exit(1);
   }
-  if (!anonKey) {
-    console.error("Anon key is missing. Set SB_ANON_JWT or SUPABASE_ANON_JWT in .env or the environment.");
+  if (!publishableKey) {
+    console.error("Publishable key is missing. Set SB_PUBLISHABLE_DEFAULT_KEY in .env or the environment.");
     nodeProcess.exit(1);
   }
 
@@ -72,16 +66,16 @@ async function main() {
     updated = replacePlaceholder(
       updated,
       anonPattern,
-      `const ANON_KEY_PLACEHOLDER = "${anonKey}";`,
+      `const ANON_KEY_PLACEHOLDER = "${publishableKey}";`,
       "ANON_KEY_PLACEHOLDER",
       targetPath,
     );
 
     if (updated !== html) {
       await fs.writeFile(targetPath, updated);
-      console.log(`Injected SUPABASE_PROJECT_REF and anon key into ${path.relative(REPO_ROOT, targetPath)}`);
+      console.log(`Injected SUPABASE_PROJECT_REF and publishable key into ${path.relative(REPO_ROOT, targetPath)}`);
     } else {
-      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref and anon key.`);
+      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref and publishable key.`);
     }
   }
 }

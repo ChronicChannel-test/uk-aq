@@ -30,7 +30,7 @@ jobs:
         run: node scripts/uk_aq_inject_project_ref.mjs
         env:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          SB_ANON_JWT: ${{ secrets.SB_ANON_JWT }}
+          SB_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SB_PUBLISHABLE_DEFAULT_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

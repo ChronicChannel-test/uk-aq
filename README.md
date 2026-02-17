@@ -9,12 +9,12 @@ Static web UI for CIC UK Air Quality Networks.
 - `data/WHO-guidelines/` reference copy of the WHO GAQG 2021 CSV loaded into Supabase.
 
 ## Supabase config (optional)
-The HTML pages can embed the Supabase project ref and anon key for live Edge Function URLs.
+The HTML pages can embed the Supabase project ref and publishable key for live Edge Function URLs.
 
 Create a `.env` file in the repo root or set env vars:
 ```
 SUPABASE_PROJECT_REF=your_project_ref
-SB_ANON_JWT=your_anon_key
+SB_PUBLISHABLE_DEFAULT_KEY=your_publishable_key
 ```
 
 Then run:
@@ -28,7 +28,7 @@ node scripts/uk_aq_inject_project_ref.mjs uk_aq_hex_map.html
 ```
 
 ### GitHub Pages
-In your GH Pages workflow, set repo secrets `SUPABASE_PROJECT_REF` and `SB_ANON_JWT`, then run:
+In your GH Pages workflow, set repo secrets `SUPABASE_PROJECT_REF` and `SB_PUBLISHABLE_DEFAULT_KEY`, then run:
 ```
 node scripts/uk_aq_inject_project_ref.mjs
 ```

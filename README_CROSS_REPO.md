@@ -41,7 +41,7 @@ Data flow across repos:
   - [uk_aq_hex_map.html](uk_aq_hex_map.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_la_hex`, `uk_aq_population`.
   - [hex_map_test.html](hex_map_test.html), [hex_map_test1.html](hex_map_test1.html), [hex_map_test2.html](hex_map_test2.html), [hex_map_test3.html](hex_map_test3.html), [hex_map_test_met1.html](hex_map_test_met1.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_population` (varies per file).
 - **Storage**: none found.
-- **Auth**: anon key is injected and sent in `Authorization`/`apikey` headers in the HTML files above.
+- **Auth**: publishable key is injected and sent in `Authorization`/`apikey` headers in the HTML files above.
 - **Realtime**: none found.
 
 ### Writes
@@ -52,15 +52,12 @@ Data flow across repos:
   - AQ functions: [../../CIC-test-uk-aq-ingest/supabase/functions/](../../CIC-test-uk-aq-ingest/supabase/functions/)
   - Population function: [../../CIC UK Population Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population](../../CIC%20UK%20Population%20Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population)
 - **Invocation pattern**: `https://<project_ref>.supabase.co/functions/v1/<function_name>`
-- **Public vs user-specific responses**: requests use an anon key; the UI does not attach user-specific auth tokens in code.
+- **Public vs user-specific responses**: requests use a publishable key; the UI does not attach user-specific auth tokens in code.
 
 ## Running and configuration (NO SECRETS)
 - **Env vars (names only)**:
   - `SUPABASE_PROJECT_REF`
-  - `SB_ANON_JWT`
-  - `SUPABASE_ANON_JWT`
-  - `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-  - `SUPABASE_ANON_KEY`
+  - `SB_PUBLISHABLE_DEFAULT_KEY`
 - **Env files**: `.env` exists at repo root (no `.env.example` found).
 - **Commands (documented)**:
   - `node scripts/uk_aq_inject_project_ref.mjs`
