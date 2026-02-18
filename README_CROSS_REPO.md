@@ -1,7 +1,7 @@
 # Cross-repo map: CIC-test-uk-aq (web UI)
 
 ## Main repo
-- `CIC-test-uk-aq-ingest` is the main repo for this project and the default starting point for cross-repo tasks.
+- `CIC-test-uk-aq` is the main repo for this project and the default starting point for cross-repo tasks.
 
 ## Purpose
 This repo is a static HTML/CSS/JS front-end for the UK Air Quality Networks project. It renders latest station readings, timeseries charts, and hex-map summaries by calling Supabase Edge Functions and using local data files for geometry and styling.
