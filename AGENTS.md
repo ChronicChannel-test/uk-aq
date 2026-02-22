@@ -2,6 +2,7 @@
 
 ## Main Repo
 - `CIC-test-uk-aq` is the main repo for this project and the default starting point for cross-repo work.
+- Filesystem location: `/Users/mikehinford/Library/CloudStorage/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC UK-AQ Webpage/CIC-test-uk-aq`.
 
 ## Planning Requests
 When proposing plans, offer more than one option when possible, list pros/cons for each, and recommend which to pick with a brief rationale.
@@ -13,7 +14,7 @@ When proposing plans, offer more than one option when possible, list pros/cons f
 Files in `archive/` can be referenced for context but must never be modified once created. Adding new files/directories under `archive/` is allowed.
 
 ## External Archive Policy
-For `/Users/mikehinford/Library/CloudStorage/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC-test-uk-aq-schema/uk-aq-schema`, edits are allowed for any file except under `archive/` directories. Archive files are read-only; new files may be added under `archive/` but must never be modified once created.
+For `/Users/mikehinford/Library/CloudStorage/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema`, edits are allowed for any file except under `archive/` directories. Archive files are read-only; new files may be added under `archive/` but must never be modified once created.
 
 ## Documentation Hygiene
 When adding or updating agent/project notes, also update relevant files under `system_docs` if they need to stay in sync.

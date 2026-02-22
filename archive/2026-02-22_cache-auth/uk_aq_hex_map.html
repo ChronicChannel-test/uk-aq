@@ -2924,8 +2924,6 @@
       const anonKeyParam = params.get("anon_key");
       const cacheBaseParam = params.get("cache_base");
       const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
-      const cacheSessionParam = params.get("cache_session_url");
-      const turnstileSiteKeyParam = params.get("turnstile_site_key");
       const metricParam = params.get("metric");
       const colorScaleParam = params.get("color_scale");
       const pollutantParam = params.get("pollutant");
@@ -2990,13 +2988,6 @@
       const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
-      const TURNSTILE_SITE_KEY_PLACEHOLDER = "__UK_AQ_TURNSTILE_SITE_KEY__";
-      const turnstileSiteKey = TURNSTILE_SITE_KEY_PLACEHOLDER.includes("__UK_AQ_TURNSTILE_SITE_KEY__")
-        ? (turnstileSiteKeyParam || "")
-        : (turnstileSiteKeyParam || TURNSTILE_SITE_KEY_PLACEHOLDER);
-      const cacheOrigin = cacheBaseUrl ? new URL(cacheBaseUrl).origin : "";
-      const defaultCacheSessionUrl = cacheOrigin ? `${cacheOrigin}/api/aq/session/start` : "";
-      const cacheSessionUrl = (cacheSessionParam || defaultCacheSessionUrl || "").trim();
       const REST_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/pcon-hex`
         : "";
@@ -3323,16 +3314,6 @@
       let selectedPconCode = null;
       let selectedCell = null;
       let pinnedTooltipCell = null;
-      const CACHE_SESSION_SKEW_MS = 10000;
-      let cacheAuthToken = null;
-      let cacheAuthTokenExpiresAt = 0;
-      let cacheAuthInflight = null;
-      let turnstileScriptInflight = null;
-      let turnstileTokenInflight = null;
-      let turnstileWidgetId = null;
-      let turnstileTokenResolver = null;
-      let turnstileTokenRejecter = null;
-      let turnstileTokenTimeoutId = null;
 
       function setStatus(value) {
         if (!statusEl) {
@@ -3349,180 +3330,6 @@
         endpointHint.textContent = REST_URL
           ? `Endpoint: ${REST_URL} (${activeMap.label})`
           : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
-      }
-
-      function clearCacheAuthToken() {
-        cacheAuthToken = null;
-        cacheAuthTokenExpiresAt = 0;
-      }
-
-      function hasFreshCacheAuthToken() {
-        return Boolean(
-          cacheAuthToken
-          && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS),
-        );
-      }
-
-      function ensureTurnstileContainer() {
-        let container = document.getElementById("uk-aq-turnstile-widget-uk");
-        if (!container) {
-          container = document.createElement("div");
-          container.id = "uk-aq-turnstile-widget-uk";
-          container.style.display = "none";
-          document.body.appendChild(container);
-        }
-        return container;
-      }
-
-      function clearTurnstilePendingState() {
-        if (turnstileTokenTimeoutId) {
-          clearTimeout(turnstileTokenTimeoutId);
-          turnstileTokenTimeoutId = null;
-        }
-        turnstileTokenResolver = null;
-        turnstileTokenRejecter = null;
-      }
-
-      async function ensureTurnstileScript() {
-        if (window.turnstile && typeof window.turnstile.render === "function") {
-          return;
-        }
-        if (!turnstileScriptInflight) {
-          turnstileScriptInflight = new Promise((resolve, reject) => {
-            const existing = document.getElementById("uk-aq-turnstile-script");
-            if (existing) {
-              existing.addEventListener("load", () => resolve(), { once: true });
-              existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script.")), {
-                once: true,
-              });
-              return;
-            }
-            const script = document.createElement("script");
-            script.id = "uk-aq-turnstile-script";
-            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-            script.async = true;
-            script.defer = true;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Failed to load Turnstile script."));
-            document.head.appendChild(script);
-          });
-        }
-        await turnstileScriptInflight;
-      }
-
-      async function ensureTurnstileWidget() {
-        if (!turnstileSiteKey) {
-          throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
-        }
-        await ensureTurnstileScript();
-        if (turnstileWidgetId !== null) {
-          return;
-        }
-        const turnstileApi = window.turnstile;
-        if (!turnstileApi || typeof turnstileApi.render !== "function") {
-          throw new Error("Turnstile SDK unavailable.");
-        }
-        const container = ensureTurnstileContainer();
-        turnstileWidgetId = turnstileApi.render(container, {
-          sitekey: turnstileSiteKey,
-          size: "invisible",
-          callback: (token) => {
-            if (turnstileTokenResolver) {
-              turnstileTokenResolver(token);
-              clearTurnstilePendingState();
-            }
-          },
-          "error-callback": () => {
-            if (turnstileTokenRejecter) {
-              turnstileTokenRejecter(new Error("Turnstile verification failed."));
-              clearTurnstilePendingState();
-            }
-          },
-          "expired-callback": () => {
-            if (turnstileTokenRejecter) {
-              turnstileTokenRejecter(new Error("Turnstile token expired."));
-              clearTurnstilePendingState();
-            }
-          },
-        });
-      }
-
-      async function getTurnstileToken() {
-        await ensureTurnstileWidget();
-        if (!turnstileTokenInflight) {
-          turnstileTokenInflight = (async () => {
-            const turnstileApi = window.turnstile;
-            if (!turnstileApi || typeof turnstileApi.execute !== "function") {
-              throw new Error("Turnstile execute unavailable.");
-            }
-            if (typeof turnstileApi.reset === "function") {
-              turnstileApi.reset(turnstileWidgetId);
-            }
-            const token = await new Promise((resolve, reject) => {
-              turnstileTokenResolver = resolve;
-              turnstileTokenRejecter = reject;
-              turnstileTokenTimeoutId = setTimeout(() => {
-                if (turnstileTokenRejecter) {
-                  turnstileTokenRejecter(new Error("Turnstile token timed out."));
-                }
-                clearTurnstilePendingState();
-              }, 15000);
-              turnstileApi.execute(turnstileWidgetId);
-            });
-            return token;
-          })().finally(() => {
-            turnstileTokenInflight = null;
-          });
-        }
-        return turnstileTokenInflight;
-      }
-
-      async function getCacheAuthToken(forceRefresh = false) {
-        if (!forceRefresh && hasFreshCacheAuthToken()) {
-          return cacheAuthToken;
-        }
-        if (!cacheSessionUrl) {
-          throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
-        }
-        if (!cacheAuthInflight) {
-          cacheAuthInflight = (async () => {
-            const turnstileToken = await getTurnstileToken();
-            const response = await fetch(cacheSessionUrl, {
-              method: "POST",
-              headers: {
-                "Accept": "application/json",
-                "X-UK-AQ-Session-Init": "1",
-                "CF-Turnstile-Token": turnstileToken,
-              },
-              credentials: "include",
-            });
-            if (!response.ok) {
-              throw new Error(`Session start failed: ${response.status}`);
-            }
-            const payload = await response.json().catch(() => ({}));
-            const expiresIn = Number(payload?.session_expires_in);
-            cacheAuthToken = "session";
-            cacheAuthTokenExpiresAt = Date.now() + Math.max(
-              30000,
-              Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
-            );
-            return cacheAuthToken;
-          })().finally(() => {
-            cacheAuthInflight = null;
-          });
-        }
-        return cacheAuthInflight;
-      }
-
-      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-        await getCacheAuthToken(false);
-        const response = await fetch(input, { ...init, credentials: "include" });
-        if (response.status === 401 && retryOnAuthFailure) {
-          clearCacheAuthToken();
-          await getCacheAuthToken(true);
-          return fetch(input, { ...init, credentials: "include" });
-        }
-        return response;
       }
 
       function inferProjectRefFromHost() {
@@ -6258,15 +6065,6 @@
           setMapLoading(false);
           return;
         }
-        if (!cacheSessionUrl) {
-          if (errorEl) {
-            errorEl.textContent = "Missing cache session URL. Provide ?cache_session_url=... if needed.";
-            errorEl.hidden = false;
-          }
-          setStatus("Error");
-          setMapLoading(false);
-          return;
-        }
         try {
           const pconUrl = new URL(REST_URL);
           if (activePconVersion) {
@@ -6311,10 +6109,10 @@
           // }
           const [hexResponse, pconResponse, latestResponse, populationResponse] = await Promise.all([
             fetch(HEX_DATA_URL),
-            fetchCacheApi(pconUrl.toString(), {
+            fetch(pconUrl.toString(), {
               headers: pconHeaders,
             }),
-            fetchCacheApi(latestUrl.toString(), {
+            fetch(latestUrl.toString(), {
               headers: latestHeaders,
             }).catch(() => null),
             // populationUrl
@@ -6718,14 +6516,12 @@
 
 	      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
 	      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
-		      const params = new URLSearchParams(window.location.search);
-		      const projectRefParam = params.get("project_ref");
-		      const anonKeyParam = params.get("anon_key");
-		      const cacheBaseParam = params.get("cache_base");
-		      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
-		      const cacheSessionParam = params.get("cache_session_url");
-		      const turnstileSiteKeyParam = params.get("turnstile_site_key");
-		      const metricParam = params.get("metric");
+	      const params = new URLSearchParams(window.location.search);
+	      const projectRefParam = params.get("project_ref");
+	      const anonKeyParam = params.get("anon_key");
+	      const cacheBaseParam = params.get("cache_base");
+	      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
+	      const metricParam = params.get("metric");
 	      const colorScaleParam = params.get("color_scale");
 	      const pollutantParam = params.get("pollutant");
 	      const mapDateParam = params.get("map_date");
@@ -6749,19 +6545,12 @@
       const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
         ? (projectRefParam || inferredProjectRef || "")
         : PROJECT_REF_PLACEHOLDER;
-	      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
-	        ? (anonKeyParam || "")
-	        : ANON_KEY_PLACEHOLDER;
-	      const TURNSTILE_SITE_KEY_PLACEHOLDER = "__UK_AQ_TURNSTILE_SITE_KEY__";
-	      const turnstileSiteKey = TURNSTILE_SITE_KEY_PLACEHOLDER.includes("__UK_AQ_TURNSTILE_SITE_KEY__")
-	        ? (turnstileSiteKeyParam || "")
-	        : (turnstileSiteKeyParam || TURNSTILE_SITE_KEY_PLACEHOLDER);
-	      const cacheOrigin = cacheBaseUrl ? new URL(cacheBaseUrl).origin : "";
-	      const defaultCacheSessionUrl = cacheOrigin ? `${cacheOrigin}/api/aq/session/start` : "";
-	      const cacheSessionUrl = (cacheSessionParam || defaultCacheSessionUrl || "").trim();
-		      const REST_URL = cacheBaseUrl
-		        ? `${cacheBaseUrl}/la-hex`
-		        : "";
+      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
+        ? (anonKeyParam || "")
+        : ANON_KEY_PLACEHOLDER;
+	      const REST_URL = cacheBaseUrl
+	        ? `${cacheBaseUrl}/la-hex`
+	        : "";
 	      const LATEST_URL = cacheBaseUrl
 	        ? `${cacheBaseUrl}/latest`
 	        : "";
@@ -7061,20 +6850,10 @@
       let crRefreshTimer = null;
       let crWasHidden = true;
       let populationLookup = new Map();
-	      let networkInputs = [];
-	      let networkSelectionMismatch = false;
-	      let selectedPconCode = null;
-	      let selectedCell = null;
-	      const CACHE_SESSION_SKEW_MS = 10000;
-	      let cacheAuthToken = null;
-	      let cacheAuthTokenExpiresAt = 0;
-	      let cacheAuthInflight = null;
-	      let turnstileScriptInflight = null;
-	      let turnstileTokenInflight = null;
-	      let turnstileWidgetId = null;
-	      let turnstileTokenResolver = null;
-	      let turnstileTokenRejecter = null;
-	      let turnstileTokenTimeoutId = null;
+      let networkInputs = [];
+      let networkSelectionMismatch = false;
+      let selectedPconCode = null;
+      let selectedCell = null;
 
       function setStatus(value) {
         if (!statusEl) {
@@ -7087,195 +6866,21 @@
         }
       }
 
-	      function updateEndpointHint() {
-	        if (!endpointHint) {
-	          return;
-	        }
+      function updateEndpointHint() {
+        if (!endpointHint) {
+          return;
+        }
         if (!REST_URL) {
           endpointHint.textContent = "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
           return;
         }
         const regionSuffix = activeRegion ? ` · ${activeRegion}` : "";
         endpointHint.textContent = `Endpoint: ${REST_URL} (${LA_CONFIG.label}${regionSuffix})`;
-	      }
-	      updateEndpointHint();
+      }
+      updateEndpointHint();
 
-	      function clearCacheAuthToken() {
-	        cacheAuthToken = null;
-	        cacheAuthTokenExpiresAt = 0;
-	      }
-
-	      function hasFreshCacheAuthToken() {
-	        return Boolean(
-	          cacheAuthToken
-	          && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS),
-	        );
-	      }
-
-	      function ensureTurnstileContainer() {
-	        let container = document.getElementById("uk-aq-turnstile-widget-cr");
-	        if (!container) {
-	          container = document.createElement("div");
-	          container.id = "uk-aq-turnstile-widget-cr";
-	          container.style.display = "none";
-	          document.body.appendChild(container);
-	        }
-	        return container;
-	      }
-
-	      function clearTurnstilePendingState() {
-	        if (turnstileTokenTimeoutId) {
-	          clearTimeout(turnstileTokenTimeoutId);
-	          turnstileTokenTimeoutId = null;
-	        }
-	        turnstileTokenResolver = null;
-	        turnstileTokenRejecter = null;
-	      }
-
-	      async function ensureTurnstileScript() {
-	        if (window.turnstile && typeof window.turnstile.render === "function") {
-	          return;
-	        }
-	        if (!turnstileScriptInflight) {
-	          turnstileScriptInflight = new Promise((resolve, reject) => {
-	            const existing = document.getElementById("uk-aq-turnstile-script");
-	            if (existing) {
-	              existing.addEventListener("load", () => resolve(), { once: true });
-	              existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script.")), {
-	                once: true,
-	              });
-	              return;
-	            }
-	            const script = document.createElement("script");
-	            script.id = "uk-aq-turnstile-script";
-	            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-	            script.async = true;
-	            script.defer = true;
-	            script.onload = () => resolve();
-	            script.onerror = () => reject(new Error("Failed to load Turnstile script."));
-	            document.head.appendChild(script);
-	          });
-	        }
-	        await turnstileScriptInflight;
-	      }
-
-	      async function ensureTurnstileWidget() {
-	        if (!turnstileSiteKey) {
-	          throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
-	        }
-	        await ensureTurnstileScript();
-	        if (turnstileWidgetId !== null) {
-	          return;
-	        }
-	        const turnstileApi = window.turnstile;
-	        if (!turnstileApi || typeof turnstileApi.render !== "function") {
-	          throw new Error("Turnstile SDK unavailable.");
-	        }
-	        const container = ensureTurnstileContainer();
-	        turnstileWidgetId = turnstileApi.render(container, {
-	          sitekey: turnstileSiteKey,
-	          size: "invisible",
-	          callback: (token) => {
-	            if (turnstileTokenResolver) {
-	              turnstileTokenResolver(token);
-	              clearTurnstilePendingState();
-	            }
-	          },
-	          "error-callback": () => {
-	            if (turnstileTokenRejecter) {
-	              turnstileTokenRejecter(new Error("Turnstile verification failed."));
-	              clearTurnstilePendingState();
-	            }
-	          },
-	          "expired-callback": () => {
-	            if (turnstileTokenRejecter) {
-	              turnstileTokenRejecter(new Error("Turnstile token expired."));
-	              clearTurnstilePendingState();
-	            }
-	          },
-	        });
-	      }
-
-	      async function getTurnstileToken() {
-	        await ensureTurnstileWidget();
-	        if (!turnstileTokenInflight) {
-	          turnstileTokenInflight = (async () => {
-	            const turnstileApi = window.turnstile;
-	            if (!turnstileApi || typeof turnstileApi.execute !== "function") {
-	              throw new Error("Turnstile execute unavailable.");
-	            }
-	            if (typeof turnstileApi.reset === "function") {
-	              turnstileApi.reset(turnstileWidgetId);
-	            }
-	            const token = await new Promise((resolve, reject) => {
-	              turnstileTokenResolver = resolve;
-	              turnstileTokenRejecter = reject;
-	              turnstileTokenTimeoutId = setTimeout(() => {
-	                if (turnstileTokenRejecter) {
-	                  turnstileTokenRejecter(new Error("Turnstile token timed out."));
-	                }
-	                clearTurnstilePendingState();
-	              }, 15000);
-	              turnstileApi.execute(turnstileWidgetId);
-	            });
-	            return token;
-	          })().finally(() => {
-	            turnstileTokenInflight = null;
-	          });
-	        }
-	        return turnstileTokenInflight;
-	      }
-
-	      async function getCacheAuthToken(forceRefresh = false) {
-	        if (!forceRefresh && hasFreshCacheAuthToken()) {
-	          return cacheAuthToken;
-	        }
-	        if (!cacheSessionUrl) {
-	          throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
-	        }
-		        if (!cacheAuthInflight) {
-		          cacheAuthInflight = (async () => {
-		            const turnstileToken = await getTurnstileToken();
-		            const response = await fetch(cacheSessionUrl, {
-		              method: "POST",
-		              headers: {
-		                "Accept": "application/json",
-		                "X-UK-AQ-Session-Init": "1",
-		                "CF-Turnstile-Token": turnstileToken,
-		              },
-		              credentials: "include",
-		            });
-	            if (!response.ok) {
-	              throw new Error(`Session start failed: ${response.status}`);
-	            }
-	            const payload = await response.json().catch(() => ({}));
-	            const expiresIn = Number(payload?.session_expires_in);
-	            cacheAuthToken = "session";
-	            cacheAuthTokenExpiresAt = Date.now() + Math.max(
-	              30000,
-	              Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
-	            );
-	            return cacheAuthToken;
-	          })().finally(() => {
-	            cacheAuthInflight = null;
-	          });
-	        }
-	        return cacheAuthInflight;
-	      }
-
-	      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-	        await getCacheAuthToken(false);
-	        const response = await fetch(input, { ...init, credentials: "include" });
-	        if (response.status === 401 && retryOnAuthFailure) {
-	          clearCacheAuthToken();
-	          await getCacheAuthToken(true);
-	          return fetch(input, { ...init, credentials: "include" });
-	        }
-	        return response;
-	      }
-
-	      if (mapSelect) {
-	        mapSelect.value = activeRegion;
+      if (mapSelect) {
+        mapSelect.value = activeRegion;
         mapSelect.addEventListener("change", () => {
           const nextRegion = normalizeRegion(mapSelect.value);
           if (!nextRegion) {
@@ -9683,13 +9288,11 @@
         const hadAllSelected = networkInputs.length > 0
           ? networkInputs.every((input) => input.checked)
           : storedSelection.defaultAll;
-	        const hasCredentials = Boolean(REST_URL) && Boolean(cacheSessionUrl);
+	        const hasCredentials = Boolean(REST_URL);
 	        const canLoadData = hasCredentials;
 	        if (!hasCredentials) {
 	          if (errorEl) {
-	            errorEl.textContent = !REST_URL
-	              ? "Missing cache endpoint base URL. Showing boundaries only."
-	              : "Missing cache session URL. Showing boundaries only.";
+	            errorEl.textContent = "Missing cache endpoint base URL. Showing boundaries only.";
 	            errorEl.hidden = false;
 	          }
 	        }
@@ -9748,12 +9351,12 @@
             //   }
             //   populationUrl.searchParams.set("limit", "2000");
             // }
-	            laPromise = fetchCacheApi(laUrl.toString(), {
-	              headers: laHeaders,
-	            }).catch(() => null);
-	            latestPromise = fetchCacheApi(latestUrl.toString(), {
-	              headers: latestHeaders,
-	            }).catch(() => null);
+            laPromise = fetch(laUrl.toString(), {
+              headers: laHeaders,
+            }).catch(() => null);
+            latestPromise = fetch(latestUrl.toString(), {
+              headers: latestHeaders,
+            }).catch(() => null);
             // populationPromise = populationUrl
             //   ? fetch(populationUrl.toString(), {
             //     headers: {

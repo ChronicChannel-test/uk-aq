@@ -2,9 +2,10 @@
 
 ## Main repo
 - `CIC-test-uk-aq` is the main repo for this project and the default starting point for cross-repo tasks.
+- Filesystem location: `/Users/mikehinford/Library/CloudStorage/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC UK-AQ Webpage/CIC-test-uk-aq`.
 
 ## Purpose
-This repo is a static HTML/CSS/JS front-end for the UK Air Quality Networks project. It renders latest station readings, timeseries charts, and hex-map summaries by calling Supabase Edge Functions and using local data files for geometry and styling.
+This repo is a static HTML/CSS/JS front-end for the UK Air Quality Networks project. It renders latest station readings, timeseries charts, and hex-map summaries by calling the Cloudflare cache proxy (`/api/aq/*`) for AQ reads and using local data files for geometry and styling.
 
 It does not ingest data itself; it relies on the ingest and population repos (Edge Functions) and the schema repo (tables/views) for all live data.
 
@@ -37,11 +38,11 @@ Data flow across repos:
 - **PostgREST**: none found (no direct `/rest/v1` usage in this repo).
 - **RPC**: none found.
 - **Edge Functions**:
-  - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html): `uk_aq_stations_chart`, `uk_aq_timeseries`.
-  - [uk_aq_hex_map.html](uk_aq_hex_map.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_la_hex`, `uk_aq_population`.
+  - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html): `stations-chart`, `timeseries` via cache proxy routes under `/api/aq/*`.
+  - [uk_aq_hex_map.html](uk_aq_hex_map.html): `latest`, `pcon-hex`, `la-hex` via cache proxy routes under `/api/aq/*`; `uk_aq_population` remains a direct Supabase edge function route when enabled.
   - [hex_map_test.html](hex_map_test.html), [hex_map_test1.html](hex_map_test1.html), [hex_map_test2.html](hex_map_test2.html), [hex_map_test3.html](hex_map_test3.html), [hex_map_test_met1.html](hex_map_test_met1.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_population` (varies per file).
 - **Storage**: none found.
-- **Auth**: publishable key is injected and sent in `Authorization`/`apikey` headers in the HTML files above.
+- **Auth**: cached AQ read routes (`/api/aq/*`) use a Cloudflare Worker session cookie (`uk_aq_edge_session`, HttpOnly) initialized via `POST /api/aq/session/start`; session start sends `X-UK-AQ-Session-Init: 1` plus `CF-Turnstile-Token` from Turnstile solve, and browser fetches use `credentials: include` without `Authorization`/`apikey` headers for AQ reads. Direct Supabase calls (for example population/test pages) still use the publishable key flow where configured.
 - **Realtime**: none found.
 
 ### Writes
@@ -51,8 +52,10 @@ Data flow across repos:
 - **Location**:
   - AQ functions: [../../CIC-test-uk-aq-ingest/supabase/functions/](../../CIC-test-uk-aq-ingest/supabase/functions/)
   - Population function: [../../CIC UK Population Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population](../../CIC%20UK%20Population%20Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population)
-- **Invocation pattern**: `https://<project_ref>.supabase.co/functions/v1/<function_name>`
-- **Public vs user-specific responses**: requests use a publishable key; the UI does not attach user-specific auth tokens in code.
+- **Invocation pattern**:
+  - AQ reads (main pages): `https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq/<route>`
+  - Direct Supabase edge calls (where still used): `https://<project_ref>.supabase.co/functions/v1/<function_name>`
+- **Public vs user-specific responses**: AQ cache routes use worker-managed session cookies (not user account JWTs). The UI does not attach user-specific auth tokens in code.
 
 ## Running and configuration (NO SECRETS)
 - **Env vars (names only)**:
@@ -67,11 +70,11 @@ Data flow across repos:
 
 ## Data model pointers
 - Core AQ tables/views (timeseries, observations, stations, guidelines, pcon/la latest views):
-  - [../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_core_schema.sql](../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_core_schema.sql)
+  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_core_schema.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_core_schema.sql)
 - Public read-only views (if used by Edge Functions):
-  - [../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_public_views.sql](../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_public_views.sql)
+  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_public_views.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_public_views.sql)
 - Population views (`uk_population_observations`):
-  - [../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_pop_schema.sql](../../CIC-test-uk-aq-schema/uk-aq-schema/schemas/uk_aq_pop_schema.sql)
+  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_pop_schema.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_pop_schema.sql)
 
 ## Egress-relevant notes (FACTUAL, no solutions)
 - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html) poll live data every 5 minutes via Edge Functions.
