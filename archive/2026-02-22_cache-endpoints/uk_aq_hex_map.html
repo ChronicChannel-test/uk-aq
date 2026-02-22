@@ -2922,8 +2922,6 @@
       const params = new URLSearchParams(window.location.search);
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
-      const cacheBaseParam = params.get("cache_base");
-      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
       const metricParam = params.get("metric");
       const colorScaleParam = params.get("color_scale");
       const pollutantParam = params.get("pollutant");
@@ -2988,11 +2986,11 @@
       const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
-      const REST_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/pcon-hex`
+      const REST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_pcon_hex`
         : "";
-      const LATEST_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/latest`
+      const LATEST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_latest`
         : "";
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
@@ -3329,7 +3327,7 @@
       if (endpointHint) {
         endpointHint.textContent = REST_URL
           ? `Endpoint: ${REST_URL} (${activeMap.label})`
-          : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+          : "Missing project ref. Add ?project_ref=... to the URL.";
       }
 
       function inferProjectRefFromHost() {
@@ -6058,7 +6056,16 @@
           : storedSelection.defaultAll;
         if (!REST_URL) {
           if (errorEl) {
-            errorEl.textContent = "Missing cache endpoint base URL. Provide ?cache_base=... if needed.";
+            errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+            errorEl.hidden = false;
+          }
+          setStatus("Error");
+          setMapLoading(false);
+          return;
+        }
+        if (!anonKey) {
+          if (errorEl) {
+            errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
             errorEl.hidden = false;
           }
           setStatus("Error");
@@ -6076,7 +6083,10 @@
             pconUrl.searchParams.set("since", pconSince);
           }
           const pconEtag = pconEtagByKey.get(pconCacheKey) || null;
-          const pconHeaders = {};
+          const pconHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
           if (pconEtag) {
             pconHeaders["If-None-Match"] = pconEtag;
           }
@@ -6095,7 +6105,10 @@
               latestUrl.searchParams.set("since_id", String(latestSinceId));
             }
           }
-          const latestHeaders = {};
+          const latestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
           if (latestEtag) {
             latestHeaders["If-None-Match"] = latestEtag;
           }
@@ -6514,18 +6527,16 @@
   const query = (selector) => root.querySelector(selector);
   const queryAll = (selector) => Array.from(root.querySelectorAll(selector));
 
-	      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
-	      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
-	      const params = new URLSearchParams(window.location.search);
-	      const projectRefParam = params.get("project_ref");
-	      const anonKeyParam = params.get("anon_key");
-	      const cacheBaseParam = params.get("cache_base");
-	      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
-	      const metricParam = params.get("metric");
-	      const colorScaleParam = params.get("color_scale");
-	      const pollutantParam = params.get("pollutant");
-	      const mapDateParam = params.get("map_date");
-	      const laVersionParam = params.get("la_version");
+      const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
+      const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
+      const params = new URLSearchParams(window.location.search);
+      const projectRefParam = params.get("project_ref");
+      const anonKeyParam = params.get("anon_key");
+      const metricParam = params.get("metric");
+      const colorScaleParam = params.get("color_scale");
+      const pollutantParam = params.get("pollutant");
+      const mapDateParam = params.get("map_date");
+      const laVersionParam = params.get("la_version");
       const sharedSettings = (window.mapSettingsState = window.mapSettingsState || {});
       const mapNetworkState = (window.mapNetworkState = window.mapNetworkState || {});
       const MAP_KEY = "shared";
@@ -6548,12 +6559,12 @@
       const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
-	      const REST_URL = cacheBaseUrl
-	        ? `${cacheBaseUrl}/la-hex`
-	        : "";
-	      const LATEST_URL = cacheBaseUrl
-	        ? `${cacheBaseUrl}/latest`
-	        : "";
+      const REST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_la_hex`
+        : "";
+      const LATEST_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_latest`
+        : "";
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
         : "";
@@ -6871,7 +6882,7 @@
           return;
         }
         if (!REST_URL) {
-          endpointHint.textContent = "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+          endpointHint.textContent = "Missing project ref. Add ?project_ref=... to the URL.";
           return;
         }
         const regionSuffix = activeRegion ? ` · ${activeRegion}` : "";
@@ -9288,14 +9299,14 @@
         const hadAllSelected = networkInputs.length > 0
           ? networkInputs.every((input) => input.checked)
           : storedSelection.defaultAll;
-	        const hasCredentials = Boolean(REST_URL);
-	        const canLoadData = hasCredentials;
-	        if (!hasCredentials) {
-	          if (errorEl) {
-	            errorEl.textContent = "Missing cache endpoint base URL. Showing boundaries only.";
-	            errorEl.hidden = false;
-	          }
-	        }
+        const hasCredentials = Boolean(REST_URL) && Boolean(anonKey);
+        const canLoadData = hasCredentials;
+        if (!hasCredentials) {
+          if (errorEl) {
+            errorEl.textContent = "Missing project ref or anon key. Showing boundaries only.";
+            errorEl.hidden = false;
+          }
+        }
         try {
           const hexUrl = getHexUrlForRegion(requestRegion);
           const hexPromise = fetch(hexUrl);
@@ -9317,10 +9328,13 @@
               laUrl.searchParams.set("since", laSince);
             }
             const laEtag = laEtagByKey.get(laCacheKey) || null;
-	            const laHeaders = {};
-	            if (laEtag) {
-	              laHeaders["If-None-Match"] = laEtag;
-	            }
+            const laHeaders = {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            };
+            if (laEtag) {
+              laHeaders["If-None-Match"] = laEtag;
+            }
             const latestUrl = new URL(LATEST_URL);
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
             const latestSince = latestSinceByKey.get(latestCacheKey) || null;
@@ -9339,10 +9353,13 @@
                 latestUrl.searchParams.set("since_id", String(latestSinceId));
               }
             }
-	            const latestHeaders = {};
-	            if (latestEtag) {
-	              latestHeaders["If-None-Match"] = latestEtag;
-	            }
+            const latestHeaders = {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            };
+            if (latestEtag) {
+              latestHeaders["If-None-Match"] = latestEtag;
+            }
             // const populationUrl = POPULATION_URL ? new URL(POPULATION_URL) : null;
             // if (populationUrl) {
             //   populationUrl.searchParams.set("geo_type", "LAD");

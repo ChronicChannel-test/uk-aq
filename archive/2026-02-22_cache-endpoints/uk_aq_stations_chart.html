@@ -410,8 +410,6 @@
       const stationLikeParam = params.get("station_like") || params.get("q");
       let currentStationLike = normalizeStationLike(stationLikeParam) || "Bristol";
       const limitParam = params.get("limit");
-      const cacheBaseParam = params.get("cache_base");
-      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
       const inferredProjectRef = inferProjectRefFromHost();
@@ -421,8 +419,8 @@
       const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
-      const EDGE_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/stations-chart`
+      const EDGE_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_stations_chart`
         : "";
 
       const statusEl = document.getElementById("status");
@@ -435,8 +433,8 @@
       const stationSearchInput = document.getElementById("station-search");
       const stationSearchBtn = document.getElementById("search-submit");
       const pollutantSelect = document.getElementById("pollutant-filter");
-      const SERIES_EDGE_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/timeseries`
+      const SERIES_EDGE_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_timeseries`
         : "";
       const stationSelect = document.getElementById("station-select");
       const windowSelect = document.getElementById("window-select");
@@ -464,11 +462,11 @@
       regionBadge.textContent = `Search: ${currentStationLike}`;
       endpointHint.textContent = EDGE_URL
         ? `Endpoint: ${EDGE_URL}`
-        : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+        : "Missing project ref. Add ?project_ref=... to the URL.";
       if (chartHintEl) {
         chartHintEl.textContent = SERIES_EDGE_URL
           ? `Endpoint: ${SERIES_EDGE_URL}`
-          : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+          : "Missing project ref. Add ?project_ref=... to the URL.";
       }
 
       function formatValue(value) {
@@ -1078,10 +1076,19 @@
         }
         if (!SERIES_EDGE_URL) {
           if (chartErrorEl) {
-            chartErrorEl.textContent = "Missing cache endpoint base URL for series endpoint.";
+            chartErrorEl.textContent = "Missing project ref for series endpoint.";
           }
           chartStatusEl.textContent = "Error";
           clearSeriesChart("Series endpoint missing.");
+          setChartLoading(false);
+          return;
+        }
+        if (!anonKey) {
+          if (chartErrorEl) {
+            chartErrorEl.textContent = "Missing anon key.";
+          }
+          chartStatusEl.textContent = "Error";
+          clearSeriesChart("Missing anon key.");
           setChartLoading(false);
           return;
         }
@@ -1110,7 +1117,10 @@
             url.searchParams.set("since", since);
           }
           const etag = seriesEtagByKey.get(seriesKey) || null;
-          const requestHeaders = {};
+          const requestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
           if (etag) {
             requestHeaders["If-None-Match"] = etag;
           }
@@ -1181,14 +1191,22 @@
         errorEl.textContent = "";
         const endpoint = buildEndpoint();
         if (!endpoint) {
-          errorEl.textContent = "Missing cache endpoint base URL. Provide ?cache_base=... if needed.";
+          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        if (!anonKey) {
+          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
           statusEl.textContent = "Error";
           return;
         }
         try {
           const searchKey = currentStationLike.toLowerCase();
           const etag = latestEtagBySearch.get(searchKey) || null;
-          const requestHeaders = {};
+          const requestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
           if (etag) {
             requestHeaders["If-None-Match"] = etag;
           }

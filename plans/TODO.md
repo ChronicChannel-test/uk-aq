@@ -53,6 +53,7 @@ Cons:
 - [ ] Add tests for favourites CRUD and RLS rules
 - [ ] Add unsubscribe link and consent text for alerts
 - [ ] Add rate limits/debounce for notification spam prevention
+- [ ] Handle UK clock changes (BST/GMT): store/query in UTC, display user-facing times in `Europe/London`, and test DST transition days
 
 ## Suggested First Slice
 Ship in this order:

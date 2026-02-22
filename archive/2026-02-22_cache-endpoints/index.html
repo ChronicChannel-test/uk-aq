@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UK AQ Station Chart</title>
+    <title>UK Air Bristol Snapshot</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -142,8 +142,7 @@
         color: var(--ink);
       }
 
-      .filters select,
-      .filters input[type="search"] {
+      .filters select {
         background: #fff;
         border: 1px solid rgba(20, 34, 37, 0.15);
         border-radius: 999px;
@@ -327,10 +326,11 @@
   <body>
     <main>
       <header>
-        <p class="badge" id="region-badge">Station Search</p>
-        <h1 class="title">UK AQ station chart</h1>
+        <p class="badge" id="region-badge">Region</p>
+        <h1 class="title">UK Air latest readings</h1>
         <p class="subtitle">
-          Search by station name (for example Bristol or Surbiton) and view latest readings with trend charts.
+          A lightweight view of the most recent measurements for stations in the selected region.
+          Update the region via the query string or keep it on Bristol for a quick snapshot.
         </p>
         <div class="meta">
           <span id="row-count">Loading…</span>
@@ -348,9 +348,6 @@
         </div>
         <div class="hint" id="endpoint-hint"></div>
         <div class="filters">
-          <label for="station-search">Station search</label>
-          <input id="station-search" type="search" placeholder="Bristol / Surbiton / station name" />
-          <button id="search-submit">Search</button>
           <label for="pollutant-filter">Pollutant</label>
           <select id="pollutant-filter">
             <option value="">All pollutants</option>
@@ -362,7 +359,6 @@
             <thead>
               <tr>
                 <th>Station</th>
-                <th>Network</th>
                 <th>Pollutant</th>
                 <th>Value</th>
                 <th>Unit</th>
@@ -407,11 +403,10 @@
       const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
       const ANON_KEY_PLACEHOLDER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZ2llcmFmb2V1eGZra3NjcmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMjIzMDMsImV4cCI6MjA4MDg5ODMwM30.x6rKhvMTFRyJCZNlaFG-5tUiSuwehCLLu3qbulNTe7A";
       const params = new URLSearchParams(window.location.search);
-      const stationLikeParam = params.get("station_like") || params.get("q");
-      let currentStationLike = normalizeStationLike(stationLikeParam) || "Bristol";
+      const regionParam = params.get("region");
+      const region = regionParam || "Bristol";
+      const stationLike = params.get("station_like") || region;
       const limitParam = params.get("limit");
-      const cacheBaseParam = params.get("cache_base");
-      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
       const inferredProjectRef = inferProjectRefFromHost();
@@ -421,8 +416,8 @@
       const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
-      const EDGE_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/stations-chart`
+      const EDGE_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_stations_chart`
         : "";
 
       const statusEl = document.getElementById("status");
@@ -432,11 +427,9 @@
       const lastUpdated = document.getElementById("last-updated");
       const regionBadge = document.getElementById("region-badge");
       const endpointHint = document.getElementById("endpoint-hint");
-      const stationSearchInput = document.getElementById("station-search");
-      const stationSearchBtn = document.getElementById("search-submit");
       const pollutantSelect = document.getElementById("pollutant-filter");
-      const SERIES_EDGE_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/timeseries`
+      const SERIES_EDGE_URL = projectRef
+        ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_timeseries`
         : "";
       const stationSelect = document.getElementById("station-select");
       const windowSelect = document.getElementById("window-select");
@@ -449,7 +442,6 @@
       let cachedRows = [];
       let selectedSeriesId = null;
       let seriesLookup = new Map();
-      const latestEtagBySearch = new Map();
       const seriesSinceByKey = new Map();
       const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
@@ -458,17 +450,14 @@
       const SERIES_CACHE_MAX_KEYS = 30;
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
 
-      if (stationSearchInput) {
-        stationSearchInput.value = currentStationLike;
-      }
-      regionBadge.textContent = `Search: ${currentStationLike}`;
+      regionBadge.textContent = region;
       endpointHint.textContent = EDGE_URL
         ? `Endpoint: ${EDGE_URL}`
-        : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+        : "Missing project ref. Add ?project_ref=... to the URL.";
       if (chartHintEl) {
         chartHintEl.textContent = SERIES_EDGE_URL
           ? `Endpoint: ${SERIES_EDGE_URL}`
-          : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+          : "Missing project ref. Add ?project_ref=... to the URL.";
       }
 
       function formatValue(value) {
@@ -528,28 +517,6 @@
           || row.phenomenon?.label
           || row.phenomenon_label
           || "Unknown";
-      }
-
-      function getNetworkLabel(row) {
-        const direct = String(row.network_name || "").trim();
-        if (direct) {
-          return direct;
-        }
-        const memberships = Array.isArray(row.station_network_memberships)
-          ? row.station_network_memberships
-          : [];
-        const primary = memberships.find((entry) => Boolean(entry?.is_primary));
-        const primaryLabel = String(primary?.network_label || primary?.network_code || "").trim();
-        if (primaryLabel) {
-          return primaryLabel;
-        }
-        const first = memberships[0];
-        const firstLabel = String(first?.network_label || first?.network_code || "").trim();
-        if (firstLabel) {
-          return firstLabel;
-        }
-        const connectorLabel = String(row.connector_label || row.connector_code || "").trim();
-        return connectorLabel || "Unknown";
       }
 
       function formatStationLabel(row) {
@@ -644,7 +611,6 @@
         ordered.forEach((row) => {
           const tr = document.createElement("tr");
           const station = formatStationLabel(row);
-          const network = getNetworkLabel(row);
           const pollutant = getPollutantLabel(row);
           const value = formatValue(row.last_value);
           const unit = row.uom_display || row.uom || "";
@@ -652,9 +618,6 @@
 
           const stationCell = document.createElement("td");
           stationCell.textContent = station;
-
-          const networkCell = document.createElement("td");
-          networkCell.textContent = network;
 
           const pollutantCell = document.createElement("td");
           pollutantCell.textContent = pollutant;
@@ -670,7 +633,6 @@
           observedCell.textContent = observed;
 
           tr.appendChild(stationCell);
-          tr.appendChild(networkCell);
           tr.appendChild(pollutantCell);
           tr.appendChild(valueCell);
           tr.appendChild(unitCell);
@@ -1078,10 +1040,19 @@
         }
         if (!SERIES_EDGE_URL) {
           if (chartErrorEl) {
-            chartErrorEl.textContent = "Missing cache endpoint base URL for series endpoint.";
+            chartErrorEl.textContent = "Missing project ref for series endpoint.";
           }
           chartStatusEl.textContent = "Error";
           clearSeriesChart("Series endpoint missing.");
+          setChartLoading(false);
+          return;
+        }
+        if (!anonKey) {
+          if (chartErrorEl) {
+            chartErrorEl.textContent = "Missing anon key.";
+          }
+          chartStatusEl.textContent = "Error";
+          clearSeriesChart("Missing anon key.");
           setChartLoading(false);
           return;
         }
@@ -1110,7 +1081,10 @@
             url.searchParams.set("since", since);
           }
           const etag = seriesEtagByKey.get(seriesKey) || null;
-          const requestHeaders = {};
+          const requestHeaders = {
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          };
           if (etag) {
             requestHeaders["If-None-Match"] = etag;
           }
@@ -1167,7 +1141,12 @@
           return "";
         }
         const url = new URL(EDGE_URL);
-        url.searchParams.set("station_like", currentStationLike);
+        if (regionParam) {
+          url.searchParams.set("region", region);
+        }
+        if (stationLike) {
+          url.searchParams.set("station_like", stationLike);
+        }
         if (limitParam) {
           url.searchParams.set("limit", limitParam);
         } else {
@@ -1181,32 +1160,24 @@
         errorEl.textContent = "";
         const endpoint = buildEndpoint();
         if (!endpoint) {
-          errorEl.textContent = "Missing cache endpoint base URL. Provide ?cache_base=... if needed.";
+          errorEl.textContent = "Missing project ref. Provide ?project_ref=... or inject at deploy.";
+          statusEl.textContent = "Error";
+          return;
+        }
+        if (!anonKey) {
+          errorEl.textContent = "Missing anon key. Provide ?anon_key=... or inject at deploy.";
           statusEl.textContent = "Error";
           return;
         }
         try {
-          const searchKey = currentStationLike.toLowerCase();
-          const etag = latestEtagBySearch.get(searchKey) || null;
-          const requestHeaders = {};
-          if (etag) {
-            requestHeaders["If-None-Match"] = etag;
-          }
           const response = await fetch(endpoint, {
-            headers: requestHeaders,
+            headers: {
+              Authorization: `Bearer ${anonKey}`,
+              apikey: anonKey,
+            },
           });
-          if (response.status === 304) {
-            await loadSeriesData();
-            lastUpdated.textContent = `Unchanged ${new Date().toLocaleTimeString()}`;
-            statusEl.textContent = "Live";
-            return;
-          }
           if (!response.ok) {
             throw new Error(`Request failed: ${response.status}`);
-          }
-          const responseEtag = response.headers.get("etag");
-          if (responseEtag) {
-            latestEtagBySearch.set(searchKey, responseEtag);
           }
           const payload = await response.json();
           cachedRows = payload.data || [];
@@ -1223,55 +1194,7 @@
         }
       }
 
-      function normalizeStationLike(value) {
-        if (!value) {
-          return null;
-        }
-        const trimmed = String(value).trim();
-        return trimmed ? trimmed : null;
-      }
-
-      async function runStationSearch() {
-        const rawValue = stationSearchInput ? stationSearchInput.value : "";
-        const normalized = normalizeStationLike(rawValue);
-        if (!normalized) {
-          errorEl.textContent = "Enter a station search term.";
-          return;
-        }
-        if (normalized === currentStationLike) {
-          await loadData();
-          return;
-        }
-        currentStationLike = normalized;
-        if (regionBadge) {
-          regionBadge.textContent = `Search: ${currentStationLike}`;
-        }
-        seriesSinceByKey.clear();
-        seriesEtagByKey.clear();
-        seriesPointCacheByKey.clear();
-        seriesGuidelineByKey.clear();
-        persistSeriesCacheToStorage();
-        const nextParams = new URLSearchParams(window.location.search);
-        nextParams.set("station_like", currentStationLike);
-        nextParams.delete("q");
-        const nextQuery = nextParams.toString();
-        const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
-        window.history.replaceState(null, "", nextUrl);
-        await loadData();
-      }
-
       document.getElementById("refresh").addEventListener("click", loadData);
-      if (stationSearchBtn) {
-        stationSearchBtn.addEventListener("click", runStationSearch);
-      }
-      if (stationSearchInput) {
-        stationSearchInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            runStationSearch();
-          }
-        });
-      }
       const chartRefreshBtn = document.getElementById("chart-refresh");
       if (chartRefreshBtn) {
         chartRefreshBtn.addEventListener("click", loadSeriesData);
