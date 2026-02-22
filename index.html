@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: blob:; frame-src https://challenges.cloudflare.com;"
+    />
     <title>UK Air Bristol Snapshot</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -592,7 +596,7 @@
                   turnstileTokenRejecter(new Error("Turnstile token timed out."));
                 }
                 clearTurnstilePendingState();
-              }, 15000);
+              }, 30000);
               turnstileApi.execute(turnstileWidgetId);
             });
             return token;
