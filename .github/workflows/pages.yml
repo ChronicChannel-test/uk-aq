@@ -31,6 +31,7 @@ jobs:
         env:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SB_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SB_PUBLISHABLE_DEFAULT_KEY }}
+          UK_AQ_TURNSTILE_SITE_KEY: ${{ secrets.UK_AQ_TURNSTILE_SITE_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

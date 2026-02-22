@@ -30,6 +30,7 @@ const DEFAULT_TARGETS = [
 ];
 const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
 const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/g;
+const turnstilePattern = /const TURNSTILE_SITE_KEY_PLACEHOLDER = "([^"]*)";/g;
 
 async function main() {
   const envText = await readFileIfExists(ENV_PATH);
@@ -39,6 +40,7 @@ async function main() {
 
   const projectRef = (nodeProcess.env.SUPABASE_PROJECT_REF || "").trim();
   const publishableKey = (nodeProcess.env.SB_PUBLISHABLE_DEFAULT_KEY || "").trim();
+  const turnstileSiteKey = (nodeProcess.env.UK_AQ_TURNSTILE_SITE_KEY || "").trim();
 
   if (!projectRef) {
     console.error("SUPABASE_PROJECT_REF is missing. Set it in .env or the environment.");
@@ -46,6 +48,10 @@ async function main() {
   }
   if (!publishableKey) {
     console.error("Publishable key is missing. Set SB_PUBLISHABLE_DEFAULT_KEY in .env or the environment.");
+    nodeProcess.exit(1);
+  }
+  if (!turnstileSiteKey) {
+    console.error("Turnstile site key is missing. Set UK_AQ_TURNSTILE_SITE_KEY in .env or the environment.");
     nodeProcess.exit(1);
   }
 
@@ -70,12 +76,19 @@ async function main() {
       "ANON_KEY_PLACEHOLDER",
       targetPath,
     );
+    updated = replacePlaceholder(
+      updated,
+      turnstilePattern,
+      `const TURNSTILE_SITE_KEY_PLACEHOLDER = "${turnstileSiteKey}";`,
+      "TURNSTILE_SITE_KEY_PLACEHOLDER",
+      targetPath,
+    );
 
     if (updated !== html) {
       await fs.writeFile(targetPath, updated);
-      console.log(`Injected SUPABASE_PROJECT_REF and publishable key into ${path.relative(REPO_ROOT, targetPath)}`);
+      console.log(`Injected SUPABASE_PROJECT_REF, publishable key, and Turnstile site key into ${path.relative(REPO_ROOT, targetPath)}`);
     } else {
-      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref and publishable key.`);
+      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref, publishable key, and Turnstile site key.`);
     }
   }
 }

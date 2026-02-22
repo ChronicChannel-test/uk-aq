@@ -61,6 +61,7 @@ Data flow across repos:
 - **Env vars (names only)**:
   - `SUPABASE_PROJECT_REF`
   - `SB_PUBLISHABLE_DEFAULT_KEY`
+  - `UK_AQ_TURNSTILE_SITE_KEY`
 - **Env files**: `.env` exists at repo root (no `.env.example` found).
 - **Commands (documented)**:
   - `node scripts/uk_aq_inject_project_ref.mjs`
