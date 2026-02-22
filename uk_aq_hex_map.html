@@ -3425,7 +3425,8 @@
         const container = ensureTurnstileContainer();
         turnstileWidgetId = turnstileApi.render(container, {
           sitekey: turnstileSiteKey,
-          size: "invisible",
+          appearance: "execute",
+          execution: "execute",
           callback: (token) => {
             if (turnstileTokenResolver) {
               turnstileTokenResolver(token);
@@ -7174,7 +7175,8 @@
 	        const container = ensureTurnstileContainer();
 	        turnstileWidgetId = turnstileApi.render(container, {
 	          sitekey: turnstileSiteKey,
-	          size: "invisible",
+	          appearance: "execute",
+	          execution: "execute",
 	          callback: (token) => {
 	            if (turnstileTokenResolver) {
 	              turnstileTokenResolver(token);
