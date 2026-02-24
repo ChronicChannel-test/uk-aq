@@ -465,6 +465,8 @@
       const SERIES_CACHE_MAX_KEYS = 30;
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
       const CACHE_SESSION_SKEW_MS = 10000;
+      const CACHE_API_TRANSIENT_RETRY_DELAY_MS = 300;
+      const CACHE_API_TRANSIENT_RETRY_STATUSES = new Set([502, 503, 504]);
       let cacheSessionReadyUntil = 0;
       let cacheSessionInflight = null;
       let turnstileScriptInflight = null;
@@ -490,6 +492,19 @@
 
       function hasFreshCacheSession() {
         return Date.now() < (cacheSessionReadyUntil - CACHE_SESSION_SKEW_MS);
+      }
+
+      function isSafeCacheApiMethod(method) {
+        const normalized = String(method || "GET").toUpperCase();
+        return normalized === "GET" || normalized === "HEAD";
+      }
+
+      function shouldRetryTransientStatus(status) {
+        return CACHE_API_TRANSIENT_RETRY_STATUSES.has(Number(status));
+      }
+
+      function waitMs(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
       }
 
       function ensureTurnstileContainer() {
@@ -644,10 +659,26 @@
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
         await ensureCacheSession(false);
-        const response = await fetch(input, { ...init, credentials: "include" });
+        const requestMethod = String(init?.method || "GET").toUpperCase();
+        let response;
+        try {
+          response = await fetch(input, { ...init, credentials: "include" });
+        } catch (error) {
+          if (!isSafeCacheApiMethod(requestMethod)) {
+            throw error;
+          }
+          await waitMs(CACHE_API_TRANSIENT_RETRY_DELAY_MS);
+          await ensureCacheSession(false);
+          return fetch(input, { ...init, credentials: "include" });
+        }
         if (response.status === 401 && retryOnAuthFailure) {
           clearCacheSessionState();
           await ensureCacheSession(true);
+          return fetch(input, { ...init, credentials: "include" });
+        }
+        if (isSafeCacheApiMethod(requestMethod) && shouldRetryTransientStatus(response.status)) {
+          await waitMs(CACHE_API_TRANSIENT_RETRY_DELAY_MS);
+          await ensureCacheSession(false);
           return fetch(input, { ...init, credentials: "include" });
         }
         return response;
