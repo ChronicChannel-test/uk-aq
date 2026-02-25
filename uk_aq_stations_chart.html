@@ -1308,9 +1308,11 @@
             if (!closest) {
               return;
             }
+            const dotX = xScale(closest.date);
+            const dotY = yScale(closest.value);
             dot
-              .attr("cx", xScale(closest.date))
-              .attr("cy", yScale(closest.value))
+              .attr("cx", dotX)
+              .attr("cy", dotY)
               .style("opacity", 1);
 
             if (chartTooltip) {
@@ -1323,8 +1325,22 @@
                 ${formatValue(closest.value)}${unit}
               `;
               if (chartRect) {
-                chartTooltip.style.left = `${event.clientX - chartRect.left + 12}px`;
-                chartTooltip.style.top = `${event.clientY - chartRect.top - 12}px`;
+                const tooltipWidth = chartTooltip.offsetWidth;
+                const tooltipHeight = chartTooltip.offsetHeight;
+                const pad = 8;
+                const pointGap = 14;
+                let tooltipLeft = dotX - tooltipWidth / 2;
+                tooltipLeft = Math.max(pad, Math.min(tooltipLeft, chartRect.width - tooltipWidth - pad));
+
+                const aboveTop = dotY - tooltipHeight - pointGap;
+                const belowTop = dotY + pointGap;
+                const hasRoomAbove = aboveTop >= pad;
+                const hasRoomBelow = belowTop + tooltipHeight <= chartRect.height - pad;
+                let tooltipTop = hasRoomAbove || !hasRoomBelow ? aboveTop : belowTop;
+                tooltipTop = Math.max(pad, Math.min(tooltipTop, chartRect.height - tooltipHeight - pad));
+
+                chartTooltip.style.left = `${tooltipLeft}px`;
+                chartTooltip.style.top = `${tooltipTop}px`;
               }
               chartTooltip.classList.add("visible");
             }
