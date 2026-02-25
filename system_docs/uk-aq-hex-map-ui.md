@@ -36,3 +36,8 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 ## Region selection (C&R)
 - `activeRegion` drives the C&R map scope.
 - URL param `map=` persists the active region in the address bar.
+
+## Cache session auth
+- Cache API calls now try the request first with `credentials: include`.
+- A Turnstile-backed `POST /api/aq/session/start` is attempted only after a `401` response.
+- Session expiry hints are shared across tabs in `localStorage` so quick multi-tab opens avoid redundant session minting.

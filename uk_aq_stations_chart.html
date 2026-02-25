@@ -471,6 +471,7 @@
       const SERIES_CACHE_MAX_KEYS = 30;
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
       const CACHE_SESSION_SKEW_MS = 10000;
+      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}`;
       const CACHE_API_TRANSIENT_RETRY_DELAY_MS = 300;
       const CACHE_API_TRANSIENT_RETRY_STATUSES = new Set([502, 503, 504]);
       let cacheSessionReadyUntil = 0;
@@ -495,11 +496,47 @@
           : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
       }
 
-      function clearCacheSessionState() {
+      function readCacheSessionHintUntil() {
+        try {
+          const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
+          if (!raw) {
+            return 0;
+          }
+          const parsed = Number(raw);
+          return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        } catch (_err) {
+          return 0;
+        }
+      }
+
+      function writeCacheSessionHintUntil(untilMs) {
+        try {
+          if (untilMs > 0) {
+            window.localStorage.setItem(CACHE_SESSION_HINT_STORAGE_KEY, String(Math.floor(untilMs)));
+          } else {
+            window.localStorage.removeItem(CACHE_SESSION_HINT_STORAGE_KEY);
+          }
+        } catch (_err) {
+          return;
+        }
+      }
+
+      function syncCacheSessionHint() {
+        const hintedUntil = readCacheSessionHintUntil();
+        if (hintedUntil > cacheSessionReadyUntil) {
+          cacheSessionReadyUntil = hintedUntil;
+        }
+      }
+
+      function clearCacheSessionState(clearSharedHint = true) {
         cacheSessionReadyUntil = 0;
+        if (clearSharedHint) {
+          writeCacheSessionHintUntil(0);
+        }
       }
 
       function hasFreshCacheSession() {
+        syncCacheSessionHint();
         return Date.now() < (cacheSessionReadyUntil - CACHE_SESSION_SKEW_MS);
       }
 
@@ -515,6 +552,13 @@
       function waitMs(ms) {
         return new Promise((resolve) => setTimeout(resolve, ms));
       }
+
+      syncCacheSessionHint();
+      window.addEventListener("storage", (event) => {
+        if (event.key === CACHE_SESSION_HINT_STORAGE_KEY) {
+          syncCacheSessionHint();
+        }
+      });
 
       function ensureTurnstileContainer() {
         let container = document.getElementById("uk-aq-turnstile-widget");
@@ -659,6 +703,7 @@
               30000,
               Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
             );
+            writeCacheSessionHintUntil(cacheSessionReadyUntil);
           })().finally(() => {
             cacheSessionInflight = null;
           });
@@ -667,7 +712,6 @@
       }
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-        await ensureCacheSession(false);
         const requestMethod = String(init?.method || "GET").toUpperCase();
         let response;
         try {
@@ -677,17 +721,21 @@
             throw error;
           }
           await waitMs(CACHE_API_TRANSIENT_RETRY_DELAY_MS);
-          await ensureCacheSession(false);
           return fetch(input, { ...init, credentials: "include" });
         }
         if (response.status === 401 && retryOnAuthFailure) {
+          clearCacheSessionState(false);
+          await ensureCacheSession(false);
+          response = await fetch(input, { ...init, credentials: "include" });
+          if (response.status !== 401) {
+            return response;
+          }
           clearCacheSessionState();
           await ensureCacheSession(true);
           return fetch(input, { ...init, credentials: "include" });
         }
         if (isSafeCacheApiMethod(requestMethod) && shouldRetryTransientStatus(response.status)) {
           await waitMs(CACHE_API_TRANSIENT_RETRY_DELAY_MS);
-          await ensureCacheSession(false);
           return fetch(input, { ...init, credentials: "include" });
         }
         return response;

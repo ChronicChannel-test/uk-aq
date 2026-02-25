@@ -3328,6 +3328,7 @@
       let selectedCell = null;
       let pinnedTooltipCell = null;
       const CACHE_SESSION_SKEW_MS = 10000;
+      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:uk`;
       let cacheAuthToken = null;
       let cacheAuthTokenExpiresAt = 0;
       let cacheAuthInflight = null;
@@ -3355,17 +3356,61 @@
           : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
       }
 
-      function clearCacheAuthToken() {
+      function readCacheSessionHintUntil() {
+        try {
+          const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
+          if (!raw) {
+            return 0;
+          }
+          const parsed = Number(raw);
+          return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        } catch (_err) {
+          return 0;
+        }
+      }
+
+      function writeCacheSessionHintUntil(untilMs) {
+        try {
+          if (untilMs > 0) {
+            window.localStorage.setItem(CACHE_SESSION_HINT_STORAGE_KEY, String(Math.floor(untilMs)));
+          } else {
+            window.localStorage.removeItem(CACHE_SESSION_HINT_STORAGE_KEY);
+          }
+        } catch (_err) {
+          return;
+        }
+      }
+
+      function syncCacheSessionHint() {
+        const hintedUntil = readCacheSessionHintUntil();
+        if (hintedUntil > cacheAuthTokenExpiresAt) {
+          cacheAuthToken = "session";
+          cacheAuthTokenExpiresAt = hintedUntil;
+        }
+      }
+
+      function clearCacheAuthToken(clearSharedHint = true) {
         cacheAuthToken = null;
         cacheAuthTokenExpiresAt = 0;
+        if (clearSharedHint) {
+          writeCacheSessionHintUntil(0);
+        }
       }
 
       function hasFreshCacheAuthToken() {
+        syncCacheSessionHint();
         return Boolean(
           cacheAuthToken
           && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS),
         );
       }
+
+      syncCacheSessionHint();
+      window.addEventListener("storage", (event) => {
+        if (event.key === CACHE_SESSION_HINT_STORAGE_KEY) {
+          syncCacheSessionHint();
+        }
+      });
 
       function ensureTurnstileContainer() {
         let container = document.getElementById("uk-aq-turnstile-widget-uk");
@@ -3511,6 +3556,7 @@
               30000,
               Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
             );
+            writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
             return cacheAuthToken;
           })().finally(() => {
             cacheAuthInflight = null;
@@ -3520,12 +3566,18 @@
       }
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-        await getCacheAuthToken(false);
         const response = await fetch(input, { ...init, credentials: "include" });
         if (response.status === 401 && retryOnAuthFailure) {
+          clearCacheAuthToken(false);
+          await getCacheAuthToken(false);
+          let retried = await fetch(input, { ...init, credentials: "include" });
+          if (retried.status !== 401) {
+            return retried;
+          }
           clearCacheAuthToken();
           await getCacheAuthToken(true);
-          return fetch(input, { ...init, credentials: "include" });
+          retried = await fetch(input, { ...init, credentials: "include" });
+          return retried;
         }
         return response;
       }
@@ -7071,6 +7123,7 @@
 	      let selectedPconCode = null;
 	      let selectedCell = null;
 	      const CACHE_SESSION_SKEW_MS = 10000;
+	      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:cr`;
 	      let cacheAuthToken = null;
 	      let cacheAuthTokenExpiresAt = 0;
 	      let cacheAuthInflight = null;
@@ -7105,17 +7158,61 @@
 	      }
 	      updateEndpointHint();
 
-	      function clearCacheAuthToken() {
+	      function readCacheSessionHintUntil() {
+	        try {
+	          const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
+	          if (!raw) {
+	            return 0;
+	          }
+	          const parsed = Number(raw);
+	          return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+	        } catch (_err) {
+	          return 0;
+	        }
+	      }
+
+	      function writeCacheSessionHintUntil(untilMs) {
+	        try {
+	          if (untilMs > 0) {
+	            window.localStorage.setItem(CACHE_SESSION_HINT_STORAGE_KEY, String(Math.floor(untilMs)));
+	          } else {
+	            window.localStorage.removeItem(CACHE_SESSION_HINT_STORAGE_KEY);
+	          }
+	        } catch (_err) {
+	          return;
+	        }
+	      }
+
+	      function syncCacheSessionHint() {
+	        const hintedUntil = readCacheSessionHintUntil();
+	        if (hintedUntil > cacheAuthTokenExpiresAt) {
+	          cacheAuthToken = "session";
+	          cacheAuthTokenExpiresAt = hintedUntil;
+	        }
+	      }
+
+	      function clearCacheAuthToken(clearSharedHint = true) {
 	        cacheAuthToken = null;
 	        cacheAuthTokenExpiresAt = 0;
+	        if (clearSharedHint) {
+	          writeCacheSessionHintUntil(0);
+	        }
 	      }
 
 	      function hasFreshCacheAuthToken() {
+	        syncCacheSessionHint();
 	        return Boolean(
 	          cacheAuthToken
 	          && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS),
 	        );
 	      }
+
+	      syncCacheSessionHint();
+	      window.addEventListener("storage", (event) => {
+	        if (event.key === CACHE_SESSION_HINT_STORAGE_KEY) {
+	          syncCacheSessionHint();
+	        }
+	      });
 
 	      function ensureTurnstileContainer() {
 	        let container = document.getElementById("uk-aq-turnstile-widget-cr");
@@ -7261,6 +7358,7 @@
 	              30000,
 	              Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
 	            );
+	            writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
 	            return cacheAuthToken;
 	          })().finally(() => {
 	            cacheAuthInflight = null;
@@ -7270,12 +7368,18 @@
 	      }
 
 	      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-	        await getCacheAuthToken(false);
 	        const response = await fetch(input, { ...init, credentials: "include" });
 	        if (response.status === 401 && retryOnAuthFailure) {
+	          clearCacheAuthToken(false);
+	          await getCacheAuthToken(false);
+	          let retried = await fetch(input, { ...init, credentials: "include" });
+	          if (retried.status !== 401) {
+	            return retried;
+	          }
 	          clearCacheAuthToken();
 	          await getCacheAuthToken(true);
-	          return fetch(input, { ...init, credentials: "include" });
+	          retried = await fetch(input, { ...init, credentials: "include" });
+	          return retried;
 	        }
 	        return response;
 	      }

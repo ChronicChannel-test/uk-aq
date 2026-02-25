@@ -42,7 +42,7 @@ Data flow across repos:
   - [uk_aq_hex_map.html](uk_aq_hex_map.html): `latest`, `pcon-hex`, `la-hex` via cache proxy routes under `/api/aq/*`; `uk_aq_population` remains a direct Supabase edge function route when enabled.
   - [hex_map_test.html](hex_map_test.html), [hex_map_test1.html](hex_map_test1.html), [hex_map_test2.html](hex_map_test2.html), [hex_map_test3.html](hex_map_test3.html), [hex_map_test_met1.html](hex_map_test_met1.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_population` (varies per file).
 - **Storage**: none found.
-- **Auth**: cached AQ read routes (`/api/aq/*`) use a Cloudflare Worker session cookie (`uk_aq_edge_session`, HttpOnly) initialized via `POST /api/aq/session/start`; session start sends `X-UK-AQ-Session-Init: 1` plus `CF-Turnstile-Token` from Turnstile solve, and browser fetches use `credentials: include` without `Authorization`/`apikey` headers for AQ reads. Direct Supabase calls (for example population/test pages) still use the publishable key flow where configured.
+- **Auth**: cached AQ read routes (`/api/aq/*`) use a Cloudflare Worker session cookie (`uk_aq_edge_session`, HttpOnly). Browser fetches use `credentials: include` without `Authorization`/`apikey` headers for AQ reads, and only call `POST /api/aq/session/start` after a `401` response. Session start sends `X-UK-AQ-Session-Init: 1` plus `CF-Turnstile-Token` from Turnstile solve. Direct Supabase calls (for example population/test pages) still use the publishable key flow where configured.
 - **Realtime**: none found.
 
 ### Writes
