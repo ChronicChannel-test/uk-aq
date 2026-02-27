@@ -3566,13 +3566,6 @@
       }
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-        if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
-          try {
-            await getCacheAuthToken(false);
-          } catch (_err) {
-            // Fall back to the existing 401 retry flow below.
-          }
-        }
         const response = await fetch(input, { ...init, credentials: "include" });
         if (response.status === 401 && retryOnAuthFailure) {
           clearCacheAuthToken(false);
@@ -7375,13 +7368,6 @@
 	      }
 
 	      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-	        if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
-	          try {
-	            await getCacheAuthToken(false);
-	          } catch (_err) {
-	            // Fall back to the existing 401 retry flow below.
-	          }
-	        }
 	        const response = await fetch(input, { ...init, credentials: "include" });
 	        if (response.status === 401 && retryOnAuthFailure) {
 	          clearCacheAuthToken(false);
