@@ -26,6 +26,9 @@ Cons:
 
 ## TODO
 
+### Phase 0: Chart Data Coverage
+- [ ] Update 30-day chart data path to combine ingest DB (recent/hot window) + history DB (older window) so retention pruning does not create gaps.
+
 ### Phase 1: Accounts
 - [ ] Confirm auth method (magic link vs password)
 - [ ] Add auth UI (sign up, sign in, sign out)
