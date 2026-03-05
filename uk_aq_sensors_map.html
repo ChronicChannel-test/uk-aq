@@ -223,6 +223,8 @@
         const limitParam = parsePositiveInt(params.get("limit"));
         const rowLimit = limitParam || 50000;
         const readingLimit = Math.max(1, Math.min(10000, rowLimit));
+        const connectorProbeMaxParam = parsePositiveInt(params.get("connector_probe_max"));
+        const connectorProbeMax = Math.max(1, Math.min(40, connectorProbeMaxParam || 12));
         const updatedWithinParam = normalizeUpdatedWithin(params.get("updated_within"));
         let currentUpdatedWithin = updatedWithinParam || "all";
 
@@ -525,13 +527,16 @@
           return url.toString();
         }
 
-        function buildStationsEndpoint(baseEndpoint) {
+        function buildStationsEndpoint(baseEndpoint, connectorId = null) {
           if (!baseEndpoint) {
             return "";
           }
           const url = new URL(baseEndpoint);
           if (!url.searchParams.has("limit")) {
             url.searchParams.set("limit", "20000");
+          }
+          if (connectorId !== null && connectorId !== undefined) {
+            url.searchParams.set("connector_id", String(connectorId));
           }
           return url.toString();
         }
@@ -886,17 +891,48 @@
           return Array.isArray(payload?.data) ? payload.data : [];
         }
 
+        async function fetchGeometryRowsForEndpoint(baseEndpoint) {
+          const allRows = await fetchRowsFromEndpoint(
+            buildStationsEndpoint(baseEndpoint),
+            "Station geometry request failed",
+          );
+          const shardPromises = [];
+          for (let connectorId = 1; connectorId <= connectorProbeMax; connectorId += 1) {
+            shardPromises.push(
+              fetchRowsFromEndpoint(
+                buildStationsEndpoint(baseEndpoint, connectorId),
+                `Station geometry request failed (connector ${connectorId})`,
+              ).catch((error) => {
+                console.warn("Station geometry connector shard failed", { connectorId, error });
+                return [];
+              }),
+            );
+          }
+          const shardResults = await Promise.all(shardPromises);
+          const byId = new Map();
+          [...allRows, ...shardResults.flat()].forEach((row) => {
+            const id = normalizeStationId(row?.id);
+            if (!id) {
+              return;
+            }
+            byId.set(id, row);
+          });
+          return Array.from(byId.values());
+        }
+
         async function getStationGeometryRows() {
           if (stationGeometryRowsPromise) {
             return stationGeometryRowsPromise;
           }
           stationGeometryRowsPromise = (async () => {
-            const candidates = [buildStationsEndpoint(STATIONS_URL), buildStationsEndpoint(STATIONS_MAP_FALLBACK_URL)]
-              .filter(Boolean);
+            const candidates = [STATIONS_URL, STATIONS_MAP_FALLBACK_URL].filter(Boolean);
             let lastError = null;
             for (const endpoint of candidates) {
               try {
-                return await fetchRowsFromEndpoint(endpoint, "Station geometry request failed");
+                const rows = await fetchGeometryRowsForEndpoint(endpoint);
+                if (rows.length > 0) {
+                  return rows;
+                }
               } catch (error) {
                 lastError = error;
                 console.warn("Station geometry endpoint failed", { endpoint, error });
