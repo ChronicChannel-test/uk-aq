@@ -41,3 +41,4 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - Cache API calls now try the request first with `credentials: include`.
 - A Turnstile-backed `POST /api/aq/session/start` is attempted only after a `401` response.
 - Session expiry hints are shared across tabs in `localStorage` so quick multi-tab opens avoid redundant session minting.
+- If a cache fetch fails with the browser-level Access/CORS pattern (`TypeError: Failed to fetch`), the page redirects to Cloudflare Access login for the current hostname and then returns to the same map URL.

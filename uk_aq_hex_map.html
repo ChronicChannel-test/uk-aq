@@ -3029,14 +3029,14 @@
         {
           id: "pcon24",
           label: "2024 constituencies",
-          hexUrl: "data/PCON/uk-constituencies-2023.hexjson",
+          hexUrl: "/uk-aq/data/PCON/uk-constituencies-2023.hexjson",
           version: "2024",
           effectiveFrom: MAP_CUTOVER,
         },
         {
           id: "pcon23",
           label: "Pre-2024 constituencies",
-          hexUrl: "data/PCON/uk-constituencies-2017.hexjson",
+          hexUrl: "/uk-aq/data/PCON/uk-constituencies-2017.hexjson",
           version: "2023",
           effectiveUntil: MAP_CUTOVER,
         },
@@ -3587,6 +3587,55 @@
           return retried;
         }
         return response;
+      }
+
+      const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
+
+      function isLikelyAccessFetchFailure(error) {
+        if (!(error instanceof TypeError)) {
+          return false;
+        }
+        const message = String(error.message || "").toLowerCase();
+        return message.includes("failed to fetch") || message.includes("networkerror");
+      }
+
+      function buildAccessLoginUrl() {
+        const host = window.location.hostname || "";
+        if (!host) {
+          return null;
+        }
+        const appSlug = host.split(".")[0];
+        if (!appSlug) {
+          return null;
+        }
+        const loginOrigin = `https://${appSlug}.cloudflareaccess.com`;
+        const redirectPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        return `${loginOrigin}/cdn-cgi/access/login/${host}?redirect_url=${encodeURIComponent(redirectPath)}`;
+      }
+
+      function maybeRedirectToAccessLogin(error) {
+        if (!cacheOrigin || !cacheSessionUrl || !isLikelyAccessFetchFailure(error)) {
+          return false;
+        }
+        if ((window.location.hostname || "").endsWith(".cloudflareaccess.com")) {
+          return false;
+        }
+        const loginUrl = buildAccessLoginUrl();
+        if (!loginUrl) {
+          return false;
+        }
+        try {
+          const now = Date.now();
+          const last = Number(sessionStorage.getItem(ACCESS_LOGIN_REDIRECT_KEY) || "0");
+          if (Number.isFinite(last) && now - last < 10000) {
+            return false;
+          }
+          sessionStorage.setItem(ACCESS_LOGIN_REDIRECT_KEY, String(now));
+        } catch (_err) {
+          // Ignore storage failures and continue with redirect.
+        }
+        window.location.assign(loginUrl);
+        return true;
       }
 
       function inferProjectRefFromHost() {
@@ -6522,6 +6571,14 @@
           if (isStale()) {
             return;
           }
+          if (maybeRedirectToAccessLogin(error)) {
+            if (errorEl) {
+              errorEl.textContent = "Cloudflare Access login required. Redirecting...";
+              errorEl.hidden = false;
+            }
+            setStatus("Error");
+            return;
+          }
           const message = error instanceof Error ? error.message : String(error);
           console.error("uk_aq UK map load error", error);
           if (errorEl) {
@@ -6849,7 +6906,7 @@
       const LA_CONFIG = {
         id: "la23",
         label: "2023 local authorities",
-        hexUrl: "data/LAD/uk_aq_la_hex_2023.json",
+        hexUrl: "/uk-aq/data/LAD/uk_aq_la_hex_2023.json",
         version: "2023",
       };
       const DEFAULT_REGION = "London";
@@ -7396,6 +7453,55 @@
 	          return retried;
 	        }
 	        return response;
+	      }
+
+	      const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
+
+	      function isLikelyAccessFetchFailure(error) {
+	        if (!(error instanceof TypeError)) {
+	          return false;
+	        }
+	        const message = String(error.message || "").toLowerCase();
+	        return message.includes("failed to fetch") || message.includes("networkerror");
+	      }
+
+	      function buildAccessLoginUrl() {
+	        const host = window.location.hostname || "";
+	        if (!host) {
+	          return null;
+	        }
+	        const appSlug = host.split(".")[0];
+	        if (!appSlug) {
+	          return null;
+	        }
+	        const loginOrigin = `https://${appSlug}.cloudflareaccess.com`;
+	        const redirectPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+	        return `${loginOrigin}/cdn-cgi/access/login/${host}?redirect_url=${encodeURIComponent(redirectPath)}`;
+	      }
+
+	      function maybeRedirectToAccessLogin(error) {
+	        if (!cacheOrigin || !cacheSessionUrl || !isLikelyAccessFetchFailure(error)) {
+	          return false;
+	        }
+	        if ((window.location.hostname || "").endsWith(".cloudflareaccess.com")) {
+	          return false;
+	        }
+	        const loginUrl = buildAccessLoginUrl();
+	        if (!loginUrl) {
+	          return false;
+	        }
+	        try {
+	          const now = Date.now();
+	          const last = Number(sessionStorage.getItem(ACCESS_LOGIN_REDIRECT_KEY) || "0");
+	          if (Number.isFinite(last) && now - last < 10000) {
+	            return false;
+	          }
+	          sessionStorage.setItem(ACCESS_LOGIN_REDIRECT_KEY, String(now));
+	        } catch (_err) {
+	          // Ignore storage failures and continue with redirect.
+	        }
+	        window.location.assign(loginUrl);
+	        return true;
 	      }
 
 	      if (mapSelect) {
@@ -10063,6 +10169,14 @@
           setStatus("Live");
         } catch (error) {
           if (isStale()) {
+            return;
+          }
+          if (maybeRedirectToAccessLogin(error)) {
+            if (errorEl) {
+              errorEl.textContent = "Cloudflare Access login required. Redirecting...";
+              errorEl.hidden = false;
+            }
+            setStatus("Error");
             return;
           }
           const message = error instanceof Error ? error.message : String(error);
