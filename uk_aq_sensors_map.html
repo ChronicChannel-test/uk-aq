@@ -176,6 +176,13 @@
       <div class="bar-top">
         <span class="bar-title">UK AQ sensor map</span>
         <span class="spacer"></span>
+        <label for="reading-scope">Readings</label>
+        <select id="reading-scope">
+          <option value="all">PM2.5 + PM10 + NO2</option>
+          <option value="pm2.5">PM2.5 only</option>
+          <option value="pm10">PM10 only</option>
+          <option value="no2">NO2 only</option>
+        </select>
         <label for="updated-within">Updated within</label>
         <select id="updated-within">
           <option value="all">Any time</option>
@@ -225,6 +232,8 @@
         const readingLimit = Math.max(1, Math.min(10000, rowLimit));
         const connectorProbeMaxParam = parsePositiveInt(params.get("connector_probe_max"));
         const connectorProbeMax = Math.max(1, Math.min(40, connectorProbeMaxParam || 12));
+        const readingScopeParam = normalizeReadingScope(params.get("reading_scope"));
+        let currentReadingScope = readingScopeParam || "all";
         const updatedWithinParam = normalizeUpdatedWithin(params.get("updated_within"));
         let currentUpdatedWithin = updatedWithinParam || "all";
 
@@ -238,6 +247,7 @@
         const lastUpdatedEl = document.getElementById("last-updated");
         const endpointHintEl = document.getElementById("endpoint-hint");
         const errorEl = document.getElementById("error");
+        const readingScopeSelect = document.getElementById("reading-scope");
         const updatedWithinSelect = document.getElementById("updated-within");
 
         const map = L.map("map", { preferCanvas: true, zoomControl: true }).setView([54.5, -2.5], 6);
@@ -269,6 +279,9 @@
         }
         if (updatedWithinSelect) {
           updatedWithinSelect.value = currentUpdatedWithin;
+        }
+        if (readingScopeSelect) {
+          readingScopeSelect.value = currentReadingScope;
         }
 
         function getUrlOrigin(value) {
@@ -306,6 +319,34 @@
             return normalized;
           }
           return "all";
+        }
+
+        function normalizeReadingScope(value) {
+          const normalized = normalizeText(value).toLowerCase();
+          if (normalized === "pm2.5" || normalized === "pm10" || normalized === "no2") {
+            return normalized;
+          }
+          return "all";
+        }
+
+        function formatPollutantKey(value) {
+          if (value === "pm2.5") {
+            return "PM2.5";
+          }
+          if (value === "pm10") {
+            return "PM10";
+          }
+          if (value === "no2") {
+            return "NO2";
+          }
+          return value || "readings";
+        }
+
+        function getActiveReadingPollutants() {
+          if (currentReadingScope === "all") {
+            return READING_POLLUTANTS;
+          }
+          return [currentReadingScope];
         }
 
         function setStatus(message, isError = false) {
@@ -1069,7 +1110,11 @@
 
           let message = `Loaded ${plotted} sensors`;
           const withReadings = filtered.filter((station) => station.latestReadings.size > 0).length;
-          message += ` · ${withReadings} with readings`;
+          if (currentReadingScope === "all") {
+            message += ` · ${withReadings} with readings (PM2.5/PM10/NO2)`;
+          } else {
+            message += ` · ${withReadings} with ${formatPollutantKey(currentReadingScope)}`;
+          }
           if (currentUpdatedWithin !== "all") {
             message += ` (${currentUpdatedWithin})`;
           }
@@ -1083,7 +1128,7 @@
           setStatus("Loading…");
           setError("");
 
-          const readingEndpoints = READING_POLLUTANTS
+          const readingEndpoints = getActiveReadingPollutants()
             .map((pollutantKey) => ({
               pollutantKey,
               endpoint: buildLatestEndpoint(pollutantKey),
@@ -1127,12 +1172,17 @@
           }
         }
 
-        function updateUpdatedWithinUrlParam() {
+        function updateControlUrlParams() {
           const nextParams = new URLSearchParams(window.location.search);
           if (currentUpdatedWithin === "all") {
             nextParams.delete("updated_within");
           } else {
             nextParams.set("updated_within", currentUpdatedWithin);
+          }
+          if (currentReadingScope === "all") {
+            nextParams.delete("reading_scope");
+          } else {
+            nextParams.set("reading_scope", currentReadingScope);
           }
           const query = nextParams.toString();
           const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
@@ -1149,8 +1199,16 @@
         if (updatedWithinSelect) {
           updatedWithinSelect.addEventListener("change", () => {
             currentUpdatedWithin = normalizeUpdatedWithin(updatedWithinSelect.value);
-            updateUpdatedWithinUrlParam();
+            updateControlUrlParams();
             renderStations();
+          });
+        }
+
+        if (readingScopeSelect) {
+          readingScopeSelect.addEventListener("change", () => {
+            currentReadingScope = normalizeReadingScope(readingScopeSelect.value);
+            updateControlUrlParams();
+            loadData();
           });
         }
 
