@@ -27,6 +27,7 @@ const DEFAULT_TARGETS = [
   "uk_aq_hex_map.html",
   "index.html",
   "uk_aq_stations_chart.html",
+  "uk_aq_sensors_map.html",
 ];
 const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
 const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/g;
