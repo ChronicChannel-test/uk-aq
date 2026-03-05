@@ -248,7 +248,7 @@
         const markerRenderer = L.canvas({ padding: 0.25 });
 
         let groupedStationsCache = [];
-        let stationCoordinateLookupPromise = null;
+        let stationGeometryRowsPromise = null;
         let hasAutoFit = false;
 
         let cacheSessionReadyUntil = 0;
@@ -521,6 +521,17 @@
           return url.toString();
         }
 
+        function buildStationsEndpoint(baseEndpoint) {
+          if (!baseEndpoint) {
+            return "";
+          }
+          const url = new URL(baseEndpoint);
+          if (!url.searchParams.has("limit")) {
+            url.searchParams.set("limit", "20000");
+          }
+          return url.toString();
+        }
+
         function parseDate(value) {
           if (!value) {
             return null;
@@ -652,13 +663,18 @@
           }
           const memberships = Array.isArray(row?.station_network_memberships)
             ? row.station_network_memberships
-            : [];
-          const primary = memberships.find((entry) => Boolean(entry?.is_primary));
+            : (Array.isArray(row?.network_memberships) ? row.network_memberships : []);
+          const normalizedMemberships = memberships.map((entry) => ({
+            network_label: entry?.network_label ?? entry?.label ?? null,
+            network_code: entry?.network_code ?? entry?.connector_code ?? null,
+            is_primary: Boolean(entry?.is_primary),
+          }));
+          const primary = normalizedMemberships.find((entry) => Boolean(entry?.is_primary));
           const primaryLabel = normalizeText(primary?.network_label || primary?.network_code);
           if (primaryLabel) {
             return primaryLabel;
           }
-          const first = memberships[0];
+          const first = normalizedMemberships[0];
           const firstLabel = normalizeText(first?.network_label || first?.network_code);
           if (firstLabel) {
             return firstLabel;
@@ -677,6 +693,29 @@
           ) || "Unknown station";
         }
 
+        function getStationLabel(row) {
+          return normalizeText(
+            row?.station_label
+              || row?.label
+              || row?.station?.label
+              || row?.display_name
+              || row?.station_name
+              || row?.station?.station_name,
+          ) || "Unknown station";
+        }
+
+        function getStationSummary(row, allowTopLevelId = false) {
+          const fallbackId = allowTopLevelId ? row?.id : null;
+          const stationLabel = getStationLabel(row);
+          const stationName = getStationName(row);
+          return {
+            stationId: normalizeStationId(row?.station_id ?? row?.station?.id ?? fallbackId),
+            stationName: stationName === "Unknown station" ? stationLabel : stationName,
+            stationLabel,
+            network: getNetworkLabel(row),
+          };
+        }
+
         function rowObservedAt(row) {
           return normalizeText(row?.last_value_at || row?.observed_at || row?.latest_value_at);
         }
@@ -685,44 +724,65 @@
           return Number.isFinite(station?.lat) && Number.isFinite(station?.lon);
         }
 
+        function makeStationRecord(summary, coords, keyPrefix) {
+          return {
+            key: `${keyPrefix}:${summary.stationId || normalizeLabelKey(summary.stationLabel) || summary.stationName}`,
+            stationId: summary.stationId,
+            stationName: summary.stationName,
+            stationLabel: summary.stationLabel,
+            network: summary.network,
+            lat: coords ? coords.lat : null,
+            lon: coords ? coords.lon : null,
+            latestReadings: new Map(),
+            latestObservedAt: "",
+            latestObservedMs: null,
+          };
+        }
+
+        function mergeReadingIntoStation(targetStation, sourceStation) {
+          if (targetStation.stationName === "Unknown station" && sourceStation.stationName !== "Unknown station") {
+            targetStation.stationName = sourceStation.stationName;
+          }
+          if (!targetStation.stationLabel || targetStation.stationLabel === "Unknown station") {
+            targetStation.stationLabel = sourceStation.stationLabel;
+          }
+          if (targetStation.network === "Unknown" && sourceStation.network !== "Unknown") {
+            targetStation.network = sourceStation.network;
+          }
+          sourceStation.latestReadings.forEach((reading, pollutant) => {
+            const existing = targetStation.latestReadings.get(pollutant);
+            const existingMs = existing?.observed_ms ?? null;
+            if (!existing || (reading.observed_ms !== null && (existingMs === null || reading.observed_ms > existingMs))) {
+              targetStation.latestReadings.set(pollutant, reading);
+            }
+          });
+          if (
+            sourceStation.latestObservedMs !== null
+            && (targetStation.latestObservedMs === null || sourceStation.latestObservedMs > targetStation.latestObservedMs)
+          ) {
+            targetStation.latestObservedMs = sourceStation.latestObservedMs;
+            targetStation.latestObservedAt = sourceStation.latestObservedAt;
+          }
+        }
+
         function groupStationRows(rows) {
           const grouped = new Map();
           const safeRows = Array.isArray(rows) ? rows : [];
 
           safeRows.forEach((row) => {
-            const stationId = normalizeStationId(row?.station_id ?? row?.station?.id);
-            const stationName = getStationName(row);
-            const stationLabel = normalizeText(row?.station_label || row?.station?.label || stationName);
-            const network = getNetworkLabel(row);
+            const summary = getStationSummary(row, false);
             const coords = extractCoordinatesFromRow(row);
-            const fallbackKey = `${network}::${stationLabel}::${coords ? `${coords.lat.toFixed(5)},${coords.lon.toFixed(5)}` : "no-coords"}`;
-            const key = stationId ? `id:${stationId}` : fallbackKey;
+            const fallbackKey = `${summary.network}::${summary.stationLabel}::${coords ? `${coords.lat.toFixed(5)},${coords.lon.toFixed(5)}` : "no-coords"}`;
+            const key = summary.stationId ? `id:${summary.stationId}` : fallbackKey;
 
             if (!grouped.has(key)) {
-              grouped.set(key, {
-                key,
-                stationId,
-                stationName,
-                stationLabel,
-                network,
-                lat: coords ? coords.lat : null,
-                lon: coords ? coords.lon : null,
-                latestReadings: new Map(),
-                latestObservedAt: "",
-                latestObservedMs: null,
-              });
+              grouped.set(key, makeStationRecord(summary, coords, "reading"));
             }
 
             const station = grouped.get(key);
             if (!hasCoordinates(station) && coords) {
               station.lat = coords.lat;
               station.lon = coords.lon;
-            }
-            if (station.network === "Unknown" && network !== "Unknown") {
-              station.network = network;
-            }
-            if (station.stationName === "Unknown station" && stationName !== "Unknown station") {
-              station.stationName = stationName;
             }
 
             const pollutant = getPollutantLabel(row);
@@ -752,34 +812,68 @@
           return Array.from(grouped.values()).sort((a, b) => a.stationName.localeCompare(b.stationName));
         }
 
-        function buildCoordinateLookup(rows) {
+        function buildGeometryStationBundle(rows) {
+          const stations = [];
           const byId = new Map();
           const byLabel = new Map();
           (Array.isArray(rows) ? rows : []).forEach((row) => {
+            const summary = getStationSummary(row, true);
             const coords = extractCoordinatesFromRow(row);
             if (!coords) {
               return;
             }
-            const stationId = normalizeStationId(row?.id ?? row?.station_id ?? row?.station?.id);
-            if (stationId) {
-              byId.set(stationId, coords);
+            const station = makeStationRecord(summary, coords, "geometry");
+            stations.push(station);
+            if (station.stationId && !byId.has(station.stationId)) {
+              byId.set(station.stationId, station);
             }
-            const label = normalizeLabelKey(row?.label || row?.station_label || row?.display_name);
-            if (label && !byLabel.has(label)) {
-              byLabel.set(label, coords);
+            const labelKey = normalizeLabelKey(station.stationLabel || station.stationName);
+            if (labelKey && !byLabel.has(labelKey)) {
+              byLabel.set(labelKey, station);
             }
           });
-          return { byId, byLabel };
+          return { stations, byId, byLabel };
         }
 
-        async function fetchStationCoordinatesRows(endpoint) {
-          const url = new URL(endpoint);
-          if (!url.searchParams.has("limit")) {
-            url.searchParams.set("limit", "20000");
-          }
-          const response = await fetchCacheApi(url.toString());
+        function mergeStations(geometryBundle, readingStations) {
+          const mergedStations = [...geometryBundle.stations];
+          const matchedReadingKeys = new Set();
+
+          readingStations.forEach((readingStation) => {
+            let target = null;
+            if (readingStation.stationId) {
+              target = geometryBundle.byId.get(readingStation.stationId) || null;
+            }
+            if (!target) {
+              const labelKey = normalizeLabelKey(readingStation.stationLabel || readingStation.stationName);
+              if (labelKey) {
+                target = geometryBundle.byLabel.get(labelKey) || null;
+              }
+            }
+            if (!target) {
+              return;
+            }
+            matchedReadingKeys.add(readingStation.key);
+            mergeReadingIntoStation(target, readingStation);
+          });
+
+          readingStations.forEach((readingStation) => {
+            if (matchedReadingKeys.has(readingStation.key)) {
+              return;
+            }
+            if (!hasCoordinates(readingStation)) {
+              return;
+            }
+            mergedStations.push(readingStation);
+          });
+
+          return mergedStations.sort((a, b) => a.stationName.localeCompare(b.stationName));
+        }
+
+        async function fetchRowsFromEndpoint(endpoint, errorPrefix) {
+          const response = await fetchCacheApi(endpoint);
           if (!response.ok) {
-            throw new Error(`Coordinate request failed: ${response.status}`);
+            throw new Error(`${errorPrefix}: ${response.status}`);
           }
           const payload = await response.json();
           if (Array.isArray(payload)) {
@@ -788,46 +882,28 @@
           return Array.isArray(payload?.data) ? payload.data : [];
         }
 
-        async function getStationCoordinateLookup() {
-          if (stationCoordinateLookupPromise) {
-            return stationCoordinateLookupPromise;
+        async function getStationGeometryRows() {
+          if (stationGeometryRowsPromise) {
+            return stationGeometryRowsPromise;
           }
-          stationCoordinateLookupPromise = (async () => {
-            const candidates = [STATIONS_URL, STATIONS_MAP_FALLBACK_URL].filter(Boolean);
+          stationGeometryRowsPromise = (async () => {
+            const candidates = [buildStationsEndpoint(STATIONS_URL), buildStationsEndpoint(STATIONS_MAP_FALLBACK_URL)]
+              .filter(Boolean);
+            let lastError = null;
             for (const endpoint of candidates) {
               try {
-                const rows = await fetchStationCoordinatesRows(endpoint);
-                const lookup = buildCoordinateLookup(rows);
-                if (lookup.byId.size > 0 || lookup.byLabel.size > 0) {
-                  return lookup;
-                }
+                return await fetchRowsFromEndpoint(endpoint, "Station geometry request failed");
               } catch (error) {
-                console.warn("Station coordinate lookup failed", { endpoint, error });
+                lastError = error;
+                console.warn("Station geometry endpoint failed", { endpoint, error });
               }
             }
-            return { byId: new Map(), byLabel: new Map() };
+            if (lastError) {
+              throw lastError;
+            }
+            return [];
           })();
-          return stationCoordinateLookupPromise;
-        }
-
-        function enrichStationCoordinates(stations, lookup) {
-          stations.forEach((station) => {
-            if (hasCoordinates(station)) {
-              return;
-            }
-            if (station.stationId && lookup.byId.has(station.stationId)) {
-              const coords = lookup.byId.get(station.stationId);
-              station.lat = coords.lat;
-              station.lon = coords.lon;
-              return;
-            }
-            const labelKey = normalizeLabelKey(station.stationLabel || station.stationName);
-            if (labelKey && lookup.byLabel.has(labelKey)) {
-              const coords = lookup.byLabel.get(labelKey);
-              station.lat = coords.lat;
-              station.lon = coords.lon;
-            }
-          });
+          return stationGeometryRowsPromise;
         }
 
         function applyUpdatedWithinFilter(stations) {
@@ -952,6 +1028,8 @@
           }
 
           let message = `Loaded ${plotted} sensors`;
+          const withReadings = filtered.filter((station) => station.latestReadings.size > 0).length;
+          message += ` · ${withReadings} with readings`;
           if (currentUpdatedWithin !== "all") {
             message += ` (${currentUpdatedWithin})`;
           }
@@ -965,8 +1043,8 @@
           setStatus("Loading…");
           setError("");
 
-          const endpoint = buildStationsChartEndpoint();
-          if (!endpoint) {
+          const stationsChartEndpoint = buildStationsChartEndpoint();
+          if (!stationsChartEndpoint) {
             setError("Missing cache endpoint base URL. Add ?cache_base=... to the URL.");
             setStatus("Error", true);
             return;
@@ -979,20 +1057,17 @@
           }
 
           try {
-            const response = await fetchCacheApi(endpoint);
-            if (!response.ok) {
-              throw new Error(`Request failed: ${response.status}`);
-            }
-            const payload = await response.json();
-            const rows = Array.isArray(payload?.data) ? payload.data : [];
-            const grouped = groupStationRows(rows);
+            const readingsRowsPromise = fetchRowsFromEndpoint(stationsChartEndpoint, "Readings request failed");
+            const geometryRowsPromise = getStationGeometryRows();
+            const [readingsRows, geometryRows] = await Promise.all([readingsRowsPromise, geometryRowsPromise]);
+            const groupedReadings = groupStationRows(readingsRows);
 
-            if (grouped.some((station) => !hasCoordinates(station))) {
-              const lookup = await getStationCoordinateLookup();
-              enrichStationCoordinates(grouped, lookup);
+            if (Array.isArray(geometryRows) && geometryRows.length > 0) {
+              const geometryBundle = buildGeometryStationBundle(geometryRows);
+              groupedStationsCache = mergeStations(geometryBundle, groupedReadings);
+            } else {
+              groupedStationsCache = groupedReadings;
             }
-
-            groupedStationsCache = grouped;
             renderStations();
             if (lastUpdatedEl) {
               lastUpdatedEl.textContent = `Last updated: ${new Date().toLocaleString()}`;
@@ -1018,7 +1093,7 @@
 
         if (refreshBtn) {
           refreshBtn.addEventListener("click", () => {
-            stationCoordinateLookupPromise = null;
+            stationGeometryRowsPromise = null;
             loadData();
           });
         }
