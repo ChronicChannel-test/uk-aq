@@ -220,14 +220,14 @@
         const turnstileSiteKey = TURNSTILE_SITE_KEY_PLACEHOLDER.includes("__UK_AQ_TURNSTILE_SITE_KEY__")
           ? (turnstileSiteKeyParam || "")
           : (turnstileSiteKeyParam || TURNSTILE_SITE_KEY_PLACEHOLDER);
-        const stationLikeParam = normalizeText(params.get("station_like"));
-        const stationLike = stationLikeParam || "%";
         const limitParam = parsePositiveInt(params.get("limit"));
         const rowLimit = limitParam || 50000;
+        const readingLimit = Math.max(1, Math.min(10000, rowLimit));
         const updatedWithinParam = normalizeUpdatedWithin(params.get("updated_within"));
         let currentUpdatedWithin = updatedWithinParam || "all";
 
-        const EDGE_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations-chart` : "";
+        const READINGS_URL = cacheBaseUrl ? `${cacheBaseUrl}/latest` : "";
+        const READING_POLLUTANTS = ["pm2.5", "pm10", "no2"];
         const STATIONS_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations` : "";
         const STATIONS_MAP_FALLBACK_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations-map` : "";
 
@@ -261,8 +261,8 @@
         let turnstileTokenTimeoutId = null;
 
         if (endpointHintEl) {
-          endpointHintEl.textContent = EDGE_URL
-            ? `Endpoint: ${EDGE_URL}`
+          endpointHintEl.textContent = READINGS_URL
+            ? `Readings: ${READINGS_URL} · Geometry: ${STATIONS_URL || STATIONS_MAP_FALLBACK_URL}`
             : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
         }
         if (updatedWithinSelect) {
@@ -511,13 +511,17 @@
           return response;
         }
 
-        function buildStationsChartEndpoint() {
-          if (!EDGE_URL) {
+        function buildLatestEndpoint(pollutantKey) {
+          if (!READINGS_URL) {
             return "";
           }
-          const url = new URL(EDGE_URL);
-          url.searchParams.set("station_like", stationLike);
-          url.searchParams.set("limit", String(rowLimit));
+          const url = new URL(READINGS_URL);
+          url.searchParams.set("scope", "all");
+          url.searchParams.set("window", "all");
+          url.searchParams.set("limit", String(readingLimit));
+          if (pollutantKey) {
+            url.searchParams.set("pollutant", pollutantKey);
+          }
           return url.toString();
         }
 
@@ -1043,8 +1047,13 @@
           setStatus("Loading…");
           setError("");
 
-          const stationsChartEndpoint = buildStationsChartEndpoint();
-          if (!stationsChartEndpoint) {
+          const readingEndpoints = READING_POLLUTANTS
+            .map((pollutantKey) => ({
+              pollutantKey,
+              endpoint: buildLatestEndpoint(pollutantKey),
+            }))
+            .filter((entry) => Boolean(entry.endpoint));
+          if (!readingEndpoints.length) {
             setError("Missing cache endpoint base URL. Add ?cache_base=... to the URL.");
             setStatus("Error", true);
             return;
@@ -1057,9 +1066,12 @@
           }
 
           try {
-            const readingsRowsPromise = fetchRowsFromEndpoint(stationsChartEndpoint, "Readings request failed");
             const geometryRowsPromise = getStationGeometryRows();
-            const [readingsRows, geometryRows] = await Promise.all([readingsRowsPromise, geometryRowsPromise]);
+            const readingRowsPromises = readingEndpoints.map((entry) =>
+              fetchRowsFromEndpoint(entry.endpoint, `Readings request failed (${entry.pollutantKey})`)
+            );
+            const [geometryRows, ...readingPayloads] = await Promise.all([geometryRowsPromise, ...readingRowsPromises]);
+            const readingsRows = readingPayloads.flat();
             const groupedReadings = groupStationRows(readingsRows);
 
             if (Array.isArray(geometryRows) && geometryRows.length > 0) {
