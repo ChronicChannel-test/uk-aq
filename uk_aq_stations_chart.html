@@ -478,7 +478,7 @@
       const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
       const seriesGuidelineByKey = new Map();
-      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v1:${projectRef || "unknown"}`;
+      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v2:${projectRef || "unknown"}`;
       const SERIES_CACHE_MAX_KEYS = 30;
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
       const CACHE_SESSION_SKEW_MS = 10000;
@@ -1059,6 +1059,13 @@
         return `${seriesId || ""}::${windowLabel || ""}`;
       }
 
+      function dropSeriesCacheForKey(seriesKey) {
+        seriesSinceByKey.delete(seriesKey);
+        seriesEtagByKey.delete(seriesKey);
+        seriesPointCacheByKey.delete(seriesKey);
+        seriesGuidelineByKey.delete(seriesKey);
+      }
+
       function parseSeriesPayloadPoints(payload) {
         const raw = Array.isArray(payload?.data) ? payload.data : [];
         const dataFormat = String(payload?.data_format || "").toLowerCase();
@@ -1430,11 +1437,20 @@
             ? `${fixedSeriesDays}d`
             : selectedWindowValue;
           const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
-          const since = seriesSinceByKey.get(seriesKey) || null;
+          let since = seriesSinceByKey.get(seriesKey) || null;
           const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
           const cachedWindowPoints = pruneSeriesPointsToWindow(cachedPoints, windowValue);
+          let cacheChanged = false;
+          if (since && cachedWindowPoints.length === 0) {
+            since = null;
+            dropSeriesCacheForKey(seriesKey);
+            cacheChanged = true;
+          }
           if (cachedWindowPoints.length !== cachedPoints.length) {
             seriesPointCacheByKey.set(seriesKey, cachedWindowPoints);
+            cacheChanged = true;
+          }
+          if (cacheChanged) {
             persistSeriesCacheToStorage();
           }
           const url = new URL(SERIES_EDGE_URL);
@@ -1638,6 +1654,17 @@
           windowSelect.title = "Range is fixed by URL parameter.";
         }
         windowSelect.addEventListener("change", () => {
+          if (selectedSeriesId) {
+            const selectedWindowValue = windowSelect.value || "24h";
+            const windowValue = hasFixedSeriesDateRange
+              ? "custom"
+              : fixedSeriesDays !== null
+              ? `${fixedSeriesDays}d`
+              : selectedWindowValue;
+            const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
+            dropSeriesCacheForKey(seriesKey);
+            persistSeriesCacheToStorage();
+          }
           loadSeriesData();
         });
       }
