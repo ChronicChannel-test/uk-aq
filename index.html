@@ -490,6 +490,9 @@
       const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}`;
       const CACHE_API_TRANSIENT_RETRY_DELAY_MS = 300;
       const CACHE_API_TRANSIENT_RETRY_STATUSES = new Set([502, 503, 504]);
+      const TURNSTILE_TOKEN_TIMEOUT_MS = 12000;
+      const TURNSTILE_TOKEN_MAX_ATTEMPTS = 2;
+      const TURNSTILE_TOKEN_RETRY_DELAY_MS = 250;
       let cacheSessionReadyUntil = 0;
       let cacheSessionInflight = null;
       let turnstileScriptInflight = null;
@@ -564,6 +567,11 @@
 
       function waitMs(ms) {
         return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function isTurnstileTimeoutError(error) {
+        const message = error instanceof Error ? error.message : String(error || "");
+        return message.toLowerCase().includes("turnstile token timed out");
       }
 
       syncCacheSessionHint();
@@ -658,29 +666,46 @@
         });
       }
 
-      async function getTurnstileToken() {
+      async function requestTurnstileTokenOnce() {
         await ensureTurnstileWidget();
+        const turnstileApi = window.turnstile;
+        if (!turnstileApi || typeof turnstileApi.execute !== "function") {
+          throw new Error("Turnstile execute unavailable.");
+        }
+        if (typeof turnstileApi.reset === "function") {
+          turnstileApi.reset(turnstileWidgetId);
+        }
+        return await new Promise((resolve, reject) => {
+          turnstileTokenResolver = resolve;
+          turnstileTokenRejecter = reject;
+          turnstileTokenTimeoutId = setTimeout(() => {
+            if (turnstileTokenRejecter) {
+              turnstileTokenRejecter(new Error("Turnstile token timed out."));
+            }
+            clearTurnstilePendingState();
+          }, TURNSTILE_TOKEN_TIMEOUT_MS);
+          turnstileApi.execute(turnstileWidgetId);
+        });
+      }
+
+      async function getTurnstileToken() {
         if (!turnstileTokenInflight) {
           turnstileTokenInflight = (async () => {
-            const turnstileApi = window.turnstile;
-            if (!turnstileApi || typeof turnstileApi.execute !== "function") {
-              throw new Error("Turnstile execute unavailable.");
-            }
-            if (typeof turnstileApi.reset === "function") {
-              turnstileApi.reset(turnstileWidgetId);
-            }
-            const token = await new Promise((resolve, reject) => {
-              turnstileTokenResolver = resolve;
-              turnstileTokenRejecter = reject;
-              turnstileTokenTimeoutId = setTimeout(() => {
-                if (turnstileTokenRejecter) {
-                  turnstileTokenRejecter(new Error("Turnstile token timed out."));
+            let lastError = null;
+            for (let attempt = 1; attempt <= TURNSTILE_TOKEN_MAX_ATTEMPTS; attempt += 1) {
+              try {
+                return await requestTurnstileTokenOnce();
+              } catch (error) {
+                lastError = error;
+                if (!isTurnstileTimeoutError(error) || attempt >= TURNSTILE_TOKEN_MAX_ATTEMPTS) {
+                  throw error instanceof Error ? error : new Error(String(error));
                 }
-                clearTurnstilePendingState();
-              }, 30000);
-              turnstileApi.execute(turnstileWidgetId);
-            });
-            return token;
+                await waitMs(TURNSTILE_TOKEN_RETRY_DELAY_MS);
+              }
+            }
+            throw lastError instanceof Error
+              ? lastError
+              : new Error("Turnstile token acquisition failed.");
           })().finally(() => {
             turnstileTokenInflight = null;
           });
