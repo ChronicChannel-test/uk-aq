@@ -401,7 +401,7 @@
             <option value="12h">Last 12 hours</option>
             <option value="24h" selected>Last 24 hours</option>
             <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
+            <option value="31d">Last 31 days</option>
           </select>
         </div>
         <div class="hint" id="chart-hint">Line chart of raw observations for the selected station.</div>
@@ -421,6 +421,9 @@
       const regionParam = params.get("region");
       const region = regionParam || "Bristol";
       const stationLike = params.get("station_like") || region;
+      const fixedSeriesDaysParam = params.get("series_days") || params.get("days");
+      const fixedSeriesStartParam = params.get("series_start") || params.get("start");
+      const fixedSeriesEndParam = params.get("series_end") || params.get("end");
       const limitParam = params.get("limit");
       const cacheBaseParam = params.get("cache_base");
       const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
@@ -465,6 +468,14 @@
       const chartTooltip = document.getElementById("chart-tooltip");
       const chartSvg = d3.select("#line-chart");
       const chartWrap = document.querySelector(".chart-wrap");
+      const fixedSeriesDays = parsePositiveInteger(fixedSeriesDaysParam);
+      const fixedSeriesStartIso = normalizeIsoTimestamp(fixedSeriesStartParam);
+      const fixedSeriesEndIso = normalizeIsoTimestamp(fixedSeriesEndParam);
+      const hasFixedSeriesDateRange = Boolean(
+        fixedSeriesStartIso &&
+          fixedSeriesEndIso &&
+          new Date(fixedSeriesEndIso).getTime() > new Date(fixedSeriesStartIso).getTime()
+      );
       let cachedRows = [];
       let selectedSeriesId = null;
       let seriesLookup = new Map();
@@ -1008,6 +1019,17 @@
         return parsed.toISOString();
       }
 
+      function parsePositiveInteger(value) {
+        if (value === null || value === undefined || value === "") {
+          return null;
+        }
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 1) {
+          return null;
+        }
+        return Math.floor(parsed);
+      }
+
       function getSeriesCacheKey(seriesId, windowLabel) {
         return `${seriesId || ""}::${windowLabel || ""}`;
       }
@@ -1154,17 +1176,31 @@
         if (!Array.isArray(points) || !points.length) {
           return [];
         }
-        const windowMsByLabel = {
-          "12h": 12 * 60 * 60 * 1000,
-          "24h": 24 * 60 * 60 * 1000,
-          "7d": 7 * 24 * 60 * 60 * 1000,
-          "30d": 30 * 24 * 60 * 60 * 1000,
-        };
-        const windowMs = windowMsByLabel[windowLabel] || windowMsByLabel["24h"];
         const parsedEnd = endIso ? new Date(endIso) : null;
         const endMs = Number.isFinite(parsedEnd?.getTime())
           ? parsedEnd.getTime()
           : Date.now();
+        if (hasFixedSeriesDateRange) {
+          const fixedStartMs = new Date(fixedSeriesStartIso).getTime();
+          const fixedEndMs = Number.isFinite(new Date(fixedSeriesEndIso).getTime())
+            ? new Date(fixedSeriesEndIso).getTime()
+            : endMs;
+          return points.filter((point) => {
+            const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+            return Number.isFinite(pointMs) && pointMs >= fixedStartMs && pointMs <= fixedEndMs;
+          });
+        }
+        const windowMsByLabel = {
+          "12h": 12 * 60 * 60 * 1000,
+          "24h": 24 * 60 * 60 * 1000,
+          "7d": 7 * 24 * 60 * 60 * 1000,
+          "31d": 31 * 24 * 60 * 60 * 1000,
+        };
+        const dynamicDaysMatch = /^(\d+)d$/i.exec(String(windowLabel || ""));
+        const dynamicWindowMs = dynamicDaysMatch
+          ? Number(dynamicDaysMatch[1]) * 24 * 60 * 60 * 1000
+          : null;
+        const windowMs = windowMsByLabel[windowLabel] || dynamicWindowMs || windowMsByLabel["24h"];
         const startMs = endMs - windowMs;
         return points.filter((point) => {
           const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
@@ -1362,7 +1398,12 @@
           return;
         }
         try {
-          const windowValue = windowSelect?.value || "24h";
+          const selectedWindowValue = windowSelect?.value || "24h";
+          const windowValue = hasFixedSeriesDateRange
+            ? "custom"
+            : fixedSeriesDays !== null
+            ? `${fixedSeriesDays}d`
+            : selectedWindowValue;
           const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
           const since = seriesSinceByKey.get(seriesKey) || null;
           const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
@@ -1373,7 +1414,14 @@
           }
           const url = new URL(SERIES_EDGE_URL);
           url.searchParams.set("timeseries_id", selectedSeriesId);
-          url.searchParams.set("window", windowValue);
+          if (hasFixedSeriesDateRange) {
+            url.searchParams.set("start", fixedSeriesStartIso);
+            url.searchParams.set("end", fixedSeriesEndIso);
+          } else if (fixedSeriesDays !== null) {
+            url.searchParams.set("days", String(fixedSeriesDays));
+          } else {
+            url.searchParams.set("window", windowValue);
+          }
           url.searchParams.set("format", "compact");
           url.searchParams.set("include_status", "false");
           if (since) {
@@ -1500,6 +1548,10 @@
         });
       }
       if (windowSelect) {
+        if (hasFixedSeriesDateRange || fixedSeriesDays !== null) {
+          windowSelect.disabled = true;
+          windowSelect.title = "Range is fixed by URL parameter.";
+        }
         windowSelect.addEventListener("change", () => {
           loadSeriesData();
         });
