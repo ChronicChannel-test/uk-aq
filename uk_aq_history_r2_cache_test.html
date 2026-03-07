@@ -209,6 +209,14 @@
             <label for="api-base">Worker API Base</label>
             <input id="api-base" type="text" />
           </div>
+          <div class="field" style="grid-column: span 2;">
+            <label for="prefix">R2 Prefix Override (optional)</label>
+            <input id="prefix" type="text" placeholder="aqi-r2-test/v1-year-hourly-test" />
+          </div>
+          <div class="field">
+            <label for="row-limit">Row limit</label>
+            <input id="row-limit" type="number" min="1" max="20000" step="1" value="20000" />
+          </div>
           <div class="field">
             <label for="scope">Scope</label>
             <select id="scope">
@@ -301,6 +309,8 @@
         const grainEl = document.getElementById("grain");
         const entityEl = document.getElementById("entity");
         const apiBaseEl = document.getElementById("api-base");
+        const prefixEl = document.getElementById("prefix");
+        const rowLimitEl = document.getElementById("row-limit");
         const tokenEl = document.getElementById("cache-token");
         const errorEl = document.getElementById("error");
 
@@ -324,10 +334,18 @@
         const initialScope = (params.get("scope") || "station").toLowerCase();
         const initialGrain = (params.get("grain") || "hourly").toLowerCase();
         const initialApiBase = params.get("api_base") || DEFAULT_API_BASE;
+        const initialPrefix = params.get("prefix") || "";
+        const initialRowLimit = Number(params.get("row_limit") || "20000");
 
         scopeEl.value = ["station", "pcon", "la", "region"].includes(initialScope) ? initialScope : "station";
         grainEl.value = ["hourly", "daily", "monthly"].includes(initialGrain) ? initialGrain : "hourly";
         apiBaseEl.value = initialApiBase;
+        if (prefixEl) {
+          prefixEl.value = initialPrefix;
+        }
+        if (rowLimitEl && Number.isFinite(initialRowLimit) && initialRowLimit > 0) {
+          rowLimitEl.value = String(Math.min(20000, Math.trunc(initialRowLimit)));
+        }
 
         const state = {
           token: params.get("v") || String(Date.now()),
@@ -373,12 +391,35 @@
           return String(raw || "").trim().replace(/\/+$/, "");
         }
 
+        function normalizePrefix(raw) {
+          return String(raw || "").trim().replace(/^\/+|\/+$/g, "");
+        }
+
+        function normalizeRowLimit(raw) {
+          const value = Number(raw);
+          if (!Number.isFinite(value)) {
+            return 20000;
+          }
+          const intValue = Math.trunc(value);
+          if (intValue < 1) {
+            return 1;
+          }
+          if (intValue > 20000) {
+            return 20000;
+          }
+          return intValue;
+        }
+
         function buildManifestUrl() {
           const apiBase = normalizeApiBase(apiBaseEl.value);
           const url = new URL(`${apiBase}/manifest`);
           url.searchParams.set("scope", scopeEl.value);
           url.searchParams.set("grain", grainEl.value);
           url.searchParams.set("v", state.token);
+          const prefix = normalizePrefix(prefixEl?.value || "");
+          if (prefix) {
+            url.searchParams.set("prefix", prefix);
+          }
           return url;
         }
 
@@ -389,6 +430,11 @@
           url.searchParams.set("grain", grainEl.value);
           url.searchParams.set("entity", entityEl.value);
           url.searchParams.set("v", cacheToken);
+          url.searchParams.set("row_limit", String(normalizeRowLimit(rowLimitEl?.value || "20000")));
+          const prefix = normalizePrefix(prefixEl?.value || "");
+          if (prefix) {
+            url.searchParams.set("prefix", prefix);
+          }
           return url;
         }
 
