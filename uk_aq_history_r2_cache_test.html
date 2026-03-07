@@ -211,7 +211,7 @@
           </div>
           <div class="field" style="grid-column: span 2;">
             <label for="prefix">R2 Prefix Override (optional)</label>
-            <input id="prefix" type="text" placeholder="aqi-r2-test/v1-year-hourly-test" />
+            <input id="prefix" type="text" placeholder="Leave blank to use worker default prefix" />
           </div>
           <div class="field">
             <label for="row-limit">Row limit</label>
@@ -276,6 +276,10 @@
             <span class="meta-value" id="meta-rows">-</span>
           </div>
           <div class="meta-row">
+            <span class="meta-key">Resolved prefix</span>
+            <span class="meta-value" id="meta-prefix">-</span>
+          </div>
+          <div class="meta-row">
             <span class="meta-key">Loaded from (UTC)</span>
             <span class="meta-value" id="meta-from">-</span>
           </div>
@@ -327,6 +331,7 @@
         const metaSize = document.getElementById("meta-size");
         const metaCache = document.getElementById("meta-cache");
         const metaRows = document.getElementById("meta-rows");
+        const metaPrefix = document.getElementById("meta-prefix");
         const metaFrom = document.getElementById("meta-from");
         const metaTo = document.getElementById("meta-to");
         const metaObjectBytes = document.getElementById("meta-object-bytes");
@@ -510,6 +515,7 @@
             metaSize.textContent = formatBytes(payloadBytes);
             metaCache.textContent = response.headers.get("x-ukaq-cache") || response.headers.get("cf-cache-status") || "-";
             metaRows.textContent = `${entries.length} entities`;
+            metaPrefix.textContent = data.prefix || "-";
             metaFrom.textContent = "-";
             metaTo.textContent = "-";
             metaObjectBytes.textContent = "-";
@@ -651,6 +657,7 @@
             metaRows.textContent = likelyTruncated
               ? `${rowCount} (at row limit; may be truncated)`
               : String(rowCount);
+            metaPrefix.textContent = data.prefix || "-";
             metaFrom.textContent = points[0]?.period_start_utc || "-";
             metaTo.textContent = points[points.length - 1]?.period_start_utc || "-";
             metaObjectBytes.textContent = formatBytes(Number(data.object_bytes));
