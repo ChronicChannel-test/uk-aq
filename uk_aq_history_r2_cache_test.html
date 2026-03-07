@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UK AQ R2 Cache Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        --bg: #f5efe1;
+        --panel: #fffdfa;
+        --ink: #1a1a1a;
+        --muted: #6a655c;
+        --line: #ddd4c0;
+        --teal: #197f7b;
+        --teal-hover: #146964;
+        --danger: #b23030;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(circle at top left, #f8f3e7, var(--bg));
+        color: var(--ink);
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 28px auto;
+        padding: 0 16px 32px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.8rem;
+      }
+
+      .lead {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(4, minmax(160px, 1fr));
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      label {
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      button {
+        font: inherit;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid #bfb7a7;
+        border-radius: 10px;
+        padding: 8px 10px;
+        background: #fff;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 9px 14px;
+        background: var(--teal);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+        box-shadow: 0 0 0 0 rgba(25, 127, 123, 0.25);
+      }
+
+      button:hover {
+        background: var(--teal-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 0 0 5px rgba(25, 127, 123, 0.18);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        background: #8ea4a2;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 8px 12px;
+      }
+
+      .meta-row {
+        border-bottom: 1px dashed #dfd7c8;
+        padding-bottom: 6px;
+      }
+
+      .meta-key {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .meta-value {
+        word-break: break-word;
+      }
+
+      .error {
+        color: var(--danger);
+        font-weight: 600;
+        min-height: 1.2rem;
+      }
+
+      .chart-wrap {
+        min-height: 320px;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .meta-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>UK AQ R2 + Cloudflare Cache Test</h1>
+      <p class="lead">
+        Internal test page for AQI history performance. Compare warm cache vs bypass-cache fetches for R2-backed Parquet datasets.
+      </p>
+
+      <section class="panel">
+        <div class="grid">
+          <div class="field" style="grid-column: span 2;">
+            <label for="api-base">Worker API Base</label>
+            <input id="api-base" type="text" />
+          </div>
+          <div class="field">
+            <label for="scope">Scope</label>
+            <select id="scope">
+              <option value="station">station</option>
+              <option value="pcon">pcon</option>
+              <option value="la">la</option>
+              <option value="region">region</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="grain">Grain</label>
+            <select id="grain">
+              <option value="hourly">hourly</option>
+              <option value="daily">daily</option>
+              <option value="monthly">monthly</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column: span 2;">
+            <label for="entity">Entity</label>
+            <select id="entity"></select>
+          </div>
+          <div class="field" style="grid-column: span 2;">
+            <label for="cache-token">Current cache token (`v`)</label>
+            <input id="cache-token" type="text" readonly />
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="load-cached" type="button">Load cached</button>
+          <button id="load-bypass" type="button">Load bypass-cache</button>
+          <button id="clear-cache" type="button">Clear cache</button>
+          <button id="reload-manifest" type="button">Reload manifest</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="error" id="error"></div>
+        <div class="meta-grid">
+          <div class="meta-row">
+            <span class="meta-key">Mode</span>
+            <span class="meta-value" id="meta-mode">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Client duration</span>
+            <span class="meta-value" id="meta-duration">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Payload size</span>
+            <span class="meta-value" id="meta-size">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Cache header</span>
+            <span class="meta-value" id="meta-cache">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Rows returned</span>
+            <span class="meta-value" id="meta-rows">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Object bytes</span>
+            <span class="meta-value" id="meta-object-bytes">-</span>
+          </div>
+          <div class="meta-row" style="grid-column: span 2;">
+            <span class="meta-key">Requested endpoint</span>
+            <span class="meta-value" id="meta-url">-</span>
+          </div>
+          <div class="meta-row" style="grid-column: span 2;">
+            <span class="meta-key">Source parquet path</span>
+            <span class="meta-value" id="meta-source-path">-</span>
+          </div>
+          <div class="meta-row" style="grid-column: span 2;">
+            <span class="meta-key">Server timing</span>
+            <span class="meta-value" id="meta-server-timing">-</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel chart-wrap">
+        <canvas id="history-chart" aria-label="AQI history chart" role="img"></canvas>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const DEFAULT_API_BASE = "https://uk-aq-aqi-history-r2-test.chronicillnesschannel.workers.dev/v1/aqi-history";
+
+        const params = new URLSearchParams(window.location.search);
+        const scopeEl = document.getElementById("scope");
+        const grainEl = document.getElementById("grain");
+        const entityEl = document.getElementById("entity");
+        const apiBaseEl = document.getElementById("api-base");
+        const tokenEl = document.getElementById("cache-token");
+        const errorEl = document.getElementById("error");
+
+        const metaMode = document.getElementById("meta-mode");
+        const metaDuration = document.getElementById("meta-duration");
+        const metaSize = document.getElementById("meta-size");
+        const metaCache = document.getElementById("meta-cache");
+        const metaRows = document.getElementById("meta-rows");
+        const metaObjectBytes = document.getElementById("meta-object-bytes");
+        const metaUrl = document.getElementById("meta-url");
+        const metaSourcePath = document.getElementById("meta-source-path");
+        const metaServerTiming = document.getElementById("meta-server-timing");
+
+        const loadCachedBtn = document.getElementById("load-cached");
+        const loadBypassBtn = document.getElementById("load-bypass");
+        const clearCacheBtn = document.getElementById("clear-cache");
+        const reloadManifestBtn = document.getElementById("reload-manifest");
+
+        const initialScope = (params.get("scope") || "station").toLowerCase();
+        const initialGrain = (params.get("grain") || "hourly").toLowerCase();
+        const initialApiBase = params.get("api_base") || DEFAULT_API_BASE;
+
+        scopeEl.value = ["station", "pcon", "la", "region"].includes(initialScope) ? initialScope : "station";
+        grainEl.value = ["hourly", "daily", "monthly"].includes(initialGrain) ? initialGrain : "hourly";
+        apiBaseEl.value = initialApiBase;
+
+        const state = {
+          token: params.get("v") || String(Date.now()),
+          manifestEntries: [],
+          chart: null,
+          busy: false,
+        };
+
+        tokenEl.value = state.token;
+
+        function setBusy(value) {
+          state.busy = Boolean(value);
+          const disabled = state.busy;
+          for (const btn of [loadCachedBtn, loadBypassBtn, clearCacheBtn, reloadManifestBtn]) {
+            btn.disabled = disabled;
+          }
+          scopeEl.disabled = disabled;
+          grainEl.disabled = disabled;
+          entityEl.disabled = disabled;
+        }
+
+        function setError(message) {
+          errorEl.textContent = message || "";
+        }
+
+        function normalizeApiBase(raw) {
+          return String(raw || "").trim().replace(/\/+$/, "");
+        }
+
+        function buildManifestUrl() {
+          const apiBase = normalizeApiBase(apiBaseEl.value);
+          const url = new URL(`${apiBase}/manifest`);
+          url.searchParams.set("scope", scopeEl.value);
+          url.searchParams.set("grain", grainEl.value);
+          url.searchParams.set("v", state.token);
+          return url;
+        }
+
+        function buildDataUrl(cacheToken) {
+          const apiBase = normalizeApiBase(apiBaseEl.value);
+          const url = new URL(`${apiBase}/data`);
+          url.searchParams.set("scope", scopeEl.value);
+          url.searchParams.set("grain", grainEl.value);
+          url.searchParams.set("entity", entityEl.value);
+          url.searchParams.set("v", cacheToken);
+          return url;
+        }
+
+        function formatBytes(bytes) {
+          if (!Number.isFinite(bytes) || bytes < 0) {
+            return "-";
+          }
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function applyEntities(entries) {
+          const current = entityEl.value;
+          entityEl.innerHTML = "";
+
+          for (const entry of entries) {
+            const option = document.createElement("option");
+            option.value = String(entry.entity_id || "");
+            option.textContent = `${entry.entity_name || entry.entity_id} (${entry.entity_id})`;
+            entityEl.appendChild(option);
+          }
+
+          if (!entries.length) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No entities available";
+            entityEl.appendChild(option);
+            entityEl.value = "";
+            return;
+          }
+
+          const hasCurrent = entries.some((entry) => String(entry.entity_id) === current);
+          if (hasCurrent) {
+            entityEl.value = current;
+          } else {
+            entityEl.selectedIndex = 0;
+          }
+        }
+
+        async function loadManifest() {
+          setBusy(true);
+          setError("");
+          try {
+            const url = buildManifestUrl();
+            const started = performance.now();
+            const response = await fetch(url.toString(), { method: "GET", cache: "default" });
+            const elapsedMs = Math.round(performance.now() - started);
+            const text = await response.text();
+            const payloadBytes = new TextEncoder().encode(text).byteLength;
+
+            if (!response.ok) {
+              throw new Error(`Manifest failed (${response.status}): ${text.slice(0, 180)}`);
+            }
+
+            const data = JSON.parse(text);
+            const entries = Array.isArray(data.entities) ? data.entities : [];
+            state.manifestEntries = entries;
+            applyEntities(entries);
+
+            metaMode.textContent = "manifest-load";
+            metaDuration.textContent = `${elapsedMs} ms`;
+            metaSize.textContent = formatBytes(payloadBytes);
+            metaCache.textContent = response.headers.get("x-ukaq-cache") || response.headers.get("cf-cache-status") || "-";
+            metaRows.textContent = `${entries.length} entities`;
+            metaObjectBytes.textContent = "-";
+            metaUrl.textContent = url.toString();
+            metaSourcePath.textContent = data.manifest_key || "-";
+            metaServerTiming.textContent = response.headers.get("server-timing") || "-";
+          } catch (error) {
+            setError(error instanceof Error ? error.message : String(error));
+            state.manifestEntries = [];
+            applyEntities([]);
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        function destroyChart() {
+          if (state.chart) {
+            state.chart.destroy();
+            state.chart = null;
+          }
+        }
+
+        function renderChart(points) {
+          const canvas = document.getElementById("history-chart");
+          if (!canvas) {
+            return;
+          }
+
+          destroyChart();
+
+          const labels = points.map((point) => point.period_start_utc || "");
+          const daqi = points.map((point) => Number(point.daqi_index_level));
+          const eaqi = points.map((point) => Number(point.eaqi_index_level));
+
+          state.chart = new Chart(canvas, {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "DAQI index",
+                  data: daqi,
+                  borderColor: "#0d6efd",
+                  backgroundColor: "rgba(13, 110, 253, 0.18)",
+                  fill: false,
+                  spanGaps: true,
+                  tension: 0.12,
+                  pointRadius: 1.8,
+                },
+                {
+                  label: "EAQI index",
+                  data: eaqi,
+                  borderColor: "#ff7a00",
+                  backgroundColor: "rgba(255, 122, 0, 0.16)",
+                  fill: false,
+                  spanGaps: true,
+                  tension: 0.12,
+                  pointRadius: 1.8,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: "index",
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+              },
+              scales: {
+                x: {
+                  ticks: {
+                    maxTicksLimit: 10,
+                  },
+                },
+                y: {
+                  beginAtZero: true,
+                  suggestedMax: 10,
+                  ticks: {
+                    stepSize: 1,
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        async function loadData(mode) {
+          if (!entityEl.value) {
+            setError("No entity selected.");
+            return;
+          }
+
+          setBusy(true);
+          setError("");
+
+          const isBypass = mode === "bypass";
+          const cacheToken = isBypass ? String(Date.now()) : state.token;
+
+          try {
+            const url = buildDataUrl(cacheToken);
+            const started = performance.now();
+            const response = await fetch(url.toString(), { method: "GET", cache: "default" });
+            const elapsedMs = Math.round(performance.now() - started);
+            const text = await response.text();
+            const payloadBytes = new TextEncoder().encode(text).byteLength;
+
+            if (!response.ok) {
+              throw new Error(`Data request failed (${response.status}): ${text.slice(0, 180)}`);
+            }
+
+            const data = JSON.parse(text);
+            const points = Array.isArray(data.points) ? data.points : [];
+
+            renderChart(points);
+
+            metaMode.textContent = isBypass ? "bypass-cache" : "cached";
+            metaDuration.textContent = `${elapsedMs} ms`;
+            metaSize.textContent = formatBytes(payloadBytes);
+            metaCache.textContent = response.headers.get("x-ukaq-cache") || response.headers.get("cf-cache-status") || "-";
+            metaRows.textContent = String(data.row_count ?? points.length ?? 0);
+            metaObjectBytes.textContent = formatBytes(Number(data.object_bytes));
+            metaUrl.textContent = url.toString();
+            metaSourcePath.textContent = data.source_path || "-";
+            metaServerTiming.textContent = response.headers.get("server-timing") || "-";
+          } catch (error) {
+            destroyChart();
+            setError(error instanceof Error ? error.message : String(error));
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        scopeEl.addEventListener("change", () => {
+          loadManifest();
+        });
+
+        grainEl.addEventListener("change", () => {
+          loadManifest();
+        });
+
+        reloadManifestBtn.addEventListener("click", () => {
+          loadManifest();
+        });
+
+        clearCacheBtn.addEventListener("click", () => {
+          state.token = String(Date.now());
+          tokenEl.value = state.token;
+          setError(`Cache token rotated to ${state.token}`);
+        });
+
+        loadCachedBtn.addEventListener("click", () => {
+          loadData("cached");
+        });
+
+        loadBypassBtn.addEventListener("click", () => {
+          loadData("bypass");
+        });
+
+        loadManifest();
+      })();
+    </script>
+  </body>
+</html>
