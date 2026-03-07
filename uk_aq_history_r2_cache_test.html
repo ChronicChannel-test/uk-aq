@@ -276,6 +276,14 @@
             <span class="meta-value" id="meta-rows">-</span>
           </div>
           <div class="meta-row">
+            <span class="meta-key">Loaded from (UTC)</span>
+            <span class="meta-value" id="meta-from">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Loaded to (UTC)</span>
+            <span class="meta-value" id="meta-to">-</span>
+          </div>
+          <div class="meta-row">
             <span class="meta-key">Object bytes</span>
             <span class="meta-value" id="meta-object-bytes">-</span>
           </div>
@@ -319,6 +327,8 @@
         const metaSize = document.getElementById("meta-size");
         const metaCache = document.getElementById("meta-cache");
         const metaRows = document.getElementById("meta-rows");
+        const metaFrom = document.getElementById("meta-from");
+        const metaTo = document.getElementById("meta-to");
         const metaObjectBytes = document.getElementById("meta-object-bytes");
         const metaUrl = document.getElementById("meta-url");
         const metaSourcePath = document.getElementById("meta-source-path");
@@ -500,6 +510,8 @@
             metaSize.textContent = formatBytes(payloadBytes);
             metaCache.textContent = response.headers.get("x-ukaq-cache") || response.headers.get("cf-cache-status") || "-";
             metaRows.textContent = `${entries.length} entities`;
+            metaFrom.textContent = "-";
+            metaTo.textContent = "-";
             metaObjectBytes.textContent = "-";
             metaUrl.textContent = url.toString();
             metaSourcePath.textContent = data.manifest_key || "-";
@@ -618,6 +630,7 @@
 
             const data = JSON.parse(text);
             const points = Array.isArray(data.points) ? data.points : [];
+            const requestedRowLimit = normalizeRowLimit(rowLimitEl?.value || "20000");
 
             if (points.length > 0) {
               renderChart(points);
@@ -633,7 +646,13 @@
             metaDuration.textContent = `${elapsedMs} ms`;
             metaSize.textContent = formatBytes(payloadBytes);
             metaCache.textContent = response.headers.get("x-ukaq-cache") || response.headers.get("cf-cache-status") || "-";
-            metaRows.textContent = String(data.row_count ?? points.length ?? 0);
+            const rowCount = Number(data.row_count ?? points.length ?? 0);
+            const likelyTruncated = Number.isFinite(rowCount) && rowCount >= requestedRowLimit;
+            metaRows.textContent = likelyTruncated
+              ? `${rowCount} (at row limit; may be truncated)`
+              : String(rowCount);
+            metaFrom.textContent = points[0]?.period_start_utc || "-";
+            metaTo.textContent = points[points.length - 1]?.period_start_utc || "-";
             metaObjectBytes.textContent = formatBytes(Number(data.object_bytes));
             metaUrl.textContent = url.toString();
             metaSourcePath.textContent = data.source_path || "-";
