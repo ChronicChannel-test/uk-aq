@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UK AQ R2 vs Supabase AQI Compare</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        --bg: #f5efe1;
+        --panel: #fffdfa;
+        --ink: #1a1a1a;
+        --muted: #6a655c;
+        --line: #ddd4c0;
+        --teal: #197f7b;
+        --teal-hover: #146964;
+        --danger: #b23030;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(circle at top left, #f8f3e7, var(--bg));
+        color: var(--ink);
+      }
+
+      .page {
+        max-width: 1240px;
+        margin: 24px auto;
+        padding: 0 16px 30px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.8rem;
+      }
+
+      .lead {
+        margin: 0 0 14px;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+      }
+
+      .field { display: grid; gap: 6px; }
+
+      label {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      input, select, button { font: inherit; }
+
+      input, select {
+        width: 100%;
+        border: 1px solid #bfb7a7;
+        border-radius: 10px;
+        padding: 8px 10px;
+        background: #fff;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 9px 14px;
+        background: var(--teal);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      }
+
+      button:hover {
+        background: var(--teal-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 0 0 5px rgba(25, 127, 123, 0.18);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        background: #8ea4a2;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .error {
+        color: var(--danger);
+        font-weight: 600;
+        min-height: 1.2rem;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(300px, 1fr));
+        gap: 10px;
+      }
+
+      .metrics-box {
+        border: 1px solid #e2d9c8;
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      .metrics-box h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+
+      .kv {
+        margin: 0;
+        border-top: 1px dashed #e7ddcc;
+        padding: 5px 0;
+      }
+
+      .kv:first-of-type {
+        border-top: none;
+        padding-top: 0;
+      }
+
+      .k {
+        display: block;
+        font-size: 0.76rem;
+        color: var(--muted);
+      }
+
+      .v {
+        word-break: break-word;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(320px, 1fr));
+        gap: 12px;
+      }
+
+      .chart-panel {
+        position: relative;
+        min-height: 330px;
+        background: #f0f0f0;
+        border: 1px solid #ddd4c2;
+        border-radius: 10px;
+        padding: 8px;
+      }
+
+      .chart-panel canvas {
+        min-height: 310px;
+        transition: opacity 140ms ease, filter 140ms ease;
+      }
+
+      .chart-panel.is-loading canvas,
+      .chart-panel.is-empty canvas {
+        opacity: 0.3;
+        filter: grayscale(1);
+      }
+
+      .chart-overlay {
+        position: absolute;
+        inset: 8px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-weight: 600;
+        pointer-events: none;
+        text-align: center;
+      }
+
+      .chart-panel.is-loading .chart-overlay,
+      .chart-panel.is-empty .chart-overlay {
+        display: flex;
+      }
+
+      @media (max-width: 980px) {
+        .grid { grid-template-columns: 1fr 1fr; }
+        .metrics-grid { grid-template-columns: 1fr; }
+        .charts-grid { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 700px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>UK AQ R2 vs Supabase AQI Compare</h1>
+      <p class="lead">Compares the same station/hourly window from R2 Parquet and Supabase in parallel.</p>
+
+      <section class="panel">
+        <div class="grid">
+          <div class="field" style="grid-column: span 2;">
+            <label for="api-base">Worker API Base</label>
+            <input id="api-base" type="text" />
+          </div>
+          <div class="field" style="grid-column: span 2;">
+            <label for="prefix">R2 Prefix Override (optional)</label>
+            <input id="prefix" type="text" placeholder="aqi-r2-test/v1-year-hourly-test" />
+          </div>
+          <div class="field">
+            <label for="row-limit">Row limit</label>
+            <input id="row-limit" type="number" min="1" max="20000" step="1" value="20000" />
+          </div>
+          <div class="field">
+            <label for="from-utc">From (UTC)</label>
+            <input id="from-utc" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label for="to-utc">To (UTC)</label>
+            <input id="to-utc" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label for="entity">Station entity</label>
+            <select id="entity"></select>
+          </div>
+          <div class="field" style="grid-column: span 2;">
+            <label for="cache-token">Current cache token (`v`)</label>
+            <input id="cache-token" type="text" readonly />
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="load-cached" type="button">Load both (cached)</button>
+          <button id="load-bypass" type="button">Load both (bypass-cache)</button>
+          <button id="clear-cache" type="button">Clear cache token</button>
+          <button id="reload-manifest" type="button">Reload station manifest</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="error" id="error"></div>
+        <div class="metrics-grid">
+          <div class="metrics-box">
+            <h3>R2 Result</h3>
+            <p class="kv"><span class="k">Duration</span><span class="v" id="r2-duration">-</span></p>
+            <p class="kv"><span class="k">Payload size</span><span class="v" id="r2-size">-</span></p>
+            <p class="kv"><span class="k">Cache header</span><span class="v" id="r2-cache">-</span></p>
+            <p class="kv"><span class="k">Rows (after window filter)</span><span class="v" id="r2-rows">-</span></p>
+            <p class="kv"><span class="k">Range</span><span class="v" id="r2-range">-</span></p>
+            <p class="kv"><span class="k">Resolved prefix</span><span class="v" id="r2-prefix">-</span></p>
+            <p class="kv"><span class="k">Endpoint</span><span class="v" id="r2-url">-</span></p>
+          </div>
+          <div class="metrics-box">
+            <h3>Supabase Result</h3>
+            <p class="kv"><span class="k">Duration</span><span class="v" id="sb-duration">-</span></p>
+            <p class="kv"><span class="k">Payload size</span><span class="v" id="sb-size">-</span></p>
+            <p class="kv"><span class="k">Cache header</span><span class="v" id="sb-cache">-</span></p>
+            <p class="kv"><span class="k">Rows returned</span><span class="v" id="sb-rows">-</span></p>
+            <p class="kv"><span class="k">Range</span><span class="v" id="sb-range">-</span></p>
+            <p class="kv"><span class="k">Source path</span><span class="v" id="sb-source">-</span></p>
+            <p class="kv"><span class="k">Endpoint</span><span class="v" id="sb-url">-</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel charts-grid">
+        <div class="chart-panel is-empty" id="r2-chart-panel">
+          <div class="chart-overlay" id="r2-chart-overlay">Load data to render R2 chart.</div>
+          <canvas id="r2-chart" role="img" aria-label="R2 AQI chart"></canvas>
+        </div>
+        <div class="chart-panel is-empty" id="sb-chart-panel">
+          <div class="chart-overlay" id="sb-chart-overlay">Load data to render Supabase chart.</div>
+          <canvas id="sb-chart" role="img" aria-label="Supabase AQI chart"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const DEFAULT_API_BASE = "https://uk-aq-aqi-history-r2-test.michael-hinford.workers.dev/v1/aqi-history";
+        const DEFAULT_PREFIX = "aqi-r2-test/v1-year-hourly-test";
+
+        const params = new URLSearchParams(window.location.search);
+
+        const apiBaseEl = document.getElementById("api-base");
+        const prefixEl = document.getElementById("prefix");
+        const rowLimitEl = document.getElementById("row-limit");
+        const fromUtcEl = document.getElementById("from-utc");
+        const toUtcEl = document.getElementById("to-utc");
+        const entityEl = document.getElementById("entity");
+        const tokenEl = document.getElementById("cache-token");
+        const errorEl = document.getElementById("error");
+
+        const loadCachedBtn = document.getElementById("load-cached");
+        const loadBypassBtn = document.getElementById("load-bypass");
+        const clearCacheBtn = document.getElementById("clear-cache");
+        const reloadManifestBtn = document.getElementById("reload-manifest");
+
+        const r2DurationEl = document.getElementById("r2-duration");
+        const r2SizeEl = document.getElementById("r2-size");
+        const r2CacheEl = document.getElementById("r2-cache");
+        const r2RowsEl = document.getElementById("r2-rows");
+        const r2RangeEl = document.getElementById("r2-range");
+        const r2PrefixEl = document.getElementById("r2-prefix");
+        const r2UrlEl = document.getElementById("r2-url");
+
+        const sbDurationEl = document.getElementById("sb-duration");
+        const sbSizeEl = document.getElementById("sb-size");
+        const sbCacheEl = document.getElementById("sb-cache");
+        const sbRowsEl = document.getElementById("sb-rows");
+        const sbRangeEl = document.getElementById("sb-range");
+        const sbSourceEl = document.getElementById("sb-source");
+        const sbUrlEl = document.getElementById("sb-url");
+
+        const r2ChartPanel = document.getElementById("r2-chart-panel");
+        const r2ChartOverlay = document.getElementById("r2-chart-overlay");
+        const sbChartPanel = document.getElementById("sb-chart-panel");
+        const sbChartOverlay = document.getElementById("sb-chart-overlay");
+
+        const state = {
+          token: params.get("v") || String(Date.now()),
+          busy: false,
+          charts: {
+            r2: null,
+            sb: null,
+          },
+        };
+
+        apiBaseEl.value = params.get("api_base") || DEFAULT_API_BASE;
+        prefixEl.value = params.get("prefix") || DEFAULT_PREFIX;
+        rowLimitEl.value = params.get("row_limit") || "20000";
+        tokenEl.value = state.token;
+
+        function setDefaultDateWindow() {
+          const now = new Date();
+          const to = new Date(Date.UTC(
+            now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0,
+          ));
+          const from = new Date(to.getTime() - (365 * 24 * 60 * 60 * 1000));
+          fromUtcEl.value = toDatetimeLocal(from);
+          toUtcEl.value = toDatetimeLocal(to);
+        }
+
+        function toDatetimeLocal(date) {
+          const y = date.getUTCFullYear();
+          const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+          const d = String(date.getUTCDate()).padStart(2, "0");
+          const hh = String(date.getUTCHours()).padStart(2, "0");
+          const mm = String(date.getUTCMinutes()).padStart(2, "0");
+          return `${y}-${m}-${d}T${hh}:${mm}`;
+        }
+
+        function datetimeLocalToIso(raw) {
+          const value = String(raw || "").trim();
+          if (!value) return null;
+          const parsed = Date.parse(`${value}:00Z`);
+          if (!Number.isFinite(parsed)) {
+            return null;
+          }
+          return new Date(parsed).toISOString();
+        }
+
+        if (!fromUtcEl.value || !toUtcEl.value) {
+          setDefaultDateWindow();
+        }
+
+        function setBusy(value) {
+          state.busy = Boolean(value);
+          const disabled = state.busy;
+          for (const el of [loadCachedBtn, loadBypassBtn, clearCacheBtn, reloadManifestBtn, entityEl, rowLimitEl, prefixEl, fromUtcEl, toUtcEl]) {
+            el.disabled = disabled;
+          }
+        }
+
+        function setError(message) {
+          errorEl.textContent = message || "";
+        }
+
+        function normalizeApiBase(raw) {
+          return String(raw || "").trim().replace(/\/+$/, "");
+        }
+
+        function normalizePrefix(raw) {
+          return String(raw || "").trim().replace(/^\/+|\/+$/g, "");
+        }
+
+        function normalizeRowLimit(raw) {
+          const value = Number(raw);
+          if (!Number.isFinite(value)) return 20000;
+          const intValue = Math.trunc(value);
+          if (intValue < 1) return 1;
+          if (intValue > 20000) return 20000;
+          return intValue;
+        }
+
+        function formatBytes(bytes) {
+          if (!Number.isFinite(bytes) || bytes < 0) return "-";
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function formatRange(points) {
+          if (!Array.isArray(points) || points.length === 0) return "-";
+          const first = points[0]?.period_start_utc || "-";
+          const last = points[points.length - 1]?.period_start_utc || "-";
+          return `${first} -> ${last}`;
+        }
+
+        function setPanelLoading(panel, overlay, isLoading, emptyText) {
+          if (!panel || !overlay) return;
+          panel.classList.toggle("is-loading", Boolean(isLoading));
+          if (!isLoading && !panel.classList.contains("is-empty") && emptyText) {
+            overlay.textContent = emptyText;
+          }
+        }
+
+        function setPanelEmpty(panel, overlay, isEmpty, text) {
+          if (!panel || !overlay) return;
+          panel.classList.toggle("is-empty", Boolean(isEmpty));
+          if (text) {
+            overlay.textContent = text;
+          }
+        }
+
+        function destroyChart(key) {
+          const existing = state.charts[key];
+          if (existing) {
+            existing.destroy();
+            state.charts[key] = null;
+          }
+        }
+
+        function renderChart(key, canvasId, points, titlePrefix) {
+          const canvas = document.getElementById(canvasId);
+          if (!canvas) return;
+          destroyChart(key);
+
+          const labels = points.map((p) => p.period_start_utc || "");
+          const daqi = points.map((p) => Number(p.daqi_index_level));
+          const eaqi = points.map((p) => Number(p.eaqi_index_level));
+
+          state.charts[key] = new Chart(canvas, {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: `${titlePrefix} DAQI`,
+                  data: daqi,
+                  borderColor: "#0d6efd",
+                  backgroundColor: "rgba(13, 110, 253, 0.14)",
+                  fill: false,
+                  spanGaps: true,
+                  tension: 0.12,
+                  pointRadius: 1.2,
+                },
+                {
+                  label: `${titlePrefix} EAQI`,
+                  data: eaqi,
+                  borderColor: "#ff7a00",
+                  backgroundColor: "rgba(255, 122, 0, 0.14)",
+                  fill: false,
+                  spanGaps: true,
+                  tension: 0.12,
+                  pointRadius: 1.2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              interaction: { mode: "index", intersect: false },
+              plugins: {
+                legend: { position: "top" },
+              },
+              scales: {
+                x: { ticks: { maxTicksLimit: 10 } },
+                y: {
+                  beginAtZero: true,
+                  suggestedMax: 10,
+                  ticks: { stepSize: 1 },
+                },
+              },
+            },
+          });
+        }
+
+        async function fetchJsonWithTiming(url) {
+          const started = performance.now();
+          const response = await fetch(url, { method: "GET", cache: "default" });
+          const elapsedMs = Math.round(performance.now() - started);
+          const text = await response.text();
+          const payloadBytes = new TextEncoder().encode(text).byteLength;
+          let body = null;
+          try {
+            body = text ? JSON.parse(text) : null;
+          } catch (_err) {
+            body = null;
+          }
+          return { response, elapsedMs, payloadBytes, body, text };
+        }
+
+        function buildManifestUrl() {
+          const apiBase = normalizeApiBase(apiBaseEl.value);
+          const prefix = normalizePrefix(prefixEl.value);
+          const url = new URL(`${apiBase}/manifest`);
+          url.searchParams.set("scope", "station");
+          url.searchParams.set("grain", "hourly");
+          url.searchParams.set("v", state.token);
+          if (prefix) {
+            url.searchParams.set("prefix", prefix);
+          }
+          return url;
+        }
+
+        function buildDataUrls(cacheToken) {
+          const apiBase = normalizeApiBase(apiBaseEl.value);
+          const prefix = normalizePrefix(prefixEl.value);
+          const rowLimit = normalizeRowLimit(rowLimitEl.value);
+          const stationId = entityEl.value;
+
+          const fromIso = datetimeLocalToIso(fromUtcEl.value);
+          const toIso = datetimeLocalToIso(toUtcEl.value);
+          if (!fromIso || !toIso) {
+            throw new Error("Invalid From/To UTC values.");
+          }
+          if (Date.parse(fromIso) > Date.parse(toIso)) {
+            throw new Error("From UTC must be before To UTC.");
+          }
+
+          const r2Url = new URL(`${apiBase}/data`);
+          r2Url.searchParams.set("scope", "station");
+          r2Url.searchParams.set("grain", "hourly");
+          r2Url.searchParams.set("entity", stationId);
+          r2Url.searchParams.set("row_limit", String(rowLimit));
+          r2Url.searchParams.set("v", cacheToken);
+          if (prefix) {
+            r2Url.searchParams.set("prefix", prefix);
+          }
+
+          const sbUrl = new URL(`${apiBase}/supabase-data`);
+          sbUrl.searchParams.set("scope", "station");
+          sbUrl.searchParams.set("grain", "hourly");
+          sbUrl.searchParams.set("entity", stationId);
+          sbUrl.searchParams.set("from_utc", fromIso);
+          sbUrl.searchParams.set("to_utc", toIso);
+          sbUrl.searchParams.set("row_limit", String(rowLimit));
+          sbUrl.searchParams.set("v", cacheToken);
+
+          return { r2Url, sbUrl, fromIso, toIso };
+        }
+
+        function applyEntityOptions(entries) {
+          const current = entityEl.value;
+          entityEl.innerHTML = "";
+          for (const entry of entries) {
+            const option = document.createElement("option");
+            option.value = String(entry.entity_id || "");
+            option.textContent = `${entry.entity_name || entry.entity_id} (${entry.entity_id})`;
+            entityEl.appendChild(option);
+          }
+          if (!entries.length) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No stations";
+            entityEl.appendChild(option);
+            return;
+          }
+          if (entries.some((entry) => String(entry.entity_id) === current)) {
+            entityEl.value = current;
+          } else {
+            entityEl.selectedIndex = 0;
+          }
+        }
+
+        async function loadManifest() {
+          setBusy(true);
+          setError("");
+          try {
+            const manifestUrl = buildManifestUrl();
+            const result = await fetchJsonWithTiming(manifestUrl.toString());
+            if (!result.response.ok || !result.body?.ok) {
+              throw new Error(`Manifest request failed (${result.response.status}).`);
+            }
+            const entities = Array.isArray(result.body.entities) ? result.body.entities : [];
+            applyEntityOptions(entities);
+          } catch (error) {
+            applyEntityOptions([]);
+            setError(error instanceof Error ? error.message : String(error));
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        function filterPointsByWindow(points, fromIso, toIso) {
+          const fromMs = Date.parse(fromIso);
+          const toMs = Date.parse(toIso);
+          return (Array.isArray(points) ? points : []).filter((point) => {
+            const ms = Date.parse(String(point?.period_start_utc || ""));
+            if (!Number.isFinite(ms)) {
+              return false;
+            }
+            return ms >= fromMs && ms <= toMs;
+          });
+        }
+
+        async function loadBoth(mode) {
+          if (!entityEl.value) {
+            setError("No station selected.");
+            return;
+          }
+
+          setBusy(true);
+          setError("");
+          setPanelLoading(r2ChartPanel, r2ChartOverlay, true, "Loading R2 chart...");
+          setPanelLoading(sbChartPanel, sbChartOverlay, true, "Loading Supabase chart...");
+
+          const cacheToken = mode === "bypass" ? String(Date.now()) : state.token;
+
+          try {
+            const { r2Url, sbUrl, fromIso, toIso } = buildDataUrls(cacheToken);
+
+            const [r2Result, sbResult] = await Promise.all([
+              fetchJsonWithTiming(r2Url.toString()),
+              fetchJsonWithTiming(sbUrl.toString()),
+            ]);
+
+            if (!r2Result.response.ok || !r2Result.body?.ok) {
+              throw new Error(`R2 request failed (${r2Result.response.status}).`);
+            }
+            if (!sbResult.response.ok || !sbResult.body?.ok) {
+              throw new Error(`Supabase request failed (${sbResult.response.status}).`);
+            }
+
+            const r2Points = filterPointsByWindow(r2Result.body.points || [], fromIso, toIso);
+            const sbPoints = Array.isArray(sbResult.body.points) ? sbResult.body.points : [];
+
+            if (r2Points.length > 0) {
+              renderChart("r2", "r2-chart", r2Points, "R2");
+              setPanelEmpty(r2ChartPanel, r2ChartOverlay, false, "");
+            } else {
+              destroyChart("r2");
+              setPanelEmpty(r2ChartPanel, r2ChartOverlay, true, "No R2 points in selected UTC window.");
+            }
+
+            if (sbPoints.length > 0) {
+              renderChart("sb", "sb-chart", sbPoints, "Supabase");
+              setPanelEmpty(sbChartPanel, sbChartOverlay, false, "");
+            } else {
+              destroyChart("sb");
+              setPanelEmpty(sbChartPanel, sbChartOverlay, true, "No Supabase points in selected UTC window.");
+            }
+
+            r2DurationEl.textContent = `${r2Result.elapsedMs} ms`;
+            r2SizeEl.textContent = formatBytes(r2Result.payloadBytes);
+            r2CacheEl.textContent = r2Result.response.headers.get("x-ukaq-cache") || r2Result.response.headers.get("cf-cache-status") || "-";
+            r2RowsEl.textContent = String(r2Points.length);
+            r2RangeEl.textContent = formatRange(r2Points);
+            r2PrefixEl.textContent = r2Result.body.prefix || "-";
+            r2UrlEl.textContent = r2Url.toString();
+
+            sbDurationEl.textContent = `${sbResult.elapsedMs} ms`;
+            sbSizeEl.textContent = formatBytes(sbResult.payloadBytes);
+            sbCacheEl.textContent = sbResult.response.headers.get("x-ukaq-cache") || sbResult.response.headers.get("cf-cache-status") || "-";
+            sbRowsEl.textContent = String(sbPoints.length);
+            sbRangeEl.textContent = formatRange(sbPoints);
+            sbSourceEl.textContent = sbResult.body.source_path || "-";
+            sbUrlEl.textContent = sbUrl.toString();
+          } catch (error) {
+            destroyChart("r2");
+            destroyChart("sb");
+            setPanelEmpty(r2ChartPanel, r2ChartOverlay, true, "Chart load failed.");
+            setPanelEmpty(sbChartPanel, sbChartOverlay, true, "Chart load failed.");
+            setError(error instanceof Error ? error.message : String(error));
+          } finally {
+            setPanelLoading(r2ChartPanel, r2ChartOverlay, false, "");
+            setPanelLoading(sbChartPanel, sbChartOverlay, false, "");
+            setBusy(false);
+          }
+        }
+
+        reloadManifestBtn.addEventListener("click", loadManifest);
+        loadCachedBtn.addEventListener("click", () => loadBoth("cached"));
+        loadBypassBtn.addEventListener("click", () => loadBoth("bypass"));
+        clearCacheBtn.addEventListener("click", () => {
+          state.token = String(Date.now());
+          tokenEl.value = state.token;
+          setError(`Cache token rotated to ${state.token}`);
+        });
+
+        loadManifest();
+      })();
+    </script>
+  </body>
+</html>
