@@ -9354,8 +9354,9 @@
         const stepSize = Math.max(span * 0.2, 0.02);
         const maxSteps = 700;
         const placements = new Map();
-        const placed = [{ bounds: anchor.bounds }];
+        const movedBoundsById = new Map();
         placements.set(anchor.id, { dx: 0, dy: 0 });
+        movedBoundsById.set(anchor.id, anchor.bounds);
 
         const movable = components
           .filter((component) => component.id !== anchor.id)
@@ -9378,9 +9379,13 @@
             const trialDx = dx + directionX * stepSize;
             const trialDy = dy + directionY * stepSize;
             const trialBounds = translateBounds(component.bounds, trialDx, trialDy);
-            const hasCollision = placed.some((placedComponent) =>
-              boundsDistance(trialBounds, placedComponent.bounds) < targetGap
-            );
+            const hasCollision = components.some((otherComponent) => {
+              if (otherComponent.id === component.id) {
+                return false;
+              }
+              const otherBounds = movedBoundsById.get(otherComponent.id) || otherComponent.bounds;
+              return boundsDistance(trialBounds, otherBounds) < targetGap;
+            });
             if (hasCollision) {
               break;
             }
@@ -9389,7 +9394,7 @@
             movedBounds = trialBounds;
           }
           placements.set(component.id, { dx, dy });
-          placed.push({ bounds: movedBounds });
+          movedBoundsById.set(component.id, movedBounds);
         });
 
         const moveByCellIndex = new Map();
