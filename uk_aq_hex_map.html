@@ -9350,7 +9350,6 @@
         ), components[0]);
         const anchorCenter = anchor.center;
         const span = estimateTypicalCellSpan(cells);
-        const targetGap = span * 0.75;
         const stepSize = Math.max(span * 0.2, 0.02);
         const maxSteps = 700;
         const placements = new Map();
@@ -9384,7 +9383,7 @@
                 return false;
               }
               const otherBounds = movedBoundsById.get(otherComponent.id) || otherComponent.bounds;
-              return boundsDistance(trialBounds, otherBounds) < targetGap;
+              return boundsTouchOrOverlap(trialBounds, otherBounds, 1e-6);
             });
             if (hasCollision) {
               break;
