@@ -6995,6 +6995,14 @@
         { q: 0, r: 1 },
       ];
       const EDGE_DIRECTION_CACHE = new Map();
+      const LA_REGION_OVERRIDES = Object.freeze({
+        // Source data fix: Kingston Upon Hull is Yorkshire and The Humber.
+        E06000010: "Yorkshire and The Humber",
+      });
+      const GEO_ISLAND_COMPACTION_EXCLUDED_REGIONS = new Set([
+        "London",
+        "Yorkshire and The Humber",
+      ]);
 
       const mapSelect = byId("map-select");
       const statusEl = byId("status");
@@ -9173,6 +9181,239 @@
         return { minX, minY, maxX, maxY };
       }
 
+      function canonicalRegionName(value) {
+        if (typeof value !== "string") {
+          return "";
+        }
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return "";
+        }
+        return REGION_LOOKUP.get(trimmed.toLowerCase()) || trimmed;
+      }
+
+      function resolveLaRegionName(laCode, laName, rawRegionName) {
+        const normalizedCode = String(laCode || "").trim().toUpperCase();
+        const normalizedName = String(laName || "").trim().toLowerCase();
+        if (
+          normalizedCode === "E06000010"
+          || normalizedName === "kingston upon hull"
+          || normalizedName === "kingston upon hull, city of"
+        ) {
+          return "Yorkshire and The Humber";
+        }
+        const override = LA_REGION_OVERRIDES[normalizedCode];
+        if (override) {
+          return override;
+        }
+        return canonicalRegionName(rawRegionName);
+      }
+
+      function computeRingBounds(rings) {
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        (rings || []).forEach((ring) => {
+          (ring || []).forEach((point) => {
+            const [x, y] = point;
+            if (x < minX) {
+              minX = x;
+            }
+            if (y < minY) {
+              minY = y;
+            }
+            if (x > maxX) {
+              maxX = x;
+            }
+            if (y > maxY) {
+              maxY = y;
+            }
+          });
+        });
+        return { minX, minY, maxX, maxY };
+      }
+
+      function mergeBounds(a, b) {
+        return {
+          minX: Math.min(a.minX, b.minX),
+          minY: Math.min(a.minY, b.minY),
+          maxX: Math.max(a.maxX, b.maxX),
+          maxY: Math.max(a.maxY, b.maxY),
+        };
+      }
+
+      function translateBounds(bounds, dx, dy) {
+        return {
+          minX: bounds.minX + dx,
+          minY: bounds.minY + dy,
+          maxX: bounds.maxX + dx,
+          maxY: bounds.maxY + dy,
+        };
+      }
+
+      function boundsCenter(bounds) {
+        return {
+          x: (bounds.minX + bounds.maxX) / 2,
+          y: (bounds.minY + bounds.maxY) / 2,
+        };
+      }
+
+      function boundsTouchOrOverlap(a, b, epsilon = 1e-6) {
+        return (
+          a.minX <= b.maxX + epsilon
+          && a.maxX >= b.minX - epsilon
+          && a.minY <= b.maxY + epsilon
+          && a.maxY >= b.minY - epsilon
+        );
+      }
+
+      function boundsDistance(a, b) {
+        const dx = Math.max(0, Math.max(a.minX - b.maxX, b.minX - a.maxX));
+        const dy = Math.max(0, Math.max(a.minY - b.maxY, b.minY - a.maxY));
+        return Math.hypot(dx, dy);
+      }
+
+      function estimateTypicalCellSpan(cells) {
+        const spans = cells
+          .map((cell) => {
+            const bounds = computeRingBounds(cell.paths || []);
+            return Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+          })
+          .filter((value) => Number.isFinite(value) && value > 0)
+          .sort((a, b) => a - b);
+        if (!spans.length) {
+          return 1;
+        }
+        return spans[Math.floor(spans.length / 2)];
+      }
+
+      function buildGeoIslandComponents(cells) {
+        const metrics = cells.map((cell, index) => ({
+          index,
+          bounds: computeRingBounds(cell.paths || []),
+        }));
+        const components = [];
+        const visited = new Set();
+        for (let i = 0; i < metrics.length; i += 1) {
+          if (visited.has(i)) {
+            continue;
+          }
+          visited.add(i);
+          const queue = [i];
+          const indices = [];
+          let componentBounds = metrics[i].bounds;
+          while (queue.length) {
+            const current = queue.pop();
+            indices.push(current);
+            const currentBounds = metrics[current].bounds;
+            for (let j = 0; j < metrics.length; j += 1) {
+              if (visited.has(j)) {
+                continue;
+              }
+              if (!boundsTouchOrOverlap(currentBounds, metrics[j].bounds)) {
+                continue;
+              }
+              visited.add(j);
+              queue.push(j);
+            }
+          }
+          indices.forEach((idx) => {
+            componentBounds = mergeBounds(componentBounds, metrics[idx].bounds);
+          });
+          components.push({
+            id: components.length,
+            indices,
+            bounds: componentBounds,
+            center: boundsCenter(componentBounds),
+          });
+        }
+        return components;
+      }
+
+      function compactGeoIslands(cells, regionName) {
+        const canonicalRegion = canonicalRegionName(regionName);
+        if (
+          !canonicalRegion
+          || GEO_ISLAND_COMPACTION_EXCLUDED_REGIONS.has(canonicalRegion)
+          || !Array.isArray(cells)
+          || cells.length < 2
+        ) {
+          return cells;
+        }
+        const components = buildGeoIslandComponents(cells);
+        if (components.length < 2) {
+          return cells;
+        }
+        const anchor = components.reduce((best, candidate) => (
+          candidate.indices.length > best.indices.length ? candidate : best
+        ), components[0]);
+        const anchorCenter = anchor.center;
+        const span = estimateTypicalCellSpan(cells);
+        const targetGap = span * 0.75;
+        const stepSize = Math.max(span * 0.2, 0.02);
+        const maxSteps = 700;
+        const placements = new Map();
+        const placed = [{ bounds: anchor.bounds }];
+        placements.set(anchor.id, { dx: 0, dy: 0 });
+
+        const movable = components
+          .filter((component) => component.id !== anchor.id)
+          .sort((a, b) => {
+            const aDistance = Math.hypot(a.center.x - anchorCenter.x, a.center.y - anchorCenter.y);
+            const bDistance = Math.hypot(b.center.x - anchorCenter.x, b.center.y - anchorCenter.y);
+            return bDistance - aDistance;
+          });
+
+        movable.forEach((component) => {
+          let directionX = anchorCenter.x - component.center.x;
+          let directionY = anchorCenter.y - component.center.y;
+          const magnitude = Math.hypot(directionX, directionY) || 1;
+          directionX /= magnitude;
+          directionY /= magnitude;
+          let dx = 0;
+          let dy = 0;
+          let movedBounds = component.bounds;
+          for (let step = 0; step < maxSteps; step += 1) {
+            const trialDx = dx + directionX * stepSize;
+            const trialDy = dy + directionY * stepSize;
+            const trialBounds = translateBounds(component.bounds, trialDx, trialDy);
+            const hasCollision = placed.some((placedComponent) =>
+              boundsDistance(trialBounds, placedComponent.bounds) < targetGap
+            );
+            if (hasCollision) {
+              break;
+            }
+            dx = trialDx;
+            dy = trialDy;
+            movedBounds = trialBounds;
+          }
+          placements.set(component.id, { dx, dy });
+          placed.push({ bounds: movedBounds });
+        });
+
+        const moveByCellIndex = new Map();
+        components.forEach((component) => {
+          const move = placements.get(component.id) || { dx: 0, dy: 0 };
+          component.indices.forEach((cellIndex) => {
+            moveByCellIndex.set(cellIndex, move);
+          });
+        });
+
+        return cells.map((cell, cellIndex) => {
+          const move = moveByCellIndex.get(cellIndex) || { dx: 0, dy: 0 };
+          if (!move.dx && !move.dy) {
+            return cell;
+          }
+          return {
+            ...cell,
+            paths: (cell.paths || []).map((ring) =>
+              ring.map((point) => [point[0] + move.dx, point[1] + move.dy])
+            ),
+          };
+        });
+      }
+
       function buildHexCellsFromGeojson(geojson) {
         const features = Array.isArray(geojson?.features) ? geojson.features : [];
         const cells = [];
@@ -9180,18 +9421,16 @@
           const props = feature?.properties || {};
           const laCode = typeof props.la_code === "string" ? props.la_code.trim() : "";
           const laName = typeof props.la_name === "string" ? props.la_name.trim() : "";
-        const regionName = typeof props.region_nation === "string"
-          ? props.region_nation.trim()
-          : "";
-        if (activeRegion && regionName !== activeRegion) {
-          return;
-        }
-        const rings = extractOuterRings(feature?.geometry);
-        if (!rings.length) {
-          return;
-        }
-        const code = laCode || laName || `la-${index}`;
-        const name = laName || code;
+          const regionName = resolveLaRegionName(laCode, laName, props.region_nation);
+          if (activeRegion && regionName !== activeRegion) {
+            return;
+          }
+          const rings = extractOuterRings(feature?.geometry);
+          if (!rings.length) {
+            return;
+          }
+          const code = laCode || laName || `la-${index}`;
+          const name = laName || code;
           cells.push({
             id: code,
             pcon_code: code || null,
@@ -9200,7 +9439,8 @@
             paths: rings,
           });
         });
-        return { cells, bounds: computePolygonBounds(cells), side: null, layout: null };
+        const compactedCells = compactGeoIslands(cells, activeRegion);
+        return { cells: compactedCells, bounds: computePolygonBounds(compactedCells), side: null, layout: null };
       }
 
       function offsetToAxial(layout, col, row) {
