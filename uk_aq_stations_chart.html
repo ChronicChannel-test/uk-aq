@@ -418,7 +418,7 @@
       const fixedSeriesEndParam = params.get("series_end") || params.get("end");
       const limitParam = params.get("limit");
       const cacheBaseParam = params.get("cache_base");
-      const cacheBaseUrl = (cacheBaseParam || "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq").replace(/\/$/, "");
+      const cacheBaseUrl = resolveCacheBaseUrl(cacheBaseParam);
       const cacheSessionParam = params.get("cache_session_url");
       const turnstileSiteKeyParam = params.get("turnstile_site_key");
       const projectRefParam = params.get("project_ref");
@@ -508,6 +508,17 @@
         chartHintEl.textContent = SERIES_EDGE_URL
           ? `Endpoint: ${SERIES_EDGE_URL}`
           : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+      }
+
+      function resolveCacheBaseUrl(rawValue) {
+        const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
+        if (explicit) {
+          return explicit.replace(/\/+$/, "");
+        }
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+          return `${window.location.origin.replace(/\/$/, "")}/api/aq`;
+        }
+        return "https://cic-test.chronicillnesschannel.co.uk/api/aq";
       }
 
       function readCacheSessionHintUntil() {

@@ -53,7 +53,7 @@ Data flow across repos:
   - AQ functions: [../../CIC-test-uk-aq-ingest/supabase/functions/](../../CIC-test-uk-aq-ingest/supabase/functions/)
   - Population function: [../../CIC UK Population Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population](../../CIC%20UK%20Population%20Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population)
 - **Invocation pattern**:
-  - AQ reads (main pages): `https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq/<route>`
+  - AQ reads (main pages): `${window.location.origin}/api/aq/<route>` by default, overrideable via `?cache_base=...`
   - Direct Supabase edge calls (where still used): `https://<project_ref>.supabase.co/functions/v1/<function_name>`
 - **Public vs user-specific responses**: AQ cache routes use worker-managed session cookies (not user account JWTs). The UI does not attach user-specific auth tokens in code.
 

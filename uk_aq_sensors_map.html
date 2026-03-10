@@ -207,7 +207,7 @@
       (() => {
         const PROJECT_REF_PLACEHOLDER = "nmgierafoeuxfkkscrln";
         const ANON_KEY_PLACEHOLDER = "sb_publishable_a6RslXF8rRzJqNo3RjjSSg_mFwfSNMP";
-        const DEFAULT_CACHE_BASE_URL = "https://uk-aq-cache-cic-test.chronicillnesschannel.co.uk/api/aq";
+        const FALLBACK_CACHE_BASE_URL = "https://cic-test.chronicillnesschannel.co.uk/api/aq";
         const TURNSTILE_SITE_KEY_PLACEHOLDER = "0x4AAAAAACgnR_Sa-RXK0lPJ";
         const UPDATED_WITHIN_MS = {
           "3h": 3 * 60 * 60 * 1000,
@@ -218,7 +218,7 @@
 
         const params = new URLSearchParams(window.location.search);
         const cacheBaseParam = params.get("cache_base");
-        const cacheBaseUrl = (cacheBaseParam || DEFAULT_CACHE_BASE_URL).trim().replace(/\/+$/, "");
+        const cacheBaseUrl = resolveCacheBaseUrl(cacheBaseParam);
         const cacheOrigin = getUrlOrigin(cacheBaseUrl);
         const cacheSessionParam = params.get("cache_session_url");
         const defaultCacheSessionUrl = cacheOrigin ? `${cacheOrigin}/api/aq/session/start` : "";
@@ -282,6 +282,17 @@
         }
         if (readingScopeSelect) {
           readingScopeSelect.value = currentReadingScope;
+        }
+
+        function resolveCacheBaseUrl(rawValue) {
+          const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
+          if (explicit) {
+            return explicit.replace(/\/+$/, "");
+          }
+          if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+            return `${window.location.origin.replace(/\/$/, "")}/api/aq`;
+          }
+          return FALLBACK_CACHE_BASE_URL;
         }
 
         function getUrlOrigin(value) {
