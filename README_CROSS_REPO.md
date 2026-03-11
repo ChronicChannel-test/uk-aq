@@ -38,7 +38,7 @@ Data flow across repos:
 - **PostgREST**: none found (no direct `/rest/v1` usage in this repo).
 - **RPC**: none found.
 - **Edge Functions**:
-  - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html): `stations-chart`, `timeseries` via cache proxy routes under `/api/aq/*`.
+  - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html): `stations-chart`, `timeseries` via cache proxy routes under `/api/aq/*`; DAQI/EAQI chart mode reads AQI history from an overrideable R2 worker base (`?aqi_history_base=...`).
   - [uk_aq_hex_map.html](uk_aq_hex_map.html): `latest`, `pcon-hex`, `la-hex` via cache proxy routes under `/api/aq/*`; `uk_aq_population` remains a direct Supabase edge function route when enabled.
   - [hex_map_test.html](hex_map_test.html), [hex_map_test1.html](hex_map_test1.html), [hex_map_test2.html](hex_map_test2.html), [hex_map_test3.html](hex_map_test3.html), [hex_map_test_met1.html](hex_map_test_met1.html): `uk_aq_latest`, `uk_aq_pcon_hex`, `uk_aq_population` (varies per file).
 - **Storage**: none found.
@@ -54,6 +54,7 @@ Data flow across repos:
   - Population function: [../../CIC UK Population Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population](../../CIC%20UK%20Population%20Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population)
 - **Invocation pattern**:
   - AQ reads (main pages): `${window.location.origin}/api/aq/<route>` by default, overrideable via `?cache_base=...`
+  - AQI history chart reads (DAQI/EAQI mode): overrideable via `?aqi_history_base=<aqi-history-worker-base>`
   - Direct Supabase edge calls (where still used): `https://<project_ref>.supabase.co/functions/v1/<function_name>`
 - **Public vs user-specific responses**: AQ cache routes use worker-managed session cookies (not user account JWTs). The UI does not attach user-specific auth tokens in code.
 
