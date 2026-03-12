@@ -22,6 +22,8 @@ Then run:
 node scripts/uk_aq_inject_project_ref.mjs
 ```
 
+Note: `AQI_HISTORY_BASE_PLACEHOLDER` injection is optional per file. Files that do not include that placeholder (for example `uk_aq_hex_map.html`) are skipped for that one token and still receive the required Supabase/Turnstile injections.
+
 You can also target specific files:
 ```
 node scripts/uk_aq_inject_project_ref.mjs uk_aq_hex_map.html

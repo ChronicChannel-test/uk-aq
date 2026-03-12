@@ -92,6 +92,7 @@ async function main() {
       `const AQI_HISTORY_BASE_PLACEHOLDER = "${aqiHistoryBaseUrl}";`,
       "AQI_HISTORY_BASE_PLACEHOLDER",
       targetPath,
+      { required: false },
     );
 
     if (updated !== html) {
@@ -114,11 +115,17 @@ main().catch((error) => {
  * @param {string} replacement
  * @param {string} label
  * @param {string} targetPath
+ * @param {{ required?: boolean }} [options]
  * @returns {string}
  */
-function replacePlaceholder(text, pattern, replacement, label, targetPath) {
+function replacePlaceholder(text, pattern, replacement, label, targetPath, options = {}) {
+  const required = options.required !== false;
   const matches = text.match(pattern);
   if (!matches) {
+    if (!required) {
+      console.warn(`Skipping ${label} in ${path.relative(REPO_ROOT, targetPath)} (placeholder not present).`);
+      return text;
+    }
     console.error(`Could not find ${label} in ${path.relative(REPO_ROOT, targetPath)}`);
     nodeProcess.exit(1);
   }
