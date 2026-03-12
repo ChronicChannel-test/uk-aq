@@ -442,17 +442,23 @@
       const turnstileSiteKey = TURNSTILE_SITE_KEY_PLACEHOLDER.includes("__UK_AQ_TURNSTILE_SITE_KEY__")
         ? (turnstileSiteKeyParam || "")
         : (turnstileSiteKeyParam || TURNSTILE_SITE_KEY_PLACEHOLDER);
+      const AQI_HISTORY_BASE_PLACEHOLDER = "https://cic-test.chronicillnesschannel.co.uk/api/aq/aqi-history";
+      const configuredAqiHistoryBase = AQI_HISTORY_BASE_PLACEHOLDER.includes("__UK_AQ_AQI_HISTORY_BASE_URL__")
+        ? ""
+        : AQI_HISTORY_BASE_PLACEHOLDER;
       const cacheOrigin = cacheBaseUrl ? new URL(cacheBaseUrl).origin : "";
       const defaultCacheSessionUrl = cacheOrigin ? `${cacheOrigin}/api/aq/session/start` : "";
       const cacheSessionUrl = (cacheSessionParam || defaultCacheSessionUrl || "").trim();
       const EDGE_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/stations-chart`
         : "";
-      const DEFAULT_AQI_HISTORY_BASE_URL = "https://uk-aq-aqi-history-r2-test.chronicillnesschannel.workers.dev/v1/aqi-history";
+      const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
+      const DEFAULT_AQI_HISTORY_BASE_URL = configuredAqiHistoryBase;
       const AQI_HISTORY_BASE_URL = resolveAqiHistoryBaseUrl(aqiHistoryBaseParam);
       const AQI_HISTORY_ROW_LIMIT = 20000;
       const AQI_HISTORY_BASE_CANDIDATES = dedupeStrings([
         AQI_HISTORY_BASE_URL,
+        cacheAqiHistoryBase,
         DEFAULT_AQI_HISTORY_BASE_URL,
       ]);
 
@@ -544,10 +550,13 @@
         if (explicit) {
           return explicit.replace(/\/+$/, "");
         }
-        if (cacheBaseUrl) {
-          return `${cacheBaseUrl}/aqi-history`;
+        if (configuredAqiHistoryBase) {
+          return configuredAqiHistoryBase.replace(/\/+$/, "");
         }
-        return DEFAULT_AQI_HISTORY_BASE_URL;
+        if (cacheAqiHistoryBase) {
+          return cacheAqiHistoryBase;
+        }
+        return "";
       }
 
       function normalizeChartMetric(value) {
@@ -597,7 +606,7 @@
         }
         chartHintEl.textContent = preferredAqiHistoryBase
           ? `${getChartMetricLabel(selectedChartMetric)} endpoint: ${preferredAqiHistoryBase}`
-          : "Missing AQI history endpoint. Add ?aqi_history_base=... to the URL.";
+          : "Missing AQI history endpoint. Set UK_AQ_AQI_HISTORY_BASE_URL or add ?aqi_history_base=...";
       }
 
       function readCacheSessionHintUntil() {
@@ -1719,7 +1728,7 @@
         }
         const candidates = buildAqiHistoryRequestCandidates(stationId, windowValue);
         if (!candidates.length) {
-          throw new Error("Missing AQI history endpoint. Add ?aqi_history_base=... to the URL.");
+          throw new Error("Missing AQI history endpoint. Set UK_AQ_AQI_HISTORY_BASE_URL or add ?aqi_history_base=...");
         }
         let lastError = null;
         for (const candidate of candidates) {

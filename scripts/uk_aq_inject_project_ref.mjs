@@ -32,6 +32,7 @@ const DEFAULT_TARGETS = [
 const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
 const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/g;
 const turnstilePattern = /const TURNSTILE_SITE_KEY_PLACEHOLDER = "([^"]*)";/g;
+const aqiHistoryPattern = /const AQI_HISTORY_BASE_PLACEHOLDER = "([^"]*)";/g;
 
 async function main() {
   const envText = await readFileIfExists(ENV_PATH);
@@ -42,6 +43,7 @@ async function main() {
   const projectRef = (nodeProcess.env.SUPABASE_PROJECT_REF || "").trim();
   const publishableKey = (nodeProcess.env.SB_PUBLISHABLE_DEFAULT_KEY || "").trim();
   const turnstileSiteKey = (nodeProcess.env.UK_AQ_TURNSTILE_SITE_KEY || "").trim();
+  const aqiHistoryBaseUrl = (nodeProcess.env.UK_AQ_AQI_HISTORY_BASE_URL || "__UK_AQ_AQI_HISTORY_BASE_URL__").trim();
 
   if (!projectRef) {
     console.error("SUPABASE_PROJECT_REF is missing. Set it in .env or the environment.");
@@ -84,12 +86,19 @@ async function main() {
       "TURNSTILE_SITE_KEY_PLACEHOLDER",
       targetPath,
     );
+    updated = replacePlaceholder(
+      updated,
+      aqiHistoryPattern,
+      `const AQI_HISTORY_BASE_PLACEHOLDER = "${aqiHistoryBaseUrl}";`,
+      "AQI_HISTORY_BASE_PLACEHOLDER",
+      targetPath,
+    );
 
     if (updated !== html) {
       await fs.writeFile(targetPath, updated);
-      console.log(`Injected SUPABASE_PROJECT_REF, publishable key, and Turnstile site key into ${path.relative(REPO_ROOT, targetPath)}`);
+      console.log(`Injected SUPABASE_PROJECT_REF, publishable key, Turnstile site key, and AQI history base into ${path.relative(REPO_ROOT, targetPath)}`);
     } else {
-      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref, publishable key, and Turnstile site key.`);
+      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref, publishable key, Turnstile site key, and AQI history base.`);
     }
   }
 }
