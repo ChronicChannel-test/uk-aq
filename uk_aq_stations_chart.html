@@ -401,6 +401,7 @@
             <option value="24h" selected>Last 24 hours</option>
             <option value="7d">Last 7 days</option>
             <option value="31d">Last 31 days</option>
+            <option value="90d">Last 90 days</option>
           </select>
         </div>
         <div class="hint" id="chart-hint">Line chart of raw observations for the selected station.</div>
@@ -1587,6 +1588,8 @@
           dayCount = 7;
         } else if (windowValue === "31d") {
           dayCount = 31;
+        } else if (windowValue === "90d") {
+          dayCount = 90;
         }
         const from = new Date(to.getTime() - (dayCount * DAY_MS));
         return {
