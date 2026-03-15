@@ -514,12 +514,7 @@
         <div class="filters">
           <label for="station-select">Station</label>
           <select id="station-select"></select>
-          <label for="chart-metric-select">Metric</label>
-          <select id="chart-metric-select">
-            <option value="observations" selected>Observations</option>
-            <option value="daqi">DAQI</option>
-            <option value="eaqi">EAQI</option>
-          </select>
+
           <label for="window-select">Window</label>
           <select id="window-select">
             <option value="12h">Last 12 hours</option>
@@ -570,7 +565,7 @@
       const limitParam = params.get("limit");
       const cacheBaseParam = params.get("cache_base");
       const aqiHistoryBaseParam = params.get("aqi_history_base");
-      const chartMetricParam = params.get("chart_metric");
+
       const cacheBaseUrl = resolveCacheBaseUrl(cacheBaseParam);
       const cacheSessionParam = params.get("cache_session_url");
       const turnstileSiteKeyParam = params.get("turnstile_site_key");
@@ -621,7 +616,7 @@
         ? `${cacheBaseUrl}/timeseries`
         : "";
       const stationSelect = document.getElementById("station-select");
-      const chartMetricSelect = document.getElementById("chart-metric-select");
+
       const windowSelect = document.getElementById("window-select");
       const chartStatusEl = document.getElementById("chart-status");
       const chartErrorEl = document.getElementById("chart-error");
@@ -645,7 +640,7 @@
       );
       let cachedRows = [];
       let selectedSeriesId = null;
-      let selectedChartMetric = normalizeChartMetric(chartMetricParam || chartMetricSelect?.value || "observations");
+
       let seriesLookup = new Map();
       let preferredAqiHistoryBase = AQI_HISTORY_BASE_CANDIDATES[0] || "";
       const latestEtagBySearch = new Map();
@@ -682,9 +677,7 @@
       if (stationSearchInput) {
         stationSearchInput.value = currentStationLike;
       }
-      if (chartMetricSelect) {
-        chartMetricSelect.value = selectedChartMetric;
-      }
+
       regionBadge.textContent = `Search: ${currentStationLike}`;
       endpointHint.textContent = EDGE_URL
         ? `Endpoint: ${EDGE_URL}`
@@ -716,16 +709,7 @@
         return "";
       }
 
-      function normalizeChartMetric(value) {
-        const normalized = String(value || "").trim().toLowerCase();
-        if (normalized === "daqi") {
-          return "daqi";
-        }
-        if (normalized === "eaqi") {
-          return "eaqi";
-        }
-        return "observations";
-      }
+
 
       function dedupeStrings(values) {
         const out = [];
@@ -741,29 +725,15 @@
         return out;
       }
 
-      function getChartMetricLabel(metric) {
-        if (metric === "daqi") {
-          return "DAQI";
-        }
-        if (metric === "eaqi") {
-          return "EAQI";
-        }
-        return "Observations";
-      }
+
 
       function updateChartHint() {
         if (!chartHintEl) {
           return;
         }
-        if (selectedChartMetric === "observations") {
-          chartHintEl.textContent = SERIES_EDGE_URL
-            ? `Raw observations endpoint: ${SERIES_EDGE_URL}`
-            : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
-          return;
-        }
-        chartHintEl.textContent = preferredAqiHistoryBase
-          ? `${getChartMetricLabel(selectedChartMetric)} endpoint: ${preferredAqiHistoryBase}`
-          : "Missing AQI history endpoint. Set UK_AQ_AQI_HISTORY_BASE_URL or add ?aqi_history_base=...";
+        chartHintEl.textContent = SERIES_EDGE_URL
+          ? `Raw observations endpoint: ${SERIES_EDGE_URL}`
+          : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
       }
 
       function readCacheSessionHintUntil() {
@@ -1313,7 +1283,7 @@
           initialized: false,
           width: 0,
           height: 0,
-          margin: { top: 24, right: 24, bottom: 40, left: 56 },
+          margin: { top: 76, right: 24, bottom: 40, left: 56 },
           xScale: d3.scaleTime(),
           yScale: d3.scaleLinear(),
           frame: null,
@@ -1325,6 +1295,8 @@
           dot: null,
           overlay: null,
           emptyText: null,
+          daqiGroup: null,
+          eaqiGroup: null,
           points: [],
           meta: null,
         };
@@ -1560,25 +1532,19 @@
         );
       }
 
-      function parseAqiHistoryPoints(payload, metric) {
+      function parseAqiBandPayload(payload) {
         const rawPoints = Array.isArray(payload?.points)
           ? payload.points
           : Array.isArray(payload?.data)
           ? payload.data
           : [];
-        const valueKey = metric === "eaqi" ? "eaqi_index_level" : "daqi_index_level";
         const mapped = rawPoints.map((row) => ({
-          date: new Date(
-            row?.period_start_utc ||
-              row?.timestamp_hour_utc ||
-              row?.observed_at,
-          ),
-          value: Number(row?.[valueKey]),
+          date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
+          daqi: Number(row?.daqi_index_level),
+          eaqi: row?.eaqi_index_level,
         }));
         return mapped.filter((row) =>
-          Number.isFinite(row.date?.getTime()) &&
-          Number.isFinite(row.value) &&
-          row.value >= 0
+          Number.isFinite(row.date?.getTime())
         ).sort((a, b) => a.date.getTime() - b.date.getTime());
       }
 
@@ -1737,6 +1703,8 @@
         chartSvg.attr("viewBox", `0 0 ${width} ${height}`);
 
         if (!chartState.initialized) {
+          chartState.daqiGroup = chartSvg.append("g").attr("class", "aqi-band-group daqi-group");
+          chartState.eaqiGroup = chartSvg.append("g").attr("class", "aqi-band-group eaqi-group");
           chartState.xAxisGroup = chartSvg.append("g")
             .attr("class", "chart-axis");
           chartState.yAxisGroup = chartSvg.append("g")
@@ -1835,6 +1803,101 @@
           chartTooltip.style.top = `${tooltipTop}px`;
         }
         chartTooltip.classList.add("visible");
+      }
+
+      function renderAqiBands() {
+        if (!chartState.initialized || !chartState.daqiGroup || !chartState.eaqiGroup) {
+          return;
+        }
+
+        const daqiColors = {
+          1: "#BED82F", 2: "#62BB3D", 3: "#358A2F", 4: "#F2BE1C", 5: "#FA9418",
+          6: "#F1671E", 7: "#ED1B24", 8: "#B50F19", 9: "#72361A", 10: "#B83D97"
+        };
+        const eaqiColors = {
+          "Good": "#50F0E6", "Fair": "#50CCAA", "Moderate": "#F0E641",
+          "Poor": "#FF5050", "Very poor": "#960032", "Extremely poor": "#7D2181",
+          1: "#50F0E6", 2: "#50CCAA", 3: "#F0E641", 4: "#FF5050", 5: "#960032", 6: "#7D2181"
+        };
+        const noDataColor = "#D9D9D9";
+
+        const bandHeight = 22;
+        const gap = 4;
+
+        chartState.daqiGroup.selectAll("*").remove();
+        chartState.eaqiGroup.selectAll("*").remove();
+
+        // Extract timespan from current chart scale
+        const domain = chartState.xScale.domain();
+        if (!domain || domain.length < 2) return;
+        const [domainStart, domainEnd] = domain;
+
+        // Determine hour segments across the viewing window
+        const totalHours = Math.max(1, (domainEnd - domainStart) / HOUR_MS);
+        const cellWidth = Math.max(1, (chartState.width - chartState.margin.left - chartState.margin.right) / totalHours);
+
+        const slots = [];
+        let current = new Date(domainStart);
+        current.setMinutes(0, 0, 0); // floor to hour
+        while (current < domainEnd) {
+          slots.push(new Date(current));
+          current = new Date(current.getTime() + HOUR_MS);
+        }
+
+        const getPointForSlot = (slotTime) => {
+          if (!Array.isArray(chartState.aqiPoints)) return null;
+          return chartState.aqiPoints.find(p => p.date.getTime() === slotTime.getTime()) || null;
+        };
+
+        const drawBand = (group, yOffset, valueKey, colorsMap, label) => {
+          group.attr("transform", `translate(0, ${yOffset})`);
+
+          // Accessible label + visual label
+          group.attr("aria-label", `${label} band`);
+          group.append("text")
+            .attr("x", chartState.margin.left - 8)
+            .attr("y", bandHeight / 2)
+            .attr("dy", "0.32em")
+            .attr("text-anchor", "end")
+            .style("font-size", "0.75rem")
+            .style("font-weight", "600")
+            .style("fill", "var(--ink-soft)")
+            .text(label);
+
+          slots.forEach(slot => {
+            const point = getPointForSlot(slot);
+            const val = point ? point[valueKey] : null;
+            const color = (val !== null && val !== undefined && val !== 0 && colorsMap[val]) ? colorsMap[val] : noDataColor;
+
+            const xPos = chartState.xScale(slot);
+            // Must overlap or clip within bounds
+            if (xPos > chartState.margin.left - cellWidth && xPos < chartState.width - chartState.margin.right) {
+               const safeX = Math.max(chartState.margin.left, xPos);
+               let safeW = cellWidth;
+               if (xPos < chartState.margin.left) {
+                 safeW = cellWidth - (chartState.margin.left - xPos);
+               }
+               if (safeX + safeW > chartState.width - chartState.margin.right) {
+                 safeW = (chartState.width - chartState.margin.right) - safeX;
+               }
+               if (safeW > 0) {
+                 group.append("rect")
+                  .attr("x", safeX)
+                  .attr("y", 0)
+                  .attr("width", safeW)
+                  .attr("height", bandHeight)
+                  .attr("fill", color)
+                  .style("stroke", "none");
+               }
+            }
+          });
+        };
+
+        const daqiY = 16;
+        const eaqiY = daqiY + bandHeight + gap;
+
+        drawBand(chartState.daqiGroup, daqiY, "daqi", daqiColors, "DAQI");
+        drawBand(chartState.eaqiGroup, eaqiY, "eaqi", eaqiColors, "EAQI");
       }
 
       function renderSeriesChart(points, meta, windowLabel, guideline, options = {}) {
@@ -1948,6 +2011,8 @@
           .datum(chartState.points)
           .transition(transition)
           .attr("d", line);
+
+        renderAqiBands();
       }
 
       function resolveWindowValue() {
@@ -2534,15 +2599,19 @@
         chartStatusEl.textContent = "Live";
       }
 
-      async function loadAqiSeriesData(windowValue, metric) {
+      async function loadAqiBandsData(windowValue) {
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const stationId = baseMeta?.stationId || null;
         if (!stationId) {
-          throw new Error("Selected series is missing station_id.");
+          chartState.aqiPoints = [];
+          renderAqiBands();
+          return;
         }
         const candidates = buildAqiHistoryRequestCandidates(stationId, windowValue);
         if (!candidates.length) {
-          throw new Error("Missing AQI history endpoint. Set UK_AQ_AQI_HISTORY_BASE_URL or add ?aqi_history_base=...");
+          chartState.aqiPoints = [];
+          renderAqiBands();
+          return;
         }
         let lastError = null;
         for (const candidate of candidates) {
@@ -2554,37 +2623,24 @@
               throw new Error(`AQI request failed (${response.status}).`);
             }
             const payload = await response.json().catch(() => ({}));
-            const parsedPoints = parseAqiHistoryPoints(payload, metric);
+            const parsedPoints = parseAqiBandPayload(payload);
             const points = pruneSeriesPointsToWindow(
               parsedPoints,
               windowValue,
               payload?.query_to_utc || payload?.to_utc || null,
             );
-            preferredAqiHistoryBase = candidate.base;
-            updateChartHint();
-            const metricLabel = getChartMetricLabel(metric);
-            const stationLabel = baseMeta?.stationLabel || extractSeriesStation(baseMeta?.label) || "Selected station";
-            renderSeriesChart(
-              points,
-              {
-                label: `${stationLabel} — ${metricLabel}`,
-                uom: "index",
-                valueFormat: "integer",
-                emptyMessage: `No ${metricLabel} values in this window.`,
-              },
-              windowValue,
-              null,
-            );
-            chartStatusEl.textContent = "Live";
+            chartState.aqiPoints = points;
+            renderAqiBands();
             return;
           } catch (error) {
             lastError = error;
           }
         }
-        if (lastError instanceof Error) {
-          throw lastError;
+        if (lastError) {
+          console.warn("Unable to load AQI history for bands.", lastError);
         }
-        throw new Error("Unable to load AQI history series.");
+        chartState.aqiPoints = [];
+        renderAqiBands();
       }
 
       async function loadSeriesData() {
@@ -2614,18 +2670,15 @@
         updateChartHint();
         const windowValue = resolveWindowValue();
         try {
-          if (selectedChartMetric === "observations") {
-            if (!SERIES_EDGE_URL) {
-              throw new Error("Missing cache endpoint base URL for series endpoint.");
-            }
-            if (!cacheSessionUrl) {
-              throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
-            }
-            await loadObservationSeriesData(windowValue, loadId, loadReason);
-          } else {
-            settleChartTimeline(windowValue);
-            await loadAqiSeriesData(windowValue, selectedChartMetric);
+          if (!SERIES_EDGE_URL) {
+            throw new Error("Missing cache endpoint base URL for series endpoint.");
           }
+          if (!cacheSessionUrl) {
+            throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
+          }
+          
+          loadAqiBandsData(windowValue).catch(e => console.warn("AQI bands failed to load", e));
+          await loadObservationSeriesData(windowValue, loadId, loadReason);
         } catch (error) {
           if (!isSeriesLoadCurrent(loadId) || isAbortError(error)) {
             return;
@@ -2636,11 +2689,8 @@
           }
           chartStatusEl.textContent = "Error";
           setChartTimelineLoading(false, "Chart loading stopped.");
-          const metricLabel = selectedChartMetric === "observations"
-            ? "series"
-            : getChartMetricLabel(selectedChartMetric);
           if (!chartState.points.length) {
-            clearSeriesChart(`Unable to load ${metricLabel}.`);
+            clearSeriesChart("Unable to load series.");
           }
         } finally {
           if (isSeriesLoadCurrent(loadId)) {
@@ -2783,21 +2833,14 @@
           loadSeriesData();
         });
       }
-      if (chartMetricSelect) {
-        chartMetricSelect.addEventListener("change", () => {
-          selectedChartMetric = normalizeChartMetric(chartMetricSelect.value);
-          updateChartHint();
-          nextSeriesLoadReason = "metric-change";
-          loadSeriesData();
-        });
-      }
+
       if (windowSelect) {
         if (hasFixedSeriesDateRange || fixedSeriesDays !== null) {
           windowSelect.disabled = true;
           windowSelect.title = "Range is fixed by URL parameter.";
         }
         windowSelect.addEventListener("change", () => {
-          if (selectedSeriesId && selectedChartMetric === "observations") {
+          if (selectedSeriesId) {
             const selectedWindowValue = windowSelect.value || "24h";
             const windowValue = hasFixedSeriesDateRange
               ? "custom"
