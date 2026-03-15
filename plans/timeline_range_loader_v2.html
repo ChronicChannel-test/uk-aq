@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Range Loader</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #fff; color: #111; padding: 2rem; max-width: 800px; margin: 0 auto; }
+  button { cursor: pointer; font-size: 13px; padding: 5px 12px; border-radius: 6px; border: 0.5px solid #ccc; background: transparent; color: #333; }
+  button:hover { background: #f0f0f0; }
+  @keyframes txt-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+</head>
+<body>
+
+<div style="padding:1rem 0 0.5rem;">
+
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+    <div style="font-size:15px; font-weight:500; color:#111;">Sensor readings</div>
+    <div style="display:flex; gap:6px;" id="btns">
+      <button onclick="go('24h')" id="b-24h">24h</button>
+      <button onclick="go('7d')" id="b-7d">7d</button>
+      <button onclick="go('30d')" id="b-30d">30d</button>
+      <button onclick="go('90d')" id="b-90d">90d</button>
+    </div>
+  </div>
+
+  <div style="position:relative; margin-bottom:1.5rem; user-select:none;">
+
+    <div style="position:relative; height:18px; margin-bottom:5px;">
+      <span id="lbl-start" style="position:absolute; left:0; font-size:11px; color:#666; white-space:nowrap;"></span>
+      <span id="lbl-loading" style="position:absolute; font-size:11px; font-weight:500; color:#854F0B; white-space:nowrap; transform:translateX(-50%); animation:txt-pulse 1.1s ease-in-out infinite; transition:left 0.08s linear, opacity 0.2s;"></span>
+      <span id="lbl-end" style="position:absolute; right:0; font-size:11px; color:#666; white-space:nowrap;">now</span>
+    </div>
+
+    <div style="display:flex; height:28px; border-radius:6px; overflow:hidden; border:0.5px solid #ddd;">
+      <div id="bl" style="flex:0; background:#FAC775; transition:flex 0.08s linear; min-width:0;"></div>
+      <div id="bd" style="flex:1; background:#185FA5; transition:flex 0.08s linear; min-width:0;"></div>
+    </div>
+
+    <div style="position:relative; height:16px; margin-top:4px;">
+      <span id="lbl-fetch" style="position:absolute; font-size:11px; color:#aaa; white-space:nowrap; transform:translateX(-50%); transition:left 0.08s linear, opacity 0.2s;"></span>
+    </div>
+
+  </div>
+
+  <div style="position:relative; height:280px;">
+    <canvas id="mc"></canvas>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const MS=3600000, NOW=Date.now();
+const RANGES={'24h':24,'7d':168,'30d':720,'90d':2160};
+const RKEYS=['24h','7d','30d','90d'];
+
+function fdate(h){
+  const d=new Date(NOW-h*MS);
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:h>700?'numeric':undefined});
+}
+function fshort(h){
+  if(h<1) return 'now';
+  if(h<48) return Math.round(h)+'h ago';
+  return Math.round(h/24)+'d ago';
+}
+
+const allData=[];
+let vv=60;
+for(let h=2160;h>=0;h-=2){
+  vv+=(Math.random()-0.486)*2.8;
+  vv=Math.max(18,Math.min(92,vv));
+  allData.push({x:NOW-h*MS,y:Math.round(vv*10)/10});
+}
+
+let maxLoaded=24, target=24, disp=24, tmr=null;
+
+function getVis(h){ return allData.filter(p=>p.x>=NOW-h*MS); }
+
+const chart=new Chart(document.getElementById('mc'),{
+  type:'line',
+  data:{datasets:[{
+    data:getVis(24),parsing:false,
+    borderColor:'#378ADD',borderWidth:1.5,
+    pointRadius:0,tension:0.38,fill:true,
+    backgroundColor:'rgba(55,138,221,0.07)'
+  }]},
+  options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{
+      enabled:true,
+      callbacks:{
+        title(items){return fshort((NOW-items[0].parsed.x)/MS);},
+        label(item){return ' '+Math.round(item.parsed.y);}
+      },
+      backgroundColor:'rgba(20,40,70,0.85)',
+      titleColor:'#B5D4F4',bodyColor:'#e8f2fb',
+      borderColor:'rgba(55,138,221,0.3)',borderWidth:1,
+      padding:8,cornerRadius:6
+    }},
+    scales:{
+      x:{type:'linear',min:NOW-24*MS,max:NOW,
+        grid:{color:'rgba(128,128,128,0.08)'},
+        ticks:{maxTicksLimit:6,color:'#888',font:{size:11},
+          callback(v){return fshort((NOW-v)/MS);}
+        }
+      },
+      y:{grid:{color:'rgba(128,128,128,0.08)'},
+        ticks:{maxTicksLimit:5,color:'#888',font:{size:11},callback:v=>Math.round(v)}
+      }
+    }
+  }
+});
+
+function refresh(){
+  chart.data.datasets[0].data=getVis(disp);
+  chart.options.scales.x.min=NOW-disp*MS;
+  chart.update('none');
+
+  const loading=disp<target;
+  const lRatio=loading?(target-disp)/target:0;
+  const dRatio=disp/target;
+
+  document.getElementById('bl').style.flex=lRatio;
+  document.getElementById('bd').style.flex=dRatio;
+
+  const lblLoading=document.getElementById('lbl-loading');
+  const lblFetch=document.getElementById('lbl-fetch');
+  const lblStart=document.getElementById('lbl-start');
+
+  lblStart.textContent=fdate(target);
+
+  if(loading && lRatio>0.08){
+    const centerPct=(lRatio/2)*100;
+    lblLoading.style.left=centerPct+'%';
+    lblLoading.textContent='Loading';
+    lblLoading.style.opacity='1';
+
+    lblFetch.style.left=(lRatio*100)+'%';
+    lblFetch.textContent=fdate(disp);
+    lblFetch.style.opacity='1';
+  } else {
+    lblLoading.style.opacity='0';
+    lblFetch.style.opacity='0';
+  }
+}
+
+function setBtn(key){
+  RKEYS.forEach(k=>{
+    const b=document.getElementById('b-'+k);
+    if(k===key){
+      b.style.background='#dbeeff';
+      b.style.color='#0c447c';
+      b.style.borderColor='#85b7eb';
+    } else {
+      b.style.background='';b.style.color='';b.style.borderColor='';
+    }
+  });
+}
+
+function go(key){
+  clearInterval(tmr);
+  const nt=RANGES[key];
+  target=nt;
+  setBtn(key);
+
+  if(nt<=maxLoaded){
+    disp=nt; refresh(); return;
+  }
+
+  const from=maxLoaded;
+  const STEPS=52;
+  const step=(nt-from)/STEPS;
+  let i=0;
+  tmr=setInterval(()=>{
+    i++;
+    disp=Math.min(from+step*i, nt);
+    maxLoaded=disp;
+    refresh();
+    if(i>=STEPS){
+      clearInterval(tmr); tmr=null;
+      disp=maxLoaded=nt; refresh();
+    }
+  },65);
+}
+
+refresh();
+setBtn('24h');
+</script>
+</body>
+</html>

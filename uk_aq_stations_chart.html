@@ -669,6 +669,7 @@
       const chartState = createEmptyChartState();
       let activeSeriesLoadId = 0;
       let activeObservationAbortController = null;
+      let nextSeriesLoadReason = "initial";
       let cacheSessionReadyUntil = 0;
       let cacheSessionInflight = null;
       let turnstileScriptInflight = null;
@@ -1505,6 +1506,25 @@
         return `${seriesId || ""}::${windowLabel || ""}`;
       }
 
+      function getSeriesGuideline(seriesId, preferredKey = null) {
+        if (preferredKey && seriesGuidelineByKey.has(preferredKey)) {
+          return seriesGuidelineByKey.get(preferredKey) || null;
+        }
+        const prefix = `${seriesId || ""}::`;
+        for (const [key, value] of seriesGuidelineByKey.entries()) {
+          if (key.startsWith(prefix) && value) {
+            return value;
+          }
+        }
+        return null;
+      }
+
+      function consumeSeriesLoadReason() {
+        const reason = nextSeriesLoadReason;
+        nextSeriesLoadReason = "auto";
+        return reason;
+      }
+
       function dropSeriesCacheForKey(seriesKey) {
         seriesSinceByKey.delete(seriesKey);
         seriesEtagByKey.delete(seriesKey);
@@ -2089,6 +2109,32 @@
         return chunks;
       }
 
+      function getObservationSeedPoints(meta) {
+        if (!Array.isArray(chartState.points) || !chartState.points.length) {
+          return [];
+        }
+        if (!meta?.label || chartState.meta?.label !== meta.label) {
+          return [];
+        }
+        return chartState.points.slice().sort((a, b) => a.date.getTime() - b.date.getTime());
+      }
+
+      function shouldUseProgressiveObservationExpansion(loadReason, range, seedPoints) {
+        if (loadReason !== "window-change") {
+          return false;
+        }
+        if (!Array.isArray(seedPoints) || !seedPoints.length) {
+          return false;
+        }
+        const earliestSeedMs = seedPoints[0]?.date instanceof Date
+          ? seedPoints[0].date.getTime()
+          : Number.NaN;
+        if (!Number.isFinite(earliestSeedMs)) {
+          return false;
+        }
+        return range.startMs < (earliestSeedMs - 60 * 1000);
+      }
+
       function buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, since = null }) {
         const url = new URL(SERIES_EDGE_URL);
         url.searchParams.set("timeseries_id", seriesId);
@@ -2160,7 +2206,7 @@
           return true;
         }
         if (response.status === 304) {
-          const guideline = seriesGuidelineByKey.get(seriesKey) || null;
+          const guideline = getSeriesGuideline(selectedSeriesId, seriesKey);
           renderSeriesChart(cachedWindowPoints, meta, windowValue, guideline, {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
@@ -2198,7 +2244,126 @@
         return true;
       }
 
-      async function loadObservationSeriesData(windowValue, loadId) {
+      async function loadObservationSeriesDataImmediate({
+        seriesKey,
+        range,
+        meta,
+        windowValue,
+        loadId,
+        cachedWindowPoints,
+      }) {
+        if (cachedWindowPoints.length) {
+          const cachedGuideline = getSeriesGuideline(selectedSeriesId, seriesKey);
+          renderSeriesChart(cachedWindowPoints, meta, windowValue, cachedGuideline, {
+            domainStartMs: range.startMs,
+            domainEndMs: range.endMs,
+          });
+          setChartTimelineProgress({
+            progress: 1,
+            boundaryMs: range.startMs,
+            isComplete: true,
+            ariaText: "Cached observations rendered.",
+          });
+          setChartTimelineLoading(false);
+          chartStatusEl.textContent = "Live";
+          await refreshObservationSeriesFromCache(
+            seriesKey,
+            cachedWindowPoints,
+            range,
+            meta,
+            windowValue,
+            loadId
+          );
+          activeObservationAbortController = null;
+          return;
+        }
+
+        const controller = new AbortController();
+        activeObservationAbortController = controller;
+        const etag = seriesEtagByKey.get(seriesKey) || null;
+        const requestHeaders = {};
+        if (etag) {
+          requestHeaders["If-None-Match"] = etag;
+        }
+        const response = await fetchCacheApi(
+          buildObservationSeriesRequestUrl({
+            seriesId: selectedSeriesId,
+            startIso: range.startIso,
+            endIso: range.endIso,
+          }).toString(),
+          {
+            headers: requestHeaders,
+            signal: controller.signal,
+          }
+        );
+        if (!isSeriesLoadCurrent(loadId)) {
+          return;
+        }
+        if (response.status === 304) {
+          const guideline = seriesGuidelineByKey.get(seriesKey) || null;
+          if (cachedWindowPoints.length) {
+            renderSeriesChart(cachedWindowPoints, meta, windowValue, guideline, {
+              domainStartMs: range.startMs,
+              domainEndMs: range.endMs,
+            });
+          } else {
+            clearSeriesChart(meta.emptyMessage);
+          }
+          setChartTimelineProgress({
+            progress: 1,
+            boundaryMs: range.startMs,
+            isComplete: true,
+            ariaText: "Observation loading complete.",
+          });
+          setChartTimelineLoading(false);
+          chartStatusEl.textContent = "Live";
+          return;
+        }
+        if (!response.ok) {
+          throw new Error(`Series request failed: ${response.status}`);
+        }
+        const responseEtag = response.headers.get("etag");
+        if (responseEtag) {
+          seriesEtagByKey.set(seriesKey, responseEtag);
+        }
+        const payload = await response.json();
+        if (!isSeriesLoadCurrent(loadId)) {
+          return;
+        }
+        const guideline = payload?.guideline || null;
+        if (guideline) {
+          seriesGuidelineByKey.set(seriesKey, guideline);
+        }
+        const points = pruneSeriesPointsToWindow(
+          parseSeriesPayloadPoints(payload),
+          windowValue,
+          range.endIso
+        );
+        if (points.length) {
+          seriesPointCacheByKey.set(seriesKey, points);
+          const nextSince = normalizeIsoTimestamp(payload?.next_since) || latestObservedAtFromPoints(points);
+          if (nextSince) {
+            seriesSinceByKey.set(seriesKey, nextSince);
+          }
+          persistSeriesCacheToStorage();
+          renderSeriesChart(points, meta, windowValue, guideline, {
+            domainStartMs: range.startMs,
+            domainEndMs: range.endMs,
+          });
+        } else {
+          clearSeriesChart(meta.emptyMessage);
+        }
+        setChartTimelineProgress({
+          progress: 1,
+          boundaryMs: range.startMs,
+          isComplete: true,
+          ariaText: "Observation loading complete.",
+        });
+        setChartTimelineLoading(false);
+        chartStatusEl.textContent = "Live";
+      }
+
+      async function loadObservationSeriesData(windowValue, loadId, loadReason) {
         const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
         const range = resolveObservationRequestRange(windowValue);
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
@@ -2231,9 +2396,24 @@
           persistSeriesCacheToStorage();
         }
 
-        if (cachedWindowPoints.length) {
-          const cachedGuideline = seriesGuidelineByKey.get(seriesKey) || null;
-          renderSeriesChart(cachedWindowPoints, meta, windowValue, cachedGuideline, {
+        const seedPoints = getObservationSeedPoints(meta);
+        const earliestSeedMs = seedPoints[0]?.date instanceof Date
+          ? seedPoints[0].date.getTime()
+          : Number.NaN;
+        if (
+          loadReason === "window-change" &&
+          seedPoints.length &&
+          Number.isFinite(earliestSeedMs) &&
+          range.startMs >= (earliestSeedMs - 60 * 1000)
+        ) {
+          const points = pruneSeriesPointsToWindow(seedPoints, windowValue, range.endIso);
+          seriesPointCacheByKey.set(seriesKey, points);
+          const nextSince = latestObservedAtFromPoints(points);
+          if (nextSince) {
+            seriesSinceByKey.set(seriesKey, nextSince);
+          }
+          persistSeriesCacheToStorage();
+          renderSeriesChart(points, meta, windowValue, getSeriesGuideline(selectedSeriesId, seriesKey), {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
           });
@@ -2241,36 +2421,50 @@
             progress: 1,
             boundaryMs: range.startMs,
             isComplete: true,
-            ariaText: "Cached observations rendered.",
+            ariaText: "Observation range updated.",
           });
           setChartTimelineLoading(false);
           chartStatusEl.textContent = "Live";
-          await refreshObservationSeriesFromCache(
+          return;
+        }
+        if (!shouldUseProgressiveObservationExpansion(loadReason, range, seedPoints)) {
+          await loadObservationSeriesDataImmediate({
             seriesKey,
-            cachedWindowPoints,
             range,
             meta,
             windowValue,
-            loadId
-          );
-          activeObservationAbortController = null;
+            loadId,
+            cachedWindowPoints,
+          });
           return;
         }
-
-        clearSeriesChart("Loading observations…");
+        let mergedPoints = pruneSeriesPointsToWindow(seedPoints, windowValue, range.endIso);
+        if (!mergedPoints.length) {
+          await loadObservationSeriesDataImmediate({
+            seriesKey,
+            range,
+            meta,
+            windowValue,
+            loadId,
+            cachedWindowPoints,
+          });
+          return;
+        }
+        let guideline = getSeriesGuideline(selectedSeriesId, seriesKey);
+        let loadedBoundaryMs = mergedPoints[0].date.getTime();
         setChartTimelineProgress({
-          progress: 0,
-          boundaryMs: range.endMs,
+          progress: computeTimelineProgress(range, loadedBoundaryMs),
+          boundaryMs: loadedBoundaryMs,
           ariaText: `Loading observations from ${formatTimelinePinnedLabel(range.startDate)} to ${range.endLabel}.`,
         });
         setChartTimelineLoading(true);
 
         const controller = new AbortController();
         activeObservationAbortController = controller;
-        const chunks = buildObservationLoadChunks(windowValue, range);
-        let mergedPoints = [];
-        let guideline = null;
-        let loadedBoundaryMs = range.endMs;
+        const chunks = buildObservationLoadChunks(windowValue, {
+          startMs: range.startMs,
+          endMs: loadedBoundaryMs,
+        });
 
         seriesEtagByKey.delete(seriesKey);
         seriesSinceByKey.delete(seriesKey);
@@ -2397,6 +2591,7 @@
         if (!chartStatusEl) {
           return;
         }
+        const loadReason = consumeSeriesLoadReason();
         const loadId = activeSeriesLoadId + 1;
         activeSeriesLoadId = loadId;
         if (activeObservationAbortController) {
@@ -2426,7 +2621,7 @@
             if (!cacheSessionUrl) {
               throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
             }
-            await loadObservationSeriesData(windowValue, loadId);
+            await loadObservationSeriesData(windowValue, loadId, loadReason);
           } else {
             settleChartTimeline(windowValue);
             await loadAqiSeriesData(windowValue, selectedChartMetric);
@@ -2555,6 +2750,7 @@
         const nextQuery = nextParams.toString();
         const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
         window.history.replaceState(null, "", nextUrl);
+        nextSeriesLoadReason = "station-search";
         await loadData();
       }
 
@@ -2572,7 +2768,10 @@
       }
       const chartRefreshBtn = document.getElementById("chart-refresh");
       if (chartRefreshBtn) {
-        chartRefreshBtn.addEventListener("click", loadSeriesData);
+        chartRefreshBtn.addEventListener("click", () => {
+          nextSeriesLoadReason = "refresh";
+          loadSeriesData();
+        });
       }
       if (pollutantSelect) {
         pollutantSelect.addEventListener("change", () => renderRows(cachedRows));
@@ -2580,6 +2779,7 @@
       if (stationSelect) {
         stationSelect.addEventListener("change", () => {
           selectedSeriesId = stationSelect.value || null;
+          nextSeriesLoadReason = "station-change";
           loadSeriesData();
         });
       }
@@ -2587,6 +2787,7 @@
         chartMetricSelect.addEventListener("change", () => {
           selectedChartMetric = normalizeChartMetric(chartMetricSelect.value);
           updateChartHint();
+          nextSeriesLoadReason = "metric-change";
           loadSeriesData();
         });
       }
@@ -2607,6 +2808,7 @@
             dropSeriesCacheForKey(seriesKey);
             persistSeriesCacheToStorage();
           }
+          nextSeriesLoadReason = "window-change";
           loadSeriesData();
         });
       }
