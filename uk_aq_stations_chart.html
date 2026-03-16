@@ -246,8 +246,8 @@
       }
 
       .chart-timeline {
-        --chart-boundary-pct: 100%;
-        --chart-loading-center-pct: 50%;
+        --chart-unloaded-pct: 100%;
+        --chart-loaded-pct: 0%;
         color: var(--ink-soft);
         user-select: none;
       }
@@ -286,7 +286,7 @@
       }
 
       .chart-timeline-loading {
-        left: var(--chart-loading-center-pct);
+        left: calc(var(--chart-unloaded-pct) / 2);
         transform: translateX(-50%);
         color: var(--teal-deep);
         font-weight: 600;
@@ -306,34 +306,38 @@
         overflow: hidden;
         background: rgba(15, 139, 141, 0.16);
         border: 1px solid rgba(15, 139, 141, 0.1);
+        display: flex;
       }
 
       .chart-timeline-loaded {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: calc(100% - var(--chart-boundary-pct));
+        position: relative;
+        width: var(--chart-loaded-pct);
         min-width: 0;
-        border-radius: inherit;
         background: linear-gradient(90deg, rgba(15, 139, 141, 0.72), rgba(15, 139, 141, 0.94));
-        transition: width 0.26s ease;
+        transition: width 0.15s linear;
+      }
+
+      .chart-timeline-unloaded {
+        position: relative;
+        width: var(--chart-unloaded-pct);
+        min-width: 0;
+        transition: width 0.15s linear;
       }
 
       .chart-timeline-boundary {
         position: absolute;
         top: -3px;
         bottom: -3px;
-        left: var(--chart-boundary-pct);
+        left: var(--chart-unloaded-pct);
         width: 2px;
         border-radius: 999px;
         background: rgba(20, 34, 37, 0.34);
         transform: translateX(-50%);
-        transition: left 0.26s ease;
+        transition: left 0.15s linear;
       }
 
       .chart-timeline-boundary-label {
-        left: var(--chart-boundary-pct);
+        left: var(--chart-unloaded-pct);
         transform: translateX(-50%);
         color: var(--teal-deep);
         font-weight: 600;
@@ -1358,8 +1362,8 @@
         }
         ui.start.textContent = startLabel || "";
         ui.end.textContent = endLabel || "now";
-        ui.root.style.setProperty("--chart-boundary-pct", "100%");
-        ui.root.style.setProperty("--chart-loading-center-pct", "50%");
+        ui.root.style.setProperty("--chart-unloaded-pct", "100%");
+        ui.root.style.setProperty("--chart-loaded-pct", "0%");
         if (ui.boundaryLabel) {
           ui.boundaryLabel.textContent = formatTimelineBoundaryLabel(endMs);
         }
@@ -1368,19 +1372,27 @@
         }
       }
 
-      function setChartTimelineProgress({ progress, boundaryMs, isComplete = false, ariaText = "" }) {
+      function setChartTimelineProgress({ targetStartMs, targetEndMs, displayedStartMs, isComplete = false, ariaText = "" }) {
         const ui = ensureChartTimelineUi();
         if (!ui.root) {
           return;
         }
-        const normalizedProgress = clampNumber(progress, 0, 1);
-        const boundaryRatio = 1 - normalizedProgress;
-        const boundaryPct = `${clampNumber(boundaryRatio * 100, 0, 100).toFixed(2)}%`;
-        const loadingCenterPct = `${clampNumber(boundaryRatio * 50, 0, 50).toFixed(2)}%`;
-        ui.root.style.setProperty("--chart-boundary-pct", boundaryPct);
-        ui.root.style.setProperty("--chart-loading-center-pct", loadingCenterPct);
+        
+        const totalRangeMs = Math.max(1, targetEndMs - targetStartMs);
+        const clampedDisplayedStartMs = clampNumber(displayedStartMs, targetStartMs, targetEndMs);
+        const displayedRangeMs = targetEndMs - clampedDisplayedStartMs;
+        
+        const loadedRatio = clampNumber(displayedRangeMs / totalRangeMs, 0, 1);
+        const unloadedRatio = 1 - loadedRatio;
+        
+        const loadedPct = `${(loadedRatio * 100).toFixed(2)}%`;
+        const unloadedPct = `${(unloadedRatio * 100).toFixed(2)}%`;
+
+        ui.root.style.setProperty("--chart-unloaded-pct", unloadedPct);
+        ui.root.style.setProperty("--chart-loaded-pct", loadedPct);
+
         if (ui.boundaryLabel) {
-          ui.boundaryLabel.textContent = formatTimelineBoundaryLabel(boundaryMs);
+          ui.boundaryLabel.textContent = formatTimelineBoundaryLabel(clampedDisplayedStartMs);
         }
         ui.root.classList.toggle("is-complete", Boolean(isComplete));
         if (ui.aria && ariaText) {
@@ -1408,8 +1420,9 @@
           endLabel: range.endLabel,
         });
         setChartTimelineProgress({
-          progress: 1,
-          boundaryMs: range.startMs,
+          targetStartMs: range.startMs,
+          targetEndMs: range.endMs,
+          displayedStartMs: range.startMs,
           isComplete: true,
           ariaText: `Range ready from ${formatTimelinePinnedLabel(range.startDate)} to ${range.endLabel}.`,
         });
@@ -2144,15 +2157,19 @@
       function resolveObservationChunkSpanMs(totalRangeMs, chunkIndex) {
         const totalDays = totalRangeMs / DAY_MS;
         if (totalDays <= 1.1) {
-          return totalRangeMs;
+          // 24h range: ~6h chunks (4 chunks)
+          return 6 * HOUR_MS;
         }
-        if (totalDays <= 7) {
-          return chunkIndex === 0 ? DAY_MS : 3 * DAY_MS;
+        if (totalDays <= 7.1) {
+          // 7d range: 1d chunks (7 chunks)
+          return DAY_MS;
         }
-        if (totalDays <= 31) {
-          return chunkIndex === 0 ? 2 * DAY_MS : 10 * DAY_MS;
+        if (totalDays <= 31.1) {
+          // 31d range: 3d chunks (~10 chunks)
+          return 3 * DAY_MS;
         }
-        return chunkIndex === 0 ? 3 * DAY_MS : 21 * DAY_MS;
+        // 90d range: 7d chunks (~12 chunks)
+        return 7 * DAY_MS;
       }
 
       function buildObservationLoadChunks(windowValue, range) {
@@ -2184,21 +2201,7 @@
         return chartState.points.slice().sort((a, b) => a.date.getTime() - b.date.getTime());
       }
 
-      function shouldUseProgressiveObservationExpansion(loadReason, range, seedPoints) {
-        if (loadReason !== "window-change") {
-          return false;
-        }
-        if (!Array.isArray(seedPoints) || !seedPoints.length) {
-          return false;
-        }
-        const earliestSeedMs = seedPoints[0]?.date instanceof Date
-          ? seedPoints[0].date.getTime()
-          : Number.NaN;
-        if (!Number.isFinite(earliestSeedMs)) {
-          return false;
-        }
-        return range.startMs < (earliestSeedMs - 60 * 1000);
-      }
+
 
       function buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, since = null }) {
         const url = new URL(SERIES_EDGE_URL);
@@ -2212,11 +2215,7 @@
         return url;
       }
 
-      function computeTimelineProgress(range, boundaryMs) {
-        const totalRangeMs = Math.max(1, range.endMs - range.startMs);
-        const clampedBoundaryMs = clampNumber(boundaryMs, range.startMs, range.endMs);
-        return clampNumber((range.endMs - clampedBoundaryMs) / totalRangeMs, 0, 1);
-      }
+
 
       function latestObservedAtFromPoints(points) {
         if (!Array.isArray(points) || !points.length) {
@@ -2324,8 +2323,9 @@
             domainEndMs: range.endMs,
           });
           setChartTimelineProgress({
-            progress: 1,
-            boundaryMs: range.startMs,
+            targetStartMs: range.startMs,
+            targetEndMs: range.endMs,
+            displayedStartMs: range.startMs,
             isComplete: true,
             ariaText: "Cached observations rendered.",
           });
@@ -2375,8 +2375,9 @@
             clearSeriesChart(meta.emptyMessage);
           }
           setChartTimelineProgress({
-            progress: 1,
-            boundaryMs: range.startMs,
+            targetStartMs: range.startMs,
+            targetEndMs: range.endMs,
+            displayedStartMs: range.startMs,
             isComplete: true,
             ariaText: "Observation loading complete.",
           });
@@ -2419,8 +2420,9 @@
           clearSeriesChart(meta.emptyMessage);
         }
         setChartTimelineProgress({
-          progress: 1,
-          boundaryMs: range.startMs,
+          targetStartMs: range.startMs,
+          targetEndMs: range.endMs,
+          displayedStartMs: range.startMs,
           isComplete: true,
           ariaText: "Observation loading complete.",
         });
@@ -2483,8 +2485,9 @@
             domainEndMs: range.endMs,
           });
           setChartTimelineProgress({
-            progress: 1,
-            boundaryMs: range.startMs,
+            targetStartMs: range.startMs,
+            targetEndMs: range.endMs,
+            displayedStartMs: range.startMs,
             isComplete: true,
             ariaText: "Observation range updated.",
           });
@@ -2492,34 +2495,14 @@
           chartStatusEl.textContent = "Live";
           return;
         }
-        if (!shouldUseProgressiveObservationExpansion(loadReason, range, seedPoints)) {
-          await loadObservationSeriesDataImmediate({
-            seriesKey,
-            range,
-            meta,
-            windowValue,
-            loadId,
-            cachedWindowPoints,
-          });
-          return;
-        }
         let mergedPoints = pruneSeriesPointsToWindow(seedPoints, windowValue, range.endIso);
-        if (!mergedPoints.length) {
-          await loadObservationSeriesDataImmediate({
-            seriesKey,
-            range,
-            meta,
-            windowValue,
-            loadId,
-            cachedWindowPoints,
-          });
-          return;
-        }
         let guideline = getSeriesGuideline(selectedSeriesId, seriesKey);
-        let loadedBoundaryMs = mergedPoints[0].date.getTime();
+        let displayedStartMs = mergedPoints.length > 0 ? mergedPoints[0].date.getTime() : range.endMs;
+
         setChartTimelineProgress({
-          progress: computeTimelineProgress(range, loadedBoundaryMs),
-          boundaryMs: loadedBoundaryMs,
+          targetStartMs: range.startMs,
+          targetEndMs: range.endMs,
+          displayedStartMs,
           ariaText: `Loading observations from ${formatTimelinePinnedLabel(range.startDate)} to ${range.endLabel}.`,
         });
         setChartTimelineLoading(true);
@@ -2528,7 +2511,7 @@
         activeObservationAbortController = controller;
         const chunks = buildObservationLoadChunks(windowValue, {
           startMs: range.startMs,
-          endMs: loadedBoundaryMs,
+          endMs: displayedStartMs,
         });
 
         seriesEtagByKey.delete(seriesKey);
@@ -2548,11 +2531,22 @@
           guideline = payload?.guideline || guideline;
           const chunkPoints = parseSeriesPayloadPoints(payload);
           mergedPoints = mergeSeriesPoints(mergedPoints, chunkPoints);
-          loadedBoundaryMs = chunk.startMs;
-          const progress = computeTimelineProgress(range, loadedBoundaryMs);
+          
+          if (mergedPoints.length > 0) {
+             const actualEarliest = mergedPoints[0].date.getTime();
+             if (actualEarliest <= chunk.startMs) {
+                displayedStartMs = actualEarliest;
+             } else {
+                displayedStartMs = chunk.startMs;
+             }
+          } else {
+             displayedStartMs = chunk.startMs;
+          }
+
           setChartTimelineProgress({
-            progress,
-            boundaryMs: loadedBoundaryMs,
+            targetStartMs: range.startMs,
+            targetEndMs: range.endMs,
+            displayedStartMs,
             ariaText: `Loaded ${index + 1} of ${chunks.length} chart segments.`,
           });
           chartStatusEl.textContent = `Loading ${index + 1}/${chunks.length}…`;
@@ -2561,7 +2555,7 @@
           }
           if (mergedPoints.length) {
             renderSeriesChart(mergedPoints, meta, windowValue, guideline, {
-              domainStartMs: loadedBoundaryMs,
+              domainStartMs: displayedStartMs,
               domainEndMs: range.endMs,
             });
           }
