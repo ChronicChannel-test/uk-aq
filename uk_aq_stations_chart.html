@@ -19,8 +19,12 @@
         --ink: #142225;
         --ink-soft: #334449;
         --mist: #f6f1e9;
-        --teal: #0f8b8d;
-        --teal-deep: #0a5d61;
+        --accent: #3c78ac;
+        --accent-deep: #285a84;
+        --accent-soft: rgba(60, 120, 172, 0.08);
+        --accent-muted: rgba(60, 120, 172, 0.12);
+        --accent-strong: rgba(60, 120, 172, 0.18);
+        --accent-glow: rgba(60, 120, 172, 0.28);
         --sun: #f4b942;
         --clay: #e8dcc7;
         --fog: rgba(20, 34, 37, 0.08);
@@ -158,7 +162,7 @@
 
       button {
         border: none;
-        background: var(--teal);
+        background: var(--accent);
         color: white;
         padding: 8px 14px;
         border-radius: 999px;
@@ -169,7 +173,12 @@
 
       button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 18px rgba(15, 139, 141, 0.25);
+        box-shadow: 0 8px 18px var(--accent-glow);
+      }
+
+      button:focus-visible {
+        outline: 2px solid rgba(60, 120, 172, 0.45);
+        outline-offset: 2px;
       }
 
       table {
@@ -197,7 +206,7 @@
       }
 
       tbody tr:hover {
-        background: rgba(15, 139, 141, 0.06);
+        background: var(--accent-soft);
       }
 
       .value {
@@ -246,10 +255,17 @@
       }
 
       .chart-timeline {
+        --chart-plot-left: 56px;
+        --chart-plot-right: 24px;
         --chart-unloaded-pct: 100%;
         --chart-loaded-pct: 0%;
+        --chart-boundary-pct: 100%;
         color: var(--ink-soft);
         user-select: none;
+        display: grid;
+        gap: 4px;
+        padding-inline-start: var(--chart-plot-left);
+        padding-inline-end: var(--chart-plot-right);
       }
 
       .chart-timeline-labels,
@@ -269,12 +285,24 @@
 
       .chart-timeline-start,
       .chart-timeline-end,
-      .chart-timeline-loading,
       .chart-timeline-boundary-label {
         position: absolute;
         top: 0;
         white-space: nowrap;
         transition: left 0.26s ease, opacity 0.2s ease, transform 0.26s ease;
+      }
+
+      .chart-timeline-loading {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        white-space: nowrap;
+        transform: translateX(-50%);
+        color: var(--accent-deep);
+        font-weight: 600;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
       }
 
       .chart-timeline-start {
@@ -283,15 +311,6 @@
 
       .chart-timeline-end {
         right: 0;
-      }
-
-      .chart-timeline-loading {
-        left: calc(var(--chart-unloaded-pct) / 2);
-        transform: translateX(-50%);
-        color: var(--teal-deep);
-        font-weight: 600;
-        opacity: 0;
-        pointer-events: none;
       }
 
       .chart-timeline.is-loading .chart-timeline-loading {
@@ -304,17 +323,19 @@
         height: 12px;
         border-radius: 999px;
         overflow: hidden;
-        background: rgba(15, 139, 141, 0.16);
-        border: 1px solid rgba(15, 139, 141, 0.1);
-        display: flex;
+        background: var(--accent-strong);
+        border: 1px solid var(--accent-muted);
       }
 
       .chart-timeline-loaded {
-        position: relative;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
         width: var(--chart-loaded-pct);
         min-width: 0;
-        background: linear-gradient(90deg, rgba(15, 139, 141, 0.72), rgba(15, 139, 141, 0.94));
-        transition: width 0.15s linear;
+        background: linear-gradient(90deg, rgba(148, 187, 220, 0.82), rgba(60, 120, 172, 0.98));
+        transition: width 0.26s ease;
       }
 
       .chart-timeline-unloaded {
@@ -328,18 +349,18 @@
         position: absolute;
         top: -3px;
         bottom: -3px;
-        left: var(--chart-unloaded-pct);
+        left: var(--chart-boundary-pct);
         width: 2px;
         border-radius: 999px;
         background: rgba(20, 34, 37, 0.34);
         transform: translateX(-50%);
-        transition: left 0.15s linear;
+        transition: left 0.26s ease, opacity 0.2s ease;
       }
 
       .chart-timeline-boundary-label {
-        left: var(--chart-unloaded-pct);
+        left: var(--chart-boundary-pct);
         transform: translateX(-50%);
-        color: var(--teal-deep);
+        color: var(--accent-deep);
         font-weight: 600;
         opacity: 0;
         pointer-events: none;
@@ -347,6 +368,11 @@
 
       .chart-timeline.is-loading .chart-timeline-boundary-label {
         opacity: 0.92;
+      }
+
+      .chart-timeline.is-complete .chart-timeline-boundary,
+      .chart-timeline.is-complete .chart-timeline-boundary-label {
+        opacity: 0;
       }
 
       .chart-timeline-sr {
@@ -383,7 +409,7 @@
 
       .chart-line {
         fill: none;
-        stroke: var(--teal);
+        stroke: var(--accent);
         stroke-width: 2.5px;
       }
 
@@ -402,7 +428,7 @@
 
       .chart-dot {
         fill: var(--sun);
-        stroke: var(--teal-deep);
+        stroke: var(--accent-deep);
         stroke-width: 1.5px;
       }
 
@@ -669,6 +695,7 @@
       let activeSeriesLoadId = 0;
       let activeObservationAbortController = null;
       let nextSeriesLoadReason = "initial";
+      let chartResizeFrame = 0;
       let cacheSessionReadyUntil = 0;
       let cacheSessionInflight = null;
       let turnstileScriptInflight = null;
@@ -1301,8 +1328,16 @@
           emptyText: null,
           daqiGroup: null,
           eaqiGroup: null,
+          dataClipRect: null,
           points: [],
+          aqiPoints: [],
           meta: null,
+          guideline: null,
+          windowLabel: null,
+          emptyMessage: "",
+          domainStartMs: Number.NaN,
+          domainEndMs: Number.NaN,
+          revealStartMs: Number.NaN,
         };
       }
 
@@ -1315,6 +1350,15 @@
           boundaryLabel: chartTimelineBoundaryLabelEl,
           aria: chartTimelineAriaEl,
         };
+      }
+
+      function syncChartTimelineGeometry() {
+        const ui = ensureChartTimelineUi();
+        if (!ui.root) {
+          return;
+        }
+        ui.root.style.setProperty("--chart-plot-left", `${chartState.margin.left}px`);
+        ui.root.style.setProperty("--chart-plot-right", `${chartState.margin.right}px`);
       }
 
       function clampNumber(value, min, max) {
@@ -1360,10 +1404,13 @@
         if (!ui.root) {
           return;
         }
+        syncChartTimelineGeometry();
         ui.start.textContent = startLabel || "";
         ui.end.textContent = endLabel || "now";
         ui.root.style.setProperty("--chart-unloaded-pct", "100%");
         ui.root.style.setProperty("--chart-loaded-pct", "0%");
+        ui.root.style.setProperty("--chart-boundary-pct", "100%");
+        ui.root.classList.remove("is-complete");
         if (ui.boundaryLabel) {
           ui.boundaryLabel.textContent = formatTimelineBoundaryLabel(endMs);
         }
@@ -1390,6 +1437,7 @@
 
         ui.root.style.setProperty("--chart-unloaded-pct", unloadedPct);
         ui.root.style.setProperty("--chart-loaded-pct", loadedPct);
+        ui.root.style.setProperty("--chart-boundary-pct", unloadedPct);
 
         if (ui.boundaryLabel) {
           ui.boundaryLabel.textContent = formatTimelineBoundaryLabel(clampedDisplayedStartMs);
@@ -1463,6 +1511,28 @@
           return;
         }
         chartWrap.classList.toggle("is-loading", isLoading);
+      }
+
+      function syncCurrentChartLayout() {
+        chartResizeFrame = 0;
+        syncChartTimelineGeometry();
+        if (!chartState.initialized) {
+          return;
+        }
+        renderSeriesChart(chartState.points, chartState.meta, chartState.windowLabel, chartState.guideline, {
+          domainStartMs: chartState.domainStartMs,
+          domainEndMs: chartState.domainEndMs,
+          revealStartMs: chartState.revealStartMs,
+          emptyMessage: chartState.emptyMessage,
+          animate: false,
+        });
+      }
+
+      function scheduleChartLayoutSync() {
+        if (chartResizeFrame) {
+          return;
+        }
+        chartResizeFrame = window.requestAnimationFrame(syncCurrentChartLayout);
       }
 
       function normalizeIsoTimestamp(value) {
@@ -1714,8 +1784,14 @@
         chartState.width = width;
         chartState.height = height;
         chartSvg.attr("viewBox", `0 0 ${width} ${height}`);
+        syncChartTimelineGeometry();
 
         if (!chartState.initialized) {
+          const clipPathId = "chart-series-reveal-clip";
+          const defs = chartSvg.append("defs");
+          chartState.dataClipRect = defs.append("clipPath")
+            .attr("id", clipPathId)
+            .append("rect");
           chartState.daqiGroup = chartSvg.append("g").attr("class", "aqi-band-group daqi-group");
           chartState.eaqiGroup = chartSvg.append("g").attr("class", "aqi-band-group eaqi-group");
           chartState.xAxisGroup = chartSvg.append("g")
@@ -1745,6 +1821,10 @@
             .style("pointer-events", "all")
             .on("mousemove", handleSeriesChartMouseMove)
             .on("mouseleave", hideChartTooltip);
+          chartState.daqiGroup.attr("clip-path", `url(#${clipPathId})`);
+          chartState.eaqiGroup.attr("clip-path", `url(#${clipPathId})`);
+          chartState.linePath.attr("clip-path", `url(#${clipPathId})`);
+          chartState.dot.attr("clip-path", `url(#${clipPathId})`);
           chartState.initialized = true;
         }
 
@@ -1758,6 +1838,36 @@
           .attr("y", margin.top)
           .attr("width", Math.max(0, width - margin.left - margin.right))
           .attr("height", Math.max(0, height - margin.top - margin.bottom));
+      }
+
+      function updateChartRevealMask(revealStartMs, transition = null) {
+        if (!chartState.dataClipRect) {
+          return;
+        }
+        const plotLeft = chartState.margin.left;
+        const plotRight = chartState.width - chartState.margin.right;
+        const domainStartMs = Number.isFinite(chartState.domainStartMs)
+          ? chartState.domainStartMs
+          : Number.NaN;
+        const domainEndMs = Number.isFinite(chartState.domainEndMs)
+          ? chartState.domainEndMs
+          : Number.NaN;
+        const clampedRevealStartMs = clampNumber(
+          revealStartMs,
+          Number.isFinite(domainStartMs) ? domainStartMs : 0,
+          Number.isFinite(domainEndMs) ? domainEndMs : 0
+        );
+        const revealX = clampNumber(
+          chartState.xScale(new Date(clampedRevealStartMs)),
+          plotLeft,
+          plotRight
+        );
+        const target = transition ? chartState.dataClipRect.transition(transition) : chartState.dataClipRect;
+        target
+          .attr("x", revealX)
+          .attr("y", 0)
+          .attr("width", Math.max(0, plotRight - revealX))
+          .attr("height", Math.max(0, chartState.height - chartState.margin.bottom));
       }
 
       function handleSeriesChartMouseMove(event) {
@@ -1917,23 +2027,15 @@
         ensureSeriesChartFrame();
         chartState.points = Array.isArray(points) ? points.slice() : [];
         chartState.meta = meta || null;
+        chartState.guideline = guideline || null;
+        chartState.windowLabel = windowLabel || null;
+        chartState.emptyMessage = typeof options.emptyMessage === "string"
+          ? options.emptyMessage
+          : (options.emptyMessage ?? meta?.emptyMessage ?? "No observations in this window.");
         chartSvg.attr(
           "aria-label",
           `${meta?.label || "Selected station"} trend chart with ${chartState.points.length} points`
         );
-
-        if (!chartState.points.length) {
-          chartState.emptyText
-            .style("display", null)
-            .text(options.emptyMessage || meta?.emptyMessage || "No observations in this window.");
-          chartState.linePath.attr("d", null);
-          chartState.guidelineLine.style("opacity", 0);
-          chartState.guidelineLabel.style("opacity", 0);
-          hideChartTooltip();
-          return;
-        }
-
-        chartState.emptyText.style("display", "none").text("");
         const pointExtent = d3.extent(chartState.points, (d) => d.date);
         const xStartMs = Number.isFinite(options.domainStartMs)
           ? options.domainStartMs
@@ -1945,6 +2047,12 @@
         const safeEndMs = Number.isFinite(xEndMs) && xEndMs > safeStartMs
           ? xEndMs
           : safeStartMs + HOUR_MS;
+        const revealStartMs = Number.isFinite(options.revealStartMs)
+          ? options.revealStartMs
+          : safeStartMs;
+        chartState.domainStartMs = safeStartMs;
+        chartState.domainEndMs = safeEndMs;
+        chartState.revealStartMs = clampNumber(revealStartMs, safeStartMs, safeEndMs);
         const yExtent = d3.extent(chartState.points, (d) => d.value);
         const minValue = Number.isFinite(yExtent[0]) ? yExtent[0] : 0;
         const maxValue = Number.isFinite(yExtent[1]) ? yExtent[1] : 1;
@@ -1976,19 +2084,27 @@
           : 6;
         const xAxis = d3.axisBottom(chartState.xScale).ticks(tickCount).tickSizeOuter(0);
         const yAxis = d3.axisLeft(chartState.yScale).ticks(5).tickSizeOuter(0);
-        const transition = d3.transition().duration(CHART_TRANSITION_MS).ease(d3.easeCubicOut);
+        const transition = options.animate === false
+          ? null
+          : d3.transition().duration(CHART_TRANSITION_MS).ease(d3.easeCubicOut);
 
-        chartState.xAxisGroup
-          .transition(transition)
-          .call(xAxis);
-        chartState.yAxisGroup
-          .transition(transition)
-          .call(yAxis);
+        if (transition) {
+          chartState.xAxisGroup
+            .transition(transition)
+            .call(xAxis);
+          chartState.yAxisGroup
+            .transition(transition)
+            .call(yAxis);
+        } else {
+          chartState.xAxisGroup.call(xAxis);
+          chartState.yAxisGroup.call(yAxis);
+        }
 
         if (hasGuideline) {
-          chartState.guidelineLine
-            .style("opacity", 0.85)
-            .transition(transition)
+          const guidelineLine = transition
+            ? chartState.guidelineLine.style("opacity", 0.85).transition(transition)
+            : chartState.guidelineLine.style("opacity", 0.85);
+          guidelineLine
             .attr("x1", chartState.margin.left)
             .attr("x2", chartState.width - chartState.margin.right)
             .attr("y1", chartState.yScale(guidelineValue))
@@ -2004,27 +2120,57 @@
             Math.max(chartState.yScale(guidelineValue) - 6, chartState.margin.top + 12),
             chartState.height - chartState.margin.bottom - 6
           );
-          chartState.guidelineLabel
+          const guidelineTextSelection = chartState.guidelineLabel
             .style("opacity", 1)
-            .text(guidelineText)
-            .transition(transition)
-            .attr("x", chartState.width - chartState.margin.right - 4)
-            .attr("y", labelY);
+            .text(guidelineText);
+          if (transition) {
+            guidelineTextSelection
+              .transition(transition)
+              .attr("x", chartState.width - chartState.margin.right - 4)
+              .attr("y", labelY);
+          } else {
+            guidelineTextSelection
+              .attr("x", chartState.width - chartState.margin.right - 4)
+              .attr("y", labelY);
+          }
         } else {
           chartState.guidelineLine.style("opacity", 0);
           chartState.guidelineLabel.style("opacity", 0);
         }
 
+        if (!chartState.points.length) {
+          chartState.emptyText
+            .style("display", chartState.emptyMessage ? null : "none")
+            .text(chartState.emptyMessage || "");
+          chartState.linePath.attr("d", null);
+          hideChartTooltip();
+          updateChartRevealMask(chartState.revealStartMs, transition);
+          if (Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
+            renderAqiBands();
+          } else {
+            chartState.daqiGroup?.selectAll("*").remove();
+            chartState.eaqiGroup?.selectAll("*").remove();
+          }
+          return;
+        }
+
+        chartState.emptyText.style("display", "none").text("");
         const line = d3.line()
           .defined((d) => Number.isFinite(d.value))
           .x((d) => chartState.xScale(d.date))
           .y((d) => chartState.yScale(d.value));
 
-        chartState.linePath
-          .datum(chartState.points)
-          .transition(transition)
-          .attr("d", line);
+        const lineSelection = chartState.linePath
+          .datum(chartState.points);
+        if (transition) {
+          lineSelection
+            .transition(transition)
+            .attr("d", line);
+        } else {
+          lineSelection.attr("d", line);
+        }
 
+        updateChartRevealMask(chartState.revealStartMs, transition);
         renderAqiBands();
       }
 
@@ -2274,6 +2420,7 @@
           renderSeriesChart(cachedWindowPoints, meta, windowValue, guideline, {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
+            revealStartMs: range.startMs,
           });
           return true;
         }
@@ -2304,6 +2451,7 @@
         renderSeriesChart(points, meta, windowValue, guideline, {
           domainStartMs: range.startMs,
           domainEndMs: range.endMs,
+          revealStartMs: range.startMs,
         });
         return true;
       }
@@ -2321,6 +2469,7 @@
           renderSeriesChart(cachedWindowPoints, meta, windowValue, cachedGuideline, {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
+            revealStartMs: range.startMs,
           });
           setChartTimelineProgress({
             targetStartMs: range.startMs,
@@ -2340,7 +2489,7 @@
             loadId
           );
           activeObservationAbortController = null;
-          return;
+          return true;
         }
 
         const controller = new AbortController();
@@ -2370,6 +2519,7 @@
             renderSeriesChart(cachedWindowPoints, meta, windowValue, guideline, {
               domainStartMs: range.startMs,
               domainEndMs: range.endMs,
+              revealStartMs: range.startMs,
             });
           } else {
             clearSeriesChart(meta.emptyMessage);
@@ -2383,7 +2533,7 @@
           });
           setChartTimelineLoading(false);
           chartStatusEl.textContent = "Live";
-          return;
+          return true;
         }
         if (!response.ok) {
           throw new Error(`Series request failed: ${response.status}`);
@@ -2415,6 +2565,7 @@
           renderSeriesChart(points, meta, windowValue, guideline, {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
+            revealStartMs: range.startMs,
           });
         } else {
           clearSeriesChart(meta.emptyMessage);
@@ -2428,6 +2579,7 @@
         });
         setChartTimelineLoading(false);
         chartStatusEl.textContent = "Live";
+        return true;
       }
 
       async function loadObservationSeriesData(windowValue, loadId, loadReason) {
@@ -2463,7 +2615,24 @@
           persistSeriesCacheToStorage();
         }
 
-        const seedPoints = getObservationSeedPoints(meta);
+        if (cachedWindowPoints.length && since) {
+          const usedImmediateCache = await loadObservationSeriesDataImmediate({
+            seriesKey,
+            range,
+            meta,
+            windowValue,
+            loadId,
+            cachedWindowPoints,
+          });
+          if (usedImmediateCache !== false) {
+            return;
+          }
+        }
+
+        const seedPoints = mergeSeriesPoints(
+          pruneSeriesPointsToWindow(getObservationSeedPoints(meta), windowValue, range.endIso),
+          cachedWindowPoints
+        );
         const earliestSeedMs = seedPoints[0]?.date instanceof Date
           ? seedPoints[0].date.getTime()
           : Number.NaN;
@@ -2483,6 +2652,7 @@
           renderSeriesChart(points, meta, windowValue, getSeriesGuideline(selectedSeriesId, seriesKey), {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
+            revealStartMs: range.startMs,
           });
           setChartTimelineProgress({
             targetStartMs: range.startMs,
@@ -2495,9 +2665,16 @@
           chartStatusEl.textContent = "Live";
           return;
         }
-        let mergedPoints = pruneSeriesPointsToWindow(seedPoints, windowValue, range.endIso);
+        let mergedPoints = seedPoints.slice();
         let guideline = getSeriesGuideline(selectedSeriesId, seriesKey);
         let displayedStartMs = mergedPoints.length > 0 ? mergedPoints[0].date.getTime() : range.endMs;
+
+        renderSeriesChart(mergedPoints, meta, windowValue, guideline, {
+          domainStartMs: range.startMs,
+          domainEndMs: range.endMs,
+          revealStartMs: displayedStartMs,
+          emptyMessage: "",
+        });
 
         setChartTimelineProgress({
           targetStartMs: range.startMs,
@@ -2511,7 +2688,7 @@
         activeObservationAbortController = controller;
         const chunks = buildObservationLoadChunks(windowValue, {
           startMs: range.startMs,
-          endMs: displayedStartMs,
+          endMs: Math.min(displayedStartMs, range.endMs),
         });
 
         seriesEtagByKey.delete(seriesKey);
@@ -2553,12 +2730,12 @@
           if (guideline) {
             seriesGuidelineByKey.set(seriesKey, guideline);
           }
-          if (mergedPoints.length) {
-            renderSeriesChart(mergedPoints, meta, windowValue, guideline, {
-              domainStartMs: displayedStartMs,
-              domainEndMs: range.endMs,
-            });
-          }
+          renderSeriesChart(mergedPoints, meta, windowValue, guideline, {
+            domainStartMs: range.startMs,
+            domainEndMs: range.endMs,
+            revealStartMs: displayedStartMs,
+            emptyMessage: "",
+          });
         }
 
         if (!isSeriesLoadCurrent(loadId)) {
@@ -2578,13 +2755,15 @@
           renderSeriesChart(points, meta, windowValue, guideline, {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
+            revealStartMs: range.startMs,
           });
         } else {
           clearSeriesChart(meta.emptyMessage);
         }
         setChartTimelineProgress({
-          progress: 1,
-          boundaryMs: range.startMs,
+          targetStartMs: range.startMs,
+          targetEndMs: range.endMs,
+          displayedStartMs: range.startMs,
           isComplete: true,
           ariaText: "Observation loading complete.",
         });
@@ -2670,7 +2849,11 @@
           if (!cacheSessionUrl) {
             throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
           }
-          
+          if (loadReason === "station-change" || loadReason === "station-search") {
+            chartState.aqiPoints = [];
+            chartState.daqiGroup?.selectAll("*").remove();
+            chartState.eaqiGroup?.selectAll("*").remove();
+          }
           loadAqiBandsData(windowValue).catch(e => console.warn("AQI bands failed to load", e));
           await loadObservationSeriesData(windowValue, loadId, loadReason);
         } catch (error) {
@@ -2834,20 +3017,18 @@
           windowSelect.title = "Range is fixed by URL parameter.";
         }
         windowSelect.addEventListener("change", () => {
-          if (selectedSeriesId) {
-            const selectedWindowValue = windowSelect.value || "24h";
-            const windowValue = hasFixedSeriesDateRange
-              ? "custom"
-              : fixedSeriesDays !== null
-              ? `${fixedSeriesDays}d`
-              : selectedWindowValue;
-            const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
-            dropSeriesCacheForKey(seriesKey);
-            persistSeriesCacheToStorage();
-          }
           nextSeriesLoadReason = "window-change";
           loadSeriesData();
         });
+      }
+      syncChartTimelineGeometry();
+      if (window.ResizeObserver && chartWrap) {
+        const chartResizeObserver = new ResizeObserver(() => {
+          scheduleChartLayoutSync();
+        });
+        chartResizeObserver.observe(chartWrap);
+      } else {
+        window.addEventListener("resize", scheduleChartLayoutSync);
       }
       loadSeriesCacheFromStorage();
       loadData();
