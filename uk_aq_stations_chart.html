@@ -2119,6 +2119,29 @@
         };
       }
 
+      function buildAqiHistoryBaseVariants(base) {
+        const normalizedBase = String(base || "").trim().replace(/\/+$/, "");
+        if (!normalizedBase) {
+          return [];
+        }
+        let pathname = "";
+        try {
+          pathname = new URL(normalizedBase).pathname.replace(/\/+$/, "");
+        } catch (_err) {
+          return [normalizedBase];
+        }
+        if (pathname.endsWith("/data")) {
+          return dedupeStrings([normalizedBase, normalizedBase.replace(/\/data$/, "")]);
+        }
+        // When the base already points at the AQI history endpoint, do not probe a
+        // synthetic /data path. That fallback is not valid on this deployment and
+        // was generating noisy 404s after a real transient upstream failure.
+        if (pathname.endsWith("/aqi-history")) {
+          return [normalizedBase];
+        }
+        return dedupeStrings([normalizedBase, `${normalizedBase}/data`]);
+      }
+
       function buildAqiHistoryRequestCandidates(stationId, windowValue) {
         const stationToken = String(stationId || "").trim();
         if (!stationToken) {
@@ -2134,10 +2157,7 @@
           if (!normalizedBase) {
             return;
           }
-          const variants = normalizedBase.endsWith("/data")
-            ? [normalizedBase, normalizedBase.replace(/\/data$/, "")]
-            : [normalizedBase, `${normalizedBase}/data`];
-          dedupeStrings(variants).forEach((variant) => {
+          buildAqiHistoryBaseVariants(normalizedBase).forEach((variant) => {
             let requestUrl;
             try {
               requestUrl = new URL(variant);
@@ -2155,12 +2175,19 @@
               requestUrl.searchParams.set("to_utc", toIso);
             }
             candidates.push({
-              base: normalizedBase,
+              base: variant,
               url: requestUrl.toString(),
             });
           });
         });
-        return candidates;
+        const seenUrls = new Set();
+        return candidates.filter((candidate) => {
+          if (seenUrls.has(candidate.url)) {
+            return false;
+          }
+          seenUrls.add(candidate.url);
+          return true;
+        });
       }
 
       function isAbortError(error) {
@@ -2715,6 +2742,7 @@
               windowValue,
               payload?.query_to_utc || payload?.to_utc || null,
             );
+            preferredAqiHistoryBase = candidate.base;
             chartState.aqiPoints = points;
             renderAqiBands();
             return;
