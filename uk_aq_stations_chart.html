@@ -547,7 +547,7 @@
       const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
       const seriesGuidelineByKey = new Map();
-      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v2:${projectRef || "unknown"}`;
+      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v3:${projectRef || "unknown"}`;
       const SERIES_CACHE_MAX_KEYS = 30;
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
       const DAY_MS = 24 * 60 * 60 * 1000;
@@ -1350,6 +1350,20 @@
         seriesGuidelineByKey.delete(seriesKey);
       }
 
+      function parseObservationNumericValue(rawValue) {
+        if (rawValue === null || rawValue === undefined) {
+          return Number.NaN;
+        }
+        if (typeof rawValue === "string") {
+          const trimmed = rawValue.trim();
+          if (!trimmed || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "nan") {
+            return Number.NaN;
+          }
+          return Number(trimmed);
+        }
+        return Number(rawValue);
+      }
+
       function parseSeriesPayloadPoints(payload) {
         const raw = Array.isArray(payload?.data) ? payload.data : [];
         const dataFormat = String(payload?.data_format || "").toLowerCase();
@@ -1362,12 +1376,12 @@
             const value = valueIndex >= 0 ? row[valueIndex] : row[1];
             return {
               date: new Date(observedAt),
-              value: Number(value),
+              value: parseObservationNumericValue(value),
             };
           }
           return {
             date: new Date(row?.observed_at),
-            value: Number(row?.value),
+            value: parseObservationNumericValue(row?.value),
           };
         });
         return mapped.filter(
@@ -1434,7 +1448,7 @@
                   return null;
                 }
                 const date = new Date(entry[0]);
-                const value = Number(entry[1]);
+                const value = parseObservationNumericValue(entry[1]);
                 if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) {
                   return null;
                 }
