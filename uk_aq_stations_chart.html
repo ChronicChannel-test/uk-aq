@@ -546,6 +546,7 @@
       const seriesSinceByKey = new Map();
       const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
+      const aqiBandPointCacheByKey = new Map();
       const seriesGuidelineByKey = new Map();
       const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v3:${projectRef || "unknown"}`;
       const SERIES_CACHE_MAX_KEYS = 30;
@@ -1206,9 +1207,14 @@
           emptyText: null,
           daqiGroup: null,
           eaqiGroup: null,
+          daqiLabelGroup: null,
+          eaqiLabelGroup: null,
+          daqiBandLayer: null,
+          eaqiBandLayer: null,
           plotClipRect: null,
           points: [],
           aqiPoints: [],
+          aqiDataKey: "",
           meta: null,
           guideline: null,
           windowLabel: null,
@@ -1273,6 +1279,25 @@
           return;
         }
         chartWrap.classList.toggle("is-loading", isLoading);
+      }
+
+      function getAqiBandCacheKey(seriesId, windowLabel) {
+        return `aqi::${getSeriesCacheKey(seriesId, windowLabel)}`;
+      }
+
+      function floorToHourStartMs(value) {
+        const timeMs = value instanceof Date ? value.getTime() : Date.parse(String(value || ""));
+        if (!Number.isFinite(timeMs)) {
+          return Number.NaN;
+        }
+        return Math.floor(timeMs / HOUR_MS) * HOUR_MS;
+      }
+
+      function clearAqiBands() {
+        chartState.daqiLabelGroup?.selectAll("*").remove();
+        chartState.eaqiLabelGroup?.selectAll("*").remove();
+        chartState.daqiBandLayer?.selectAll("*").remove();
+        chartState.eaqiBandLayer?.selectAll("*").remove();
       }
 
       function syncCurrentChartLayout() {
@@ -1570,6 +1595,10 @@
             .append("rect");
           chartState.daqiGroup = chartSvg.append("g").attr("class", "aqi-band-group daqi-group");
           chartState.eaqiGroup = chartSvg.append("g").attr("class", "aqi-band-group eaqi-group");
+          chartState.daqiLabelGroup = chartState.daqiGroup.append("g").attr("class", "aqi-band-label-group");
+          chartState.eaqiLabelGroup = chartState.eaqiGroup.append("g").attr("class", "aqi-band-label-group");
+          chartState.daqiBandLayer = chartState.daqiGroup.append("g").attr("class", "aqi-band-rect-group");
+          chartState.eaqiBandLayer = chartState.eaqiGroup.append("g").attr("class", "aqi-band-rect-group");
           chartState.xAxisGroup = chartSvg.append("g")
             .attr("class", "chart-axis");
           chartState.yAxisGroup = chartSvg.append("g")
@@ -1597,8 +1626,8 @@
             .style("pointer-events", "all")
             .on("mousemove", handleSeriesChartMouseMove)
             .on("mouseleave", hideChartTooltip);
-          chartState.daqiGroup.attr("clip-path", `url(#${clipPathId})`);
-          chartState.eaqiGroup.attr("clip-path", `url(#${clipPathId})`);
+          chartState.daqiBandLayer.attr("clip-path", `url(#${clipPathId})`);
+          chartState.eaqiBandLayer.attr("clip-path", `url(#${clipPathId})`);
           chartState.linePath.attr("clip-path", `url(#${clipPathId})`);
           chartState.dot.attr("clip-path", `url(#${clipPathId})`);
           chartState.initialized = true;
@@ -1680,7 +1709,15 @@
       }
 
       function renderAqiBands() {
-        if (!chartState.initialized || !chartState.daqiGroup || !chartState.eaqiGroup) {
+        if (
+          !chartState.initialized ||
+          !chartState.daqiGroup ||
+          !chartState.eaqiGroup ||
+          !chartState.daqiLabelGroup ||
+          !chartState.eaqiLabelGroup ||
+          !chartState.daqiBandLayer ||
+          !chartState.eaqiBandLayer
+        ) {
           return;
         }
 
@@ -1698,8 +1735,7 @@
         const bandHeight = 22;
         const gap = 4;
 
-        chartState.daqiGroup.selectAll("*").remove();
-        chartState.eaqiGroup.selectAll("*").remove();
+        clearAqiBands();
 
         // Extract timespan from current chart scale
         const domain = chartState.xScale.domain();
@@ -1718,17 +1754,29 @@
           current = new Date(current.getTime() + HOUR_MS);
         }
 
+        const aqiPointByHourMs = new Map();
+        if (Array.isArray(chartState.aqiPoints)) {
+          chartState.aqiPoints.forEach((point) => {
+            const hourStartMs = floorToHourStartMs(point?.date);
+            if (Number.isFinite(hourStartMs) && !aqiPointByHourMs.has(hourStartMs)) {
+              aqiPointByHourMs.set(hourStartMs, point);
+            }
+          });
+        }
+
         const getPointForSlot = (slotTime) => {
-          if (!Array.isArray(chartState.aqiPoints)) return null;
-          return chartState.aqiPoints.find(p => p.date.getTime() === slotTime.getTime()) || null;
+          const hourStartMs = floorToHourStartMs(slotTime);
+          return Number.isFinite(hourStartMs) ? (aqiPointByHourMs.get(hourStartMs) || null) : null;
         };
 
-        const drawBand = (group, yOffset, valueKey, colorsMap, label) => {
+        const drawBand = (group, labelGroup, bandLayer, yOffset, valueKey, colorsMap, label) => {
           group.attr("transform", `translate(0, ${yOffset})`);
+          labelGroup.attr("transform", `translate(0, 0)`);
+          bandLayer.attr("transform", `translate(0, 0)`);
 
           // Accessible label + visual label
           group.attr("aria-label", `${label} band`);
-          group.append("text")
+          labelGroup.append("text")
             .attr("x", chartState.margin.left - 8)
             .attr("y", bandHeight / 2)
             .attr("dy", "0.32em")
@@ -1755,7 +1803,7 @@
                  safeW = (chartState.width - chartState.margin.right) - safeX;
                }
                if (safeW > 0) {
-                 group.append("rect")
+                 bandLayer.append("rect")
                   .attr("x", safeX)
                   .attr("y", 0)
                   .attr("width", safeW)
@@ -1770,8 +1818,24 @@
         const daqiY = 16;
         const eaqiY = daqiY + bandHeight + gap;
 
-        drawBand(chartState.daqiGroup, daqiY, "daqi", daqiColors, "DAQI");
-        drawBand(chartState.eaqiGroup, eaqiY, "eaqi", eaqiColors, "EAQI");
+        drawBand(
+          chartState.daqiGroup,
+          chartState.daqiLabelGroup,
+          chartState.daqiBandLayer,
+          daqiY,
+          "daqi",
+          daqiColors,
+          "DAQI"
+        );
+        drawBand(
+          chartState.eaqiGroup,
+          chartState.eaqiLabelGroup,
+          chartState.eaqiBandLayer,
+          eaqiY,
+          "eaqi",
+          eaqiColors,
+          "EAQI"
+        );
       }
 
       function buildChartRenderSnapshot(points, meta, windowLabel, guideline, options = {}) {
@@ -1910,8 +1974,7 @@
           if (Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
             renderAqiBands();
           } else {
-            chartState.daqiGroup?.selectAll("*").remove();
-            chartState.eaqiGroup?.selectAll("*").remove();
+            clearAqiBands();
           }
           return;
         }
@@ -2712,17 +2775,27 @@
         setChartStatus("Live");
       }
 
-      async function loadAqiBandsData(windowValue) {
+      async function loadAqiBandsData(windowValue, loadId) {
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const stationId = baseMeta?.stationId || null;
+        const aqiCacheKey = getAqiBandCacheKey(selectedSeriesId, windowValue);
+        const cachedPoints = aqiBandPointCacheByKey.get(aqiCacheKey) || null;
+
+        if (isSeriesLoadCurrent(loadId) && Array.isArray(cachedPoints) && cachedPoints.length) {
+          chartState.aqiPoints = cachedPoints;
+          chartState.aqiDataKey = aqiCacheKey;
+          renderAqiBands();
+        }
         if (!stationId) {
           chartState.aqiPoints = [];
+          chartState.aqiDataKey = "";
           renderAqiBands();
           return;
         }
         const candidates = buildAqiHistoryRequestCandidates(stationId, windowValue);
         if (!candidates.length) {
           chartState.aqiPoints = [];
+          chartState.aqiDataKey = aqiCacheKey;
           renderAqiBands();
           return;
         }
@@ -2742,18 +2815,37 @@
               windowValue,
               payload?.query_to_utc || payload?.to_utc || null,
             );
+            if (!isSeriesLoadCurrent(loadId)) {
+              return;
+            }
             preferredAqiHistoryBase = candidate.base;
+            aqiBandPointCacheByKey.set(aqiCacheKey, points);
             chartState.aqiPoints = points;
+            chartState.aqiDataKey = aqiCacheKey;
             renderAqiBands();
             return;
           } catch (error) {
             lastError = error;
           }
         }
+        if (!isSeriesLoadCurrent(loadId)) {
+          return;
+        }
         if (lastError) {
           console.warn("Unable to load AQI history for bands.", lastError);
         }
+        if (Array.isArray(cachedPoints) && cachedPoints.length) {
+          chartState.aqiPoints = cachedPoints;
+          chartState.aqiDataKey = aqiCacheKey;
+          renderAqiBands();
+          return;
+        }
+        if (chartState.aqiDataKey === aqiCacheKey && Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
+          renderAqiBands();
+          return;
+        }
         chartState.aqiPoints = [];
+        chartState.aqiDataKey = aqiCacheKey;
         renderAqiBands();
       }
 
@@ -2792,10 +2884,10 @@
           }
           if (loadReason === "station-change" || loadReason === "station-search") {
             chartState.aqiPoints = [];
-            chartState.daqiGroup?.selectAll("*").remove();
-            chartState.eaqiGroup?.selectAll("*").remove();
+            chartState.aqiDataKey = "";
+            clearAqiBands();
           }
-          loadAqiBandsData(windowValue).catch(e => console.warn("AQI bands failed to load", e));
+          loadAqiBandsData(windowValue, loadId).catch(e => console.warn("AQI bands failed to load", e));
           await loadObservationSeriesData(windowValue, loadId, loadReason);
         } catch (error) {
           if (!isSeriesLoadCurrent(loadId) || isAbortError(error)) {
