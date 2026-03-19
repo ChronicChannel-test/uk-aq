@@ -553,6 +553,9 @@
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
       const DAY_MS = 24 * 60 * 60 * 1000;
       const HOUR_MS = 60 * 60 * 1000;
+      const AQI_BAND_CACHE_MAX_KEYS = 20;
+      const AQI_BAND_CACHE_MAX_POINTS_PER_KEY = 2500;
+      const AQI_BAND_MUTABLE_WINDOW_MS = 24 * HOUR_MS;
       const CHART_TRANSITION_MS = 240;
       const CHART_TRANSITION_COALESCE_MS = 60;
       const CACHE_SESSION_SKEW_MS = 10000;
@@ -1281,8 +1284,34 @@
         chartWrap.classList.toggle("is-loading", isLoading);
       }
 
-      function getAqiBandCacheKey(seriesId, windowLabel) {
-        return `aqi::${getSeriesCacheKey(seriesId, windowLabel)}`;
+      function getAqiBandCacheKey(stationId, windowLabel) {
+        const stationToken = String(stationId || "").trim();
+        if (hasFixedSeriesDateRange) {
+          return `aqi::${stationToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
+        }
+        if (fixedSeriesDays !== null) {
+          return `aqi::${stationToken}::days::${fixedSeriesDays}`;
+        }
+        return `aqi::${stationToken}::${windowLabel || "24h"}`;
+      }
+
+      function normalizeAqiBandLevel(value, allowText = false) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return null;
+          }
+          const numeric = Number(trimmed);
+          if (Number.isFinite(numeric)) {
+            return Math.trunc(numeric);
+          }
+          return allowText ? trimmed : null;
+        }
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? Math.trunc(numeric) : null;
       }
 
       function floorToHourStartMs(value) {
@@ -1425,11 +1454,11 @@
           : [];
         const mapped = rawPoints.map((row) => ({
           date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
-          daqi: Number(row?.daqi_index_level),
-          eaqi: row?.eaqi_index_level,
+          daqi: normalizeAqiBandLevel(row?.daqi_index_level, false),
+          eaqi: normalizeAqiBandLevel(row?.eaqi_index_level, true),
         }));
         return mapped.filter((row) =>
-          Number.isFinite(row.date?.getTime())
+          Number.isFinite(row.date?.getTime()) && (row.daqi !== null || row.eaqi !== null)
         ).sort((a, b) => a.date.getTime() - b.date.getTime());
       }
 
@@ -1446,6 +1475,7 @@
           const sinceByKey = parsed?.since_by_key || {};
           const etagByKey = parsed?.etag_by_key || {};
           const pointsByKey = parsed?.points_by_key || {};
+          const aqiPointsByKey = parsed?.aqi_points_by_key || {};
           const guidelineByKey = parsed?.guideline_by_key || {};
           Object.entries(sinceByKey).forEach(([key, value]) => {
             const normalized = normalizeIsoTimestamp(value);
@@ -1484,6 +1514,28 @@
               seriesPointCacheByKey.set(key, restored);
             }
           });
+          Object.entries(aqiPointsByKey).forEach(([key, rows]) => {
+            if (!Array.isArray(rows)) {
+              return;
+            }
+            const restored = rows
+              .map((entry) => {
+                if (!Array.isArray(entry) || entry.length < 3) {
+                  return null;
+                }
+                const date = new Date(entry[0]);
+                const daqi = normalizeAqiBandLevel(entry[1], false);
+                const eaqi = normalizeAqiBandLevel(entry[2], true);
+                if (!Number.isFinite(date.getTime()) || (daqi === null && eaqi === null)) {
+                  return null;
+                }
+                return { date, daqi, eaqi };
+              })
+              .filter(Boolean);
+            if (restored.length) {
+              aqiBandPointCacheByKey.set(key, restored);
+            }
+          });
         } catch (_error) {
           // Ignore local cache read errors.
         }
@@ -1495,7 +1547,9 @@
         }
         try {
           const keys = Array.from(seriesPointCacheByKey.keys()).slice(-SERIES_CACHE_MAX_KEYS);
+          const aqiKeys = Array.from(aqiBandPointCacheByKey.keys()).slice(-AQI_BAND_CACHE_MAX_KEYS);
           const pointsByKey = {};
+          const aqiPointsByKey = {};
           const sinceByKey = {};
           const etagByKey = {};
           const guidelineByKey = {};
@@ -1512,12 +1566,21 @@
               guidelineByKey[key] = seriesGuidelineByKey.get(key);
             }
           });
+          aqiKeys.forEach((key) => {
+            const points = (aqiBandPointCacheByKey.get(key) || []).slice(-AQI_BAND_CACHE_MAX_POINTS_PER_KEY);
+            aqiPointsByKey[key] = points.map((point) => [
+              point.date.toISOString(),
+              point.daqi,
+              point.eaqi,
+            ]);
+          });
           const payload = {
             version: 1,
             saved_at: new Date().toISOString(),
             since_by_key: sinceByKey,
             etag_by_key: etagByKey,
             points_by_key: pointsByKey,
+            aqi_points_by_key: aqiPointsByKey,
             guideline_by_key: guidelineByKey,
           };
           localStorage.setItem(SERIES_CACHE_STORAGE_KEY, JSON.stringify(payload));
@@ -1536,6 +1599,23 @@
         });
         incomingPoints.forEach((point) => {
           const key = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+          if (Number.isFinite(key)) {
+            merged.set(key, point);
+          }
+        });
+        return Array.from(merged.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+      }
+
+      function mergeAqiBandPoints(existingPoints, incomingPoints) {
+        const merged = new Map();
+        existingPoints.forEach((point) => {
+          const key = point?.date instanceof Date ? floorToHourStartMs(point.date) : Number.NaN;
+          if (Number.isFinite(key)) {
+            merged.set(key, point);
+          }
+        });
+        incomingPoints.forEach((point) => {
+          const key = point?.date instanceof Date ? floorToHourStartMs(point.date) : Number.NaN;
           if (Number.isFinite(key)) {
             merged.set(key, point);
           }
@@ -2205,12 +2285,12 @@
         return dedupeStrings([normalizedBase, `${normalizedBase}/data`]);
       }
 
-      function buildAqiHistoryRequestCandidates(stationId, windowValue) {
+      function buildAqiHistoryRequestCandidates(stationId, windowValue, rangeOverride = null) {
         const stationToken = String(stationId || "").trim();
         if (!stationToken) {
           return [];
         }
-        const { fromIso, toIso } = resolveAqiRequestRange(windowValue);
+        const { fromIso, toIso } = rangeOverride || resolveAqiRequestRange(windowValue);
         const orderedBases = preferredAqiHistoryBase
           ? dedupeStrings([preferredAqiHistoryBase, ...AQI_HISTORY_BASE_CANDIDATES])
           : AQI_HISTORY_BASE_CANDIDATES;
@@ -2778,8 +2858,12 @@
       async function loadAqiBandsData(windowValue, loadId) {
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const stationId = baseMeta?.stationId || null;
-        const aqiCacheKey = getAqiBandCacheKey(selectedSeriesId, windowValue);
+        const aqiCacheKey = getAqiBandCacheKey(stationId, windowValue);
         const cachedPoints = aqiBandPointCacheByKey.get(aqiCacheKey) || null;
+        const fullRange = resolveAqiRequestRange(windowValue);
+        const fullRangeStartMs = Date.parse(fullRange.fromIso);
+        const fullRangeEndMs = Date.parse(fullRange.toIso);
+        const immutableCutoffMs = Date.now() - AQI_BAND_MUTABLE_WINDOW_MS;
 
         if (isSeriesLoadCurrent(loadId) && Array.isArray(cachedPoints) && cachedPoints.length) {
           chartState.aqiPoints = cachedPoints;
@@ -2792,7 +2876,40 @@
           renderAqiBands();
           return;
         }
-        const candidates = buildAqiHistoryRequestCandidates(stationId, windowValue);
+        if (
+          Array.isArray(cachedPoints) &&
+          cachedPoints.length &&
+          Number.isFinite(fullRangeEndMs) &&
+          fullRangeEndMs <= immutableCutoffMs
+        ) {
+          chartState.aqiPoints = cachedPoints;
+          chartState.aqiDataKey = aqiCacheKey;
+          renderAqiBands();
+          return;
+        }
+
+        let requestRange = fullRange;
+        let immutableCachedPoints = [];
+        if (
+          Array.isArray(cachedPoints) &&
+          cachedPoints.length &&
+          Number.isFinite(fullRangeStartMs) &&
+          Number.isFinite(fullRangeEndMs)
+        ) {
+          const mutableStartMs = Math.max(fullRangeStartMs, immutableCutoffMs);
+          // AQI levels are treated as immutable once they are more than 24 hours old,
+          // so keep that older slice from cache and refresh only the mutable tail.
+          immutableCachedPoints = cachedPoints.filter((point) => {
+            const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+            return Number.isFinite(pointMs) && pointMs >= fullRangeStartMs && pointMs < mutableStartMs;
+          });
+          requestRange = {
+            fromIso: new Date(mutableStartMs).toISOString(),
+            toIso: fullRange.toIso,
+          };
+        }
+
+        const candidates = buildAqiHistoryRequestCandidates(stationId, windowValue, requestRange);
         if (!candidates.length) {
           chartState.aqiPoints = [];
           chartState.aqiDataKey = aqiCacheKey;
@@ -2810,7 +2927,7 @@
             }
             const payload = await response.json().catch(() => ({}));
             const parsedPoints = parseAqiBandPayload(payload);
-            const points = pruneSeriesPointsToWindow(
+            const fetchedPoints = pruneSeriesPointsToWindow(
               parsedPoints,
               windowValue,
               payload?.query_to_utc || payload?.to_utc || null,
@@ -2818,8 +2935,12 @@
             if (!isSeriesLoadCurrent(loadId)) {
               return;
             }
+            const points = immutableCachedPoints.length
+              ? mergeAqiBandPoints(immutableCachedPoints, fetchedPoints)
+              : fetchedPoints;
             preferredAqiHistoryBase = candidate.base;
             aqiBandPointCacheByKey.set(aqiCacheKey, points);
+            persistSeriesCacheToStorage();
             chartState.aqiPoints = points;
             chartState.aqiDataKey = aqiCacheKey;
             renderAqiBands();
