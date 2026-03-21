@@ -644,9 +644,18 @@
         if (!chartHintEl) {
           return;
         }
-        chartHintEl.textContent = SERIES_EDGE_URL
-          ? `Raw observations endpoint: ${SERIES_EDGE_URL}`
-          : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
+        const meta = seriesLookup.get(selectedSeriesId) || chartState.meta || null;
+        const pollutantKey = normalizeAqiSupportedPollutant(meta?.aqiPollutantKey || meta?.pollutant);
+        const hintParts = [];
+        if (meta && !isAqiSupportedPollutant(pollutantKey)) {
+          hintParts.push("DAQI and EAQI bands are only available for PM2.5, PM10, and NO2.");
+        }
+        hintParts.push(
+          SERIES_EDGE_URL
+            ? `Raw observations endpoint: ${SERIES_EDGE_URL}`
+            : "Missing cache endpoint base URL. Add ?cache_base=... to the URL."
+        );
+        chartHintEl.textContent = hintParts.join(" ");
       }
 
       function readCacheSessionHintUntil() {
@@ -989,6 +998,57 @@
           || "Unknown";
       }
 
+      function normalizeAqiSupportedPollutant(label) {
+        const compact = String(label || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+        if (!compact) {
+          return null;
+        }
+        if (compact === "pm25" || compact === "particulatematter25") {
+          return "pm25";
+        }
+        if (compact === "pm10" || compact === "particulatematter10") {
+          return "pm10";
+        }
+        if (compact === "no2" || compact === "nitrogendioxide") {
+          return "no2";
+        }
+        return null;
+      }
+
+      function getAqiFieldMappingForPollutant(pollutantKey) {
+        if (pollutantKey === "pm25") {
+          return {
+            daqiField: "daqi_pm25_rolling24h_index_level",
+            eaqiField: "eaqi_pm25_index_level",
+          };
+        }
+        if (pollutantKey === "pm10") {
+          return {
+            daqiField: "daqi_pm10_rolling24h_index_level",
+            eaqiField: "eaqi_pm10_index_level",
+          };
+        }
+        if (pollutantKey === "no2") {
+          return {
+            daqiField: "daqi_no2_index_level",
+            eaqiField: "eaqi_no2_index_level",
+          };
+        }
+        return null;
+      }
+
+      function isAqiSupportedPollutant(pollutantKey) {
+        return Boolean(getAqiFieldMappingForPollutant(pollutantKey));
+      }
+
+      if (typeof window !== "undefined") {
+        window.__ukAqStationsChartDebug = {
+          ...(window.__ukAqStationsChartDebug || {}),
+          normalizeAqiSupportedPollutant,
+          getAqiFieldMappingForPollutant,
+        };
+      }
+
       function getNetworkLabel(row) {
         const direct = String(row.network_name || "").trim();
         if (direct) {
@@ -1166,6 +1226,7 @@
             id,
             label,
             pollutant,
+            aqiPollutantKey: normalizeAqiSupportedPollutant(pollutant),
             uom: row.uom_display || row.uom || "",
             stationId,
             stationLabel: baseLabel || "Unknown station",
@@ -1218,6 +1279,8 @@
           points: [],
           aqiPoints: [],
           aqiDataKey: "",
+          aqiRequestKey: "",
+          aqiPollutantKey: null,
           meta: null,
           guideline: null,
           windowLabel: null,
@@ -1284,15 +1347,42 @@
         chartWrap.classList.toggle("is-loading", isLoading);
       }
 
-      function getAqiBandCacheKey(stationId, windowLabel) {
+      function getAqiBandCacheKey(stationId, pollutantKey, windowLabel) {
         const stationToken = String(stationId || "").trim();
+        const pollutantToken = String(pollutantKey || "unsupported").trim() || "unsupported";
         if (hasFixedSeriesDateRange) {
-          return `aqi::${stationToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
+          return `aqi::${stationToken}::${pollutantToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
         }
         if (fixedSeriesDays !== null) {
-          return `aqi::${stationToken}::days::${fixedSeriesDays}`;
+          return `aqi::${stationToken}::${pollutantToken}::days::${fixedSeriesDays}`;
         }
-        return `aqi::${stationToken}::${windowLabel || "24h"}`;
+        return `aqi::${stationToken}::${pollutantToken}::${windowLabel || "24h"}`;
+      }
+
+      function buildAqiRequestContext(meta, windowLabel) {
+        const stationId = meta?.stationId || null;
+        const pollutantKey = normalizeAqiSupportedPollutant(meta?.aqiPollutantKey || meta?.pollutant);
+        return {
+          stationId,
+          pollutantKey,
+          supported: Boolean(stationId) && isAqiSupportedPollutant(pollutantKey),
+          dataKey: getAqiBandCacheKey(stationId, pollutantKey, windowLabel),
+          windowLabel: windowLabel || "24h",
+        };
+      }
+
+      function applyAqiContextState(points, context, render = true) {
+        chartState.aqiPoints = Array.isArray(points) ? points : [];
+        chartState.aqiDataKey = context?.dataKey || "";
+        chartState.aqiRequestKey = context?.dataKey || "";
+        chartState.aqiPollutantKey = context?.pollutantKey || null;
+        if (render) {
+          renderAqiBands();
+        }
+      }
+
+      function isAqiRequestCurrent(loadId, context) {
+        return isSeriesLoadCurrent(loadId) && chartState.aqiRequestKey === context?.dataKey;
       }
 
       function normalizeAqiBandLevel(value, allowText = false) {
@@ -1446,7 +1536,11 @@
         );
       }
 
-      function parseAqiBandPayload(payload) {
+      function parseAqiBandPayload(payload, pollutantKey) {
+        const fieldMapping = getAqiFieldMappingForPollutant(pollutantKey);
+        if (!fieldMapping) {
+          return [];
+        }
         const rawPoints = Array.isArray(payload?.points)
           ? payload.points
           : Array.isArray(payload?.data)
@@ -1454,8 +1548,8 @@
           : [];
         const mapped = rawPoints.map((row) => ({
           date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
-          daqi: normalizeAqiBandLevel(row?.daqi_index_level, false),
-          eaqi: normalizeAqiBandLevel(row?.eaqi_index_level, true),
+          daqi: normalizeAqiBandLevel(row?.[fieldMapping.daqiField], false),
+          eaqi: normalizeAqiBandLevel(row?.[fieldMapping.eaqiField], true),
         }));
         return mapped.filter((row) =>
           Number.isFinite(row.date?.getTime()) && (row.daqi !== null || row.eaqi !== null)
@@ -1798,6 +1892,20 @@
           !chartState.daqiBandLayer ||
           !chartState.eaqiBandLayer
         ) {
+          return;
+        }
+
+        const currentMeta = seriesLookup.get(selectedSeriesId) || chartState.meta || null;
+        const currentContext = buildAqiRequestContext(
+          currentMeta,
+          chartState.windowLabel || resolveWindowValue()
+        );
+        if (
+          !currentContext.supported
+          || chartState.aqiDataKey !== currentContext.dataKey
+          || chartState.aqiRequestKey !== currentContext.dataKey
+        ) {
+          clearAqiBands();
           return;
         }
 
@@ -2285,9 +2393,9 @@
         return dedupeStrings([normalizedBase, `${normalizedBase}/data`]);
       }
 
-      function buildAqiHistoryRequestCandidates(stationId, windowValue, rangeOverride = null) {
+      function buildAqiHistoryRequestCandidates(stationId, pollutantKey, windowValue, rangeOverride = null) {
         const stationToken = String(stationId || "").trim();
-        if (!stationToken) {
+        if (!stationToken || !isAqiSupportedPollutant(pollutantKey)) {
           return [];
         }
         const { fromIso, toIso } = rangeOverride || resolveAqiRequestRange(windowValue);
@@ -2310,6 +2418,7 @@
             requestUrl.searchParams.set("scope", "station");
             requestUrl.searchParams.set("grain", "hourly");
             requestUrl.searchParams.set("entity", stationToken);
+            requestUrl.searchParams.set("pollutant", pollutantKey);
             requestUrl.searchParams.set("row_limit", String(AQI_HISTORY_ROW_LIMIT));
             if (fromIso) {
               requestUrl.searchParams.set("from_utc", fromIso);
@@ -2857,23 +2966,27 @@
 
       async function loadAqiBandsData(windowValue, loadId) {
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
-        const stationId = baseMeta?.stationId || null;
-        const aqiCacheKey = getAqiBandCacheKey(stationId, windowValue);
+        const context = buildAqiRequestContext(baseMeta, windowValue);
+        const { stationId, pollutantKey, supported, dataKey } = context;
+        const aqiCacheKey = dataKey;
         const cachedPoints = aqiBandPointCacheByKey.get(aqiCacheKey) || null;
         const fullRange = resolveAqiRequestRange(windowValue);
         const fullRangeStartMs = Date.parse(fullRange.fromIso);
         const fullRangeEndMs = Date.parse(fullRange.toIso);
         const immutableCutoffMs = Date.now() - AQI_BAND_MUTABLE_WINDOW_MS;
 
-        if (isSeriesLoadCurrent(loadId) && Array.isArray(cachedPoints) && cachedPoints.length) {
-          chartState.aqiPoints = cachedPoints;
-          chartState.aqiDataKey = aqiCacheKey;
-          renderAqiBands();
+        chartState.aqiRequestKey = aqiCacheKey;
+        chartState.aqiPollutantKey = pollutantKey;
+        if (chartState.aqiDataKey !== aqiCacheKey) {
+          applyAqiContextState([], context, false);
+          clearAqiBands();
         }
-        if (!stationId) {
-          chartState.aqiPoints = [];
-          chartState.aqiDataKey = "";
-          renderAqiBands();
+
+        if (isAqiRequestCurrent(loadId, context) && Array.isArray(cachedPoints) && cachedPoints.length) {
+          applyAqiContextState(cachedPoints, context);
+        }
+        if (!supported) {
+          applyAqiContextState([], context);
           return;
         }
         if (
@@ -2882,9 +2995,7 @@
           Number.isFinite(fullRangeEndMs) &&
           fullRangeEndMs <= immutableCutoffMs
         ) {
-          chartState.aqiPoints = cachedPoints;
-          chartState.aqiDataKey = aqiCacheKey;
-          renderAqiBands();
+          applyAqiContextState(cachedPoints, context);
           return;
         }
 
@@ -2909,11 +3020,9 @@
           };
         }
 
-        const candidates = buildAqiHistoryRequestCandidates(stationId, windowValue, requestRange);
+        const candidates = buildAqiHistoryRequestCandidates(stationId, pollutantKey, windowValue, requestRange);
         if (!candidates.length) {
-          chartState.aqiPoints = [];
-          chartState.aqiDataKey = aqiCacheKey;
-          renderAqiBands();
+          applyAqiContextState([], context);
           return;
         }
         let lastError = null;
@@ -2926,13 +3035,13 @@
               throw new Error(`AQI request failed (${response.status}).`);
             }
             const payload = await response.json().catch(() => ({}));
-            const parsedPoints = parseAqiBandPayload(payload);
+            const parsedPoints = parseAqiBandPayload(payload, pollutantKey);
             const fetchedPoints = pruneSeriesPointsToWindow(
               parsedPoints,
               windowValue,
               payload?.query_to_utc || payload?.to_utc || null,
             );
-            if (!isSeriesLoadCurrent(loadId)) {
+            if (!isAqiRequestCurrent(loadId, context)) {
               return;
             }
             const points = immutableCachedPoints.length
@@ -2941,33 +3050,27 @@
             preferredAqiHistoryBase = candidate.base;
             aqiBandPointCacheByKey.set(aqiCacheKey, points);
             persistSeriesCacheToStorage();
-            chartState.aqiPoints = points;
-            chartState.aqiDataKey = aqiCacheKey;
-            renderAqiBands();
+            applyAqiContextState(points, context);
             return;
           } catch (error) {
             lastError = error;
           }
         }
-        if (!isSeriesLoadCurrent(loadId)) {
+        if (!isAqiRequestCurrent(loadId, context)) {
           return;
         }
         if (lastError) {
           console.warn("Unable to load AQI history for bands.", lastError);
         }
         if (Array.isArray(cachedPoints) && cachedPoints.length) {
-          chartState.aqiPoints = cachedPoints;
-          chartState.aqiDataKey = aqiCacheKey;
-          renderAqiBands();
+          applyAqiContextState(cachedPoints, context);
           return;
         }
         if (chartState.aqiDataKey === aqiCacheKey && Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
           renderAqiBands();
           return;
         }
-        chartState.aqiPoints = [];
-        chartState.aqiDataKey = aqiCacheKey;
-        renderAqiBands();
+        applyAqiContextState([], context);
       }
 
       async function loadSeriesData() {
@@ -2994,8 +3097,17 @@
           return;
         }
 
-        updateChartHint();
         const windowValue = resolveWindowValue();
+        const baseMeta = seriesLookup.get(selectedSeriesId) || null;
+        const aqiContext = buildAqiRequestContext(baseMeta, windowValue);
+        if (chartState.aqiDataKey !== aqiContext.dataKey || !aqiContext.supported) {
+          applyAqiContextState([], aqiContext, false);
+          clearAqiBands();
+        } else {
+          chartState.aqiRequestKey = aqiContext.dataKey;
+          chartState.aqiPollutantKey = aqiContext.pollutantKey;
+        }
+        updateChartHint();
         try {
           if (!SERIES_EDGE_URL) {
             throw new Error("Missing cache endpoint base URL for series endpoint.");
@@ -3004,8 +3116,7 @@
             throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
           }
           if (loadReason === "station-change" || loadReason === "station-search") {
-            chartState.aqiPoints = [];
-            chartState.aqiDataKey = "";
+            applyAqiContextState([], aqiContext, false);
             clearAqiBands();
           }
           loadAqiBandsData(windowValue, loadId).catch(e => console.warn("AQI bands failed to load", e));
