@@ -2581,6 +2581,27 @@
         };
       }
 
+      function isLongObservationWindow(windowValue) {
+        if (windowValue === "31d" || windowValue === "90d") {
+          return true;
+        }
+        const dynamicDaysMatch = /^(\d+)d$/i.exec(String(windowValue || ""));
+        if (!dynamicDaysMatch) {
+          return false;
+        }
+        return Number(dynamicDaysMatch[1]) >= 31;
+      }
+
+      function shouldForceFullObservationReload(windowValue, loadReason) {
+        if (!isLongObservationWindow(windowValue)) {
+          return false;
+        }
+        return loadReason === "station-search"
+          || loadReason === "station-change"
+          || loadReason === "window-change"
+          || loadReason === "refresh";
+      }
+
 
 
       function buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, since = null }) {
@@ -2809,6 +2830,16 @@
         const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
         const cachedWindowPoints = pruneSeriesPointsToWindow(cachedPoints, windowValue, range.endIso);
         let cacheChanged = false;
+        if (
+          since
+          && cachedWindowPoints.length
+          && shouldForceFullObservationReload(windowValue, loadReason)
+        ) {
+          since = null;
+          seriesSinceByKey.delete(seriesKey);
+          seriesEtagByKey.delete(seriesKey);
+          cacheChanged = true;
+        }
         if (since && cachedWindowPoints.length === 0) {
           since = null;
           dropSeriesCacheForKey(seriesKey);
