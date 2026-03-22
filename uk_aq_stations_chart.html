@@ -897,6 +897,13 @@
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
         const requestMethod = String(init?.method || "GET").toUpperCase();
+        if (retryOnAuthFailure && !hasFreshCacheSession()) {
+          try {
+            await ensureCacheSession(false);
+          } catch (_err) {
+            // Fall back to the explicit 401 recovery path below.
+          }
+        }
         let response;
         try {
           response = await fetch(input, { ...init, credentials: "include" });
@@ -908,8 +915,9 @@
           return fetch(input, { ...init, credentials: "include" });
         }
         if (response.status === 401 && retryOnAuthFailure) {
-          clearCacheSessionState(false);
-          await ensureCacheSession(false);
+          // A real 401 means the shared localStorage hint is stale for this browser session too.
+          clearCacheSessionState();
+          await ensureCacheSession(true);
           response = await fetch(input, { ...init, credentials: "include" });
           if (response.status !== 401) {
             return response;
@@ -1199,6 +1207,19 @@
         });
 
         rowCount.textContent = `${ordered.length} series`;
+      }
+
+      function resetResultState(message = "Search returned no data.") {
+        cachedRows = [];
+        updatePollutantOptions([]);
+        renderRows([]);
+        buildSeriesOptions([]);
+        lastUpdated.textContent = "Waiting for data";
+        if (chartErrorEl) {
+          chartErrorEl.textContent = "";
+        }
+        setChartStatus("Waiting for series...");
+        clearSeriesChart(message);
       }
 
       function buildSeriesOptions(rows) {
@@ -3202,6 +3223,7 @@
           statusEl.textContent = "Live";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
+          resetResultState("Unable to load series.");
           errorEl.textContent = message;
           statusEl.textContent = "Error";
         }
