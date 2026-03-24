@@ -568,6 +568,7 @@
       const chartState = createEmptyChartState();
       let activeSeriesLoadId = 0;
       let activeObservationAbortController = null;
+      let activeAqiAbortController = null;
       let nextSeriesLoadReason = "initial";
       let chartResizeFrame = 0;
       const chartRenderController = {
@@ -834,7 +835,7 @@
           headers: { "Content-Type": "application/json" },
           body,
           keepalive: true,
-          credentials: "omit",
+          credentials: "include",
         }).then((response) => {
           if (!response.ok) {
             chartTelemetryMutedUntilMs = Date.now() + CHART_METRICS_FAILURE_SUPPRESS_MS;
@@ -1366,6 +1367,9 @@
         try {
           response = await fetch(input, { ...init, credentials: "include" });
         } catch (error) {
+          if (isAbortError(error) || init?.signal?.aborted) {
+            throw error;
+          }
           if (!isSafeCacheApiMethod(requestMethod)) {
             throw error;
           }
@@ -1391,8 +1395,11 @@
         return response;
       }
 
-      async function fetchAqiHistoryWithRetries(url, loadId) {
-        const requestInit = { headers: { Accept: "application/json" } };
+      async function fetchAqiHistoryWithRetries(url, loadId, signal = null) {
+        const requestInit = {
+          headers: { Accept: "application/json" },
+          signal,
+        };
         noteAqiRequest(loadId);
         let response = await fetchCacheApi(url, requestInit);
         noteAqiResponse(loadId, response);
@@ -3522,7 +3529,7 @@
         setChartStatus("Live");
       }
 
-      async function loadAqiBandsData(windowValue, loadId) {
+      async function loadAqiBandsData(windowValue, loadId, signal = null) {
         const telemetry = getSeriesLoadTelemetry(loadId);
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const context = buildAqiRequestContext(baseMeta, windowValue);
@@ -3608,7 +3615,7 @@
         let lastError = null;
         for (const candidate of candidates) {
           try {
-            const response = await fetchAqiHistoryWithRetries(candidate.url, loadId);
+            const response = await fetchAqiHistoryWithRetries(candidate.url, loadId, signal);
             if (!response.ok) {
               throw new Error(`AQI request failed (${response.status}).`);
             }
@@ -3639,6 +3646,9 @@
             summary.points_count = points.length;
             return summary;
           } catch (error) {
+            if (isAbortError(error)) {
+              throw error;
+            }
             lastError = error;
           }
         }
@@ -3690,6 +3700,12 @@
           activeObservationAbortController.abort();
           activeObservationAbortController = null;
         }
+        if (activeAqiAbortController) {
+          activeAqiAbortController.abort();
+          activeAqiAbortController = null;
+        }
+        const aqiAbortController = new AbortController();
+        activeAqiAbortController = aqiAbortController;
         cancelQueuedChartRender();
         setChartLoading(true);
         setChartStatus("Loading...");
@@ -3737,8 +3753,17 @@
             applyAqiContextState([], aqiContext, false);
             clearAqiBands();
           }
-          aqiLoadPromise = loadAqiBandsData(windowValue, loadId)
+          aqiLoadPromise = loadAqiBandsData(windowValue, loadId, aqiAbortController.signal)
             .catch((error) => {
+              if (isAbortError(error)) {
+                return {
+                  supported: aqiContext.supported,
+                  success: false,
+                  points_count: 0,
+                  error_message: null,
+                  superseded: true,
+                };
+              }
               console.warn("AQI bands failed to load", error);
               return {
                 supported: aqiContext.supported,
@@ -3773,6 +3798,9 @@
         } finally {
           if (isSeriesLoadCurrent(loadId)) {
             activeObservationAbortController = null;
+            if (activeAqiAbortController === aqiAbortController) {
+              activeAqiAbortController = null;
+            }
             setChartLoading(false);
           }
         }
