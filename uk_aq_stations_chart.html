@@ -643,10 +643,13 @@
       const CHART_METRICS_SESSION_STORAGE_KEY = `uk_aq_chart_metrics_session_v1:${cacheOrigin || "default"}`;
       const CHART_METRICS_SESSION_TTL_MS = 12 * HOUR_MS;
       const CHART_METRICS_SAMPLE_RATE = 1;
+      const CHART_METRICS_FAILURE_SUPPRESS_MS = 5 * 60 * 1000;
+      const AQI_HISTORY_EXTRA_RETRY_DELAYS_MS = [500, 1500];
       const pageViewId = createRandomUuid();
       const sessionId = getOrCreateAnonymousSessionId();
       const chartLoadTelemetryById = new Map();
       let activeChartLoadTelemetry = null;
+      let chartTelemetryMutedUntilMs = 0;
 
       function createRandomUuid() {
         if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -819,28 +822,25 @@
         if (!CHART_METRICS_ENDPOINT) {
           return;
         }
+        if (Date.now() < chartTelemetryMutedUntilMs) {
+          return;
+        }
         if (!shouldSampleChartTelemetry()) {
           return;
         }
         const body = JSON.stringify(compactChartTelemetryPayload(payload));
-        try {
-          if (navigator.sendBeacon) {
-            const blob = new Blob([body], { type: "application/json" });
-            if (navigator.sendBeacon(CHART_METRICS_ENDPOINT, blob)) {
-              return;
-            }
-          }
-        } catch (_err) {
-          // Fall through to fetch keepalive.
-        }
         fetch(CHART_METRICS_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
           keepalive: true,
           credentials: "omit",
+        }).then((response) => {
+          if (!response.ok) {
+            chartTelemetryMutedUntilMs = Date.now() + CHART_METRICS_FAILURE_SUPPRESS_MS;
+          }
         }).catch(() => {
-          return;
+          chartTelemetryMutedUntilMs = Date.now() + CHART_METRICS_FAILURE_SUPPRESS_MS;
         });
       }
 
@@ -1387,6 +1387,26 @@
         if (isSafeCacheApiMethod(requestMethod) && shouldRetryTransientStatus(response.status)) {
           await waitMs(CACHE_API_TRANSIENT_RETRY_DELAY_MS);
           return fetch(input, { ...init, credentials: "include" });
+        }
+        return response;
+      }
+
+      async function fetchAqiHistoryWithRetries(url, loadId) {
+        const requestInit = { headers: { Accept: "application/json" } };
+        noteAqiRequest(loadId);
+        let response = await fetchCacheApi(url, requestInit);
+        noteAqiResponse(loadId, response);
+        if (!shouldRetryTransientStatus(response.status)) {
+          return response;
+        }
+        for (const retryDelayMs of AQI_HISTORY_EXTRA_RETRY_DELAYS_MS) {
+          await waitMs(retryDelayMs);
+          noteAqiRequest(loadId);
+          response = await fetchCacheApi(url, requestInit);
+          noteAqiResponse(loadId, response);
+          if (!shouldRetryTransientStatus(response.status)) {
+            return response;
+          }
         }
         return response;
       }
@@ -3588,11 +3608,7 @@
         let lastError = null;
         for (const candidate of candidates) {
           try {
-            noteAqiRequest(loadId);
-            const response = await fetchCacheApi(candidate.url, {
-              headers: { Accept: "application/json" },
-            });
-            noteAqiResponse(loadId, response);
+            const response = await fetchAqiHistoryWithRetries(candidate.url, loadId);
             if (!response.ok) {
               throw new Error(`AQI request failed (${response.status}).`);
             }
