@@ -808,7 +808,7 @@
       function compactChartTelemetryPayload(payload) {
         const compact = {};
         Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined) {
+          if (value !== undefined && value !== null) {
             compact[key] = value;
           }
         });
