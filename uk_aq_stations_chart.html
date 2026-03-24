@@ -1792,6 +1792,7 @@
           aqiPoints: [],
           aqiDataKey: "",
           aqiRequestKey: "",
+          aqiIdentityKey: "",
           aqiPollutantKey: null,
           meta: null,
           guideline: null,
@@ -1859,26 +1860,33 @@
         chartWrap.classList.toggle("is-loading", isLoading);
       }
 
-      function getAqiBandCacheKey(stationId, pollutantKey, windowLabel) {
-        const stationToken = String(stationId || "").trim();
+      function getAqiBandCacheKey(timeseriesId, pollutantKey, windowLabel) {
+        const timeseriesToken = String(timeseriesId || "").trim();
         const pollutantToken = String(pollutantKey || "unsupported").trim() || "unsupported";
         if (hasFixedSeriesDateRange) {
-          return `aqi::${stationToken}::${pollutantToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
+          return `aqi::${timeseriesToken}::${pollutantToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
         }
         if (fixedSeriesDays !== null) {
-          return `aqi::${stationToken}::${pollutantToken}::days::${fixedSeriesDays}`;
+          return `aqi::${timeseriesToken}::${pollutantToken}::days::${fixedSeriesDays}`;
         }
-        return `aqi::${stationToken}::${pollutantToken}::${windowLabel || "24h"}`;
+        return `aqi::${timeseriesToken}::${pollutantToken}::${windowLabel || "24h"}`;
+      }
+
+      function getAqiBandIdentityKey(timeseriesId, pollutantKey) {
+        const timeseriesToken = String(timeseriesId || "").trim();
+        const pollutantToken = String(pollutantKey || "unsupported").trim() || "unsupported";
+        return `aqi_identity::${timeseriesToken}::${pollutantToken}`;
       }
 
       function buildAqiRequestContext(meta, windowLabel) {
-        const stationId = meta?.stationId || null;
+        const timeseriesId = meta?.id ? String(meta.id) : "";
         const pollutantKey = normalizeAqiSupportedPollutant(meta?.aqiPollutantKey || meta?.pollutant);
         return {
-          stationId,
+          timeseriesId,
           pollutantKey,
-          supported: Boolean(stationId) && isAqiSupportedPollutant(pollutantKey),
-          dataKey: getAqiBandCacheKey(stationId, pollutantKey, windowLabel),
+          supported: Boolean(timeseriesId) && isAqiSupportedPollutant(pollutantKey),
+          dataKey: getAqiBandCacheKey(timeseriesId, pollutantKey, windowLabel),
+          identityKey: getAqiBandIdentityKey(timeseriesId, pollutantKey),
           windowLabel: windowLabel || "24h",
         };
       }
@@ -1887,6 +1895,7 @@
         chartState.aqiPoints = Array.isArray(points) ? points : [];
         chartState.aqiDataKey = context?.dataKey || "";
         chartState.aqiRequestKey = context?.dataKey || "";
+        chartState.aqiIdentityKey = context?.identityKey || "";
         chartState.aqiPollutantKey = context?.pollutantKey || null;
         if (render) {
           renderAqiBands();
@@ -2414,8 +2423,7 @@
         );
         if (
           !currentContext.supported
-          || chartState.aqiDataKey !== currentContext.dataKey
-          || chartState.aqiRequestKey !== currentContext.dataKey
+          || chartState.aqiIdentityKey !== currentContext.identityKey
         ) {
           clearAqiBands();
           return;
@@ -2908,9 +2916,9 @@
         return dedupeStrings([normalizedBase, `${normalizedBase}/data`]);
       }
 
-      function buildAqiHistoryRequestCandidates(stationId, pollutantKey, windowValue, rangeOverride = null) {
-        const stationToken = String(stationId || "").trim();
-        if (!stationToken || !isAqiSupportedPollutant(pollutantKey)) {
+      function buildAqiHistoryRequestCandidates(timeseriesId, pollutantKey, windowValue, rangeOverride = null) {
+        const timeseriesToken = String(timeseriesId || "").trim();
+        if (!timeseriesToken || !isAqiSupportedPollutant(pollutantKey)) {
           return [];
         }
         const { fromIso, toIso } = rangeOverride || resolveAqiRequestRange(windowValue);
@@ -2930,9 +2938,10 @@
             } catch (_err) {
               return;
             }
-            requestUrl.searchParams.set("scope", "station");
+            requestUrl.searchParams.set("scope", "timeseries");
             requestUrl.searchParams.set("grain", "hourly");
-            requestUrl.searchParams.set("entity", stationToken);
+            requestUrl.searchParams.set("timeseries_id", timeseriesToken);
+            requestUrl.searchParams.set("entity", timeseriesToken);
             requestUrl.searchParams.set("pollutant", pollutantKey);
             requestUrl.searchParams.set("row_limit", String(AQI_HISTORY_ROW_LIMIT));
             if (fromIso) {
@@ -3539,7 +3548,7 @@
         const telemetry = getSeriesLoadTelemetry(loadId);
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const context = buildAqiRequestContext(baseMeta, windowValue);
-        const { stationId, pollutantKey, supported, dataKey } = context;
+        const { timeseriesId, pollutantKey, supported, dataKey } = context;
         const aqiCacheKey = dataKey;
         const cachedPoints = aqiBandPointCacheByKey.get(aqiCacheKey) || null;
         const fullRange = resolveAqiRequestRange(windowValue);
@@ -3559,7 +3568,7 @@
 
         chartState.aqiRequestKey = aqiCacheKey;
         chartState.aqiPollutantKey = pollutantKey;
-        if (chartState.aqiDataKey !== aqiCacheKey) {
+        if (chartState.aqiIdentityKey !== context.identityKey) {
           applyAqiContextState([], context, false);
           clearAqiBands();
         }
@@ -3611,7 +3620,12 @@
           };
         }
 
-        const candidates = buildAqiHistoryRequestCandidates(stationId, pollutantKey, windowValue, requestRange);
+        const candidates = buildAqiHistoryRequestCandidates(
+          timeseriesId,
+          pollutantKey,
+          windowValue,
+          requestRange,
+        );
         if (!candidates.length) {
           applyAqiContextState([], context);
           summary.success = false;
@@ -3675,7 +3689,7 @@
           summary.points_count = cachedPoints.length;
           return summary;
         }
-        if (chartState.aqiDataKey === aqiCacheKey && Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
+        if (chartState.aqiIdentityKey === context.identityKey && Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
           renderAqiBands();
           if (telemetry) {
             telemetry.aqi_total_points = chartState.aqiPoints.length;
@@ -3731,7 +3745,7 @@
         }
 
         const aqiContext = buildAqiRequestContext(baseMeta, windowValue);
-        if (chartState.aqiDataKey !== aqiContext.dataKey || !aqiContext.supported) {
+        if (chartState.aqiIdentityKey !== aqiContext.identityKey || !aqiContext.supported) {
           applyAqiContextState([], aqiContext, false);
           clearAqiBands();
         } else {
