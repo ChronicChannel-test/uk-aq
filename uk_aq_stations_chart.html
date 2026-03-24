@@ -1354,7 +1354,7 @@
         await cacheSessionInflight;
       }
 
-      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
+      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true, retryOnTransient = true) {
         const requestMethod = String(init?.method || "GET").toUpperCase();
         if (retryOnAuthFailure && !hasFreshCacheSession()) {
           try {
@@ -1388,7 +1388,7 @@
           await ensureCacheSession(true);
           return fetch(input, { ...init, credentials: "include" });
         }
-        if (isSafeCacheApiMethod(requestMethod) && shouldRetryTransientStatus(response.status)) {
+        if (retryOnTransient && isSafeCacheApiMethod(requestMethod) && shouldRetryTransientStatus(response.status)) {
           await waitMs(CACHE_API_TRANSIENT_RETRY_DELAY_MS);
           return fetch(input, { ...init, credentials: "include" });
         }
@@ -1401,15 +1401,21 @@
           signal,
         };
         noteAqiRequest(loadId);
-        let response = await fetchCacheApi(url, requestInit);
+        let response = await fetchCacheApi(url, requestInit, true, false);
         noteAqiResponse(loadId, response);
         if (!shouldRetryTransientStatus(response.status)) {
           return response;
         }
         for (const retryDelayMs of AQI_HISTORY_EXTRA_RETRY_DELAYS_MS) {
+          if (signal?.aborted || !isSeriesLoadCurrent(loadId)) {
+            throw new DOMException("Aborted", "AbortError");
+          }
           await waitMs(retryDelayMs);
+          if (signal?.aborted || !isSeriesLoadCurrent(loadId)) {
+            throw new DOMException("Aborted", "AbortError");
+          }
           noteAqiRequest(loadId);
-          response = await fetchCacheApi(url, requestInit);
+          response = await fetchCacheApi(url, requestInit, true, false);
           noteAqiResponse(loadId, response);
           if (!shouldRetryTransientStatus(response.status)) {
             return response;
