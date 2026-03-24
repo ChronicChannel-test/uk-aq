@@ -638,6 +638,443 @@
         return out;
       }
 
+      const CHART_METRICS_ENDPOINT = cacheBaseUrl ? `${cacheBaseUrl}/chart-metrics` : "";
+      const CHART_METRICS_PAGE_NAME = "uk_aq_stations_chart";
+      const CHART_METRICS_SESSION_STORAGE_KEY = `uk_aq_chart_metrics_session_v1:${cacheOrigin || "default"}`;
+      const CHART_METRICS_SESSION_TTL_MS = 12 * HOUR_MS;
+      const CHART_METRICS_SAMPLE_RATE = 1;
+      const pageViewId = createRandomUuid();
+      const sessionId = getOrCreateAnonymousSessionId();
+      const chartLoadTelemetryById = new Map();
+      let activeChartLoadTelemetry = null;
+
+      function createRandomUuid() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return window.crypto.randomUUID();
+        }
+        const bytes = new Uint8Array(16);
+        if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+          window.crypto.getRandomValues(bytes);
+        } else {
+          for (let i = 0; i < bytes.length; i += 1) {
+            bytes[i] = Math.floor(Math.random() * 256);
+          }
+        }
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+        return [
+          hex.slice(0, 8),
+          hex.slice(8, 12),
+          hex.slice(12, 16),
+          hex.slice(16, 20),
+          hex.slice(20),
+        ].join("-");
+      }
+
+      function getOrCreateAnonymousSessionId() {
+        try {
+          const nowMs = Date.now();
+          const raw = localStorage.getItem(CHART_METRICS_SESSION_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const existingId = String(parsed?.id || "").trim();
+            const expiresAtMs = Number(parsed?.expires_at_ms || 0);
+            if (
+              existingId &&
+              Number.isFinite(expiresAtMs) &&
+              expiresAtMs > nowMs &&
+              /^[0-9a-f-]{36}$/i.test(existingId)
+            ) {
+              return existingId.toLowerCase();
+            }
+          }
+          const nextId = createRandomUuid();
+          const nextPayload = {
+            id: nextId,
+            expires_at_ms: nowMs + CHART_METRICS_SESSION_TTL_MS,
+          };
+          localStorage.setItem(CHART_METRICS_SESSION_STORAGE_KEY, JSON.stringify(nextPayload));
+          return nextId;
+        } catch (_err) {
+          return null;
+        }
+      }
+
+      function sanitizeChartTelemetryErrorMessage(error) {
+        const raw = error instanceof Error ? error.message : String(error || "");
+        const cleaned = raw.replace(/[\u0000-\u001F\u007F]+/g, " ").trim();
+        if (!cleaned) {
+          return null;
+        }
+        return cleaned.length <= 240 ? cleaned : `${cleaned.slice(0, 237)}...`;
+      }
+
+      function normalizeLoadReasonForTelemetry(loadReason) {
+        if (loadReason === "initial") {
+          return "initial";
+        }
+        if (loadReason === "station-change" || loadReason === "station-search") {
+          return "station_change";
+        }
+        if (loadReason === "window-change") {
+          return "timescale_change";
+        }
+        if (loadReason === "pollutant-change") {
+          return "pollutant_change";
+        }
+        return "refresh";
+      }
+
+      function normalizeTelemetryInt(value, fallback = null, min = 0, max = 600000) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+          return fallback;
+        }
+        const rounded = Math.round(numeric);
+        if (rounded < min || rounded > max) {
+          return fallback;
+        }
+        return rounded;
+      }
+
+      function normalizeTelemetryNumber(value, fallback = null, min = 0, max = 2048) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+          return fallback;
+        }
+        if (numeric < min || numeric > max) {
+          return fallback;
+        }
+        return numeric;
+      }
+
+      function resolveTelemetryConnectionInfo() {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        return {
+          network_effective_type: connection && typeof connection.effectiveType === "string"
+            ? connection.effectiveType
+            : null,
+          device_memory_gb: normalizeTelemetryNumber(navigator.deviceMemory, null, 0, 2048),
+          hardware_concurrency: normalizeTelemetryInt(navigator.hardwareConcurrency, null, 0, 512),
+        };
+      }
+
+      function getSeriesLoadTelemetry(loadId) {
+        return chartLoadTelemetryById.get(loadId) || null;
+      }
+
+      function getActiveSeriesLoadTelemetry() {
+        if (!activeChartLoadTelemetry || activeChartLoadTelemetry.emitted) {
+          return null;
+        }
+        return activeChartLoadTelemetry;
+      }
+
+      function shouldSampleChartTelemetry() {
+        if (CHART_METRICS_SAMPLE_RATE >= 1) {
+          return true;
+        }
+        if (CHART_METRICS_SAMPLE_RATE <= 0) {
+          return false;
+        }
+        return Math.random() < CHART_METRICS_SAMPLE_RATE;
+      }
+
+      function classifyOverallCacheClass(telemetry) {
+        const obsRequests = telemetry.obs_network_request_count || 0;
+        const aqiRequests = telemetry.aqi_network_request_count || 0;
+        const networkRequests = obsRequests + aqiRequests;
+        const usedLocalCache = telemetry.obs_used_local_cache === true || telemetry.aqi_used_local_cache === true;
+        const usedHttp304 = telemetry.obs_received_304 === true || telemetry.aqi_received_304 === true;
+        if (telemetry._bypass_seen === true) {
+          return "bypass";
+        }
+        if (usedLocalCache && networkRequests === 0) {
+          return "warm_local";
+        }
+        if (usedHttp304 && !usedLocalCache && networkRequests > 0) {
+          return "warm_http_304";
+        }
+        if ((usedLocalCache || usedHttp304) && networkRequests > 0) {
+          return "mixed";
+        }
+        if (!usedLocalCache && !usedHttp304 && networkRequests > 0) {
+          return "cold";
+        }
+        return "unknown";
+      }
+
+      function compactChartTelemetryPayload(payload) {
+        const compact = {};
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value !== undefined) {
+            compact[key] = value;
+          }
+        });
+        return compact;
+      }
+
+      function sendChartTelemetryPayload(payload) {
+        if (!CHART_METRICS_ENDPOINT) {
+          return;
+        }
+        if (!shouldSampleChartTelemetry()) {
+          return;
+        }
+        const body = JSON.stringify(compactChartTelemetryPayload(payload));
+        try {
+          if (navigator.sendBeacon) {
+            const blob = new Blob([body], { type: "application/json" });
+            if (navigator.sendBeacon(CHART_METRICS_ENDPOINT, blob)) {
+              return;
+            }
+          }
+        } catch (_err) {
+          // Fall through to fetch keepalive.
+        }
+        fetch(CHART_METRICS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: true,
+          credentials: "omit",
+        }).catch(() => {
+          return;
+        });
+      }
+
+      function beginSeriesLoadTelemetry(loadId, loadReason, windowValue, meta) {
+        if (activeChartLoadTelemetry && !activeChartLoadTelemetry.emitted) {
+          finalizeSeriesLoadTelemetry(activeChartLoadTelemetry.load_id, {
+            success: false,
+            error_stage: "aborted",
+            error_message: "Superseded by a newer chart load.",
+          });
+        }
+        const connectionInfo = resolveTelemetryConnectionInfo();
+        const telemetry = {
+          load_id: loadId,
+          emitted: false,
+          started_at_perf_ms: performance.now(),
+          page_name: CHART_METRICS_PAGE_NAME,
+          page_view_id: pageViewId,
+          request_group_id: createRandomUuid(),
+          session_id: sessionId,
+          load_reason: normalizeLoadReasonForTelemetry(loadReason),
+          station_id: normalizeTelemetryInt(meta?.stationId, null, 1, 2147483647),
+          timeseries_id: normalizeTelemetryInt(selectedSeriesId, null, 1, 2147483647),
+          station_label: typeof meta?.stationLabel === "string" && meta.stationLabel.trim()
+            ? meta.stationLabel.trim()
+            : null,
+          pollutant: typeof meta?.pollutant === "string" && meta.pollutant.trim()
+            ? meta.pollutant.trim()
+            : null,
+          window_label: windowValue || null,
+          success: false,
+          error_stage: null,
+          error_message: null,
+          total_load_ms: null,
+          time_to_first_obs_response_ms: null,
+          time_to_first_obs_render_ms: null,
+          time_to_obs_complete_ms: null,
+          time_to_aqi_complete_ms: null,
+          time_to_chart_ready_ms: null,
+          cache_session_init_ms: null,
+          turnstile_ms: null,
+          obs_chunk_count: 0,
+          obs_network_request_count: 0,
+          obs_total_points: 0,
+          obs_used_local_cache: false,
+          obs_used_etag: false,
+          obs_received_304: false,
+          obs_cache_mode: "unknown",
+          aqi_supported: null,
+          aqi_network_request_count: 0,
+          aqi_total_points: 0,
+          aqi_used_local_cache: false,
+          aqi_received_304: false,
+          cache_session_was_warm: hasFreshCacheSession(),
+          overall_cache_class: "unknown",
+          network_effective_type: connectionInfo.network_effective_type || null,
+          device_memory_gb: connectionInfo.device_memory_gb,
+          hardware_concurrency: connectionInfo.hardware_concurrency,
+          app_version: null,
+          _bypass_seen: false,
+          _aqi_error_message: null,
+        };
+        chartLoadTelemetryById.set(loadId, telemetry);
+        activeChartLoadTelemetry = telemetry;
+        return telemetry;
+      }
+
+      function noteObservationRequest(loadId, options = {}) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted) {
+          return;
+        }
+        telemetry.obs_network_request_count += 1;
+        telemetry.obs_chunk_count += 1;
+        if (options.usedEtag === true) {
+          telemetry.obs_used_etag = true;
+        }
+      }
+
+      function noteObservationResponse(loadId, response) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted || !response) {
+          return;
+        }
+        if (telemetry.time_to_first_obs_response_ms === null) {
+          telemetry.time_to_first_obs_response_ms = normalizeTelemetryInt(
+            performance.now() - telemetry.started_at_perf_ms,
+            null,
+            0,
+            600000,
+          );
+        }
+        if (response.status === 304) {
+          telemetry.obs_received_304 = true;
+        }
+        if (String(response.headers.get("X-UK-AQ-Cache") || "").toUpperCase() === "BYPASS") {
+          telemetry._bypass_seen = true;
+        }
+      }
+
+      function noteObservationFirstRender(loadId) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted || telemetry.time_to_first_obs_render_ms !== null) {
+          return;
+        }
+        telemetry.time_to_first_obs_render_ms = normalizeTelemetryInt(
+          performance.now() - telemetry.started_at_perf_ms,
+          null,
+          0,
+          600000,
+        );
+      }
+
+      function noteObservationComplete(loadId) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted) {
+          return;
+        }
+        telemetry.time_to_obs_complete_ms = normalizeTelemetryInt(
+          performance.now() - telemetry.started_at_perf_ms,
+          null,
+          0,
+          600000,
+        );
+        telemetry.obs_total_points = Array.isArray(chartState.points)
+          ? chartState.points.length
+          : (telemetry.obs_total_points || 0);
+      }
+
+      function noteAqiRequest(loadId) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted) {
+          return;
+        }
+        telemetry.aqi_network_request_count += 1;
+      }
+
+      function noteAqiResponse(loadId, response) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted || !response) {
+          return;
+        }
+        if (response.status === 304) {
+          telemetry.aqi_received_304 = true;
+        }
+        if (String(response.headers.get("X-UK-AQ-Cache") || "").toUpperCase() === "BYPASS") {
+          telemetry._bypass_seen = true;
+        }
+      }
+
+      function finalizeSeriesLoadTelemetry(loadId, options = {}) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
+        if (!telemetry || telemetry.emitted) {
+          return;
+        }
+        telemetry.emitted = true;
+        chartLoadTelemetryById.delete(loadId);
+        if (activeChartLoadTelemetry && activeChartLoadTelemetry.load_id === loadId) {
+          activeChartLoadTelemetry = null;
+        }
+
+        const success = options.success === true;
+        telemetry.success = success;
+        if (!success) {
+          telemetry.error_stage = options.error_stage || telemetry.error_stage || "load";
+          telemetry.error_message = sanitizeChartTelemetryErrorMessage(options.error_message) || telemetry.error_message;
+        } else {
+          telemetry.error_stage = null;
+          telemetry.error_message = null;
+        }
+
+        const nowElapsedMs = normalizeTelemetryInt(
+          performance.now() - telemetry.started_at_perf_ms,
+          null,
+          0,
+          600000,
+        );
+        if (telemetry.time_to_chart_ready_ms === null) {
+          const fallbackReadyMs = Math.max(
+            telemetry.time_to_obs_complete_ms || 0,
+            telemetry.time_to_aqi_complete_ms || 0,
+            nowElapsedMs || 0,
+          );
+          telemetry.time_to_chart_ready_ms = normalizeTelemetryInt(fallbackReadyMs, null, 0, 600000);
+        }
+        telemetry.total_load_ms = telemetry.time_to_chart_ready_ms !== null
+          ? telemetry.time_to_chart_ready_ms
+          : nowElapsedMs;
+        telemetry.overall_cache_class = classifyOverallCacheClass(telemetry);
+
+        const payload = {
+          page_name: telemetry.page_name,
+          page_view_id: telemetry.page_view_id,
+          request_group_id: telemetry.request_group_id,
+          session_id: telemetry.session_id,
+          load_reason: telemetry.load_reason,
+          station_id: telemetry.station_id,
+          timeseries_id: telemetry.timeseries_id,
+          station_label: telemetry.station_label,
+          pollutant: telemetry.pollutant,
+          window_label: telemetry.window_label,
+          success: telemetry.success,
+          error_stage: telemetry.error_stage,
+          error_message: telemetry.error_message,
+          total_load_ms: telemetry.total_load_ms,
+          time_to_first_obs_response_ms: telemetry.time_to_first_obs_response_ms,
+          time_to_first_obs_render_ms: telemetry.time_to_first_obs_render_ms,
+          time_to_obs_complete_ms: telemetry.time_to_obs_complete_ms,
+          time_to_aqi_complete_ms: telemetry.time_to_aqi_complete_ms,
+          time_to_chart_ready_ms: telemetry.time_to_chart_ready_ms,
+          cache_session_init_ms: telemetry.cache_session_init_ms,
+          turnstile_ms: telemetry.turnstile_ms,
+          obs_chunk_count: telemetry.obs_chunk_count,
+          obs_network_request_count: telemetry.obs_network_request_count,
+          obs_total_points: telemetry.obs_total_points,
+          obs_used_local_cache: telemetry.obs_used_local_cache,
+          obs_used_etag: telemetry.obs_used_etag,
+          obs_received_304: telemetry.obs_received_304,
+          obs_cache_mode: telemetry.obs_cache_mode,
+          aqi_supported: telemetry.aqi_supported,
+          aqi_network_request_count: telemetry.aqi_network_request_count,
+          aqi_total_points: telemetry.aqi_total_points,
+          aqi_used_local_cache: telemetry.aqi_used_local_cache,
+          aqi_received_304: telemetry.aqi_received_304,
+          cache_session_was_warm: telemetry.cache_session_was_warm,
+          overall_cache_class: telemetry.overall_cache_class,
+          network_effective_type: telemetry.network_effective_type,
+          device_memory_gb: telemetry.device_memory_gb,
+          hardware_concurrency: telemetry.hardware_concurrency,
+          app_version: telemetry.app_version,
+        };
+        sendChartTelemetryPayload(payload);
+      }
+
 
 
       function updateChartHint() {
@@ -835,12 +1272,23 @@
       }
 
       async function getTurnstileToken() {
+        const activeTelemetry = getActiveSeriesLoadTelemetry();
         if (!turnstileTokenInflight) {
           turnstileTokenInflight = (async () => {
+            const startedAt = performance.now();
             let lastError = null;
             for (let attempt = 1; attempt <= TURNSTILE_TOKEN_MAX_ATTEMPTS; attempt += 1) {
               try {
-                return await requestTurnstileTokenOnce();
+                const token = await requestTurnstileTokenOnce();
+                if (activeTelemetry && activeTelemetry.turnstile_ms === null) {
+                  activeTelemetry.turnstile_ms = normalizeTelemetryInt(
+                    performance.now() - startedAt,
+                    null,
+                    0,
+                    120000,
+                  );
+                }
+                return token;
               } catch (error) {
                 lastError = error;
                 if (!isTurnstileTimeoutError(error) || attempt >= TURNSTILE_TOKEN_MAX_ATTEMPTS) {
@@ -866,8 +1314,10 @@
         if (!cacheSessionUrl) {
           throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
         }
+        const activeTelemetry = getActiveSeriesLoadTelemetry();
         if (!cacheSessionInflight) {
           cacheSessionInflight = (async () => {
+            const startedAt = performance.now();
             const turnstileToken = await getTurnstileToken();
             const response = await fetch(cacheSessionUrl, {
               method: "POST",
@@ -888,6 +1338,14 @@
               Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
             );
             writeCacheSessionHintUntil(cacheSessionReadyUntil);
+            if (activeTelemetry && activeTelemetry.cache_session_init_ms === null) {
+              activeTelemetry.cache_session_init_ms = normalizeTelemetryInt(
+                performance.now() - startedAt,
+                null,
+                0,
+                120000,
+              );
+            }
           })().finally(() => {
             cacheSessionInflight = null;
           });
@@ -2349,7 +2807,10 @@
         }
       }
 
-      function renderSeriesChart(points, meta, windowLabel, guideline, options = {}) {
+      function renderSeriesChart(points, meta, windowLabel, guideline, options = {}, loadId = null) {
+        if (loadId !== null && loadId !== undefined) {
+          noteObservationFirstRender(loadId);
+        }
         queueChartRenderSnapshot(
           buildChartRenderSnapshot(points, meta, windowLabel, guideline, options)
         );
@@ -2629,7 +3090,8 @@
         return lastPoint.date.toISOString();
       }
 
-      async function fetchObservationSeriesChunk({ seriesId, startIso, endIso, signal }) {
+      async function fetchObservationSeriesChunk({ seriesId, startIso, endIso, signal, loadId }) {
+        noteObservationRequest(loadId, { usedEtag: false });
         const response = await fetchCacheApi(
           buildObservationSeriesRequestUrl({ seriesId, startIso, endIso }).toString(),
           {
@@ -2637,6 +3099,7 @@
             signal,
           }
         );
+        noteObservationResponse(loadId, response);
         if (!response.ok) {
           throw new Error(`Series request failed: ${response.status}`);
         }
@@ -2655,6 +3118,7 @@
         }
         const controller = new AbortController();
         activeObservationAbortController = controller;
+        noteObservationRequest(loadId, { usedEtag: Boolean(etag) });
         const response = await fetchCacheApi(
           buildObservationSeriesRequestUrl({
             seriesId: selectedSeriesId,
@@ -2667,6 +3131,7 @@
             signal: controller.signal,
           }
         );
+        noteObservationResponse(loadId, response);
         if (!isSeriesLoadCurrent(loadId)) {
           return true;
         }
@@ -2676,7 +3141,7 @@
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
             animate: false,
-          });
+          }, loadId);
           return true;
         }
         if (!response.ok) {
@@ -2704,10 +3169,10 @@
         }
         persistSeriesCacheToStorage();
         renderSeriesChart(points, meta, windowValue, guideline, {
-          domainStartMs: range.startMs,
-          domainEndMs: range.endMs,
-          animate: false,
-        });
+            domainStartMs: range.startMs,
+            domainEndMs: range.endMs,
+            animate: false,
+          }, loadId);
         return true;
       }
 
@@ -2725,7 +3190,7 @@
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
             animate: false,
-          });
+          }, loadId);
           await refreshObservationSeriesFromCache(
             seriesKey,
             cachedWindowPoints,
@@ -2749,6 +3214,7 @@
         if (etag) {
           requestHeaders["If-None-Match"] = etag;
         }
+        noteObservationRequest(loadId, { usedEtag: Boolean(etag) });
         const response = await fetchCacheApi(
           buildObservationSeriesRequestUrl({
             seriesId: selectedSeriesId,
@@ -2760,6 +3226,7 @@
             signal: controller.signal,
           }
         );
+        noteObservationResponse(loadId, response);
         if (!isSeriesLoadCurrent(loadId)) {
           return;
         }
@@ -2770,7 +3237,7 @@
               domainStartMs: range.startMs,
               domainEndMs: range.endMs,
               animate: false,
-            });
+            }, loadId);
           } else {
             clearSeriesChart(meta.emptyMessage);
           }
@@ -2808,7 +3275,7 @@
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
             animate: false,
-          });
+          }, loadId);
         } else {
           clearSeriesChart(meta.emptyMessage);
         }
@@ -2817,6 +3284,7 @@
       }
 
       async function loadObservationSeriesData(windowValue, loadId, loadReason) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
         const seriesKey = getSeriesCacheKey(selectedSeriesId, windowValue);
         const range = resolveObservationRequestRange(windowValue);
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
@@ -2825,6 +3293,9 @@
           valueFormat: "decimal",
           emptyMessage: "No observations in this window.",
         };
+        if (telemetry) {
+          telemetry.obs_cache_mode = "unknown";
+        }
 
         let since = seriesSinceByKey.get(seriesKey) || null;
         const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
@@ -2854,6 +3325,10 @@
         }
 
         if (cachedWindowPoints.length && since) {
+          if (telemetry) {
+            telemetry.obs_used_local_cache = true;
+            telemetry.obs_cache_mode = "local_plus_refresh";
+          }
           const usedImmediateCache = await loadObservationSeriesDataImmediate({
             seriesKey,
             range,
@@ -2880,6 +3355,10 @@
           Number.isFinite(earliestSeedMs) &&
           range.startMs >= (earliestSeedMs - 60 * 1000)
         ) {
+          if (telemetry) {
+            telemetry.obs_used_local_cache = true;
+            telemetry.obs_cache_mode = "local_only";
+          }
           const points = pruneSeriesPointsToWindow(seedPoints, windowValue, range.endIso);
           seriesPointCacheByKey.set(seriesKey, points);
           const nextSince = latestObservedAtFromPoints(points);
@@ -2891,13 +3370,16 @@
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
             animate: false,
-          });
+          }, loadId);
           setChartStatus("Live");
           return;
         }
 
         const expansionContext = resolveObservationExpansionContext(meta, seedPoints, range, loadReason);
         if (!expansionContext) {
+          if (telemetry && telemetry.obs_cache_mode === "unknown") {
+            telemetry.obs_cache_mode = "network_full";
+          }
           await loadObservationSeriesDataImmediate({
             seriesKey,
             range,
@@ -2911,6 +3393,9 @@
 
         // Expansion keeps the existing visible range in place, then widens leftward as
         // newly fetched older chunks are merged in nearest-first order.
+        if (telemetry) {
+          telemetry.obs_cache_mode = "network_chunked";
+        }
         let mergedPoints = mergeSeriesPoints(expansionContext.seedPoints, cachedWindowPoints);
         let guideline = getSeriesGuideline(selectedSeriesId, seriesKey);
         let renderedDomainStartMs = expansionContext.currentDomainStartMs;
@@ -2930,7 +3415,7 @@
             domainStartMs: Math.min(renderedDomainStartMs, mergedSeedEarliestMs),
             domainEndMs: range.endMs,
             emptyMessage: "",
-          });
+          }, loadId);
           renderedDomainStartMs = Math.min(renderedDomainStartMs, mergedSeedEarliestMs);
           renderedDomainEndMs = range.endMs;
         }
@@ -2953,6 +3438,7 @@
             startIso: chunk.startIso,
             endIso: chunk.endIso,
             signal: controller.signal,
+            loadId,
           });
           if (!isSeriesLoadCurrent(loadId)) {
             return;
@@ -2979,7 +3465,7 @@
               domainEndMs: nextDomainEndMs,
               domainStartMs: nextDomainStartMs,
               emptyMessage: "",
-            });
+            }, loadId);
             renderedDomainStartMs = nextDomainStartMs;
             renderedDomainEndMs = nextDomainEndMs;
           }
@@ -3004,7 +3490,7 @@
             animate: Math.abs(renderedDomainStartMs - range.startMs) > 1 || Math.abs(renderedDomainEndMs - range.endMs) > 1,
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
-          });
+          }, loadId);
         } else {
           clearSeriesChart(meta.emptyMessage);
         }
@@ -3017,6 +3503,7 @@
       }
 
       async function loadAqiBandsData(windowValue, loadId) {
+        const telemetry = getSeriesLoadTelemetry(loadId);
         const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const context = buildAqiRequestContext(baseMeta, windowValue);
         const { stationId, pollutantKey, supported, dataKey } = context;
@@ -3026,6 +3513,16 @@
         const fullRangeStartMs = Date.parse(fullRange.fromIso);
         const fullRangeEndMs = Date.parse(fullRange.toIso);
         const immutableCutoffMs = Date.now() - AQI_BAND_MUTABLE_WINDOW_MS;
+        const summary = {
+          supported,
+          success: true,
+          points_count: 0,
+          error_message: null,
+          superseded: false,
+        };
+        if (telemetry) {
+          telemetry.aqi_supported = supported;
+        }
 
         chartState.aqiRequestKey = aqiCacheKey;
         chartState.aqiPollutantKey = pollutantKey;
@@ -3036,10 +3533,14 @@
 
         if (isAqiRequestCurrent(loadId, context) && Array.isArray(cachedPoints) && cachedPoints.length) {
           applyAqiContextState(cachedPoints, context);
+          if (telemetry) {
+            telemetry.aqi_used_local_cache = true;
+          }
         }
         if (!supported) {
           applyAqiContextState([], context);
-          return;
+          summary.points_count = 0;
+          return summary;
         }
         if (
           Array.isArray(cachedPoints) &&
@@ -3048,7 +3549,12 @@
           fullRangeEndMs <= immutableCutoffMs
         ) {
           applyAqiContextState(cachedPoints, context);
-          return;
+          if (telemetry) {
+            telemetry.aqi_used_local_cache = true;
+            telemetry.aqi_total_points = cachedPoints.length;
+          }
+          summary.points_count = cachedPoints.length;
+          return summary;
         }
 
         let requestRange = fullRange;
@@ -3075,14 +3581,18 @@
         const candidates = buildAqiHistoryRequestCandidates(stationId, pollutantKey, windowValue, requestRange);
         if (!candidates.length) {
           applyAqiContextState([], context);
-          return;
+          summary.success = false;
+          summary.error_message = "No AQI history endpoint candidates available.";
+          return summary;
         }
         let lastError = null;
         for (const candidate of candidates) {
           try {
+            noteAqiRequest(loadId);
             const response = await fetchCacheApi(candidate.url, {
               headers: { Accept: "application/json" },
             });
+            noteAqiResponse(loadId, response);
             if (!response.ok) {
               throw new Error(`AQI request failed (${response.status}).`);
             }
@@ -3094,7 +3604,8 @@
               payload?.query_to_utc || payload?.to_utc || null,
             );
             if (!isAqiRequestCurrent(loadId, context)) {
-              return;
+              summary.superseded = true;
+              return summary;
             }
             const points = immutableCachedPoints.length
               ? mergeAqiBandPoints(immutableCachedPoints, fetchedPoints)
@@ -3103,26 +3614,50 @@
             aqiBandPointCacheByKey.set(aqiCacheKey, points);
             persistSeriesCacheToStorage();
             applyAqiContextState(points, context);
-            return;
+            if (telemetry) {
+              if (immutableCachedPoints.length > 0) {
+                telemetry.aqi_used_local_cache = true;
+              }
+              telemetry.aqi_total_points = points.length;
+            }
+            summary.points_count = points.length;
+            return summary;
           } catch (error) {
             lastError = error;
           }
         }
         if (!isAqiRequestCurrent(loadId, context)) {
-          return;
+          summary.superseded = true;
+          return summary;
         }
         if (lastError) {
           console.warn("Unable to load AQI history for bands.", lastError);
+          summary.error_message = sanitizeChartTelemetryErrorMessage(lastError);
         }
         if (Array.isArray(cachedPoints) && cachedPoints.length) {
           applyAqiContextState(cachedPoints, context);
-          return;
+          if (telemetry) {
+            telemetry.aqi_used_local_cache = true;
+            telemetry.aqi_total_points = cachedPoints.length;
+          }
+          summary.points_count = cachedPoints.length;
+          return summary;
         }
         if (chartState.aqiDataKey === aqiCacheKey && Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
           renderAqiBands();
-          return;
+          if (telemetry) {
+            telemetry.aqi_total_points = chartState.aqiPoints.length;
+          }
+          summary.points_count = chartState.aqiPoints.length;
+          return summary;
         }
         applyAqiContextState([], context);
+        if (telemetry) {
+          telemetry.aqi_total_points = 0;
+        }
+        summary.success = false;
+        summary.points_count = 0;
+        return summary;
       }
 
       async function loadSeriesData() {
@@ -3132,6 +3667,9 @@
         const loadReason = consumeSeriesLoadReason();
         const loadId = activeSeriesLoadId + 1;
         activeSeriesLoadId = loadId;
+        const windowValue = resolveWindowValue();
+        const baseMeta = seriesLookup.get(selectedSeriesId) || null;
+        beginSeriesLoadTelemetry(loadId, loadReason, windowValue, baseMeta);
         if (activeObservationAbortController) {
           activeObservationAbortController.abort();
           activeObservationAbortController = null;
@@ -3146,11 +3684,14 @@
           setChartStatus("No station selected");
           clearSeriesChart("Select a station to view a trend.");
           setChartLoading(false);
+          finalizeSeriesLoadTelemetry(loadId, {
+            success: false,
+            error_stage: "selection",
+            error_message: "No station selected.",
+          });
           return;
         }
 
-        const windowValue = resolveWindowValue();
-        const baseMeta = seriesLookup.get(selectedSeriesId) || null;
         const aqiContext = buildAqiRequestContext(baseMeta, windowValue);
         if (chartState.aqiDataKey !== aqiContext.dataKey || !aqiContext.supported) {
           applyAqiContextState([], aqiContext, false);
@@ -3160,6 +3701,15 @@
           chartState.aqiPollutantKey = aqiContext.pollutantKey;
         }
         updateChartHint();
+        let observationError = null;
+        let aqiLoadSummary = {
+          supported: aqiContext.supported,
+          success: true,
+          points_count: Array.isArray(chartState.aqiPoints) ? chartState.aqiPoints.length : 0,
+          error_message: null,
+          superseded: false,
+        };
+        let aqiLoadPromise = Promise.resolve(aqiLoadSummary);
         try {
           if (!SERIES_EDGE_URL) {
             throw new Error("Missing cache endpoint base URL for series endpoint.");
@@ -3171,12 +3721,31 @@
             applyAqiContextState([], aqiContext, false);
             clearAqiBands();
           }
-          loadAqiBandsData(windowValue, loadId).catch(e => console.warn("AQI bands failed to load", e));
+          aqiLoadPromise = loadAqiBandsData(windowValue, loadId)
+            .catch((error) => {
+              console.warn("AQI bands failed to load", error);
+              return {
+                supported: aqiContext.supported,
+                success: false,
+                points_count: 0,
+                error_message: sanitizeChartTelemetryErrorMessage(error),
+                superseded: false,
+              };
+            });
           await loadObservationSeriesData(windowValue, loadId, loadReason);
+          if (isSeriesLoadCurrent(loadId)) {
+            noteObservationComplete(loadId);
+          }
         } catch (error) {
           if (!isSeriesLoadCurrent(loadId) || isAbortError(error)) {
+            finalizeSeriesLoadTelemetry(loadId, {
+              success: false,
+              error_stage: "aborted",
+              error_message: "Chart load aborted.",
+            });
             return;
           }
+          observationError = error;
           const message = error instanceof Error ? error.message : String(error);
           if (chartErrorEl) {
             chartErrorEl.textContent = message;
@@ -3191,6 +3760,59 @@
             setChartLoading(false);
           }
         }
+
+        void (async () => {
+          aqiLoadSummary = await aqiLoadPromise;
+          const telemetry = getSeriesLoadTelemetry(loadId);
+          if (!telemetry || telemetry.emitted || aqiLoadSummary?.superseded === true) {
+            return;
+          }
+          telemetry.time_to_aqi_complete_ms = normalizeTelemetryInt(
+            performance.now() - telemetry.started_at_perf_ms,
+            null,
+            0,
+            600000,
+          );
+          telemetry.aqi_total_points = normalizeTelemetryInt(
+            aqiLoadSummary.points_count,
+            telemetry.aqi_total_points,
+            0,
+            5000000,
+          );
+          if (aqiLoadSummary.error_message) {
+            telemetry._aqi_error_message = aqiLoadSummary.error_message;
+          }
+          if (typeof aqiLoadSummary.supported === "boolean") {
+            telemetry.aqi_supported = aqiLoadSummary.supported;
+          }
+          telemetry.time_to_chart_ready_ms = normalizeTelemetryInt(
+            Math.max(
+              telemetry.time_to_obs_complete_ms || 0,
+              telemetry.time_to_aqi_complete_ms || 0,
+            ),
+            null,
+            0,
+            600000,
+          );
+
+          if (observationError) {
+            finalizeSeriesLoadTelemetry(loadId, {
+              success: false,
+              error_stage: "observations",
+              error_message: observationError,
+            });
+            return;
+          }
+          if (aqiLoadSummary.supported && !aqiLoadSummary.success) {
+            finalizeSeriesLoadTelemetry(loadId, {
+              success: false,
+              error_stage: "aqi",
+              error_message: telemetry._aqi_error_message || "AQI load failed.",
+            });
+            return;
+          }
+          finalizeSeriesLoadTelemetry(loadId, { success: true });
+        })();
       }
 
       function buildEndpoint() {
