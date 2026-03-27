@@ -547,8 +547,9 @@
       const seriesEtagByKey = new Map();
       const seriesPointCacheByKey = new Map();
       const aqiBandPointCacheByKey = new Map();
+      const aqiBandMetaByKey = new Map();
       const seriesGuidelineByKey = new Map();
-      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v3:${projectRef || "unknown"}`;
+      const SERIES_CACHE_STORAGE_KEY = `uk_aq_series_cache_v4:${projectRef || "unknown"}`;
       const SERIES_CACHE_MAX_KEYS = 30;
       const SERIES_CACHE_MAX_POINTS_PER_KEY = 8000;
       const DAY_MS = 24 * 60 * 60 * 1000;
@@ -1952,6 +1953,105 @@
         return Math.floor(timeMs / HOUR_MS) * HOUR_MS;
       }
 
+      function normalizeAqiCacheMeta(rawMeta) {
+        if (!rawMeta || typeof rawMeta !== "object") {
+          return null;
+        }
+        const windowFromUtc = normalizeIsoTimestamp(rawMeta.window_from_utc || rawMeta.windowFromUtc || null);
+        const windowToUtc = normalizeIsoTimestamp(rawMeta.window_to_utc || rawMeta.windowToUtc || null);
+        const fetchedFromUtc = normalizeIsoTimestamp(rawMeta.fetched_from_utc || rawMeta.fetchedFromUtc || null);
+        const fetchedToUtc = normalizeIsoTimestamp(rawMeta.fetched_to_utc || rawMeta.fetchedToUtc || null);
+        const updatedAt = normalizeIsoTimestamp(rawMeta.updated_at || rawMeta.updatedAt || null);
+        const missingHourCount = Number(rawMeta.missing_hour_count);
+        return {
+          response_complete: rawMeta.response_complete === true,
+          source_response_complete: rawMeta.source_response_complete === true,
+          window_from_utc: windowFromUtc,
+          window_to_utc: windowToUtc,
+          fetched_from_utc: fetchedFromUtc,
+          fetched_to_utc: fetchedToUtc,
+          has_full_hour_coverage: rawMeta.has_full_hour_coverage === true,
+          missing_hour_count: Number.isFinite(missingHourCount) && missingHourCount >= 0
+            ? Math.floor(missingHourCount)
+            : null,
+          updated_at: updatedAt,
+        };
+      }
+
+      function summarizeAqiHourCoverage(points, startMs, endMs) {
+        const summary = {
+          expectedHours: 0,
+          presentHours: 0,
+          missingHours: 0,
+          hasFullCoverage: false,
+          missingRanges: [],
+        };
+        if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+          return summary;
+        }
+        const observedHourSet = new Set();
+        if (Array.isArray(points)) {
+          points.forEach((point) => {
+            const pointHourMs = floorToHourStartMs(point?.date);
+            if (
+              Number.isFinite(pointHourMs)
+              && pointHourMs >= startMs
+              && pointHourMs < endMs
+            ) {
+              observedHourSet.add(pointHourMs);
+            }
+          });
+        }
+        let cursor = floorToHourStartMs(startMs);
+        if (!Number.isFinite(cursor)) {
+          return summary;
+        }
+        let openGapStartMs = null;
+        while (cursor < endMs) {
+          summary.expectedHours += 1;
+          if (observedHourSet.has(cursor)) {
+            summary.presentHours += 1;
+            if (openGapStartMs !== null) {
+              summary.missingRanges.push({
+                fromIso: new Date(openGapStartMs).toISOString(),
+                toIso: new Date(cursor).toISOString(),
+              });
+              openGapStartMs = null;
+            }
+          } else {
+            summary.missingHours += 1;
+            if (openGapStartMs === null) {
+              openGapStartMs = cursor;
+            }
+          }
+          cursor += HOUR_MS;
+        }
+        if (openGapStartMs !== null) {
+          summary.missingRanges.push({
+            fromIso: new Date(openGapStartMs).toISOString(),
+            toIso: new Date(cursor).toISOString(),
+          });
+        }
+        summary.hasFullCoverage = summary.expectedHours > 0 && summary.missingHours === 0;
+        return summary;
+      }
+
+      function doesRequestRangeCoverWindow(requestRange, windowStartMs, windowEndMs) {
+        const requestStartMs = Date.parse(requestRange?.fromIso || "");
+        const requestEndMs = Date.parse(requestRange?.toIso || "");
+        if (
+          !Number.isFinite(requestStartMs)
+          || !Number.isFinite(requestEndMs)
+          || !Number.isFinite(windowStartMs)
+          || !Number.isFinite(windowEndMs)
+          || windowEndMs <= windowStartMs
+        ) {
+          return false;
+        }
+        return requestStartMs <= (windowStartMs + HOUR_MS)
+          && requestEndMs >= (windowEndMs - HOUR_MS);
+      }
+
       function clearAqiBands() {
         chartState.daqiLabelGroup?.selectAll("*").remove();
         chartState.eaqiLabelGroup?.selectAll("*").remove();
@@ -2129,6 +2229,7 @@
           const etagByKey = parsed?.etag_by_key || {};
           const pointsByKey = parsed?.points_by_key || {};
           const aqiPointsByKey = parsed?.aqi_points_by_key || {};
+          const aqiMetaByKey = parsed?.aqi_meta_by_key || {};
           const guidelineByKey = parsed?.guideline_by_key || {};
           Object.entries(sinceByKey).forEach(([key, value]) => {
             const normalized = normalizeIsoTimestamp(value);
@@ -2189,6 +2290,12 @@
               aqiBandPointCacheByKey.set(key, restored);
             }
           });
+          Object.entries(aqiMetaByKey).forEach(([key, value]) => {
+            const normalized = normalizeAqiCacheMeta(value);
+            if (normalized) {
+              aqiBandMetaByKey.set(key, normalized);
+            }
+          });
         } catch (_error) {
           // Ignore local cache read errors.
         }
@@ -2200,9 +2307,15 @@
         }
         try {
           const keys = Array.from(seriesPointCacheByKey.keys()).slice(-SERIES_CACHE_MAX_KEYS);
+          Array.from(aqiBandMetaByKey.keys()).forEach((key) => {
+            if (!aqiBandPointCacheByKey.has(key)) {
+              aqiBandMetaByKey.delete(key);
+            }
+          });
           const aqiKeys = Array.from(aqiBandPointCacheByKey.keys()).slice(-AQI_BAND_CACHE_MAX_KEYS);
           const pointsByKey = {};
           const aqiPointsByKey = {};
+          const aqiMetaByKey = {};
           const sinceByKey = {};
           const etagByKey = {};
           const guidelineByKey = {};
@@ -2226,6 +2339,12 @@
               point.daqi,
               point.eaqi,
             ]);
+            if (aqiBandMetaByKey.has(key)) {
+              const meta = normalizeAqiCacheMeta(aqiBandMetaByKey.get(key));
+              if (meta) {
+                aqiMetaByKey[key] = meta;
+              }
+            }
           });
           const payload = {
             version: 1,
@@ -2234,6 +2353,7 @@
             etag_by_key: etagByKey,
             points_by_key: pointsByKey,
             aqi_points_by_key: aqiPointsByKey,
+            aqi_meta_by_key: aqiMetaByKey,
             guideline_by_key: guidelineByKey,
           };
           localStorage.setItem(SERIES_CACHE_STORAGE_KEY, JSON.stringify(payload));
@@ -3589,6 +3709,7 @@
         const { timeseriesId, pollutantKey, supported, dataKey } = context;
         const aqiCacheKey = dataKey;
         const cachedPointsForWindow = aqiBandPointCacheByKey.get(aqiCacheKey) || null;
+        const cachedMetaForWindow = normalizeAqiCacheMeta(aqiBandMetaByKey.get(aqiCacheKey));
         const fullRange = resolveAqiRequestRange(windowValue);
         const fullRangeStartMs = Date.parse(fullRange.fromIso);
         const fullRangeEndMs = Date.parse(fullRange.toIso);
@@ -3605,6 +3726,8 @@
           : hasSeededIdentityPoints
           ? seededIdentityPoints
           : null;
+        const cachedCoverage = summarizeAqiHourCoverage(cachedPoints, fullRangeStartMs, fullRangeEndMs);
+        const cacheTrustedForImmutableReuse = Boolean(cachedMetaForWindow?.response_complete);
         const summary = {
           supported,
           success: true,
@@ -3614,6 +3737,8 @@
         };
         if (telemetry) {
           telemetry.aqi_supported = supported;
+          telemetry.aqi_cache_trusted = cacheTrustedForImmutableReuse;
+          telemetry.aqi_cached_missing_hours = cachedCoverage.missingHours;
         }
 
         chartState.aqiRequestKey = aqiCacheKey;
@@ -3639,6 +3764,7 @@
           cachedPoints.length &&
           Array.isArray(cachedPointsForWindow) &&
           cachedPointsForWindow.length &&
+          cacheTrustedForImmutableReuse &&
           Number.isFinite(fullRangeEndMs) &&
           fullRangeEndMs <= immutableCutoffMs
         ) {
@@ -3663,36 +3789,45 @@
             const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
             return Number.isFinite(pointMs) && pointMs >= fullRangeStartMs && pointMs <= fullRangeEndMs;
           });
-          if (
-            hasSeededIdentityPoints &&
-            (!Array.isArray(cachedPointsForWindow) || cachedPointsForWindow.length === 0)
-          ) {
-            immutableCachedPoints = pointsWithinWindow;
-            const earliestCachedMs = pointsWithinWindow[0]?.date instanceof Date
-              ? pointsWithinWindow[0].date.getTime()
-              : Number.NaN;
-            if (Number.isFinite(earliestCachedMs) && earliestCachedMs > (fullRangeStartMs + HOUR_MS)) {
-              // Reuse overlapping cached windows (for example 31d -> 90d) and only
-              // fetch the missing older head of the requested window.
-              requestRange = {
-                fromIso: fullRange.fromIso,
-                toIso: new Date(earliestCachedMs).toISOString(),
-              };
+          immutableCachedPoints = pointsWithinWindow;
+          if (cacheTrustedForImmutableReuse) {
+            if (
+              hasSeededIdentityPoints &&
+              (!Array.isArray(cachedPointsForWindow) || cachedPointsForWindow.length === 0)
+            ) {
+              const earliestCachedMs = pointsWithinWindow[0]?.date instanceof Date
+                ? pointsWithinWindow[0].date.getTime()
+                : Number.NaN;
+              if (Number.isFinite(earliestCachedMs) && earliestCachedMs > (fullRangeStartMs + HOUR_MS)) {
+                // Reuse overlapping cached windows (for example 31d -> 90d) and only
+                // fetch the missing older head of the requested window.
+                requestRange = {
+                  fromIso: fullRange.fromIso,
+                  toIso: new Date(earliestCachedMs).toISOString(),
+                };
+              } else {
+                requestRange = null;
+              }
             } else {
-              requestRange = null;
+              const mutableStartMs = Math.max(fullRangeStartMs, immutableCutoffMs);
+              // AQI levels are treated as immutable once they are more than 24 hours old,
+              // so keep that older slice from cache and refresh only the mutable tail.
+              immutableCachedPoints = pointsWithinWindow.filter((point) => {
+                const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
+                return Number.isFinite(pointMs) && pointMs < mutableStartMs;
+              });
+              requestRange = {
+                fromIso: new Date(mutableStartMs).toISOString(),
+                toIso: fullRange.toIso,
+              };
             }
           } else {
-            const mutableStartMs = Math.max(fullRangeStartMs, immutableCutoffMs);
-            // AQI levels are treated as immutable once they are more than 24 hours old,
-            // so keep that older slice from cache and refresh only the mutable tail.
-            immutableCachedPoints = pointsWithinWindow.filter((point) => {
-              const pointMs = point?.date instanceof Date ? point.date.getTime() : Number.NaN;
-              return Number.isFinite(pointMs) && pointMs < mutableStartMs;
-            });
-            requestRange = {
-              fromIso: new Date(mutableStartMs).toISOString(),
-              toIso: fullRange.toIso,
-            };
+            // If we do not have a complete cache marker for this key, force a full-window
+            // refresh to heal potential stale immutable gaps from earlier partial responses.
+            requestRange = fullRange;
+            if (telemetry) {
+              telemetry.aqi_cache_heal_required = true;
+            }
           }
         }
 
@@ -3700,6 +3835,18 @@
           requestRange === null
           && immutableCachedPoints.length > 0
         ) {
+          const reuseCoverage = summarizeAqiHourCoverage(immutableCachedPoints, fullRangeStartMs, fullRangeEndMs);
+          aqiBandMetaByKey.set(aqiCacheKey, normalizeAqiCacheMeta({
+            response_complete: true,
+            source_response_complete: true,
+            window_from_utc: fullRange.fromIso,
+            window_to_utc: fullRange.toIso,
+            fetched_from_utc: cachedMetaForWindow?.fetched_from_utc || fullRange.fromIso,
+            fetched_to_utc: cachedMetaForWindow?.fetched_to_utc || fullRange.toIso,
+            has_full_hour_coverage: reuseCoverage.hasFullCoverage,
+            missing_hour_count: reuseCoverage.missingHours,
+            updated_at: new Date().toISOString(),
+          }));
           aqiBandPointCacheByKey.set(aqiCacheKey, immutableCachedPoints);
           persistSeriesCacheToStorage();
           applyAqiContextState(immutableCachedPoints, context);
@@ -3754,16 +3901,37 @@
               points = mergeAqiBandPoints(cachedWindowPoints, points);
             }
             preferredAqiHistoryBase = candidate.base;
-            if (payloadComplete || (Array.isArray(cachedPoints) && cachedPoints.length)) {
+            const pointCoverage = summarizeAqiHourCoverage(points, fullRangeStartMs, fullRangeEndMs);
+            const fetchedWindowIsComplete = payloadComplete && (
+              cacheTrustedForImmutableReuse
+              || doesRequestRangeCoverWindow(requestRange, fullRangeStartMs, fullRangeEndMs)
+            );
+            aqiBandMetaByKey.set(aqiCacheKey, normalizeAqiCacheMeta({
+              response_complete: fetchedWindowIsComplete,
+              source_response_complete: payloadComplete,
+              window_from_utc: fullRange.fromIso,
+              window_to_utc: fullRange.toIso,
+              fetched_from_utc: normalizeIsoTimestamp(payload?.query_from_utc) || requestRange?.fromIso || null,
+              fetched_to_utc: normalizeIsoTimestamp(payload?.query_to_utc || payload?.to_utc) || requestRange?.toIso || null,
+              has_full_hour_coverage: pointCoverage.hasFullCoverage,
+              missing_hour_count: pointCoverage.missingHours,
+              updated_at: new Date().toISOString(),
+            }));
+            if (points.length) {
               aqiBandPointCacheByKey.set(aqiCacheKey, points);
-              persistSeriesCacheToStorage();
+            } else {
+              aqiBandPointCacheByKey.delete(aqiCacheKey);
             }
+            persistSeriesCacheToStorage();
             applyAqiContextState(points, context);
             if (telemetry) {
               if (immutableCachedPoints.length > 0) {
                 telemetry.aqi_used_local_cache = true;
               }
               telemetry.aqi_total_points = points.length;
+              telemetry.aqi_fetch_response_complete = payloadComplete;
+              telemetry.aqi_window_complete = fetchedWindowIsComplete;
+              telemetry.aqi_fetched_missing_hours = pointCoverage.missingHours;
             }
             summary.points_count = points.length;
             return summary;
