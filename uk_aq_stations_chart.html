@@ -342,6 +342,105 @@
         transform: translateY(0);
       }
 
+      .chart-loading-overlay {
+        position: absolute;
+        inset: 12px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 84px;
+        pointer-events: none;
+        z-index: 20;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 120ms ease;
+      }
+
+      .chart-wrap.is-loading .chart-loading-overlay {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .chart-loading-panel {
+        width: 1460px;
+        max-width: calc(100% - 40px);
+        border: 4px solid #3c78ac;
+        border-radius: 42px;
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(1px);
+        -webkit-backdrop-filter: blur(1px);
+        box-sizing: border-box;
+        padding: 26px 24px 28px;
+      }
+
+      .chart-loading-title {
+        text-align: center;
+        color: #3c78ac;
+        font-family: Arial, sans-serif;
+        font-size: 104px;
+        line-height: 1;
+        font-weight: 700;
+        margin-bottom: 26px;
+      }
+
+      .chart-loading-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px;
+      }
+
+      .chart-loading-box {
+        flex: 0 0 auto;
+        width: 125px;
+        height: 125px;
+        border-radius: 18px;
+        background: #3c78ac;
+        opacity: 0.2;
+        transform-origin: center bottom;
+        transition:
+          width 333ms linear,
+          height 333ms linear,
+          opacity 333ms linear;
+      }
+
+      @media (max-width: 1600px) {
+        .chart-loading-panel {
+          width: 1200px;
+          border-radius: 34px;
+          padding: 22px 20px 24px;
+        }
+
+        .chart-loading-title {
+          font-size: 82px;
+          margin-bottom: 22px;
+        }
+
+        .chart-loading-box {
+          border-radius: 16px;
+        }
+      }
+
+      @media (max-width: 1280px) {
+        .chart-loading-panel {
+          width: 980px;
+        }
+
+        .chart-loading-title {
+          font-size: 64px;
+        }
+
+        .chart-loading-row {
+          gap: 12px;
+        }
+
+        .chart-loading-box {
+          width: 96px;
+          height: 96px;
+          border-radius: 14px;
+        }
+      }
+
       @keyframes floatIn {
         from {
           opacity: 0;
@@ -369,6 +468,33 @@
 
         #line-chart {
           height: 300px;
+        }
+
+        .chart-loading-overlay {
+          inset: 8px;
+          padding-top: 76px;
+        }
+
+        .chart-loading-panel {
+          width: 980px;
+          border-radius: 24px;
+          padding: 12px 10px 14px;
+          max-width: calc(100% - 10px);
+        }
+
+        .chart-loading-title {
+          font-size: clamp(24px, 11vw, 42px);
+          margin-bottom: 10px;
+        }
+
+        .chart-loading-row {
+          gap: 6px;
+        }
+
+        .chart-loading-box {
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
         }
       }
     </style>
@@ -451,6 +577,12 @@
         <div class="error" id="chart-error"></div>
         <div class="chart-wrap">
           <svg id="line-chart" role="img" aria-label="PM2.5 trend for the selected station"></svg>
+          <div class="chart-loading-overlay" id="chartLoadingOverlay" aria-hidden="true">
+            <div class="chart-loading-panel">
+              <div class="chart-loading-title">Loading......</div>
+              <div class="chart-loading-row" id="chartLoadingRow"></div>
+            </div>
+          </div>
           <div class="chart-tooltip" id="chart-tooltip"></div>
         </div>
       </section>
@@ -527,6 +659,8 @@
       const chartErrorEl = document.getElementById("chart-error");
       const chartHintEl = document.getElementById("chart-hint");
       const chartTooltip = document.getElementById("chart-tooltip");
+      const chartLoadingOverlay = document.getElementById("chartLoadingOverlay");
+      const chartLoadingRow = document.getElementById("chartLoadingRow");
       const chartSvg = d3.select("#line-chart");
       const chartWrap = document.querySelector(".chart-wrap");
       const fixedSeriesDays = parsePositiveInteger(fixedSeriesDaysParam);
@@ -598,6 +732,7 @@
         ? `Endpoint: ${EDGE_URL}`
         : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
       updateChartHint();
+      initializeChartLoadingAnimation();
 
       function resolveCacheBaseUrl(rawValue) {
         const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
@@ -1854,11 +1989,50 @@
           .text(message);
       }
 
+      function initializeChartLoadingAnimation() {
+        if (!chartLoadingRow) {
+          return;
+        }
+        const BOX_COUNT = 11;
+        if (chartLoadingRow.children.length === 0) {
+          for (let index = 0; index < BOX_COUNT; index += 1) {
+            const box = document.createElement("div");
+            box.className = "chart-loading-box";
+            chartLoadingRow.appendChild(box);
+          }
+        }
+        const boxes = Array.from(chartLoadingRow.children);
+        const path = [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+          9, 8, 7, 6, 5, 4, 3, 2, 1,
+        ];
+        const sizeForDistance = (distance) => Math.max(130 - distance, 125);
+        const opacityForDistance = (distance) => Math.max(1 - (distance * 0.1), 0.2);
+        let stepIndex = 0;
+        const render = () => {
+          const activeIndex = path[stepIndex];
+          boxes.forEach((box, index) => {
+            const distance = Math.abs(index - activeIndex);
+            const size = sizeForDistance(distance);
+            const opacity = opacityForDistance(distance);
+            box.style.width = `${size}px`;
+            box.style.height = `${size}px`;
+            box.style.opacity = opacity.toFixed(2);
+          });
+          stepIndex = (stepIndex + 1) % path.length;
+        };
+        render();
+        window.setInterval(render, 333);
+      }
+
       function setChartLoading(isLoading) {
         if (!chartWrap) {
           return;
         }
         chartWrap.classList.toggle("is-loading", isLoading);
+        if (chartLoadingOverlay) {
+          chartLoadingOverlay.setAttribute("aria-hidden", isLoading ? "false" : "true");
+        }
       }
 
       function getAqiBandCacheKey(timeseriesId, pollutantKey, windowLabel) {
