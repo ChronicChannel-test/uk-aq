@@ -347,7 +347,7 @@
         left: 50%;
         top: 84px;
         transform: translateX(-50%);
-        width: clamp(460px, 72%, 900px);
+        width: clamp(420px, 64%, 820px);
         height: auto;
         pointer-events: none;
         z-index: 20;
@@ -506,12 +506,12 @@
             />
             <text
               x="730"
-              y="108"
+              y="96"
               text-anchor="middle"
               dominant-baseline="middle"
               fill="#3C78AC"
               font-family="Arial, sans-serif"
-              font-size="104"
+              font-size="88"
               font-weight="700"
             >
               Loading......
@@ -657,6 +657,16 @@
       let turnstileTokenResolver = null;
       let turnstileTokenRejecter = null;
       let turnstileTokenTimeoutId = null;
+      const chartLoadingAnimation = {
+        boxes: [],
+        slotX: [],
+        path: [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+          9, 8, 7, 6, 5, 4, 3, 2, 1,
+        ],
+        stepIndex: 0,
+        intervalId: 0,
+      };
 
       if (stationSearchInput) {
         stationSearchInput.value = currentStationLike;
@@ -1930,6 +1940,12 @@
         }
         const BOX_COUNT = 11;
         const SVG_NS = "http://www.w3.org/2000/svg";
+        const BASE_SIZE = 88;
+        const SLOT_GAP = 12;
+        const SLOT_WIDTH = BASE_SIZE + SLOT_GAP;
+        const viewBoxWidth = chartLoadingSvg?.viewBox?.baseVal?.width || 1460;
+        const rowWidth = (BOX_COUNT * BASE_SIZE) + ((BOX_COUNT - 1) * SLOT_GAP);
+        const START_X = Math.max(24, (viewBoxWidth - rowWidth) / 2);
         if (chartLoadingBoxes.children.length === 0) {
           for (let index = 0; index < BOX_COUNT; index += 1) {
             const box = document.createElementNS(SVG_NS, "rect");
@@ -1939,50 +1955,72 @@
             chartLoadingBoxes.appendChild(box);
           }
         }
-        const boxes = Array.from(chartLoadingBoxes.children);
-        const path = [
-          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-          9, 8, 7, 6, 5, 4, 3, 2, 1,
-        ];
-        const BASE_SIZE = 125;
-        const MAX_SIZE = 130;
+        chartLoadingAnimation.boxes = Array.from(chartLoadingBoxes.children);
+        chartLoadingAnimation.slotX = chartLoadingAnimation.boxes.map(
+          (_, index) => START_X + (index * SLOT_WIDTH),
+        );
+        renderChartLoadingAnimationFrame();
+      }
+
+      function renderChartLoadingAnimationFrame() {
+        if (!chartLoadingAnimation.boxes.length) {
+          return;
+        }
+        const BASE_SIZE = 88;
+        const MAX_SIZE = 96;
         const ROW_BOTTOM_Y = 286;
-        const START_X = 24;
-        const SLOT_GAP = 16;
-        const SLOT_WIDTH = BASE_SIZE + SLOT_GAP;
         const sizeForDistance = (distance) => Math.max(MAX_SIZE - distance, BASE_SIZE);
         const opacityForDistance = (distance) => Math.max(1 - (distance * 0.1), 0.2);
-        let stepIndex = 0;
-        const render = () => {
-          const activeIndex = path[stepIndex];
-          boxes.forEach((box, index) => {
-            const distance = Math.abs(index - activeIndex);
-            const size = sizeForDistance(distance);
-            const opacity = opacityForDistance(distance);
-            const slotX = START_X + (index * SLOT_WIDTH);
-            const x = slotX + ((BASE_SIZE - size) / 2);
-            const y = ROW_BOTTOM_Y - size;
-            box.setAttribute("x", x.toFixed(2));
-            box.setAttribute("y", y.toFixed(2));
-            box.setAttribute("width", size.toFixed(2));
-            box.setAttribute("height", size.toFixed(2));
-            box.setAttribute("opacity", opacity.toFixed(2));
-            box.setAttribute("rx", String(Math.max(8, Math.round(size * 0.14))));
-            box.setAttribute("ry", String(Math.max(8, Math.round(size * 0.14))));
-          });
-          stepIndex = (stepIndex + 1) % path.length;
-        };
-        render();
-        window.setInterval(render, 333);
+        const activeIndex = chartLoadingAnimation.path[chartLoadingAnimation.stepIndex];
+        chartLoadingAnimation.boxes.forEach((box, index) => {
+          const distance = Math.abs(index - activeIndex);
+          const size = sizeForDistance(distance);
+          const opacity = opacityForDistance(distance);
+          const slotX = chartLoadingAnimation.slotX[index] || 0;
+          const x = slotX + ((BASE_SIZE - size) / 2);
+          const y = ROW_BOTTOM_Y - size;
+          box.setAttribute("x", String(x));
+          box.setAttribute("y", String(y));
+          box.setAttribute("width", String(size));
+          box.setAttribute("height", String(size));
+          box.setAttribute("opacity", opacity.toFixed(2));
+          box.setAttribute("rx", String(Math.max(8, Math.round(size * 0.14))));
+          box.setAttribute("ry", String(Math.max(8, Math.round(size * 0.14))));
+        });
+        chartLoadingAnimation.stepIndex =
+          (chartLoadingAnimation.stepIndex + 1) % chartLoadingAnimation.path.length;
+      }
+
+      function startChartLoadingAnimation() {
+        if (!chartLoadingAnimation.boxes.length) {
+          initializeChartLoadingAnimation();
+        }
+        if (!chartLoadingAnimation.boxes.length || chartLoadingAnimation.intervalId) {
+          return;
+        }
+        renderChartLoadingAnimationFrame();
+        chartLoadingAnimation.intervalId = window.setInterval(renderChartLoadingAnimationFrame, 333);
+      }
+
+      function stopChartLoadingAnimation() {
+        if (chartLoadingAnimation.intervalId) {
+          window.clearInterval(chartLoadingAnimation.intervalId);
+          chartLoadingAnimation.intervalId = 0;
+        }
+        chartLoadingAnimation.stepIndex = 0;
       }
 
       function setChartLoading(isLoading) {
-        if (!chartWrap) {
-          return;
+        if (chartWrap) {
+          chartWrap.classList.toggle("is-loading", isLoading);
         }
-        chartWrap.classList.toggle("is-loading", isLoading);
         if (chartLoadingSvg) {
           chartLoadingSvg.setAttribute("aria-hidden", isLoading ? "false" : "true");
+        }
+        if (isLoading) {
+          startChartLoadingAnimation();
+        } else {
+          stopChartLoadingAnimation();
         }
       }
 
@@ -2721,7 +2759,6 @@
           "Poor": "#FF2600", "Very poor": "#A50026", "Extremely poor": "#672C7F",
           1: "#34FF00", 2: "#FFFB00", 3: "#FF9300", 4: "#FF2600", 5: "#A50026", 6: "#672C7F"
         };
-        const noDataColor = "#D9D9D9";
 
         const bandHeight = 22;
         const gap = 4;
@@ -2780,7 +2817,12 @@
           slots.forEach(slot => {
             const point = getPointForSlot(slot);
             const val = point ? point[valueKey] : null;
-            const color = (val !== null && val !== undefined && val !== 0 && colorsMap[val]) ? colorsMap[val] : noDataColor;
+            const color = (val !== null && val !== undefined && val !== 0 && colorsMap[val])
+              ? colorsMap[val]
+              : null;
+            if (!color) {
+              return;
+            }
 
             const xPos = chartState.xScale(slot);
             // Must overlap or clip within bounds
