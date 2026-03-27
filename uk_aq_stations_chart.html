@@ -342,103 +342,34 @@
         transform: translateY(0);
       }
 
-      .chart-loading-overlay {
+      .chart-loading-svg {
         position: absolute;
-        inset: 12px;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding-top: 84px;
+        left: 50%;
+        top: 84px;
+        transform: translateX(-50%);
+        width: clamp(460px, 72%, 900px);
+        height: auto;
         pointer-events: none;
         z-index: 20;
+        overflow: visible;
         opacity: 0;
         visibility: hidden;
         transition: opacity 120ms ease;
       }
 
-      .chart-wrap.is-loading .chart-loading-overlay {
+      .chart-wrap.is-loading .chart-loading-svg {
         opacity: 1;
         visibility: visible;
       }
 
-      .chart-loading-panel {
-        width: 1460px;
-        max-width: calc(100% - 40px);
-        border: 4px solid #3c78ac;
-        border-radius: 42px;
-        background: rgba(255, 255, 255, 0.55);
-        backdrop-filter: blur(1px);
-        -webkit-backdrop-filter: blur(1px);
-        box-sizing: border-box;
-        padding: 26px 24px 28px;
-      }
-
-      .chart-loading-title {
-        text-align: center;
-        color: #3c78ac;
-        font-family: Arial, sans-serif;
-        font-size: 104px;
-        line-height: 1;
-        font-weight: 700;
-        margin-bottom: 26px;
-      }
-
-      .chart-loading-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: end;
-        gap: 16px;
-      }
-
       .chart-loading-box {
-        flex: 0 0 auto;
-        width: 125px;
-        height: 125px;
-        border-radius: 18px;
-        background: #3c78ac;
-        opacity: 0.2;
-        transform-origin: center bottom;
+        fill: #3c78ac;
         transition:
+          x 333ms linear,
+          y 333ms linear,
           width 333ms linear,
           height 333ms linear,
           opacity 333ms linear;
-      }
-
-      @media (max-width: 1600px) {
-        .chart-loading-panel {
-          width: 1200px;
-          border-radius: 34px;
-          padding: 22px 20px 24px;
-        }
-
-        .chart-loading-title {
-          font-size: 82px;
-          margin-bottom: 22px;
-        }
-
-        .chart-loading-box {
-          border-radius: 16px;
-        }
-      }
-
-      @media (max-width: 1280px) {
-        .chart-loading-panel {
-          width: 980px;
-        }
-
-        .chart-loading-title {
-          font-size: 64px;
-        }
-
-        .chart-loading-row {
-          gap: 12px;
-        }
-
-        .chart-loading-box {
-          width: 96px;
-          height: 96px;
-          border-radius: 14px;
-        }
       }
 
       @keyframes floatIn {
@@ -470,31 +401,9 @@
           height: 300px;
         }
 
-        .chart-loading-overlay {
-          inset: 8px;
-          padding-top: 76px;
-        }
-
-        .chart-loading-panel {
-          width: 980px;
-          border-radius: 24px;
-          padding: 12px 10px 14px;
-          max-width: calc(100% - 10px);
-        }
-
-        .chart-loading-title {
-          font-size: clamp(24px, 11vw, 42px);
-          margin-bottom: 10px;
-        }
-
-        .chart-loading-row {
-          gap: 6px;
-        }
-
-        .chart-loading-box {
-          width: 26px;
-          height: 26px;
-          border-radius: 8px;
+        .chart-loading-svg {
+          top: 74px;
+          width: calc(100% - 12px);
         }
       }
     </style>
@@ -577,12 +486,38 @@
         <div class="error" id="chart-error"></div>
         <div class="chart-wrap">
           <svg id="line-chart" role="img" aria-label="PM2.5 trend for the selected station"></svg>
-          <div class="chart-loading-overlay" id="chartLoadingOverlay" aria-hidden="true">
-            <div class="chart-loading-panel">
-              <div class="chart-loading-title">Loading......</div>
-              <div class="chart-loading-row" id="chartLoadingRow"></div>
-            </div>
-          </div>
+          <svg
+            id="chartLoadingSvg"
+            class="chart-loading-svg"
+            viewBox="0 0 1460 320"
+            preserveAspectRatio="xMidYMin meet"
+            aria-hidden="true"
+          >
+            <rect
+              x="2"
+              y="2"
+              width="1456"
+              height="316"
+              rx="42"
+              ry="42"
+              fill="rgba(255,255,255,0.55)"
+              stroke="#3C78AC"
+              stroke-width="4"
+            />
+            <text
+              x="730"
+              y="108"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              fill="#3C78AC"
+              font-family="Arial, sans-serif"
+              font-size="104"
+              font-weight="700"
+            >
+              Loading......
+            </text>
+            <g id="chartLoadingBoxes"></g>
+          </svg>
           <div class="chart-tooltip" id="chart-tooltip"></div>
         </div>
       </section>
@@ -659,8 +594,8 @@
       const chartErrorEl = document.getElementById("chart-error");
       const chartHintEl = document.getElementById("chart-hint");
       const chartTooltip = document.getElementById("chart-tooltip");
-      const chartLoadingOverlay = document.getElementById("chartLoadingOverlay");
-      const chartLoadingRow = document.getElementById("chartLoadingRow");
+      const chartLoadingSvg = document.getElementById("chartLoadingSvg");
+      const chartLoadingBoxes = document.getElementById("chartLoadingBoxes");
       const chartSvg = d3.select("#line-chart");
       const chartWrap = document.querySelector(".chart-wrap");
       const fixedSeriesDays = parsePositiveInteger(fixedSeriesDaysParam);
@@ -1990,23 +1925,32 @@
       }
 
       function initializeChartLoadingAnimation() {
-        if (!chartLoadingRow) {
+        if (!chartLoadingBoxes) {
           return;
         }
         const BOX_COUNT = 11;
-        if (chartLoadingRow.children.length === 0) {
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        if (chartLoadingBoxes.children.length === 0) {
           for (let index = 0; index < BOX_COUNT; index += 1) {
-            const box = document.createElement("div");
-            box.className = "chart-loading-box";
-            chartLoadingRow.appendChild(box);
+            const box = document.createElementNS(SVG_NS, "rect");
+            box.setAttribute("class", "chart-loading-box");
+            box.setAttribute("rx", "18");
+            box.setAttribute("ry", "18");
+            chartLoadingBoxes.appendChild(box);
           }
         }
-        const boxes = Array.from(chartLoadingRow.children);
+        const boxes = Array.from(chartLoadingBoxes.children);
         const path = [
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
           9, 8, 7, 6, 5, 4, 3, 2, 1,
         ];
-        const sizeForDistance = (distance) => Math.max(130 - distance, 125);
+        const BASE_SIZE = 125;
+        const MAX_SIZE = 130;
+        const ROW_BOTTOM_Y = 286;
+        const START_X = 24;
+        const SLOT_GAP = 16;
+        const SLOT_WIDTH = BASE_SIZE + SLOT_GAP;
+        const sizeForDistance = (distance) => Math.max(MAX_SIZE - distance, BASE_SIZE);
         const opacityForDistance = (distance) => Math.max(1 - (distance * 0.1), 0.2);
         let stepIndex = 0;
         const render = () => {
@@ -2015,9 +1959,16 @@
             const distance = Math.abs(index - activeIndex);
             const size = sizeForDistance(distance);
             const opacity = opacityForDistance(distance);
-            box.style.width = `${size}px`;
-            box.style.height = `${size}px`;
-            box.style.opacity = opacity.toFixed(2);
+            const slotX = START_X + (index * SLOT_WIDTH);
+            const x = slotX + ((BASE_SIZE - size) / 2);
+            const y = ROW_BOTTOM_Y - size;
+            box.setAttribute("x", x.toFixed(2));
+            box.setAttribute("y", y.toFixed(2));
+            box.setAttribute("width", size.toFixed(2));
+            box.setAttribute("height", size.toFixed(2));
+            box.setAttribute("opacity", opacity.toFixed(2));
+            box.setAttribute("rx", String(Math.max(8, Math.round(size * 0.14))));
+            box.setAttribute("ry", String(Math.max(8, Math.round(size * 0.14))));
           });
           stepIndex = (stepIndex + 1) % path.length;
         };
@@ -2030,8 +1981,8 @@
           return;
         }
         chartWrap.classList.toggle("is-loading", isLoading);
-        if (chartLoadingOverlay) {
-          chartLoadingOverlay.setAttribute("aria-hidden", isLoading ? "false" : "true");
+        if (chartLoadingSvg) {
+          chartLoadingSvg.setAttribute("aria-hidden", isLoading ? "false" : "true");
         }
       }
 
