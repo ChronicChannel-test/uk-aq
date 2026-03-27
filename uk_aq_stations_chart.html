@@ -626,6 +626,7 @@
       const AQI_BAND_CACHE_MAX_KEYS = 20;
       const AQI_BAND_CACHE_MAX_POINTS_PER_KEY = 2500;
       const AQI_BAND_MUTABLE_WINDOW_MS = 24 * HOUR_MS;
+      const AQI_BAND_CACHE_KEY_PREFIX = "aqi_v2";
       const CHART_TRANSITION_MS = 240;
       const CHART_TRANSITION_COALESCE_MS = 60;
       const CACHE_SESSION_SKEW_MS = 10000;
@@ -2028,12 +2029,12 @@
         const timeseriesToken = String(timeseriesId || "").trim();
         const pollutantToken = String(pollutantKey || "unsupported").trim() || "unsupported";
         if (hasFixedSeriesDateRange) {
-          return `aqi::${timeseriesToken}::${pollutantToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
+          return `${AQI_BAND_CACHE_KEY_PREFIX}::${timeseriesToken}::${pollutantToken}::custom::${fixedSeriesStartIso || ""}::${fixedSeriesEndIso || ""}`;
         }
         if (fixedSeriesDays !== null) {
-          return `aqi::${timeseriesToken}::${pollutantToken}::days::${fixedSeriesDays}`;
+          return `${AQI_BAND_CACHE_KEY_PREFIX}::${timeseriesToken}::${pollutantToken}::days::${fixedSeriesDays}`;
         }
-        return `aqi::${timeseriesToken}::${pollutantToken}::${windowLabel || "24h"}`;
+        return `${AQI_BAND_CACHE_KEY_PREFIX}::${timeseriesToken}::${pollutantToken}::${windowLabel || "24h"}`;
       }
 
       function getAqiBandIdentityKey(timeseriesId, pollutantKey) {
@@ -2045,7 +2046,7 @@
       function collectCachedAqiPointsForIdentity(timeseriesId, pollutantKey, excludeKey = null) {
         const timeseriesToken = String(timeseriesId || "").trim();
         const pollutantToken = String(pollutantKey || "unsupported").trim() || "unsupported";
-        const prefix = `aqi::${timeseriesToken}::${pollutantToken}::`;
+        const prefix = `${AQI_BAND_CACHE_KEY_PREFIX}::${timeseriesToken}::${pollutantToken}::`;
         let mergedPoints = [];
         for (const [cacheKey, cachePoints] of aqiBandPointCacheByKey.entries()) {
           if (!cacheKey.startsWith(prefix) || cacheKey === excludeKey) {
@@ -2102,7 +2103,17 @@
           if (Number.isFinite(numeric)) {
             return Math.trunc(numeric);
           }
-          return allowText ? trimmed : null;
+          if (!allowText) {
+            return null;
+          }
+          const normalizedText = trimmed.toLowerCase().replace(/\s+/g, " ");
+          if (normalizedText === "good") return "Good";
+          if (normalizedText === "fair") return "Fair";
+          if (normalizedText === "moderate") return "Moderate";
+          if (normalizedText === "poor") return "Poor";
+          if (normalizedText === "very poor" || normalizedText === "verypoor") return "Very poor";
+          if (normalizedText === "extremely poor" || normalizedText === "extremelypoor") return "Extremely poor";
+          return trimmed;
         }
         const numeric = Number(value);
         return Number.isFinite(numeric) ? Math.trunc(numeric) : null;
@@ -2344,16 +2355,41 @@
         if (!fieldMapping) {
           return [];
         }
+        const dataFormat = String(payload?.data_format || "").toLowerCase();
+        const columns = Array.isArray(payload?.columns) ? payload.columns : [];
+        const periodStartIndex = columns.indexOf("period_start_utc");
+        const timestampHourIndex = columns.indexOf("timestamp_hour_utc");
+        const observedAtIndex = columns.indexOf("observed_at");
+        const daqiIndex = columns.indexOf(fieldMapping.daqiField);
+        const eaqiIndex = columns.indexOf(fieldMapping.eaqiField);
         const rawPoints = Array.isArray(payload?.points)
           ? payload.points
           : Array.isArray(payload?.data)
           ? payload.data
           : [];
-        const mapped = rawPoints.map((row) => ({
-          date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
-          daqi: normalizeAqiBandLevel(row?.[fieldMapping.daqiField], false),
-          eaqi: normalizeAqiBandLevel(row?.[fieldMapping.eaqiField], true),
-        }));
+        const mapped = rawPoints.map((row) => {
+          if (dataFormat === "compact" && Array.isArray(row)) {
+            const observedAt = periodStartIndex >= 0
+              ? row[periodStartIndex]
+              : timestampHourIndex >= 0
+              ? row[timestampHourIndex]
+              : observedAtIndex >= 0
+              ? row[observedAtIndex]
+              : row[0];
+            const daqiRaw = daqiIndex >= 0 ? row[daqiIndex] : null;
+            const eaqiRaw = eaqiIndex >= 0 ? row[eaqiIndex] : null;
+            return {
+              date: new Date(observedAt),
+              daqi: normalizeAqiBandLevel(daqiRaw, false),
+              eaqi: normalizeAqiBandLevel(eaqiRaw, true),
+            };
+          }
+          return {
+            date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
+            daqi: normalizeAqiBandLevel(row?.[fieldMapping.daqiField], false),
+            eaqi: normalizeAqiBandLevel(row?.[fieldMapping.eaqiField], true),
+          };
+        });
         return mapped.filter((row) =>
           Number.isFinite(row.date?.getTime()) && (row.daqi !== null || row.eaqi !== null)
         ).sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -2786,9 +2822,24 @@
         if (Array.isArray(chartState.aqiPoints)) {
           chartState.aqiPoints.forEach((point) => {
             const hourStartMs = floorToHourStartMs(point?.date);
-            if (Number.isFinite(hourStartMs) && !aqiPointByHourMs.has(hourStartMs)) {
-              aqiPointByHourMs.set(hourStartMs, point);
+            if (!Number.isFinite(hourStartMs)) {
+              return;
             }
+            const existing = aqiPointByHourMs.get(hourStartMs);
+            if (!existing) {
+              aqiPointByHourMs.set(hourStartMs, point);
+              return;
+            }
+            const existingDate = existing?.date instanceof Date ? existing.date : null;
+            const incomingDate = point?.date instanceof Date ? point.date : null;
+            const mergedDate = incomingDate && (!existingDate || incomingDate > existingDate)
+              ? incomingDate
+              : existingDate;
+            aqiPointByHourMs.set(hourStartMs, {
+              date: mergedDate,
+              daqi: point?.daqi !== null && point?.daqi !== undefined ? point.daqi : existing.daqi,
+              eaqi: point?.eaqi !== null && point?.eaqi !== undefined ? point.eaqi : existing.eaqi,
+            });
           });
         }
 
