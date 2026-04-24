@@ -259,7 +259,6 @@
   // ─── HTML builders ────────────────────────────────────────────────────────────
   const UK_AQ_ROOT_HOSTS = new Set([
     'uk-aq-beta.chronicillnesschannel.co.uk',
-    'uk-aq.chronicillnesschannel.co.uk',
   ]);
 
   function resolveHref(href) {
