@@ -26,7 +26,7 @@ const ENV_PATH = path.join(REPO_ROOT, ".env");
 const DEFAULT_TARGETS = [
   "hex_map.html",
   "index.html",
-  "stations_chart.html",
+  "sensors_chart.html",
   "sensors_map.html",
 ];
 const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
