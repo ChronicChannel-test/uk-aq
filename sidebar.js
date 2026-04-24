@@ -257,12 +257,16 @@
   `;
 
   // ─── HTML builders ────────────────────────────────────────────────────────────
+  const UK_AQ_ROOT_HOSTS = new Set([
+    'uk-aq-beta.chronicillnesschannel.co.uk',
+    'uk-aq.chronicillnesschannel.co.uk',
+  ]);
+
   function resolveHref(href) {
     if (href === '#' || typeof href !== 'string') return href;
     if (!href.startsWith('/uk-aq/')) return href;
-    const path = location.pathname || '/';
-    const hasUkAqPrefix = path === '/uk-aq' || path.startsWith('/uk-aq/');
-    return hasUkAqPrefix ? href : href.replace(/^\/uk-aq/, '');
+    const host = (location.hostname || '').toLowerCase();
+    return UK_AQ_ROOT_HOSTS.has(host) ? href.replace(/^\/uk-aq/, '') : href;
   }
 
   function buildNavItem(item) {
