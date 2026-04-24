@@ -174,14 +174,14 @@
       top: 16px; right: 16px;
       z-index: 1100;
       display: block;
-      border-radius: 8px;
-      transition: opacity 0.2s;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    #cic-home-logo:hover { opacity: 0.8; }
+    #cic-home-logo:hover { transform: translateY(-1px); box-shadow: 0 8px 14px rgba(20,34,37,0.12); }
     #cic-home-logo img {
       width: 104px; height: 104px;
       object-fit: contain; display: block;
-      border-radius: 6px;
     }
 
     /* ── Nav ── */
