@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<!-- saved from url=(0161)https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style data-omelette-injected="">html,body{background:transparent}</style><script data-omelette-injected="">(()=>{var W=["https://claude.ai","https://preview.claude.ai","https://eap-omelette.claude.ai"];var Y=30000;document.addEventListener("DOMContentLoaded",()=>{const D="transform-react-jsx-source";document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((C,F)=>{const Q=C.getAttribute("data-plugins")||"";if(Q.indexOf(D)<0){C.setAttribute("data-plugins",Q?`${Q},${D}`:D)}if(!C.hasAttribute("data-filename")){C.setAttribute("data-filename",C.getAttribute("src")||`inline-${F}`)}})});var K=window.parent;if(K&&K!==window){const D=(k,f)=>{try{K.postMessage({__omelette_log:true,type:k,data:f},"*")}catch{}};["log","warn","error"].forEach((k)=>{const f=console[k];console[k]=(...w)=>{const z=w.map((h)=>{try{return typeof h==="object"?JSON.stringify(h):String(h)}catch{try{return String(h)}catch{return"[unstringifiable]"}}}).join(" ");D(k,z);f.apply(console,w)}});window.addEventListener("error",(k)=>{const f=k.target;if(f&&f!==window&&f.tagName){const w=f.src||f.href||"";D("resource_error",`${f.tagName} failed to load: ${w}`)}else{D("error",`${k.message||"Unknown error"} at ${k.filename||"?"}:${k.lineno||0}:${k.colno||0}`)}},true);window.addEventListener("unhandledrejection",(k)=>{const f=k.reason;const w=f instanceof Error?`${f.message} ${f.stack}`:String(f);D("error",`Unhandled rejection: ${w}`)});const C=()=>{try{K.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(document.readyState==="complete")C();else window.addEventListener("load",C);if(window.ResizeObserver)new ResizeObserver(C).observe(document.documentElement);const F={};let Q=0;window.claude={complete(k){return new Promise((f,w)=>{if(!W.length){w(new Error("claude.complete: no parent origin"));return}const z=`c${++Q}`;const h=()=>setTimeout(()=>{delete F[z];w(new Error(`claude.complete: no data for ${Y/1000}s`))},Y);const J=h();F[z]={resolve:f,reject:w,text:"",t:J,arm:h};try{for(const V of W){K.postMessage({__om_api:true,id:z,body:k},V)}}catch(V){clearTimeout(J);delete F[z];w(V)}})}};const X=(k)=>{try{return JSON.stringify(k)}catch{return JSON.stringify(String(k))}};window.addEventListener("message",(k)=>{if(W.indexOf(k.origin)<0)return;if(k.source!==K)return;const f=k.data;if(!f)return;if(f.__om_api_r){const h=F[f.id];if(!h)return;if(f.error!=null){clearTimeout(h.t);delete F[f.id];h.reject(new Error(f.error));return}if(f.chunk!=null){clearTimeout(h.t);h.t=h.arm();h.text+=f.chunk;return}if(f.done){clearTimeout(h.t);delete F[f.id];h.resolve(f.text!=null?f.text:h.text);return}return}if(!f.__om_eval)return;const w=f;const z=(h)=>{k.source.postMessage({...h,__om_eval_r:1,id:w.id},k.origin)};try{const h=(0,eval)(w.code);if(h&&typeof h.then==="function"){h.then((J)=>z({ok:1,v:X(J)}),(J)=>z({ok:0,e:String(J)}))}else{z({ok:1,v:X(h)})}}catch(h){z({ok:0,e:String(h)})}})}})();
+</script>
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UK-AQ Hex Map — Teal blue · brand accent</title>
+  <link href="./UK-AQ Hex Map — Teal blue · brand accent_files/css2" rel="stylesheet">
+  <link rel="stylesheet" href="./UK-AQ Hex Map — Teal blue · brand accent_files/shared.css">
+  <style id="accent-style">:root{--accent:#3C78AC;--accent-deep:#285A84;}</style>
+<style type="text/css"></style><style type="text/css">.serp-2L1woo {
+  display: flex !important;
+  align-items: center;
+  height: 40px;
+  width: fit-content;
+  width: -moz-fit-content;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+  border-radius: 25px;
+  overflow: hidden;
+  background-color: #fff;
+  background-repeat: no-repeat !important;
+  background-size: 24px !important;
+  background-position: 0 center !important;
+  cursor: pointer;
+  user-select: none;
+}
+@media (max-width: 575.98px) {
+  .serp-2L1woo {
+    margin: 0 0 0 10px;
+    padding-top: 5px;
+  }
+}
+.serp__logo-25ddOr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 2px 0 0 2px;
+  padding: 0 0 0 3px;
+}
+.serp__logo-25ddOr svg {
+  height: 34px;
+}
+.serp__logo-25ddOr svg path,
+.serp__logo-25ddOr svg polygon {
+  fill: #fff;
+}
+.serp__body-2JGzQ4 {
+  display: inline-flex;
+  box-sizing: border-box;
+  height: 100%;
+  align-items: center;
+  padding: 0 15px 0 7px;
+}
+.serp__text-30fNUf {
+  color: #227ABF !important;
+  font-family: 'qco-Rubik', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
+  font-weight: bold;
+  font-size: 16px !important;
+}
+</style><link rel="stylesheet" type="text/css" href="chrome-extension://offafgdgnliocofjjiohlpjpenbogkbl/content/styles.css"></head>
+<body>
+
+<div class="app">
+
+  <!-- ============= SIDEBAR ============= -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <a href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/index.html" class="sidebar-brand" aria-label="UK-AQ home">
+      <!-- Inline wordmark so stroke inherits var(--accent-deep) -->
+      <svg viewBox="0 0 240 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+        <g transform="translate(4 6)">
+          <polygon points="22,0 44,12 44,36 22,48 0,36 0,12" fill="currentColor" opacity="0.14"></polygon>
+          <polygon points="22,8 37,16 37,32 22,40 7,32 7,16" fill="currentColor" opacity="0.32"></polygon>
+          <polygon points="22,16 30,20 30,28 22,32 14,28 14,20" fill="currentColor"></polygon>
+        </g>
+        <text x="62" y="37" font-family="Inter,sans-serif" font-weight="700" letter-spacing="-0.5" font-size="28" fill="currentColor">UK</text>
+        <text x="112" y="37" font-family="Inter,sans-serif" font-weight="600" font-size="28" fill="currentColor" opacity="0.55">·</text>
+        <text x="126" y="37" font-family="Inter,sans-serif" font-weight="700" letter-spacing="-0.5" font-size="28" fill="currentColor">AQ</text>
+      </svg>
+    </a>
+
+    <nav class="nav-section" aria-label="Live data">
+      <div class="nav-section-label">Live data</div>
+      <a class="nav-item active" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">◆</span><span class="label">Hex map</span><span style="margin-left:auto" class="num muted">UK</span></a>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">▲</span><span class="label">Station chart</span></a>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">●</span><span class="label">Sensor map</span></a>
+    </nav>
+
+    <nav class="nav-section" aria-label="Explorers">
+      <div class="nav-section-label">Explorers</div>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">○</span><span class="label">Bubble chart</span></a>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">↗</span><span class="label">Line chart</span></a>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">≡</span><span class="label">Eco replaces</span></a>
+    </nav>
+
+    <nav class="nav-section" aria-label="Reference">
+      <div class="nav-section-label">Reference</div>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">i</span><span class="label">Category info</span></a>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">?</span><span class="label">User guide</span></a>
+      <a class="nav-item" href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#"><span class="nav-icon">⎆</span><span class="label">Resources</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      Hosted on GitHub Pages ·
+      <a href="https://3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6.claudeusercontent.com/v1/design/projects/3cb8ef38-2891-41da-b3b4-cbbbfb7d45c6/serve/mockups/hex_map.html?accent=teal#">v2026.04</a>
+    </div>
+  </aside>
+
+  <!-- ============= MAIN ============= -->
+  <div class="main">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <h1><span class="crumb">Live data /</span> Hex map</h1>
+
+      <div class="segmented" role="tablist" aria-label="Map scope">
+        <button role="tab" aria-selected="true">United Kingdom</button>
+        <button role="tab" aria-selected="false">Countries &amp; Regions</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="live-indicator"><span class="pulse"></span> Updated 2 min ago</div>
+      <button class="btn">Share</button>
+      <button class="btn btn-primary">Refresh</button>
+    </header>
+
+    <div class="content">
+
+      <!-- STAT ROW -->
+      <section class="stats">
+        <div class="stat">
+          <div class="label">Stations reporting</div>
+          <div class="num">1,284</div>
+          <div class="delta">of 1,317 active</div>
+        </div>
+        <div class="stat">
+          <div class="label">UK mean PM2.5</div>
+          <div class="num">8.4<span class="muted" style="font-size:14px;font-weight:500"> µg/m³</span></div>
+          <div class="delta down">▼ 0.6 vs yesterday</div>
+        </div>
+        <div class="stat">
+          <div class="label">Highest constituency</div>
+          <div class="num">31.2</div>
+          <div class="delta">Cities of London &amp; Westminster</div>
+        </div>
+        <div class="stat">
+          <div class="label">WHO 2021 exceedances</div>
+          <div class="num">142</div>
+          <div class="delta up">▲ 14 constituencies today</div>
+        </div>
+      </section>
+
+      <!-- MAP CARD -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Latest PM2.5 by constituency</h2>
+          <span class="sub">Hex tiles · 650 UK constituencies · observations within last 2 hours</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="field">
+            <label>Pollutant</label>
+            <div class="pill-group" role="radiogroup">
+              <button class="pill" aria-pressed="true">PM2.5</button>
+              <button class="pill" aria-pressed="false">PM10</button>
+              <button class="pill" aria-pressed="false">NO₂</button>
+              <button class="pill" aria-pressed="false">O₃</button>
+              <button class="pill" aria-pressed="false">SO₂</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="scope">Scope</label>
+            <select id="scope">
+              <option>Parliamentary constituencies (2023)</option>
+              <option>Local authority districts</option>
+              <option>Intermediate zones (Scotland)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="window">Window</label>
+            <select id="window">
+              <option>Latest reading</option>
+              <option>Last 1 hour</option>
+              <option>Last 24 hours (mean)</option>
+            </select>
+          </div>
+          <div style="flex:1"></div>
+          <button class="btn">Export CSV</button>
+          <button class="btn">Copy link</button>
+        </div>
+
+        <div class="card-body flush">
+          <div class="map-layout">
+
+            <!-- MAP PANEL -->
+            <div class="map-panel">
+              <div class="map-meta">
+                <span class="num">1,284</span> stations ·
+                feeding <span class="num">650</span> constituencies ·
+                scale exp 0.8
+              </div>
+
+              <div class="hex-frame" id="hex-frame">
+                <!-- Illustrative hex grid (procedural, colored by fake data) -->
+                <svg viewBox="0 0 640 620" role="img" aria-label="UK hex map of PM2.5 by constituency">
+                  <defs>
+                    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(16,24,34,0.04)" stroke-width="1"></path>
+                    </pattern>
+                  </defs>
+                  <rect width="640" height="620" fill="url(#grid)"></rect>
+                  <g id="hexes"><path d="M207.8,23.1 L207.8,36.9 L195.9,43.8 L183.9,36.9 L183.9,23.1 L195.9,16.2 Z" fill="#7ac243" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 7.5 µg/m³</title>
+      </path><path d="M233.8,23.1 L233.8,36.9 L221.9,43.8 L209.9,36.9 L209.9,23.1 L221.9,16.2 Z" fill="#a1c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 9.4 µg/m³</title>
+      </path><path d="M259.8,23.1 L259.8,36.9 L247.8,43.8 L235.9,36.9 L235.9,23.1 L247.8,16.2 Z" fill="#a6c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 9.7 µg/m³</title>
+      </path><path d="M285.8,23.1 L285.8,36.9 L273.8,43.8 L261.9,36.9 L261.9,23.1 L273.8,16.2 Z" fill="#59bb49" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 6.0 µg/m³</title>
+      </path><path d="M311.8,23.1 L311.8,36.9 L299.8,43.8 L287.9,36.9 L287.9,23.1 L299.8,16.2 Z" fill="#dcd047" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 12.7 µg/m³</title>
+      </path><path d="M194.8,45.6 L194.8,59.4 L182.9,66.3 L170.9,59.4 L170.9,45.6 L182.9,38.7 Z" fill="#86c440" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 8.0 µg/m³</title>
+      </path><path d="M220.8,45.6 L220.8,59.4 L208.9,66.3 L196.9,59.4 L196.9,45.6 L208.9,38.7 Z" fill="#a0c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 9.4 µg/m³</title>
+      </path><path d="M246.8,45.6 L246.8,59.4 L234.9,66.3 L222.9,59.4 L222.9,45.6 L234.9,38.7 Z" fill="#e8d248" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 13.3 µg/m³</title>
+      </path><path d="M272.8,45.6 L272.8,59.4 L260.8,66.3 L248.9,59.4 L248.9,45.6 L260.8,38.7 Z" fill="#83c441" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 7.9 µg/m³</title>
+      </path><path d="M298.8,45.6 L298.8,59.4 L286.8,66.3 L274.9,59.4 L274.9,45.6 L286.8,38.7 Z" fill="#e0d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 12.9 µg/m³</title>
+      </path><path d="M324.7,45.6 L324.7,59.4 L312.8,66.3 L300.8,59.4 L300.8,45.6 L312.8,38.7 Z" fill="#afcb42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 10.2 µg/m³</title>
+      </path><path d="M207.8,68.1 L207.8,81.9 L195.9,88.8 L183.9,81.9 L183.9,68.1 L195.9,61.2 Z" fill="#bccc43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 10.9 µg/m³</title>
+      </path><path d="M233.8,68.1 L233.8,81.9 L221.9,88.8 L209.9,81.9 L209.9,68.1 L221.9,61.2 Z" fill="#ded147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 12.8 µg/m³</title>
+      </path><path d="M259.8,68.1 L259.8,81.9 L247.8,88.8 L235.9,81.9 L235.9,68.1 L247.8,61.2 Z" fill="#d9d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 12.5 µg/m³</title>
+      </path><path d="M285.8,68.1 L285.8,81.9 L273.8,88.8 L261.9,81.9 L261.9,68.1 L273.8,61.2 Z" fill="#e9d248" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 13.4 µg/m³</title>
+      </path><path d="M311.8,68.1 L311.8,81.9 L299.8,88.8 L287.9,81.9 L287.9,68.1 L299.8,61.2 Z" fill="#a2c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 9.5 µg/m³</title>
+      </path><path d="M337.7,68.1 L337.7,81.9 L325.8,88.8 L313.8,81.9 L313.8,68.1 L325.8,61.2 Z" fill="#b6cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 10.6 µg/m³</title>
+      </path><path d="M194.8,90.6 L194.8,104.4 L182.9,111.3 L170.9,104.4 L170.9,90.6 L182.9,83.7 Z" fill="#c5cd44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 11.4 µg/m³</title>
+      </path><path d="M220.8,90.6 L220.8,104.4 L208.9,111.3 L196.9,104.4 L196.9,90.6 L208.9,83.7 Z" fill="#78c243" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 7.4 µg/m³</title>
+      </path><path d="M246.8,90.6 L246.8,104.4 L234.9,111.3 L222.9,104.4 L222.9,90.6 L234.9,83.7 Z" fill="#78c143" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 7.3 µg/m³</title>
+      </path><path d="M272.8,90.6 L272.8,104.4 L260.8,111.3 L248.9,104.4 L248.9,90.6 L260.8,83.7 Z" fill="#b0cb42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 10.2 µg/m³</title>
+      </path><path d="M298.8,90.6 L298.8,104.4 L286.8,111.3 L274.9,104.4 L274.9,90.6 L286.8,83.7 Z" fill="#81c441" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 7.8 µg/m³</title>
+      </path><path d="M324.7,90.6 L324.7,104.4 L312.8,111.3 L300.8,104.4 L300.8,90.6 L312.8,83.7 Z" fill="#e1d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 12.9 µg/m³</title>
+      </path><path d="M350.7,90.6 L350.7,104.4 L338.8,111.3 L326.8,104.4 L326.8,90.6 L338.8,83.7 Z" fill="#bbcc43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 10.8 µg/m³</title>
+      </path><path d="M207.8,113.1 L207.8,126.9 L195.9,133.8 L183.9,126.9 L183.9,113.1 L195.9,106.2 Z" fill="#94c740" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 8.7 µg/m³</title>
+      </path><path d="M233.8,113.1 L233.8,126.9 L221.9,133.8 L209.9,126.9 L209.9,113.1 L221.9,106.2 Z" fill="#7cc242" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 7.6 µg/m³</title>
+      </path><path d="M259.8,113.1 L259.8,126.9 L247.8,133.8 L235.9,126.9 L235.9,113.1 L247.8,106.2 Z" fill="#a7c942" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 9.7 µg/m³</title>
+      </path><path d="M285.8,113.1 L285.8,126.9 L273.8,133.8 L261.9,126.9 L261.9,113.1 L273.8,106.2 Z" fill="#cecf45" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 11.9 µg/m³</title>
+      </path><path d="M311.8,113.1 L311.8,126.9 L299.8,133.8 L287.9,126.9 L287.9,113.1 L299.8,106.2 Z" fill="#abca42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 9.9 µg/m³</title>
+      </path><path d="M337.7,113.1 L337.7,126.9 L325.8,133.8 L313.8,126.9 L313.8,113.1 L325.8,106.2 Z" fill="#89c540" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 8.1 µg/m³</title>
+      </path><path d="M194.8,135.6 L194.8,149.4 L182.9,156.3 L170.9,149.4 L170.9,135.6 L182.9,128.7 Z" fill="#dad046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 12.6 µg/m³</title>
+      </path><path d="M220.8,135.6 L220.8,149.4 L208.9,156.3 L196.9,149.4 L196.9,135.6 L208.9,128.7 Z" fill="#d9d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 12.5 µg/m³</title>
+      </path><path d="M246.8,135.6 L246.8,149.4 L234.9,156.3 L222.9,149.4 L222.9,135.6 L234.9,128.7 Z" fill="#ead248" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 13.4 µg/m³</title>
+      </path><path d="M272.8,135.6 L272.8,149.4 L260.8,156.3 L248.9,149.4 L248.9,135.6 L260.8,128.7 Z" fill="#8dc63f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 8.3 µg/m³</title>
+      </path><path d="M298.8,135.6 L298.8,149.4 L286.8,156.3 L274.9,149.4 L274.9,135.6 L286.8,128.7 Z" fill="#8ac53f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 8.2 µg/m³</title>
+      </path><path d="M324.7,135.6 L324.7,149.4 L312.8,156.3 L300.8,149.4 L300.8,135.6 L312.8,128.7 Z" fill="#e5d247" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 13.1 µg/m³</title>
+      </path><path d="M350.7,135.6 L350.7,149.4 L338.8,156.3 L326.8,149.4 L326.8,135.6 L338.8,128.7 Z" fill="#e8d248" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 13.3 µg/m³</title>
+      </path><path d="M207.8,158.1 L207.8,171.9 L195.9,178.8 L183.9,171.9 L183.9,158.1 L195.9,151.2 Z" fill="#93c740" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 8.6 µg/m³</title>
+      </path><path d="M233.8,158.1 L233.8,171.9 L221.9,178.8 L209.9,171.9 L209.9,158.1 L221.9,151.2 Z" fill="#c3cd44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 11.3 µg/m³</title>
+      </path><path d="M259.8,158.1 L259.8,171.9 L247.8,178.8 L235.9,171.9 L235.9,158.1 L247.8,151.2 Z" fill="#e7d248" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 13.3 µg/m³</title>
+      </path><path d="M285.8,158.1 L285.8,171.9 L273.8,178.8 L261.9,171.9 L261.9,158.1 L273.8,151.2 Z" fill="#aeca42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 10.1 µg/m³</title>
+      </path><path d="M311.8,158.1 L311.8,171.9 L299.8,178.8 L287.9,171.9 L287.9,158.1 L299.8,151.2 Z" fill="#bbcc43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 10.8 µg/m³</title>
+      </path><path d="M337.7,158.1 L337.7,171.9 L325.8,178.8 L313.8,171.9 L313.8,158.1 L325.8,151.2 Z" fill="#c2cd44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 11.2 µg/m³</title>
+      </path><path d="M168.9,180.6 L168.9,194.4 L156.9,201.3 L145.0,194.4 L145.0,180.6 L156.9,173.7 Z" fill="#58bb49" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 5.9 µg/m³</title>
+      </path><path d="M194.8,180.6 L194.8,194.4 L182.9,201.3 L170.9,194.4 L170.9,180.6 L182.9,173.7 Z" fill="#7ec342" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 7.6 µg/m³</title>
+      </path><path d="M220.8,180.6 L220.8,194.4 L208.9,201.3 L196.9,194.4 L196.9,180.6 L208.9,173.7 Z" fill="#7ec342" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 7.6 µg/m³</title>
+      </path><path d="M246.8,180.6 L246.8,194.4 L234.9,201.3 L222.9,194.4 L222.9,180.6 L234.9,173.7 Z" fill="#a0c841" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 9.3 µg/m³</title>
+      </path><path d="M272.8,180.6 L272.8,194.4 L260.8,201.3 L248.9,194.4 L248.9,180.6 L260.8,173.7 Z" fill="#92c73f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 8.6 µg/m³</title>
+      </path><path d="M298.8,180.6 L298.8,194.4 L286.8,201.3 L274.9,194.4 L274.9,180.6 L286.8,173.7 Z" fill="#d3cf46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 12.2 µg/m³</title>
+      </path><path d="M324.7,180.6 L324.7,194.4 L312.8,201.3 L300.8,194.4 L300.8,180.6 L312.8,173.7 Z" fill="#a1c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 9.4 µg/m³</title>
+      </path><path d="M350.7,180.6 L350.7,194.4 L338.8,201.3 L326.8,194.4 L326.8,180.6 L338.8,173.7 Z" fill="#bccc44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 10.9 µg/m³</title>
+      </path><path d="M376.7,180.6 L376.7,194.4 L364.8,201.3 L352.8,194.4 L352.8,180.6 L364.8,173.7 Z" fill="#70c045" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 7.0 µg/m³</title>
+      </path><path d="M402.7,180.6 L402.7,194.4 L390.7,201.3 L378.8,194.4 L378.8,180.6 L390.7,173.7 Z" fill="#9cc840" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 9.1 µg/m³</title>
+      </path><path d="M428.7,180.6 L428.7,194.4 L416.7,201.3 L404.8,194.4 L404.8,180.6 L416.7,173.7 Z" fill="#d4cf46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 12.2 µg/m³</title>
+      </path><path d="M155.9,203.1 L155.9,216.9 L143.9,223.8 L132.0,216.9 L132.0,203.1 L143.9,196.2 Z" fill="#6abf46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 6.8 µg/m³</title>
+      </path><path d="M181.9,203.1 L181.9,216.9 L169.9,223.8 L158.0,216.9 L158.0,203.1 L169.9,196.2 Z" fill="#81c341" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 7.8 µg/m³</title>
+      </path><path d="M207.8,203.1 L207.8,216.9 L195.9,223.8 L183.9,216.9 L183.9,203.1 L195.9,196.2 Z" fill="#b8cc43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 10.7 µg/m³</title>
+      </path><path d="M233.8,203.1 L233.8,216.9 L221.9,223.8 L209.9,216.9 L209.9,203.1 L221.9,196.2 Z" fill="#b5cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 10.5 µg/m³</title>
+      </path><path d="M259.8,203.1 L259.8,216.9 L247.8,223.8 L235.9,216.9 L235.9,203.1 L247.8,196.2 Z" fill="#64bd47" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 6.5 µg/m³</title>
+      </path><path d="M285.8,203.1 L285.8,216.9 L273.8,223.8 L261.9,216.9 L261.9,203.1 L273.8,196.2 Z" fill="#b2cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 10.3 µg/m³</title>
+      </path><path d="M311.8,203.1 L311.8,216.9 L299.8,223.8 L287.9,216.9 L287.9,203.1 L299.8,196.2 Z" fill="#5abb49" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 6.0 µg/m³</title>
+      </path><path d="M337.7,203.1 L337.7,216.9 L325.8,223.8 L313.8,216.9 L313.8,203.1 L325.8,196.2 Z" fill="#d7d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 12.4 µg/m³</title>
+      </path><path d="M363.7,203.1 L363.7,216.9 L351.8,223.8 L339.8,216.9 L339.8,203.1 L351.8,196.2 Z" fill="#83c441" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 7.8 µg/m³</title>
+      </path><path d="M389.7,203.1 L389.7,216.9 L377.7,223.8 L365.8,216.9 L365.8,203.1 L377.7,196.2 Z" fill="#b3cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 10.4 µg/m³</title>
+      </path><path d="M415.7,203.1 L415.7,216.9 L403.7,223.8 L391.8,216.9 L391.8,203.1 L403.7,196.2 Z" fill="#d7d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 12.4 µg/m³</title>
+      </path><path d="M142.9,225.6 L142.9,239.4 L130.9,246.3 L119.0,239.4 L119.0,225.6 L130.9,218.7 Z" fill="#ffcd48" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 15.5 µg/m³</title>
+      </path><path d="M168.9,225.6 L168.9,239.4 L156.9,246.3 L145.0,239.4 L145.0,225.6 L156.9,218.7 Z" fill="#cfcf45" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 11.9 µg/m³</title>
+      </path><path d="M194.8,225.6 L194.8,239.4 L182.9,246.3 L170.9,239.4 L170.9,225.6 L182.9,218.7 Z" fill="#e3d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 13.0 µg/m³</title>
+      </path><path d="M220.8,225.6 L220.8,239.4 L208.9,246.3 L196.9,239.4 L196.9,225.6 L208.9,218.7 Z" fill="#ffbb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 17.5 µg/m³</title>
+      </path><path d="M246.8,225.6 L246.8,239.4 L234.9,246.3 L222.9,239.4 L222.9,225.6 L234.9,218.7 Z" fill="#a1c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 9.4 µg/m³</title>
+      </path><path d="M272.8,225.6 L272.8,239.4 L260.8,246.3 L248.9,239.4 L248.9,225.6 L260.8,218.7 Z" fill="#ffb541" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 18.0 µg/m³</title>
+      </path><path d="M298.8,225.6 L298.8,239.4 L286.8,246.3 L274.9,239.4 L274.9,225.6 L286.8,218.7 Z" fill="#ffc044" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 16.9 µg/m³</title>
+      </path><path d="M324.7,225.6 L324.7,239.4 L312.8,246.3 L300.8,239.4 L300.8,225.6 L312.8,218.7 Z" fill="#d7d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 12.4 µg/m³</title>
+      </path><path d="M350.7,225.6 L350.7,239.4 L338.8,246.3 L326.8,239.4 L326.8,225.6 L338.8,218.7 Z" fill="#afca42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 10.2 µg/m³</title>
+      </path><path d="M376.7,225.6 L376.7,239.4 L364.8,246.3 L352.8,239.4 L352.8,225.6 L364.8,218.7 Z" fill="#f9893a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 22.1 µg/m³</title>
+      </path><path d="M402.7,225.6 L402.7,239.4 L390.7,246.3 L378.8,239.4 L378.8,225.6 L390.7,218.7 Z" fill="#abca42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 10.0 µg/m³</title>
+      </path><path d="M428.7,225.6 L428.7,239.4 L416.7,246.3 L404.8,239.4 L404.8,225.6 L416.7,218.7 Z" fill="#ffa93e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 19.4 µg/m³</title>
+      </path><path d="M129.9,248.1 L129.9,261.9 L117.9,268.8 L106.0,261.9 L106.0,248.1 L117.9,241.2 Z" fill="#ffb541" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 18.0 µg/m³</title>
+      </path><path d="M155.9,248.1 L155.9,261.9 L143.9,268.8 L132.0,261.9 L132.0,248.1 L143.9,241.2 Z" fill="#c4cd44" stroke="#101822" stroke-width="2" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 11.3 µg/m³</title>
+      </path><path d="M181.9,248.1 L181.9,261.9 L169.9,268.8 L158.0,261.9 L158.0,248.1 L169.9,241.2 Z" fill="#ffb140" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 18.5 µg/m³</title>
+      </path><path d="M207.8,248.1 L207.8,261.9 L195.9,268.8 L183.9,261.9 L183.9,248.1 L195.9,241.2 Z" fill="#e4d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 13.1 µg/m³</title>
+      </path><path d="M233.8,248.1 L233.8,261.9 L221.9,268.8 L209.9,261.9 L209.9,248.1 L221.9,241.2 Z" fill="#ffa63d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 19.7 µg/m³</title>
+      </path><path d="M259.8,248.1 L259.8,261.9 L247.8,268.8 L235.9,261.9 L235.9,248.1 L247.8,241.2 Z" fill="#bccc44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 10.9 µg/m³</title>
+      </path><path d="M285.8,248.1 L285.8,261.9 L273.8,268.8 L261.9,261.9 L261.9,248.1 L273.8,241.2 Z" fill="#e1403c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 26.9 µg/m³</title>
+      </path><path d="M311.8,248.1 L311.8,261.9 L299.8,268.8 L287.9,261.9 L287.9,248.1 L299.8,241.2 Z" fill="#f7843a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 22.4 µg/m³</title>
+      </path><path d="M337.7,248.1 L337.7,261.9 L325.8,268.8 L313.8,261.9 L313.8,248.1 L325.8,241.2 Z" fill="#ffc947" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 15.9 µg/m³</title>
+      </path><path d="M363.7,248.1 L363.7,261.9 L351.8,268.8 L339.8,261.9 L339.8,248.1 L351.8,241.2 Z" fill="#ffc144" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 16.8 µg/m³</title>
+      </path><path d="M389.7,248.1 L389.7,261.9 L377.7,268.8 L365.8,261.9 L365.8,248.1 L377.7,241.2 Z" fill="#ffaa3e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 19.2 µg/m³</title>
+      </path><path d="M415.7,248.1 L415.7,261.9 L403.7,268.8 L391.8,261.9 L391.8,248.1 L403.7,241.2 Z" fill="#becc44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 11.0 µg/m³</title>
+      </path><path d="M116.9,270.6 L116.9,284.4 L105.0,291.3 L93.0,284.4 L93.0,270.6 L105.0,263.7 Z" fill="#c5cd44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 11.4 µg/m³</title>
+      </path><path d="M142.9,270.6 L142.9,284.4 L130.9,291.3 L119.0,284.4 L119.0,270.6 L130.9,263.7 Z" fill="#fa8a3a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 22.0 µg/m³</title>
+      </path><path d="M168.9,270.6 L168.9,284.4 L156.9,291.3 L145.0,284.4 L145.0,270.6 L156.9,263.7 Z" fill="#c6ce45" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 11.5 µg/m³</title>
+      </path><path d="M194.8,270.6 L194.8,284.4 L182.9,291.3 L170.9,284.4 L170.9,270.6 L182.9,263.7 Z" fill="#ffc646" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 16.2 µg/m³</title>
+      </path><path d="M220.8,270.6 L220.8,284.4 L208.9,291.3 L196.9,284.4 L196.9,270.6 L208.9,263.7 Z" fill="#ffbd43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 17.2 µg/m³</title>
+      </path><path d="M246.8,270.6 L246.8,284.4 L234.9,291.3 L222.9,284.4 L222.9,270.6 L234.9,263.7 Z" fill="#e1d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 12.9 µg/m³</title>
+      </path><path d="M272.8,270.6 L272.8,284.4 L260.8,291.3 L248.9,284.4 L248.9,270.6 L260.8,263.7 Z" fill="#ee683b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 24.3 µg/m³</title>
+      </path><path d="M298.8,270.6 L298.8,284.4 L286.8,291.3 L274.9,284.4 L274.9,270.6 L286.8,263.7 Z" fill="#ef693b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 24.2 µg/m³</title>
+      </path><path d="M324.7,270.6 L324.7,284.4 L312.8,291.3 L300.8,284.4 L300.8,270.6 L312.8,263.7 Z" fill="#ffa53d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 19.8 µg/m³</title>
+      </path><path d="M350.7,270.6 L350.7,284.4 L338.8,291.3 L326.8,284.4 L326.8,270.6 L338.8,263.7 Z" fill="#ffd149" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 15.0 µg/m³</title>
+      </path><path d="M376.7,270.6 L376.7,284.4 L364.8,291.3 L352.8,284.4 L352.8,270.6 L364.8,263.7 Z" fill="#f57d3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 22.9 µg/m³</title>
+      </path><path d="M402.7,270.6 L402.7,284.4 L390.7,291.3 L378.8,284.4 L378.8,270.6 L390.7,263.7 Z" fill="#ffcd48" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 15.5 µg/m³</title>
+      </path><path d="M129.9,293.1 L129.9,306.9 L117.9,313.8 L106.0,306.9 L106.0,293.1 L117.9,286.2 Z" fill="#ffcd48" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 15.4 µg/m³</title>
+      </path><path d="M155.9,293.1 L155.9,306.9 L143.9,313.8 L132.0,306.9 L132.0,293.1 L143.9,286.2 Z" fill="#f9d449" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 14.3 µg/m³</title>
+      </path><path d="M181.9,293.1 L181.9,306.9 L169.9,313.8 L158.0,306.9 L158.0,293.1 L169.9,286.2 Z" fill="#e5d247" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 13.1 µg/m³</title>
+      </path><path d="M207.8,293.1 L207.8,306.9 L195.9,313.8 L183.9,306.9 L183.9,293.1 L195.9,286.2 Z" fill="#ffb942" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 17.7 µg/m³</title>
+      </path><path d="M233.8,293.1 L233.8,306.9 L221.9,313.8 L209.9,306.9 L209.9,293.1 L221.9,286.2 Z" fill="#ffb842" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 17.8 µg/m³</title>
+      </path><path d="M259.8,293.1 L259.8,306.9 L247.8,313.8 L235.9,306.9 L235.9,293.1 L247.8,286.2 Z" fill="#bdcc44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 10.9 µg/m³</title>
+      </path><path d="M285.8,293.1 L285.8,306.9 L273.8,313.8 L261.9,306.9 L261.9,293.1 L273.8,286.2 Z" fill="#ee673b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 24.3 µg/m³</title>
+      </path><path d="M311.8,293.1 L311.8,306.9 L299.8,313.8 L287.9,306.9 L287.9,293.1 L299.8,286.2 Z" fill="#e8553b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 25.6 µg/m³</title>
+      </path><path d="M337.7,293.1 L337.7,306.9 L325.8,313.8 L313.8,306.9 L313.8,293.1 L325.8,286.2 Z" fill="#f06c3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 24.0 µg/m³</title>
+      </path><path d="M363.7,293.1 L363.7,306.9 L351.8,313.8 L339.8,306.9 L339.8,293.1 L351.8,286.2 Z" fill="#bdcc44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 11.0 µg/m³</title>
+      </path><path d="M389.7,293.1 L389.7,306.9 L377.7,313.8 L365.8,306.9 L365.8,293.1 L377.7,286.2 Z" fill="#b3cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 10.4 µg/m³</title>
+      </path><path d="M415.7,293.1 L415.7,306.9 L403.7,313.8 L391.8,306.9 L391.8,293.1 L403.7,286.2 Z" fill="#ffd049" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 15.1 µg/m³</title>
+      </path><path d="M142.9,315.6 L142.9,329.4 L130.9,336.3 L119.0,329.4 L119.0,315.6 L130.9,308.7 Z" fill="#ffc044" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 16.9 µg/m³</title>
+      </path><path d="M168.9,315.6 L168.9,329.4 L156.9,336.3 L145.0,329.4 L145.0,315.6 L156.9,308.7 Z" fill="#b6cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 10.6 µg/m³</title>
+      </path><path d="M194.8,315.6 L194.8,329.4 L182.9,336.3 L170.9,329.4 L170.9,315.6 L182.9,308.7 Z" fill="#ffc044" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 16.9 µg/m³</title>
+      </path><path d="M220.8,315.6 L220.8,329.4 L208.9,336.3 L196.9,329.4 L196.9,315.6 L208.9,308.7 Z" fill="#ffa23c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 20.2 µg/m³</title>
+      </path><path d="M246.8,315.6 L246.8,329.4 L234.9,336.3 L222.9,329.4 L222.9,315.6 L234.9,308.7 Z" fill="#ffa13c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 20.3 µg/m³</title>
+      </path><path d="M272.8,315.6 L272.8,329.4 L260.8,336.3 L248.9,329.4 L248.9,315.6 L260.8,308.7 Z" fill="#f9893a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 22.1 µg/m³</title>
+      </path><path d="M298.8,315.6 L298.8,329.4 L286.8,336.3 L274.9,329.4 L274.9,315.6 L286.8,308.7 Z" fill="#f8843a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 22.4 µg/m³</title>
+      </path><path d="M324.7,315.6 L324.7,329.4 L312.8,336.3 L300.8,329.4 L300.8,315.6 L312.8,308.7 Z" fill="#ef693b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 24.2 µg/m³</title>
+      </path><path d="M350.7,315.6 L350.7,329.4 L338.8,336.3 L326.8,329.4 L326.8,315.6 L338.8,308.7 Z" fill="#e9573b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 25.4 µg/m³</title>
+      </path><path d="M376.7,315.6 L376.7,329.4 L364.8,336.3 L352.8,329.4 L352.8,315.6 L364.8,308.7 Z" fill="#d6d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 12.3 µg/m³</title>
+      </path><path d="M402.7,315.6 L402.7,329.4 L390.7,336.3 L378.8,329.4 L378.8,315.6 L390.7,308.7 Z" fill="#e1d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 13.0 µg/m³</title>
+      </path><path d="M428.7,315.6 L428.7,329.4 L416.7,336.3 L404.8,329.4 L404.8,315.6 L416.7,308.7 Z" fill="#b3cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 10.4 µg/m³</title>
+      </path><path d="M129.9,338.1 L129.9,351.9 L117.9,358.8 L106.0,351.9 L106.0,338.1 L117.9,331.2 Z" fill="#c9ce45" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 11.6 µg/m³</title>
+      </path><path d="M155.9,338.1 L155.9,351.9 L143.9,358.8 L132.0,351.9 L132.0,338.1 L143.9,331.2 Z" fill="#ffab3e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 19.2 µg/m³</title>
+      </path><path d="M181.9,338.1 L181.9,351.9 L169.9,358.8 L158.0,351.9 L158.0,338.1 L169.9,331.2 Z" fill="#fd953a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 21.3 µg/m³</title>
+      </path><path d="M207.8,338.1 L207.8,351.9 L195.9,358.8 L183.9,351.9 L183.9,338.1 L195.9,331.2 Z" fill="#ffb641" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 18.0 µg/m³</title>
+      </path><path d="M233.8,338.1 L233.8,351.9 L221.9,358.8 L209.9,351.9 L209.9,338.1 L221.9,331.2 Z" fill="#b0cb42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 10.2 µg/m³</title>
+      </path><path d="M259.8,338.1 L259.8,351.9 L247.8,358.8 L235.9,351.9 L235.9,338.1 L247.8,331.2 Z" fill="#ffa23c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 20.1 µg/m³</title>
+      </path><path d="M285.8,338.1 L285.8,351.9 L273.8,358.8 L261.9,351.9 L261.9,338.1 L273.8,331.2 Z" fill="#ffba43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 17.5 µg/m³</title>
+      </path><path d="M311.8,338.1 L311.8,351.9 L299.8,358.8 L287.9,351.9 L287.9,338.1 L299.8,331.2 Z" fill="#fc933a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 21.4 µg/m³</title>
+      </path><path d="M337.7,338.1 L337.7,351.9 L325.8,358.8 L313.8,351.9 L313.8,338.1 L325.8,331.2 Z" fill="#bb2f3d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 29.3 µg/m³</title>
+      </path><path d="M363.7,338.1 L363.7,351.9 L351.8,358.8 L339.8,351.9 L339.8,338.1 L351.8,331.2 Z" fill="#f4793b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 23.1 µg/m³</title>
+      </path><path d="M389.7,338.1 L389.7,351.9 L377.7,358.8 L365.8,351.9 L365.8,338.1 L377.7,331.2 Z" fill="#d8393c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 27.7 µg/m³</title>
+      </path><path d="M415.7,338.1 L415.7,351.9 L403.7,358.8 L391.8,351.9 L391.8,338.1 L403.7,331.2 Z" fill="#f67e3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 22.8 µg/m³</title>
+      </path><path d="M441.7,338.1 L441.7,351.9 L429.7,358.8 L417.8,351.9 L417.8,338.1 L429.7,331.2 Z" fill="#a0c841" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 9.3 µg/m³</title>
+      </path><path d="M142.9,360.6 L142.9,374.4 L130.9,381.3 L119.0,374.4 L119.0,360.6 L130.9,353.7 Z" fill="#ff9f3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 20.4 µg/m³</title>
+      </path><path d="M168.9,360.6 L168.9,374.4 L156.9,381.3 L145.0,374.4 L145.0,360.6 L156.9,353.7 Z" fill="#e3d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 13.1 µg/m³</title>
+      </path><path d="M194.8,360.6 L194.8,374.4 L182.9,381.3 L170.9,374.4 L170.9,360.6 L182.9,353.7 Z" fill="#ffb742" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 17.9 µg/m³</title>
+      </path><path d="M220.8,360.6 L220.8,374.4 L208.9,381.3 L196.9,374.4 L196.9,360.6 L208.9,353.7 Z" fill="#a5c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 9.6 µg/m³</title>
+      </path><path d="M246.8,360.6 L246.8,374.4 L234.9,381.3 L222.9,374.4 L222.9,360.6 L234.9,353.7 Z" fill="#ffcf48" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 15.3 µg/m³</title>
+      </path><path d="M272.8,360.6 L272.8,374.4 L260.8,381.3 L248.9,374.4 L248.9,360.6 L260.8,353.7 Z" fill="#b6cb43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 10.6 µg/m³</title>
+      </path><path d="M298.8,360.6 L298.8,374.4 L286.8,381.3 L274.9,374.4 L274.9,360.6 L286.8,353.7 Z" fill="#ffc345" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 16.5 µg/m³</title>
+      </path><path d="M324.7,360.6 L324.7,374.4 L312.8,381.3 L300.8,374.4 L300.8,360.6 L312.8,353.7 Z" fill="#ae2a3e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 30.1 µg/m³</title>
+      </path><path d="M350.7,360.6 L350.7,374.4 L338.8,381.3 L326.8,374.4 L326.8,360.6 L338.8,353.7 Z" fill="#b62d3d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 29.6 µg/m³</title>
+      </path><path d="M376.7,360.6 L376.7,374.4 L364.8,381.3 L352.8,374.4 L352.8,360.6 L364.8,353.7 Z" fill="#f3753b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 23.4 µg/m³</title>
+      </path><path d="M402.7,360.6 L402.7,374.4 L390.7,381.3 L378.8,374.4 L378.8,360.6 L390.7,353.7 Z" fill="#f4793b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 23.2 µg/m³</title>
+      </path><path d="M428.7,360.6 L428.7,374.4 L416.7,381.3 L404.8,374.4 L404.8,360.6 L416.7,353.7 Z" fill="#ffcf48" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 15.3 µg/m³</title>
+      </path><path d="M155.9,383.1 L155.9,396.9 L143.9,403.8 L132.0,396.9 L132.0,383.1 L143.9,376.2 Z" fill="#ffa13c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 20.2 µg/m³</title>
+      </path><path d="M181.9,383.1 L181.9,396.9 L169.9,403.8 L158.0,396.9 L158.0,383.1 L169.9,376.2 Z" fill="#d9d046" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 12.5 µg/m³</title>
+      </path><path d="M207.8,383.1 L207.8,396.9 L195.9,403.8 L183.9,396.9 L183.9,383.1 L195.9,376.2 Z" fill="#fed54a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 14.6 µg/m³</title>
+      </path><path d="M233.8,383.1 L233.8,396.9 L221.9,403.8 L209.9,396.9 L209.9,383.1 L221.9,376.2 Z" fill="#c6cd44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 11.4 µg/m³</title>
+      </path><path d="M259.8,383.1 L259.8,396.9 L247.8,403.8 L235.9,396.9 L235.9,383.1 L247.8,376.2 Z" fill="#fad449" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 14.3 µg/m³</title>
+      </path><path d="M285.8,383.1 L285.8,396.9 L273.8,403.8 L261.9,396.9 L261.9,383.1 L273.8,376.2 Z" fill="#9fc841" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 9.3 µg/m³</title>
+      </path><path d="M311.8,383.1 L311.8,396.9 L299.8,403.8 L287.9,396.9 L287.9,383.1 L299.8,376.2 Z" fill="#f9883a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 22.2 µg/m³</title>
+      </path><path d="M337.7,383.1 L337.7,396.9 L325.8,403.8 L313.8,396.9 L313.8,383.1 L325.8,376.2 Z" fill="#f98a3a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 22.0 µg/m³</title>
+      </path><path d="M363.7,383.1 L363.7,396.9 L351.8,403.8 L339.8,396.9 L339.8,383.1 L351.8,376.2 Z" fill="#642879" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 36.1 µg/m³</title>
+      </path><path d="M389.7,383.1 L389.7,396.9 L377.7,403.8 L365.8,396.9 L365.8,383.1 L377.7,376.2 Z" fill="#a5273e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 30.6 µg/m³</title>
+      </path><path d="M415.7,383.1 L415.7,396.9 L403.7,403.8 L391.8,396.9 L391.8,383.1 L403.7,376.2 Z" fill="#ffaa3e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 19.2 µg/m³</title>
+      </path><path d="M441.7,383.1 L441.7,396.9 L429.7,403.8 L417.8,396.9 L417.8,383.1 L429.7,376.2 Z" fill="#ffaf3f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 18.8 µg/m³</title>
+      </path><path d="M168.9,405.6 L168.9,419.4 L156.9,426.3 L145.0,419.4 L145.0,405.6 L156.9,398.7 Z" fill="#d4cf46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 12.2 µg/m³</title>
+      </path><path d="M194.8,405.6 L194.8,419.4 L182.9,426.3 L170.9,419.4 L170.9,405.6 L182.9,398.7 Z" fill="#ffcb47" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 15.7 µg/m³</title>
+      </path><path d="M220.8,405.6 L220.8,419.4 L208.9,426.3 L196.9,419.4 L196.9,405.6 L208.9,398.7 Z" fill="#d2cf46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 12.1 µg/m³</title>
+      </path><path d="M246.8,405.6 L246.8,419.4 L234.9,426.3 L222.9,419.4 L222.9,405.6 L234.9,398.7 Z" fill="#ffa03b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 20.4 µg/m³</title>
+      </path><path d="M272.8,405.6 L272.8,419.4 L260.8,426.3 L248.9,419.4 L248.9,405.6 L260.8,398.7 Z" fill="#c5cd44" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 11.4 µg/m³</title>
+      </path><path d="M298.8,405.6 L298.8,419.4 L286.8,426.3 L274.9,419.4 L274.9,405.6 L286.8,398.7 Z" fill="#e0d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 12.9 µg/m³</title>
+      </path><path d="M324.7,405.6 L324.7,419.4 L312.8,426.3 L300.8,419.4 L300.8,405.6 L312.8,398.7 Z" fill="#fc933a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 21.4 µg/m³</title>
+      </path><path d="M350.7,405.6 L350.7,419.4 L338.8,426.3 L326.8,419.4 L326.8,405.6 L338.8,398.7 Z" fill="#c3323d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 28.9 µg/m³</title>
+      </path><path d="M376.7,405.6 L376.7,419.4 L364.8,426.3 L352.8,419.4 L352.8,405.6 L364.8,398.7 Z" fill="#861f46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 32.6 µg/m³</title>
+      </path><path d="M402.7,405.6 L402.7,419.4 L390.7,426.3 L378.8,419.4 L378.8,405.6 L390.7,398.7 Z" fill="#e3453c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 26.6 µg/m³</title>
+      </path><path d="M428.7,405.6 L428.7,419.4 L416.7,426.3 L404.8,419.4 L404.8,405.6 L416.7,398.7 Z" fill="#f8d449" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 14.2 µg/m³</title>
+      </path><path d="M454.7,405.6 L454.7,419.4 L442.7,426.3 L430.8,419.4 L430.8,405.6 L442.7,398.7 Z" fill="#ffa63d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 19.7 µg/m³</title>
+      </path><path d="M181.9,428.1 L181.9,441.9 L169.9,448.8 L158.0,441.9 L158.0,428.1 L169.9,421.2 Z" fill="#f67f3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 22.8 µg/m³</title>
+      </path><path d="M207.8,428.1 L207.8,441.9 L195.9,448.8 L183.9,441.9 L183.9,428.1 L195.9,421.2 Z" fill="#a9ca42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 9.8 µg/m³</title>
+      </path><path d="M233.8,428.1 L233.8,441.9 L221.9,448.8 L209.9,441.9 L209.9,428.1 L221.9,421.2 Z" fill="#ffa53d" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 19.8 µg/m³</title>
+      </path><path d="M259.8,428.1 L259.8,441.9 L247.8,448.8 L235.9,441.9 L235.9,428.1 L247.8,421.2 Z" fill="#fd963a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 21.2 µg/m³</title>
+      </path><path d="M285.8,428.1 L285.8,441.9 L273.8,448.8 L261.9,441.9 L261.9,428.1 L273.8,421.2 Z" fill="#f6d449" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 14.1 µg/m³</title>
+      </path><path d="M311.8,428.1 L311.8,441.9 L299.8,448.8 L287.9,441.9 L287.9,428.1 L299.8,421.2 Z" fill="#ffad3f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 18.9 µg/m³</title>
+      </path><path d="M337.7,428.1 L337.7,441.9 L325.8,448.8 L313.8,441.9 L313.8,428.1 L325.8,421.2 Z" fill="#ff9e3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 20.6 µg/m³</title>
+      </path><path d="M363.7,428.1 L363.7,441.9 L351.8,448.8 L339.8,441.9 L339.8,428.1 L351.8,421.2 Z" fill="#ffbd43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 17.2 µg/m³</title>
+      </path><path d="M389.7,428.1 L389.7,441.9 L377.7,448.8 L365.8,441.9 L365.8,428.1 L377.7,421.2 Z" fill="#e8533c" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 25.6 µg/m³</title>
+      </path><path d="M415.7,428.1 L415.7,441.9 L403.7,448.8 L391.8,441.9 L391.8,428.1 L403.7,421.2 Z" fill="#ffc746" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 16.2 µg/m³</title>
+      </path><path d="M441.7,428.1 L441.7,441.9 L429.7,448.8 L417.8,441.9 L417.8,428.1 L429.7,421.2 Z" fill="#ffc545" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 16.4 µg/m³</title>
+      </path><path d="M467.6,428.1 L467.6,441.9 L455.7,448.8 L443.7,441.9 L443.7,428.1 L455.7,421.2 Z" fill="#a1c941" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 9.4 µg/m³</title>
+      </path><path d="M194.8,450.6 L194.8,464.4 L182.9,471.3 L170.9,464.4 L170.9,450.6 L182.9,443.7 Z" fill="#ffd44a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 14.7 µg/m³</title>
+      </path><path d="M220.8,450.6 L220.8,464.4 L208.9,471.3 L196.9,464.4 L196.9,450.6 L208.9,443.7 Z" fill="#d5cf46" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 12.3 µg/m³</title>
+      </path><path d="M246.8,450.6 L246.8,464.4 L234.9,471.3 L222.9,464.4 L222.9,450.6 L234.9,443.7 Z" fill="#ccce45" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 11.8 µg/m³</title>
+      </path><path d="M272.8,450.6 L272.8,464.4 L260.8,471.3 L248.9,464.4 L248.9,450.6 L260.8,443.7 Z" fill="#f7823b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 22.5 µg/m³</title>
+      </path><path d="M298.8,450.6 L298.8,464.4 L286.8,471.3 L274.9,464.4 L274.9,450.6 L286.8,443.7 Z" fill="#ffd349" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 14.8 µg/m³</title>
+      </path><path d="M324.7,450.6 L324.7,464.4 L312.8,471.3 L300.8,464.4 L300.8,450.6 L312.8,443.7 Z" fill="#e2d147" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 13.0 µg/m³</title>
+      </path><path d="M350.7,450.6 L350.7,464.4 L338.8,471.3 L326.8,464.4 L326.8,450.6 L338.8,443.7 Z" fill="#9dc841" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 9.2 µg/m³</title>
+      </path><path d="M376.7,450.6 L376.7,464.4 L364.8,471.3 L352.8,464.4 L352.8,450.6 L364.8,443.7 Z" fill="#ffaa3e" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 19.2 µg/m³</title>
+      </path><path d="M402.7,450.6 L402.7,464.4 L390.7,471.3 L378.8,464.4 L378.8,450.6 L390.7,443.7 Z" fill="#f1d349" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 13.8 µg/m³</title>
+      </path><path d="M207.8,473.1 L207.8,486.9 L195.9,493.8 L183.9,486.9 L183.9,473.1 L195.9,466.2 Z" fill="#fe993a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 21.0 µg/m³</title>
+      </path><path d="M233.8,473.1 L233.8,486.9 L221.9,493.8 L209.9,486.9 L209.9,473.1 L221.9,466.2 Z" fill="#ffad3f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 18.9 µg/m³</title>
+      </path><path d="M259.8,473.1 L259.8,486.9 L247.8,493.8 L235.9,486.9 L235.9,473.1 L247.8,466.2 Z" fill="#ffad3f" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 18.9 µg/m³</title>
+      </path><path d="M285.8,473.1 L285.8,486.9 L273.8,493.8 L261.9,486.9 L261.9,473.1 L273.8,466.2 Z" fill="#ffd349" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 14.8 µg/m³</title>
+      </path><path d="M311.8,473.1 L311.8,486.9 L299.8,493.8 L287.9,486.9 L287.9,473.1 L299.8,466.2 Z" fill="#ffb742" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 17.8 µg/m³</title>
+      </path><path d="M337.7,473.1 L337.7,486.9 L325.8,493.8 L313.8,486.9 L313.8,473.1 L325.8,466.2 Z" fill="#fc933a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 21.4 µg/m³</title>
+      </path><path d="M363.7,473.1 L363.7,486.9 L351.8,493.8 L339.8,486.9 L339.8,473.1 L351.8,466.2 Z" fill="#b1cb42" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 10.3 µg/m³</title>
+      </path><path d="M389.7,473.1 L389.7,486.9 L377.7,493.8 L365.8,486.9 L365.8,473.1 L377.7,466.2 Z" fill="#f8863a" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 22.3 µg/m³</title>
+      </path><path d="M246.8,495.6 L246.8,509.4 L234.9,516.3 L222.9,509.4 L222.9,495.6 L234.9,488.7 Z" fill="#ffd149" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Cardiff Central · PM2.5 15.1 µg/m³</title>
+      </path><path d="M272.8,495.6 L272.8,509.4 L260.8,516.3 L248.9,509.4 L248.9,495.6 L260.8,488.7 Z" fill="#f8d449" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Leeds East · PM2.5 14.2 µg/m³</title>
+      </path><path d="M298.8,495.6 L298.8,509.4 L286.8,516.3 L274.9,509.4 L274.9,495.6 L286.8,488.7 Z" fill="#ffc044" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Islington South · PM2.5 16.9 µg/m³</title>
+      </path><path d="M324.7,495.6 L324.7,509.4 L312.8,516.3 L300.8,509.4 L300.8,495.6 L312.8,488.7 Z" fill="#ffca47" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Birmingham Ladywood · PM2.5 15.8 µg/m³</title>
+      </path><path d="M350.7,495.6 L350.7,509.4 L338.8,516.3 L326.8,509.4 L326.8,495.6 L338.8,488.7 Z" fill="#b8cc43" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Manchester Withington · PM2.5 10.7 µg/m³</title>
+      </path><path d="M376.7,495.6 L376.7,509.4 L364.8,516.3 L352.8,509.4 L352.8,495.6 L364.8,488.7 Z" fill="#ff9e3b" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" opacity="0.95">
+        <title>Bristol West · PM2.5 20.5 µg/m³</title>
+      </path></g>
+                  <!-- Selected hex callout -->
+                  <g id="callout" style="display: block;" transform="translate(161.92304845413264,213)">
+                    <rect x="0" y="0" width="180" height="70" rx="8" fill="#101822" opacity="0.95"></rect>
+                    <text x="12" y="22" font-family="Inter" font-weight="600" font-size="13" fill="#fff">Bristol West</text>
+                    <text x="12" y="42" font-family="JetBrains Mono" font-size="12" fill="#ffd54a">PM2.5 · 14.8 µg/m³</text>
+                    <text x="12" y="58" font-family="Inter" font-size="11" fill="#9aa7b3">12 sensors · 4 networks</text>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- Legend -->
+              <div class="legend" aria-label="PM2.5 legend">
+                <span class="muted">PM2.5 (µg/m³)</span>
+                <span class="legend-val">0</span>
+                <div class="legend-scale">
+                  <div class="legend-bar"></div>
+                </div>
+                <span class="legend-val">50+</span>
+                <span class="muted">continuous · power scale 0.8</span>
+              </div>
+            </div>
+
+            <!-- ASIDE -->
+            <aside class="map-aside">
+              <div>
+                <div class="nav-section-label" style="padding-left:0">Networks</div>
+                <div class="network-list">
+                  <label class="network-row"><input type="checkbox" checked=""><span class="swatch" style="background:#3C78AC"></span>DEFRA AURN<span class="count">213</span></label>
+                  <label class="network-row"><input type="checkbox" checked=""><span class="swatch" style="background:#00a85a"></span>Breathe London<span class="count">412</span></label>
+                  <label class="network-row"><input type="checkbox" checked=""><span class="swatch" style="background:#f4b942"></span>OpenAQ community<span class="count">389</span></label>
+                  <label class="network-row"><input type="checkbox" checked=""><span class="swatch" style="background:#e03c3c"></span>Scottish Comm.<span class="count">142</span></label>
+                  <label class="network-row"><input type="checkbox"><span class="swatch" style="background:#8b1e3f"></span>Sensor.Community<span class="count">128</span></label>
+                </div>
+              </div>
+
+              <div>
+                <div class="nav-section-label" style="padding-left:0">Selected</div>
+                <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2);">
+                  <div style="font-weight:600;color:var(--ink-1)">Bristol West</div>
+                  <div class="muted small" style="margin-top:2px">12 sensors · 4 networks reporting</div>
+
+                  <!-- Mini reading grid -->
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;">
+                    <div>
+                      <div class="muted small">PM2.5</div>
+                      <div class="num" style="font-size:18px;font-weight:600">14.8</div>
+                      <div class="small"><span class="status-dot heat-2"></span> Moderate</div>
+                    </div>
+                    <div>
+                      <div class="muted small">PM10</div>
+                      <div class="num" style="font-size:18px;font-weight:600">22.1</div>
+                      <div class="small"><span class="status-dot heat-1"></span> Low</div>
+                    </div>
+                    <div>
+                      <div class="muted small">NO₂</div>
+                      <div class="num" style="font-size:18px;font-weight:600">38</div>
+                      <div class="small"><span class="status-dot heat-2"></span> Moderate</div>
+                    </div>
+                  </div>
+
+                  <div style="margin-top:10px;font-size:11.5px;color:var(--ink-3)">
+                    Last reading 14:02 BST · WHO 2021 limit 15 µg/m³
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TREND CARD (NEW) -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Station trend — Bristol West</h2>
+          <span class="sub">Hourly PM2.5 observations · DAQI banding overlay</span>
+          <div style="flex:1"></div>
+          <div class="field">
+            <label>Metric</label>
+            <select>
+              <option>PM2.5 observations</option>
+              <option>DAQI</option>
+              <option>EAQI</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Window</label>
+            <select>
+              <option>24 hours</option>
+              <option selected="">7 days</option>
+              <option>31 days</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <svg id="trend-chart" viewBox="0 0 1200 280" preserveAspectRatio="none" style="width:100%;height:260px;display:block"><rect x="40" y="122.19999999999999" width="1144" height="129.8" fill="#00a85a" opacity="0.08"></rect><rect x="40" y="16" width="1144" height="106.19999999999999" fill="#8dc63f" opacity="0.07"></rect><line x1="40" y1="75" x2="1184" y2="75" stroke="#8b1e3f" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.7"></line><text x="1180" y="71" text-anchor="end" font-family="Inter" font-size="11" fill="#8b1e3f" font-weight="600">WHO 15 µg/m³</text><line x1="40" y1="252" x2="1184" y2="252" stroke="#e4e6ea" stroke-width="0.8"></line><text x="34" y="255" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">0</text><line x1="40" y1="193" x2="1184" y2="193" stroke="#e4e6ea" stroke-width="0.8"></line><text x="34" y="196" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">5</text><line x1="40" y1="134" x2="1184" y2="134" stroke="#e4e6ea" stroke-width="0.8"></line><text x="34" y="137" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">10</text><line x1="40" y1="75" x2="1184" y2="75" stroke="#e4e6ea" stroke-width="0.8"></line><text x="34" y="78" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">15</text><line x1="40" y1="16" x2="1184" y2="16" stroke="#e4e6ea" stroke-width="0.8"></line><text x="34" y="19" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">20</text><text x="40" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Mon</text><text x="204.40718562874252" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Tue</text><text x="368.81437125748505" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Wed</text><text x="533.2215568862275" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Thu</text><text x="697.6287425149701" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Fri</text><text x="862.0359281437126" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Sat</text><text x="1026.443113772455" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Sun</text><text x="1190.8502994011976" y="268" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">Mon</text><path d="M40.0,216.4 L46.9,199.7 L53.7,189.7 L60.6,201.7 L67.4,184.7 L74.3,168.4 L81.1,153.5 L88.0,160.5 L94.8,147.2 L101.7,146.6 L108.5,127.4 L115.4,139.5 L122.2,139.3 L129.1,136.1 L135.9,150.6 L142.8,161.9 L149.6,161.9 L156.5,174.3 L163.3,173.6 L170.2,190.2 L177.0,208.1 L183.9,194.9 L190.7,211.7 L197.6,202.3 L204.4,185.7 L211.3,192.9 L218.1,183.9 L225.0,166.5 L231.8,164.6 L238.7,154.2 L245.5,141.5 L252.4,128.4 L259.2,119.8 L266.1,122.9 L272.9,120.2 L279.8,107.3 L286.6,110.0 L293.5,130.1 L300.3,132.3 L307.2,152.6 L314.0,152.8 L320.9,176.4 L327.7,187.3 L334.6,185.1 L341.4,193.6 L348.3,199.2 L355.1,210.1 L362.0,189.6 L368.8,190.3 L375.7,198.8 L382.5,171.4 L389.4,170.7 L396.2,173.4 L403.1,148.1 L409.9,133.4 L416.8,135.2 L423.6,138.0 L430.5,131.5 L437.3,133.9 L444.2,125.4 L451.0,124.8 L457.9,136.7 L464.7,150.2 L471.6,152.4 L478.4,150.8 L485.3,183.6 L492.1,189.6 L499.0,185.1 L505.8,213.3 L512.7,213.7 L519.5,221.3 L526.4,218.4 L533.2,197.9 L540.1,209.1 L546.9,193.9 L553.8,186.9 L560.6,166.5 L567.5,168.7 L574.3,161.5 L581.2,160.6 L588.0,156.3 L594.9,140.2 L601.7,151.7 L608.6,148.0 L615.4,148.6 L622.3,160.2 L629.1,156.7 L636.0,164.1 L642.8,190.4 L649.7,191.0 L656.5,192.6 L663.4,201.2 L670.2,163.3 L677.1,218.8 L683.9,225.2 L690.8,218.1 L697.6,230.0 L704.5,213.1 L711.3,205.1 L718.2,213.5 L725.0,193.1 L731.9,186.2 L738.7,189.1 L745.6,170.0 L752.4,166.9 L759.3,154.8 L766.1,156.4 L773.0,157.3 L779.8,176.0 L786.7,174.0 L793.5,177.6 L800.4,199.5 L807.2,194.7 L814.1,211.5 L820.9,231.7 L827.8,228.2 L834.6,232.7 L841.5,246.1 L848.3,245.4 L855.2,238.5 L862.0,229.9 L868.9,237.7 L875.7,231.8 L882.6,213.3 L889.4,212.2 L896.3,206.6 L903.1,198.2 L910.0,182.0 L916.8,172.2 L923.7,153.9 L930.5,158.0 L937.4,157.0 L944.2,180.7 L951.1,178.3 L957.9,178.2 L964.8,194.8 L971.6,213.3 L978.5,221.9 L985.3,225.1 L992.2,225.7 L999.0,156.4 L1005.9,246.1 L1012.7,233.9 L1019.6,234.3 L1026.4,235.9 L1033.3,224.7 L1040.1,228.0 L1047.0,202.5 L1053.8,209.5 L1060.7,181.1 L1067.5,183.0 L1074.4,170.2 L1081.2,158.2 L1088.1,143.1 L1094.9,157.3 L1101.8,144.2 L1108.6,162.4 L1115.5,170.0 L1122.3,176.2 L1129.2,173.9 L1136.0,176.8 L1142.9,203.8 L1149.7,200.8 L1156.6,209.7 L1163.4,225.7 L1170.3,210.0 L1177.1,228.6 L1184.0,218.5 L 1184.0,252 L 40.0,252 Z" fill="#3C78AC" opacity="0.10"></path><path d="M40.0,216.4 L46.9,199.7 L53.7,189.7 L60.6,201.7 L67.4,184.7 L74.3,168.4 L81.1,153.5 L88.0,160.5 L94.8,147.2 L101.7,146.6 L108.5,127.4 L115.4,139.5 L122.2,139.3 L129.1,136.1 L135.9,150.6 L142.8,161.9 L149.6,161.9 L156.5,174.3 L163.3,173.6 L170.2,190.2 L177.0,208.1 L183.9,194.9 L190.7,211.7 L197.6,202.3 L204.4,185.7 L211.3,192.9 L218.1,183.9 L225.0,166.5 L231.8,164.6 L238.7,154.2 L245.5,141.5 L252.4,128.4 L259.2,119.8 L266.1,122.9 L272.9,120.2 L279.8,107.3 L286.6,110.0 L293.5,130.1 L300.3,132.3 L307.2,152.6 L314.0,152.8 L320.9,176.4 L327.7,187.3 L334.6,185.1 L341.4,193.6 L348.3,199.2 L355.1,210.1 L362.0,189.6 L368.8,190.3 L375.7,198.8 L382.5,171.4 L389.4,170.7 L396.2,173.4 L403.1,148.1 L409.9,133.4 L416.8,135.2 L423.6,138.0 L430.5,131.5 L437.3,133.9 L444.2,125.4 L451.0,124.8 L457.9,136.7 L464.7,150.2 L471.6,152.4 L478.4,150.8 L485.3,183.6 L492.1,189.6 L499.0,185.1 L505.8,213.3 L512.7,213.7 L519.5,221.3 L526.4,218.4 L533.2,197.9 L540.1,209.1 L546.9,193.9 L553.8,186.9 L560.6,166.5 L567.5,168.7 L574.3,161.5 L581.2,160.6 L588.0,156.3 L594.9,140.2 L601.7,151.7 L608.6,148.0 L615.4,148.6 L622.3,160.2 L629.1,156.7 L636.0,164.1 L642.8,190.4 L649.7,191.0 L656.5,192.6 L663.4,201.2 L670.2,163.3 L677.1,218.8 L683.9,225.2 L690.8,218.1 L697.6,230.0 L704.5,213.1 L711.3,205.1 L718.2,213.5 L725.0,193.1 L731.9,186.2 L738.7,189.1 L745.6,170.0 L752.4,166.9 L759.3,154.8 L766.1,156.4 L773.0,157.3 L779.8,176.0 L786.7,174.0 L793.5,177.6 L800.4,199.5 L807.2,194.7 L814.1,211.5 L820.9,231.7 L827.8,228.2 L834.6,232.7 L841.5,246.1 L848.3,245.4 L855.2,238.5 L862.0,229.9 L868.9,237.7 L875.7,231.8 L882.6,213.3 L889.4,212.2 L896.3,206.6 L903.1,198.2 L910.0,182.0 L916.8,172.2 L923.7,153.9 L930.5,158.0 L937.4,157.0 L944.2,180.7 L951.1,178.3 L957.9,178.2 L964.8,194.8 L971.6,213.3 L978.5,221.9 L985.3,225.1 L992.2,225.7 L999.0,156.4 L1005.9,246.1 L1012.7,233.9 L1019.6,234.3 L1026.4,235.9 L1033.3,224.7 L1040.1,228.0 L1047.0,202.5 L1053.8,209.5 L1060.7,181.1 L1067.5,183.0 L1074.4,170.2 L1081.2,158.2 L1088.1,143.1 L1094.9,157.3 L1101.8,144.2 L1108.6,162.4 L1115.5,170.0 L1122.3,176.2 L1129.2,173.9 L1136.0,176.8 L1142.9,203.8 L1149.7,200.8 L1156.6,209.7 L1163.4,225.7 L1170.3,210.0 L1177.1,228.6 L1184.0,218.5 " fill="none" stroke="#285A84" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="1184" cy="218.5264846106582" r="4" fill="#285A84" stroke="#fff" stroke-width="2"></circle></svg>
+          <div class="hstack" style="justify-content:space-between;margin-top:10px">
+            <div class="hstack small muted" style="gap:14px;flex-wrap:wrap">
+              <span><span class="status-dot heat-0"></span> DAQI 1–3 Low</span>
+              <span><span class="status-dot heat-2"></span> DAQI 4–6 Moderate</span>
+              <span><span class="status-dot heat-4"></span> DAQI 7–9 High</span>
+              <span><span class="status-dot heat-6"></span> DAQI 10 Very high</span>
+            </div>
+            <div class="small muted">WHO 24-hr guideline 15 µg/m³ · UK AQS annual 10 µg/m³</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SENSOR DETAILS -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Constituency sensors</h2>
+          <span class="sub">12 sensors in Bristol West</span>
+          <div style="flex:1"></div>
+          <div class="field">
+            <label>Sort</label>
+            <select>
+              <option>Highest reading</option>
+              <option>Most recent</option>
+              <option>Station name</option>
+            </select>
+          </div>
+          <button class="btn">Open station chart ↗</button>
+        </div>
+        <div class="card-body">
+          <div class="sensor-grid" id="sensor-grid">
+    <article class="sensor-card">
+      <div>
+        <div class="name">St Paul's AURN</div>
+        <div class="meta"><span>DEFRA AURN</span><span>·</span><span>14:02 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-2"></span><span class="k">PM2.5</span><span class="v">14.8</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-2"></span><span class="k">NO₂</span><span class="v">41</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-1"></span><span class="k">O₃</span><span class="v">52</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Bristol Centre</div>
+        <div class="meta"><span>Breathe London</span><span>·</span><span>14:00 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-2"></span><span class="k">PM2.5</span><span class="v">16.2</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-1"></span><span class="k">PM10</span><span class="v">22.1</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Temple Meads</div>
+        <div class="meta"><span>Breathe London</span><span>·</span><span>13:58 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-3"></span><span class="k">PM2.5</span><span class="v">18.9</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-3"></span><span class="k">NO₂</span><span class="v">54</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Cabot Circus</div>
+        <div class="meta"><span>OpenAQ</span><span>·</span><span>14:01 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-2"></span><span class="k">PM2.5</span><span class="v">13.1</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-1"></span><span class="k">PM10</span><span class="v">19.8</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Clifton Down</div>
+        <div class="meta"><span>OpenAQ</span><span>·</span><span>14:02 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-1"></span><span class="k">PM2.5</span><span class="v">9.4</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-1"></span><span class="k">NO₂</span><span class="v">28</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Bedminster</div>
+        <div class="meta"><span>Sensor.Community</span><span>·</span><span>13:55 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-2"></span><span class="k">PM2.5</span><span class="v">12.7</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-1"></span><span class="k">PM10</span><span class="v">21.4</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Whitehall Road</div>
+        <div class="meta"><span>DEFRA AURN</span><span>·</span><span>13:59 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-3"></span><span class="k">PM2.5</span><span class="v">17.6</span><span class="u">µg/m³</span></span><span class="reading-chip"><span class="status-dot heat-3"></span><span class="k">NO₂</span><span class="v">48</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  
+    <article class="sensor-card">
+      <div>
+        <div class="name">Ashton Gate</div>
+        <div class="meta"><span>Breathe London</span><span>·</span><span>14:01 BST</span></div>
+      </div>
+      <div class="readings">
+        <span class="reading-chip"><span class="status-dot heat-2"></span><span class="k">PM2.5</span><span class="v">11.9</span><span class="u">µg/m³</span></span>
+      </div>
+    </article>
+  </div>
+        </div>
+      </section>
+
+      <div class="mockup-note">
+        mockup · hex grid and readings are illustrative · swap to a different accent via <code>?accent=ink</code> or <code>?accent=teal</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Accent switcher ------------------------------------------------
+  const params = new URLSearchParams(location.search);
+  const accent = params.get('accent') || 'teal';
+  const palettes = {
+    teal: { accent: '#3C78AC', deep: '#285A84', tone: 'Teal blue · brand accent' },
+    ink:  { accent: '#2B4A6F', deep: '#1F3A5F', tone: 'Ink blue · muted alternate' },
+  };
+  const p = palettes[accent] || palettes.teal;
+  document.getElementById('accent-style').textContent =
+    `:root{--accent:${p.accent};--accent-deep:${p.deep};}`;
+  document.title = `UK-AQ Hex Map — ${p.tone}`;
+
+  // ---- Hex grid (illustrative) ---------------------------------------
+  const hexGroup = document.getElementById('hexes');
+  const cols = 18, rows = 22;
+  const size = 15;
+  const dx = size * Math.sqrt(3);
+  const dy = size * 1.5;
+  const offsetX = 40, offsetY = 30;
+
+  // Heat ramp sample points
+  const heatStops = [
+    [0.00, '#00a85a'], [0.18, '#8dc63f'], [0.36, '#ffd54a'],
+    [0.54, '#ff9b3a'], [0.72, '#e03c3c'], [0.86, '#8b1e3f'], [1.00, '#5b2a86']
+  ];
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function hexToRgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+  function rgbToHex(r){return '#'+r.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');}
+  function rampColor(t){
+    t = Math.max(0, Math.min(1, t));
+    for (let i=0;i<heatStops.length-1;i++){
+      const [ta,ca]=heatStops[i],[tb,cb]=heatStops[i+1];
+      if (t>=ta && t<=tb){
+        const k=(t-ta)/(tb-ta);
+        const a=hexToRgb(ca),b=hexToRgb(cb);
+        return rgbToHex([lerp(a[0],b[0],k),lerp(a[1],b[1],k),lerp(a[2],b[2],k)]);
+      }
+    }
+    return heatStops[heatStops.length-1][1];
+  }
+
+  // UK-ish silhouette mask (rough)
+  function inUK(cx, cy){
+    // Scotland north blob
+    if (cy < 180){
+      return cx > 170 && cx < 340 && (Math.abs(cx-250) + (180-cy)*0.6) < 150;
+    }
+    // mainland
+    if (cy < 440){
+      const mid = 290 + Math.sin(cy/60)*30;
+      const width = 160 - Math.abs(cy-320)*0.1;
+      return cx > mid - width && cx < mid + width;
+    }
+    // south coast tapering
+    if (cy < 520){
+      const mid = 300 + Math.sin(cy/40)*10;
+      const width = 130 - (cy-440)*0.7;
+      return cx > mid - width && cx < mid + width;
+    }
+    // NI
+    return cx > 110 && cx < 210 && cy > 300 && cy < 380;
+  }
+
+  function hexPath(cx, cy, s){
+    let d = '';
+    for (let i=0;i<6;i++){
+      const a = Math.PI/180 * (60*i - 30);
+      const x = cx + s*Math.cos(a), y = cy + s*Math.sin(a);
+      d += (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    return d + 'Z';
+  }
+
+  // Deterministic pseudo-random per tile
+  function rnd(i){
+    const x = Math.sin(i*9301.7 + 49297.3) * 233280;
+    return x - Math.floor(x);
+  }
+
+  let idx = 0;
+  let pathsSvg = '';
+  const selectedIdx = 184;
+  for (let r=0;r<rows;r++){
+    for (let c=0;c<cols;c++){
+      const cx = offsetX + c*dx + (r%2 ? dx/2 : 0);
+      const cy = offsetY + r*dy;
+      if (!inUK(cx, cy)) { idx++; continue; }
+      // Create regional hot spots
+      let base = 0.2 + rnd(idx)*0.4;
+      // London hotspot
+      const dL = Math.hypot(cx-360, cy-390); if (dL<70) base += (1-dL/70)*0.45;
+      // Birmingham hotspot
+      const dB = Math.hypot(cx-310, cy-330); if (dB<55) base += (1-dB/55)*0.30;
+      // Manchester
+      const dM = Math.hypot(cx-285, cy-265); if (dM<50) base += (1-dM/50)*0.20;
+      // Scotland clean
+      if (cy < 220) base *= 0.55;
+      const t = Math.max(0, Math.min(1, base));
+      const color = rampColor(t);
+      const sel = (idx === selectedIdx);
+      pathsSvg += `<path d="${hexPath(cx, cy, size-1.2)}" fill="${color}" stroke="${sel?'#101822':'rgba(255,255,255,0.75)'}" stroke-width="${sel?2:0.8}" opacity="0.95">
+        <title>${['Bristol West','Cardiff Central','Leeds East','Islington South','Birmingham Ladywood','Manchester Withington'][idx%6]} · PM2.5 ${(t*35+2).toFixed(1)} µg/m³</title>
+      </path>`;
+      if (sel){
+        // move callout near selected
+        const cg = document.getElementById('callout');
+        cg.setAttribute('transform', `translate(${cx+18},${cy-42})`);
+        cg.style.display = 'block';
+      }
+      idx++;
+    }
+  }
+  hexGroup.innerHTML = pathsSvg;
+
+  // ---- Trend chart (illustrative, 7 days hourly) ---------------------
+  (function trend(){
+    const svg = document.getElementById('trend-chart');
+    const W = 1200, H = 280;
+    const pad = {t:16, r:16, b:28, l:40};
+    const n = 7*24;
+    const data = [];
+    for (let i=0;i<n;i++){
+      const diurnal = 6 + Math.sin((i%24)/24*Math.PI*2 - 1.1)*3.4;
+      const weekly = Math.sin(i/n*Math.PI*2)*2;
+      const noise = (rnd(i+500)-0.5)*2.2;
+      const spike = (i===92||i===140)? 6: 0;
+      data.push(Math.max(0.5, diurnal + weekly + noise + spike));
+    }
+    const yMax = 20;
+    const x = i => pad.l + i*(W-pad.l-pad.r)/(n-1);
+    const y = v => H-pad.b - (v/yMax)*(H-pad.t-pad.b);
+
+    // DAQI band backgrounds (PM2.5 bands: 0-11,12-23,24-35,36-41,42-47,48-53,54-58,59-64,65-70,71+)
+    const bands = [
+      {lo:0, hi:11, c:'#00a85a', op:0.08},
+      {lo:11, hi:23, c:'#8dc63f', op:0.07},
+      {lo:23, hi:35, c:'#ffd54a', op:0.09},
+      {lo:35, hi:50, c:'#ff9b3a', op:0.10},
+      {lo:50, hi:71, c:'#e03c3c', op:0.10},
+    ];
+    let bandSvg = '';
+    bands.forEach(b=>{
+      const y0 = y(Math.min(b.hi, yMax));
+      const y1 = y(Math.min(b.lo, yMax));
+      if (b.lo>yMax) return;
+      bandSvg += `<rect x="${pad.l}" y="${y0}" width="${W-pad.l-pad.r}" height="${y1-y0}" fill="${b.c}" opacity="${b.op}"/>`;
+    });
+
+    // WHO guideline
+    const whoY = y(15);
+    bandSvg += `<line x1="${pad.l}" y1="${whoY}" x2="${W-pad.r}" y2="${whoY}" stroke="#8b1e3f" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.7"/>`;
+    bandSvg += `<text x="${W-pad.r-4}" y="${whoY-4}" text-anchor="end" font-family="Inter" font-size="11" fill="#8b1e3f" font-weight="600">WHO 15 µg/m³</text>`;
+
+    // Axis
+    [0,5,10,15,20].forEach(v=>{
+      const yy = y(v);
+      bandSvg += `<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="#e4e6ea" stroke-width="0.8"/>`;
+      bandSvg += `<text x="${pad.l-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">${v}</text>`;
+    });
+    // day ticks
+    for (let d=0; d<=7; d++){
+      const xx = x(d*24);
+      bandSvg += `<text x="${xx}" y="${H-pad.b+16}" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Mon'][d]}</text>`;
+    }
+
+    // Line + area
+    let path = '';
+    let area = '';
+    data.forEach((v,i)=>{
+      const px = x(i), py = y(v);
+      path += (i===0?'M':'L') + px.toFixed(1) + ',' + py.toFixed(1) + ' ';
+      area += (i===0?'M':'L') + px.toFixed(1) + ',' + py.toFixed(1) + ' ';
+    });
+    area += `L ${x(n-1).toFixed(1)},${y(0)} L ${x(0).toFixed(1)},${y(0)} Z`;
+
+    const accentDeep = getComputedStyle(document.documentElement).getPropertyValue('--accent-deep').trim();
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+    svg.innerHTML = bandSvg +
+      `<path d="${area}" fill="${accent}" opacity="0.10"/>` +
+      `<path d="${path}" fill="none" stroke="${accentDeep}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>` +
+      // latest dot
+      `<circle cx="${x(n-1)}" cy="${y(data[n-1])}" r="4" fill="${accentDeep}" stroke="#fff" stroke-width="2"/>`;
+  })();
+
+  // ---- Sensor grid --------------------------------------------------
+  const sensors = [
+    ['St Paul\'s AURN','DEFRA AURN', [['PM2.5','14.8',2],['NO₂','41',2],['O₃','52',1]], '14:02'],
+    ['Bristol Centre','Breathe London', [['PM2.5','16.2',2],['PM10','22.1',1]], '14:00'],
+    ['Temple Meads','Breathe London', [['PM2.5','18.9',3],['NO₂','54',3]], '13:58'],
+    ['Cabot Circus','OpenAQ', [['PM2.5','13.1',2],['PM10','19.8',1]], '14:01'],
+    ['Clifton Down','OpenAQ', [['PM2.5','9.4',1],['NO₂','28',1]], '14:02'],
+    ['Bedminster','Sensor.Community', [['PM2.5','12.7',2],['PM10','21.4',1]], '13:55'],
+    ['Whitehall Road','DEFRA AURN', [['PM2.5','17.6',3],['NO₂','48',3]], '13:59'],
+    ['Ashton Gate','Breathe London', [['PM2.5','11.9',2]], '14:01'],
+  ];
+  const grid = document.getElementById('sensor-grid');
+  grid.innerHTML = sensors.map(([name, net, readings, t]) => `
+    <article class="sensor-card">
+      <div>
+        <div class="name">${name}</div>
+        <div class="meta"><span>${net}</span><span>·</span><span>${t} BST</span></div>
+      </div>
+      <div class="readings">
+        ${readings.map(([k,v,h]) => `<span class="reading-chip"><span class="status-dot heat-${h}"></span><span class="k">${k}</span><span class="v">${v}</span><span class="u">µg/m³</span></span>`).join('')}
+      </div>
+    </article>
+  `).join('');
+</script>
+
+
+</body><div class="quidco-wrapper" style="z-index: 2147483647 !important; position: relative !important;"><template shadowrootmode="open">
+      <style>@import url("chrome-extension://offafgdgnliocofjjiohlpjpenbogkbl/content/styles.css");</style>
+      <div data-v-1cef12ea="" class="app"><div data-v-1cef12ea=""><!----> <!----></div> <!----></div></template></div></html>
