@@ -257,11 +257,20 @@
   `;
 
   // ─── HTML builders ────────────────────────────────────────────────────────────
+  function resolveHref(href) {
+    if (href === '#' || typeof href !== 'string') return href;
+    if (!href.startsWith('/uk-aq/')) return href;
+    const path = location.pathname || '/';
+    const hasUkAqPrefix = path === '/uk-aq' || path.startsWith('/uk-aq/');
+    return hasUkAqPrefix ? href : href.replace(/^\/uk-aq/, '');
+  }
+
   function buildNavItem(item) {
     const path = location.pathname;
-    const isActive = item.href !== '#' && path.includes(item.href);
+    const href = resolveHref(item.href);
+    const isActive = href !== '#' && path.includes(href);
     return `
-      <a class="cic-nav-item${isActive ? ' active' : ''}" href="${item.href}">
+      <a class="cic-nav-item${isActive ? ' active' : ''}" href="${href}">
         <i class="cic-nav-icon">${item.icon}</i>
         <span class="cic-nav-label">${item.label}</span>
       </a>`;
