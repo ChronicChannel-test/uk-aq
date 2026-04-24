@@ -171,15 +171,15 @@
     /* ── Top-right CIC home logo ── */
     #cic-home-logo {
       position: fixed;
-      top: 10px; right: 16px;
-      z-index: 300;
+      top: 16px; right: 16px;
+      z-index: 1100;
       display: block;
       border-radius: 8px;
       transition: opacity 0.2s;
     }
     #cic-home-logo:hover { opacity: 0.8; }
     #cic-home-logo img {
-      width: 52px; height: 52px;
+      width: 104px; height: 104px;
       object-fit: contain; display: block;
       border-radius: 6px;
     }
@@ -319,12 +319,15 @@
     btn.setAttribute('aria-label', 'Toggle navigation');
     btn.innerHTML = `<img src="${location.origin}/sidebar-images/CIC-hamburger-button.svg" alt="Menu">`;
 
-    // Top-right home logo
-    const homeLogo = document.createElement('a');
-    homeLogo.id = 'cic-home-logo';
-    homeLogo.href = '/';
-    homeLogo.setAttribute('aria-label', 'Chronic Illness Channel home');
-    homeLogo.innerHTML = `<img src="${location.origin}/sidebar-images/CIC-Square-Border-Words-Alpha.svg" alt="CIC">`;
+    // Top-right home logo (hidden on homepage)
+    const homeLogo = isHomePage() ? null : (() => {
+      const el = document.createElement('a');
+      el.id = 'cic-home-logo';
+      el.href = '/';
+      el.setAttribute('aria-label', 'Chronic Illness Channel home');
+      el.innerHTML = `<img src="${location.origin}/sidebar-images/CIC-Square-Border-Words-Alpha.svg" alt="CIC">`;
+      return el;
+    })();
 
     // Mount into placeholder or body
     const mountEl = document.getElementById('cic-sidebar-mount');
@@ -332,9 +335,9 @@
       mountEl.appendChild(aside);
       mountEl.appendChild(overlay);
       mountEl.appendChild(btn);
-      mountEl.appendChild(homeLogo);
+      if (homeLogo) mountEl.appendChild(homeLogo);
     } else {
-      document.body.prepend(homeLogo);
+      if (homeLogo) document.body.prepend(homeLogo);
       document.body.prepend(btn);
       document.body.prepend(overlay);
       document.body.prepend(aside);
