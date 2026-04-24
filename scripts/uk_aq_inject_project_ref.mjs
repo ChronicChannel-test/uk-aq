@@ -24,10 +24,10 @@ const SCRIPT_DIR = path.dirname(scriptEntryPath);
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const ENV_PATH = path.join(REPO_ROOT, ".env");
 const DEFAULT_TARGETS = [
-  "uk_aq_hex_map.html",
+  "hex_map.html",
   "index.html",
-  "uk_aq_stations_chart.html",
-  "uk_aq_sensors_map.html",
+  "stations_chart.html",
+  "sensors_map.html",
 ];
 const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
 const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/g;
