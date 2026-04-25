@@ -5,9 +5,9 @@
       id: 'uk-aq',
       label: 'UK-AQ',
       children: [
-        { label: 'Hex Map',     icon: '◆', href: '/uk-aq/hex_map.html' },
-        { label: 'Sensors',     icon: '●', href: '/uk-aq/sensors_chart.html' },
-        { label: 'Sensors Map', icon: '◉', href: '/uk-aq/sensors_map.html' },
+        { label: 'Hex Map',     iconImg: 'uk-aq-hex-map-icon.svg', href: '/uk-aq/hex_map.html' },
+        { label: 'Sensors',     iconImg: 'uk-aq-sensors-icon.svg',  href: '/uk-aq/sensors_chart.html' },
+        { label: 'Sensors Map', iconImg: 'uk-aq-map-icon.svg',       href: '/uk-aq/sensors_map.html' },
       ],
     },
     {
@@ -238,6 +238,12 @@
       display: inline-flex; align-items: center; justify-content: center;
       font-style: normal; font-size: 13px;
     }
+    .cic-nav-icon-img {
+      width: 20px; height: 20px;
+      flex-shrink: 0;
+      object-fit: contain;
+      display: block;
+    }
     .cic-nav-label { overflow: hidden; text-overflow: ellipsis; }
 
     body[data-sidebar-state="mini"] .cic-nav-label { display: none; }
@@ -272,9 +278,12 @@
     const path = location.pathname;
     const href = resolveHref(item.href);
     const isActive = href !== '#' && path.includes(href);
+    const iconHtml = item.iconImg
+      ? `<img class="cic-nav-icon-img" src="${location.origin}/sidebar-images/${item.iconImg}" alt="">`
+      : `<i class="cic-nav-icon">${item.icon}</i>`;
     return `
       <a class="cic-nav-item${isActive ? ' active' : ''}" href="${href}">
-        <i class="cic-nav-icon">${item.icon}</i>
+        ${iconHtml}
         <span class="cic-nav-label">${item.label}</span>
       </a>`;
   }
