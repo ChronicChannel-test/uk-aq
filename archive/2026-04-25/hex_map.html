@@ -17,31 +17,18 @@
     />
     <style>
       :root {
-        /* CIC design system */
-        --surface:     #ffffff;
-        --surface-2:   #FBFAF7;
-        --surface-3:   #F6F5F2;
-        --ink:         #101822;
-        --ink-1:       #1b2a38;
-        --ink-2:       #3a4a5a;
-        --ink-3:       #6b7a88;
-        --ink-4:       #9aa7b3;
-        --line:        #e4e6ea;
-        --line-soft:   #eef0f3;
-        --accent:      #3C78AC;
-        --accent-deep: #285A84;
-        /* legacy aliases kept for JS-populated elements */
-        --ink-soft:    var(--ink-2);
-        --mist:        var(--surface-3);
-        --teal:        var(--accent);
-        --teal-deep:   var(--accent-deep);
-        --clay:        var(--line-soft);
-        --fog:         rgba(16, 24, 34, 0.07);
-        --card:        var(--surface);
-        --tab-inactive: var(--line-soft);
-        --map-wrap:    var(--surface-3);
-        --sun:         #f4b942;
-        --no-data:     #efe6d8;
+        --ink: #142225;
+        --ink-soft: #334449;
+        --mist: #f6f1e9;
+        --teal: #0f8b8d;
+        --teal-deep: #0a5d61;
+        --sun: #f4b942;
+        --clay: #e8dcc7;
+        --no-data: #efe6d8;
+        --fog: rgba(20, 34, 37, 0.08);
+        --card: #ffffff;
+        --tab-inactive: #e6e6e3;
+        --map-wrap: #fdfaf4;
         --heat-0: #00a85a;
         --heat-1: #ffd54a;
         --heat-2: #ff9b3a;
@@ -56,18 +43,31 @@
       body {
         margin: 0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
-        color: var(--ink-1);
-        background: var(--surface-2);
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
+          radial-gradient(circle at 88% 18%, #d6f1ef 0%, transparent 50%),
+          linear-gradient(135deg, #f7f2e8, #f0f7f6);
         min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: linear-gradient(120deg, rgba(20, 34, 37, 0.05) 1px, transparent 1px);
+        background-size: 32px 32px;
+        opacity: 0.2;
+        pointer-events: none;
       }
 
       main {
         position: relative;
-        max-width: 1280px;
+        max-width: 1200px;
         margin: 0 auto;
-        padding: 32px 28px 64px;
+        padding: 48px 24px 64px;
         display: grid;
-        gap: 20px;
+        gap: 24px;
       }
 
       header {
@@ -116,13 +116,17 @@
       }
 
       .card {
-        background: var(--surface);
-        border-radius: 14px;
-        border: 1px solid var(--line);
-        box-shadow: 0 1px 4px rgba(16, 24, 34, 0.06);
+        background: var(--card);
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(20, 34, 37, 0.12);
         padding: 24px;
         display: grid;
         gap: 16px;
+        animation: floatIn 0.6s ease-out;
+      }
+
+      .tab-panel .card {
+        animation: none;
       }
 
       .tab-slot {
@@ -165,7 +169,7 @@
       }
 
       .tab-button:focus-visible {
-        outline: 2px solid rgba(60, 120, 172, 0.5);
+        outline: 2px solid rgba(15, 139, 141, 0.5);
         outline-offset: 2px;
       }
 
@@ -257,9 +261,9 @@
 
       .network-card {
         padding: 12px 14px;
-        border-radius: 10px;
-        background: var(--surface-3);
-        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--mist);
+        border: 1px solid var(--fog);
         display: grid;
         gap: 10px;
       }
@@ -477,9 +481,9 @@
 
       .summary-item {
         padding: 12px 14px;
-        border-radius: 8px;
-        background: var(--surface-3);
-        border: 1px solid var(--line-soft);
+        border-radius: 14px;
+        background: var(--mist);
+        border: 1px solid var(--fog);
         display: grid;
         gap: 6px;
       }
@@ -604,12 +608,13 @@
       }
 
       .selected-network-pill {
-        background: var(--surface-3);
-        border: 1px solid var(--line);
-        border-radius: 10px;
+        background: var(--mist);
+        border: 1px solid var(--fog);
+        border-radius: 22px;
         padding: 18px;
         display: grid;
         gap: 6px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
       }
 
       .selected-network-pill--coverage {
@@ -1100,9 +1105,9 @@
 
       .network-panel {
         padding: 12px;
-        border-radius: 10px;
-        background: var(--surface);
-        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(20, 34, 37, 0.12);
         display: grid;
         gap: 12px;
       }
@@ -1182,13 +1187,13 @@
       }
 
       .map-wrap {
-        border-radius: 12px;
-        background: var(--surface-3);
+        border-radius: 16px;
+        background: var(--map-wrap);
         padding: 16px;
-        margin-top: 24px;
-        border: 1px solid var(--line-soft);
+        margin-top: 28px;
+        border: 1px solid rgba(20, 34, 37, 0.08);
         display: grid;
-        grid-template-columns: 1fr minmax(220px, 0.3fr);
+        grid-template-columns: minmax(200px, 0.35fr) minmax(0, 1fr) minmax(220px, 0.45fr);
         gap: 16px;
         align-items: start;
         position: relative;
@@ -1302,22 +1307,25 @@
 
       @media (min-width: 981px) {
         .map-wrap .map-header {
-          grid-column: 1 / -1;
+          grid-column: 1 / 3;
           grid-row: 1;
         }
 
-        .map-wrap .map-canvas {
-          grid-column: 1;
+        .map-wrap .summary-card {
+          grid-column: 3;
+          grid-row: 1 / span 2;
+        }
+
+        .map-wrap .network-panel,
+        .map-wrap .map-aside {
           grid-row: 2;
         }
 
-        .map-wrap .network-panel {
-          grid-column: 2;
-          grid-row: 2 / span 2;
+        .map-wrap .map-canvas {
+          grid-row: 2;
         }
 
         .map-wrap .map-legend {
-          grid-column: 1;
           grid-row: 3;
         }
       }
@@ -1384,8 +1392,8 @@
       }
 
       .window-option input:checked + .window-text {
-        background: rgba(60, 120, 172, 0.12);
-        box-shadow: inset 0 0 0 1px rgba(60, 120, 172, 0.25);
+        background: rgba(244, 185, 66, 0.2);
+        box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.35);
         font-weight: 600;
       }
 
@@ -1837,81 +1845,10 @@
         .map-wrap {
           grid-template-columns: 1fr;
         }
-      }
-      /* ── Top summary grid ───────────────────────────────────── */
-      .top-summary-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-      }
-      @media (max-width: 720px) {
-        .top-summary-grid { grid-template-columns: repeat(2, 1fr); }
-      }
-      .top-summary-card {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 16px 18px;
-        box-shadow: 0 1px 3px rgba(16, 24, 34, 0.04);
-      }
-      .top-summary-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        font-weight: 700;
-        color: var(--ink-3);
-        margin-bottom: 6px;
-      }
-      .top-summary-value {
-        font-size: 1.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        line-height: 1.15;
-      }
-      .top-summary-value-with-icon {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .top-summary-hex {
-        flex-shrink: 0;
-        width: 18px;
-        height: 21px;
-      }
-      .top-summary-hex polygon {
-        fill: var(--hex-fill, var(--no-data));
-        transition: fill 0.3s ease;
-      }
-      .top-summary-subtext {
-        font-size: 0.8rem;
-        color: var(--ink-3);
-        margin-top: 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .top-summary-update-line {
-        font-size: 0.82rem;
-        color: var(--ink-3);
-        margin-top: 3px;
-      }
-      .top-summary-update-line span {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--accent);
-      }
 
-      /* ── Typography ─────────────────────────────────────────── */
-      .card-title {
-        font-size: 1.15rem !important;
-        font-weight: 700;
-        color: var(--ink-1);
-        margin: 0;
-      }
-      .card-header {
-        padding-bottom: 14px;
-        border-bottom: 1px solid var(--line-soft);
-        margin-bottom: 4px;
+        .summary-card {
+          order: 3;
+        }
       }
     </style>
   </head>
@@ -1923,47 +1860,6 @@
       </header>
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">
-
-        <!-- ── Top summary boxes ── -->
-        <section class="top-summary-grid" aria-label="Selected air quality summary">
-          <article class="top-summary-card">
-            <div class="top-summary-label">Total Active Sensors</div>
-            <div class="top-summary-value" id="top-total-sensors">—</div>
-            <div class="top-summary-subtext">from selected networks</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Coverage</div>
-            <div class="top-summary-value" id="top-coverage-percent">—</div>
-            <div class="top-summary-subtext" id="top-coverage-detail">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label" id="top-highest-label">Highest PM2.5</div>
-            <div class="top-summary-value top-summary-value-with-icon">
-              <svg class="top-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-              <span id="top-highest-value">—</span>
-            </div>
-            <div class="top-summary-subtext" id="top-highest-sensor">—</div>
-            <div class="top-summary-subtext" id="top-highest-network">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Updates</div>
-            <div class="top-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
-            <div class="top-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
-          </article>
-        </section>
-        <!-- Hidden anchors for old summary-* IDs (existing JS still references them) -->
-        <span id="summary-stations" hidden></span>
-        <span id="summary-highest-label" hidden></span>
-        <span id="summary-lowest-label" hidden></span>
-        <span id="summary-highest-value" hidden></span>
-        <span id="summary-highest-datetime" hidden></span>
-        <span id="summary-highest-connector" hidden></span>
-        <span id="summary-highest-name" hidden></span>
-        <span id="summary-lowest-value" hidden></span>
-        <span id="summary-lowest-datetime" hidden></span>
-        <span id="summary-lowest-connector" hidden></span>
-        <span id="summary-lowest-name" hidden></span>
-
         <section class="card">
           <div class="hint" id="endpoint-hint" hidden></div>
           <div class="error" id="error" hidden></div>
@@ -2006,9 +1902,6 @@
                     </button>
                   </div>
                 </div>
-              <div class="map-canvas">
-                <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
-              </div>
               <aside class="network-panel">
                 <div class="network-actions" role="group" aria-label="Network selection actions">
                   <button type="button" id="network-select-all">Select All</button>
@@ -2019,7 +1912,32 @@
                   <span class="network-empty">Loading networks...</span>
                 </div>
               </aside>
-              <!-- summary-card IDs moved to stat-row above -->
+              <div class="map-canvas">
+                <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+              </div>
+              <aside class="summary-card" id="overall-summary">
+                <h3 class="summary-title" id="summary-overall-title">PM2.5 summary</h3>
+                <div class="summary-list">
+                  <div class="summary-item">
+                    <span class="summary-label">Number of sensors</span>
+                    <span class="summary-value" id="summary-stations">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label" id="summary-highest-label">Highest PM2.5</span>
+                    <span class="summary-value" id="summary-highest-value">-</span>
+                    <span class="summary-datetime" id="summary-highest-datetime">-</span>
+                    <span class="summary-connector" id="summary-highest-connector">-</span>
+                    <span class="summary-name" id="summary-highest-name">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label" id="summary-lowest-label">Lowest PM2.5 (Non-zero)</span>
+                    <span class="summary-value" id="summary-lowest-value">-</span>
+                    <span class="summary-datetime" id="summary-lowest-datetime">-</span>
+                    <span class="summary-connector" id="summary-lowest-connector">-</span>
+                    <span class="summary-name" id="summary-lowest-name">-</span>
+                  </div>
+                </div>
+              </aside>
               <div class="legend map-legend">
                 <span id="legend-pollutant">PM2.5 (µg/m³)</span>
                 <div
@@ -3004,75 +2922,6 @@
     <div class="tooltip" id="cr-tooltip"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
-    <script>
-      // ── Top summary boxes — shared updater ───────────────────────────────────
-      window.updateTopSummary = function(data) {
-        const elById = (id) => document.getElementById(id);
-
-        // Box 1: Total Active Sensors
-        const sensorsEl = elById('top-total-sensors');
-        if (sensorsEl) {
-          sensorsEl.textContent = Number.isFinite(data.totalSensors)
-            ? data.totalSensors.toLocaleString()
-            : '—';
-        }
-
-        // Box 2: Coverage
-        const coveragePct = elById('top-coverage-percent');
-        const coverageDetail = elById('top-coverage-detail');
-        if (coveragePct && coverageDetail) {
-          const covered = data.pconCovered ?? 0;
-          const total = data.pconTotal ?? 0;
-          const pct = total ? Math.round((covered / total) * 100) : 0;
-          coveragePct.textContent = total ? `${pct}%` : '—';
-          const label = data.areaLabel || 'constituencies';
-          coverageDetail.textContent = total
-            ? `${covered.toLocaleString()} / ${total.toLocaleString()} ${label}`
-            : '—';
-        }
-
-        // Box 3: Highest reading
-        const highestLabel = elById('top-highest-label');
-        const highestHex = elById('top-highest-hex');
-        const highestValue = elById('top-highest-value');
-        const highestSensor = elById('top-highest-sensor');
-        const highestNetwork = elById('top-highest-network');
-        if (highestLabel) {
-          highestLabel.textContent = `Highest ${data.pollutantLabel || 'PM2.5'}`;
-        }
-        if (highestValue) {
-          highestValue.textContent = Number.isFinite(data.highestValue)
-            ? `${data.highestValue.toFixed(1)} ${data.pollutantUnits || ''}`
-            : '—';
-        }
-        if (highestHex) {
-          highestHex.style.setProperty('--hex-fill', data.highestColor || '');
-        }
-        if (highestSensor) {
-          highestSensor.textContent = data.highestSensor || '—';
-        }
-        if (highestNetwork) {
-          highestNetwork.textContent = data.highestNetwork || '—';
-        }
-
-        // Box 4: Updates — show DD/MM/YYYY HH:MM
-        const fmtTime = (iso) => {
-          if (!iso) return '—';
-          const d = new Date(iso);
-          if (isNaN(d.getTime())) return '—';
-          const dd = String(d.getDate()).padStart(2, '0');
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const yyyy = d.getFullYear();
-          const hh = String(d.getHours()).padStart(2, '0');
-          const min = String(d.getMinutes()).padStart(2, '0');
-          return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-        };
-        const latestEl = elById('top-latest-update');
-        const oldestEl = elById('top-oldest-update');
-        if (latestEl) latestEl.textContent = fmtTime(data.newestReadingISO);
-        if (oldestEl) oldestEl.textContent = fmtTime(data.oldestReadingISO);
-      };
-    </script>
     <script>
       const PROJECT_REF_PLACEHOLDER = "__SUPABASE_PROJECT_REF__";
       const ANON_KEY_PLACEHOLDER = "__SB_PUBLISHABLE_DEFAULT_KEY__";
@@ -5427,41 +5276,6 @@
         }
         if (sensorShareBars) {
           sensorShareBars.render(summary.shareData || []);
-        }
-        // ── Top summary boxes ──
-        if (typeof window.updateTopSummary === 'function') {
-          const pollutantLabel = getPollutantLabel(activePollutant);
-          const pollutantUnits = getPollutantUnits(activePollutant);
-          const capValue = getLegendCapValue();
-          const baseRows = filterRowsByWindow(scopedLatestRows);
-          const pollutantRows = getRowsForActivePollutant(baseRows);
-          const candidates = pollutantRows
-            .map((row) => { const v = resolveLatestValue(row); return Number.isFinite(v) ? { row, value: v } : null; })
-            .filter(Boolean);
-          let highestValue = null, highestColor = null, highestSensor = '—', highestNetwork = '—';
-          if (candidates.length) {
-            let h = candidates[0];
-            for (const c of candidates) { if (c.value > h.value) h = c; }
-            highestValue = h.value;
-            const palette = HEAT_STOPS.map((n, i) => resolveCssColor(n, HEAT_STOP_FALLBACKS[i]));
-            highestColor = d3.interpolateRgbBasis(palette)(mapValueToT(highestValue, capValue));
-            highestSensor = resolveStationName(h.row);
-            highestNetwork = resolveConnectorLabel(h.row);
-          }
-          window.updateTopSummary({
-            totalSensors: summary.totalSensors,
-            pconCovered: summary.pconCovered,
-            pconTotal: summary.pconTotal,
-            areaLabel: 'constituencies',
-            pollutantLabel,
-            pollutantUnits,
-            highestValue,
-            highestColor,
-            highestSensor,
-            highestNetwork,
-            newestReadingISO: summary.newestReadingISO,
-            oldestReadingISO: summary.oldestReadingISO,
-          });
         }
       }
 
@@ -8866,13 +8680,13 @@
         const pollutantLabel = getPollutantLabel(activePollutant);
         const pollutantUnits = getPollutantUnits(activePollutant);
         updatePollutantLabels();
-        const totalStations = pconRows.reduce((total, row) => {
-          const count = normalizeNumber(row.station_count);
-          return total + (count ?? 0);
-        }, 0);
         if (!pconRows.length) {
           summaryStations.textContent = "-";
         } else {
+          const totalStations = pconRows.reduce((total, row) => {
+            const count = normalizeNumber(row.station_count);
+            return total + (count ?? 0);
+          }, 0);
           summaryStations.textContent = formatNumber(totalStations);
         }
 
@@ -8898,23 +8712,6 @@
           summaryHighestDatetime.textContent = "-";
           summaryHighestConnector.textContent = "-";
           summaryHighestName.textContent = `No ${pollutantLabel} data`;
-          // ── Top summary boxes (no-data state) ──
-          if (typeof window.updateTopSummary === 'function') {
-            window.updateTopSummary({
-              totalSensors: totalStations,
-              pconCovered: 0,
-              pconTotal: pconCodes.size,
-              areaLabel: AREA_LABEL_PLURAL,
-              pollutantLabel,
-              pollutantUnits,
-              highestValue: null,
-              highestColor: null,
-              highestSensor: '—',
-              highestNetwork: '—',
-              newestReadingISO: null,
-              oldestReadingISO: null,
-            });
-          }
           return;
         }
 
@@ -8944,36 +8741,6 @@
         summaryHighestDatetime.textContent = formatSummaryTimestamp(resolveLatestTimestamp(highest.row));
         summaryHighestConnector.textContent = resolveConnectorLabel(highest.row);
         summaryHighestName.textContent = resolveStationName(highest.row);
-
-        // ── Top summary boxes ──
-        if (typeof window.updateTopSummary === 'function') {
-          const capValue = getLegendCapValue();
-          const coveredPcons = new Set(rowsWithPcon.map((row) => resolvePconCode(row)).filter(Boolean));
-          let newest = null, oldest = null;
-          candidates.forEach(({ row }) => {
-            const ts = resolveLatestTimestamp(row);
-            if (ts) {
-              if (!newest || ts > newest) newest = ts;
-              if (!oldest || ts < oldest) oldest = ts;
-            }
-          });
-          const palette = HEAT_STOPS.map((n, i) => resolveCssColor(n, HEAT_STOP_FALLBACKS[i]));
-          const highestColor = d3.interpolateRgbBasis(palette)(mapValueToT(highest.value, capValue));
-          window.updateTopSummary({
-            totalSensors: totalStations,
-            pconCovered: coveredPcons.size,
-            pconTotal: pconCodes.size,
-            areaLabel: AREA_LABEL_PLURAL,
-            pollutantLabel,
-            pollutantUnits,
-            highestValue: highest.value,
-            highestColor,
-            highestSensor: resolveStationName(highest.row),
-            highestNetwork: resolveConnectorLabel(highest.row),
-            newestReadingISO: newest ? (newest.toISOString?.() || newest) : null,
-            oldestReadingISO: oldest ? (oldest.toISOString?.() || oldest) : null,
-          });
-        }
       }
 
       function updateRowCountText() {
