@@ -239,7 +239,7 @@
       font-style: normal; font-size: 13px;
     }
     .cic-nav-icon-img {
-      width: 20px; height: 20px;
+      width: 40px; height: 40px;
       flex-shrink: 0;
       object-fit: contain;
       display: block;
