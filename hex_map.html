@@ -67,28 +67,30 @@
 
       main {
         position: relative;
-        padding: 8px 28px 64px;
+        padding: 34px 28px 64px;
         display: grid;
         gap: 20px;
       }
 
       header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 24px;
-        margin-bottom: 20px;
+        padding-top: 0;
+        margin-bottom: 14px;
       }
 
       .logo {
-        height: 64px;
+        height: 54px;
         width: auto;
         flex-shrink: 0;
+        margin-top: 3px;
       }
       .page-title {
         height: 42px;
         width: auto;
         flex-shrink: 0;
-        margin-top: 10px;
+        margin-top: 0;
       }
 
       .title {
@@ -1833,7 +1835,11 @@
 
       @media (max-width: 720px) {
         main {
-          padding: 36px 18px 48px;
+          padding: 28px 18px 48px;
+        }
+
+        header {
+          margin-bottom: 24px;
         }
 
         .card {
@@ -1956,7 +1962,7 @@
     <div id="cic-sidebar-mount"></div>
     <main>
       <header>
-        <img src="images/UK-AQ-logo-alpha-1-Line-v2.svg" alt="UK AQ Logo" class="logo" />
+        <img src="images/UK-AQ-logov2-1Line.svg" alt="UK AQ Logo" class="logo" />
         <img src="images/UK AQ Page Titles.hex-map.svg" alt="Hex Map" class="page-title" />
       </header>
 

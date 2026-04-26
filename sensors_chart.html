@@ -16,19 +16,23 @@
     />
     <style>
       :root {
-        --ink: #142225;
-        --ink-soft: #334449;
-        --mist: #f6f1e9;
+        --surface: #ffffff;
+        --surface-2: #fbfaf7;
+        --surface-3: #f6f5f2;
+        --ink: #101822;
+        --ink-1: #1b2a38;
+        --ink-2: #3a4a5a;
+        --ink-3: #6b7a88;
+        --line: #e4e6ea;
+        --line-soft: #eef0f3;
         --accent: #3c78ac;
         --accent-deep: #285a84;
         --accent-soft: rgba(60, 120, 172, 0.08);
-        --accent-muted: rgba(60, 120, 172, 0.12);
-        --accent-strong: rgba(60, 120, 172, 0.18);
         --accent-glow: rgba(60, 120, 172, 0.28);
         --sun: #f4b942;
-        --clay: #e8dcc7;
-        --fog: rgba(20, 34, 37, 0.08);
-        --card: #ffffff;
+        --ink-soft: var(--ink-2);
+        --clay: var(--line-soft);
+        --card: var(--surface);
       }
 
       * {
@@ -38,31 +42,16 @@
       body {
         margin: 0;
         font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(circle at 12% 20%, #ffe8c7 0%, transparent 55%),
-          radial-gradient(circle at 88% 18%, #d6f1ef 0%, transparent 50%),
-          linear-gradient(135deg, #f7f2e8, #f0f7f6);
+        color: var(--ink-1);
+        background: var(--surface-2);
         min-height: 100vh;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image: linear-gradient(120deg, rgba(20, 34, 37, 0.05) 1px, transparent 1px);
-        background-size: 32px 32px;
-        opacity: 0.2;
-        pointer-events: none;
       }
 
       main {
         position: relative;
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 8px 24px 64px;
+        padding: 34px 28px 64px;
         display: grid;
-        gap: 24px;
+        gap: 20px;
       }
 
       header {
@@ -72,20 +61,21 @@
       }
       .header-brand {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 24px;
-        margin-bottom: 8px;
+        margin-bottom: 26px;
       }
       .logo {
-        height: 64px;
+        height: 54px;
         width: auto;
         flex-shrink: 0;
+        margin-top: 3px;
       }
       .page-title {
         height: 42px;
         width: auto;
         flex-shrink: 0;
-        margin-top: 10px;
+        margin-top: 0;
       }
 
       .title {
@@ -123,8 +113,9 @@
 
       .card {
         background: var(--card);
-        border-radius: 18px;
-        box-shadow: 0 20px 50px rgba(20, 34, 37, 0.12);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        box-shadow: 0 1px 4px rgba(16, 24, 34, 0.06);
         padding: 24px;
         display: grid;
         gap: 16px;
@@ -402,7 +393,7 @@
 
       @media (max-width: 720px) {
         main {
-          padding: 36px 18px 48px;
+          padding: 28px 18px 48px;
         }
 
         .card {
@@ -430,13 +421,14 @@
     <main>
       <header>
         <div class="header-brand">
-          <img src="images/UK-AQ-logo-alpha-1-Line-v2.svg" alt="UK AQ Logo" class="logo" />
+          <img src="images/UK-AQ-Logov2-1Line.svg" alt="UK AQ Logo" class="logo" />
           <img src="images/UK AQ Page Titles.sensors.svg" alt="Sensors" class="page-title" />
         </div>
         <p class="subtitle">
           Search by station name (for example Bristol or Surbiton) and view latest readings with trend charts.
         </p>
         <div class="meta">
+          <span id="region-badge">Search: Bristol</span>
           <span id="row-count">Loading…</span>
           <span id="last-updated">Waiting for data</span>
         </div>
@@ -693,7 +685,9 @@
         stationSearchInput.value = currentStationLike;
       }
 
-      regionBadge.textContent = `Search: ${currentStationLike}`;
+      if (regionBadge) {
+        regionBadge.textContent = `Search: ${currentStationLike}`;
+      }
       endpointHint.textContent = EDGE_URL
         ? `Endpoint: ${EDGE_URL}`
         : "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";

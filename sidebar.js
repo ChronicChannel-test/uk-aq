@@ -176,7 +176,7 @@
     /* ── Top-right CIC home logo ── */
     #cic-home-logo {
       position: absolute;
-      top: 16px; right: 16px;
+      top: 16px; right: 28px;
       z-index: 1310;
       display: block;
       border-radius: 16px;
