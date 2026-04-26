@@ -19,6 +19,10 @@ For `/Users/mikehinford/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CI
 ## Documentation Hygiene
 When adding or updating agent/project notes, also update relevant files under `system_docs` if they need to stay in sync.
 
+## Sidebar Hook Workflow
+- Sidebar logic should be edited once only in a single repo/file per task.
+- A git hook in `.git/hooks` propagates sidebar logic changes, so do not duplicate the same sidebar logic edits manually across repos.
+
 ## R2/Cloudflare Cache Cost Policy
 - For AQI history served via R2 + Cloudflare, assume cost is primarily driven by R2 operation counts (especially Class B reads) and Worker request volume, not R2 bandwidth egress.
 - Prefer stable request URLs/params for normal traffic so Cloudflare cache can return warm-cache hits.

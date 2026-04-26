@@ -14,9 +14,9 @@
       id: 'data-explorer',
       label: 'Data Explorer',
       children: [
-        { label: 'Bubble Chart',       icon: '○', href: '/data-explorer/bubblechart/' },
-        { label: 'Line Chart',         icon: '↗', href: '/data-explorer/linechart/' },
-        { label: 'Ecodesign Replaces', icon: '≡', href: '#' },
+        { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/bubblechart/' },
+        { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/linechart/' },
+        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '#' },
         { label: 'Category Info',      icon: 'i', href: '/data-explorer/resources/' },
         { label: 'User Guide',         icon: '?', href: '/data-explorer/user-guide/' },
       ],
@@ -24,7 +24,9 @@
     {
       id: 'resources',
       label: 'Resources',
-      children: [],
+      children: [
+        { label: 'Resources', iconImg: 'chain-link-icon-grey.svg', href: '/data-explorer/resources/' },
+      ],
     },
     {
       id: 'contact',
@@ -46,6 +48,7 @@
   const DRAWER    = 'drawer';
 
   let autoCollapseTimer = null;
+  let pinnedOpenDesktop = false;
 
   function getBreakpoint() {
     const w = window.innerWidth;
@@ -72,7 +75,7 @@
   function scheduleAutoCollapse() {
     clearTimeout(autoCollapseTimer);
     autoCollapseTimer = setTimeout(() => {
-      if (getBreakpoint() === 'desktop' && getState() === EXPANDED) {
+      if (getBreakpoint() === 'desktop' && !pinnedOpenDesktop && getState() === EXPANDED) {
         setState(MINI);
       }
     }, 3000);
@@ -393,13 +396,11 @@
 
     // Initial state
     const bp = getBreakpoint();
+    pinnedOpenDesktop = false;
     if (bp === 'mobile') {
       setState(DRAWER);
-    } else if (bp === 'tablet') {
-      setState(MINI);
     } else {
-      setState(EXPANDED);
-      if (!isHomePage()) scheduleAutoCollapse();
+      setState(MINI);
     }
 
     bindEvents(btn, overlay);
@@ -414,7 +415,13 @@
         document.body.classList.toggle('cic-drawer-open');
       } else {
         clearTimeout(autoCollapseTimer);
-        setState(getState() === EXPANDED ? MINI : EXPANDED);
+        if (pinnedOpenDesktop) {
+          pinnedOpenDesktop = false;
+          setState(MINI);
+        } else {
+          pinnedOpenDesktop = true;
+          setState(EXPANDED);
+        }
       }
     });
 
@@ -426,7 +433,7 @@
     // Left-edge hover re-expand (desktop)
     document.addEventListener('mousemove', e => {
       if (getBreakpoint() !== 'desktop') return;
-      if (e.clientX < 20 && getState() === MINI) {
+      if (!pinnedOpenDesktop && e.clientX < 20 && (getState() === COLLAPSED || getState() === MINI)) {
         clearTimeout(autoCollapseTimer);
         setState(EXPANDED);
       }
@@ -439,7 +446,7 @@
 
     // Resume auto-collapse on mouse leave (non-home pages)
     document.getElementById('cic-sidebar').addEventListener('mouseleave', () => {
-      if (!isHomePage() && getBreakpoint() === 'desktop' && getState() === EXPANDED) {
+      if (!pinnedOpenDesktop && getBreakpoint() === 'desktop' && getState() === EXPANDED) {
         scheduleAutoCollapse();
       }
     });
@@ -450,13 +457,17 @@
       clearTimeout(autoCollapseTimer);
       if (bp === 'tablet') {
         setState(MINI);
+        pinnedOpenDesktop = false;
         document.body.classList.remove('cic-drawer-open');
       } else if (bp === 'mobile') {
         setState(DRAWER);
+        pinnedOpenDesktop = false;
         document.body.classList.remove('cic-drawer-open');
-      } else if (getState() === MINI || getState() === DRAWER) {
+      } else if (getState() === MINI || getState() === DRAWER || getState() === COLLAPSED) {
         document.body.classList.remove('cic-drawer-open');
-        setState(isHomePage() ? EXPANDED : MINI);
+        setState(pinnedOpenDesktop ? EXPANDED : MINI);
+      } else {
+        setState(pinnedOpenDesktop ? EXPANDED : MINI);
       }
     });
   }
