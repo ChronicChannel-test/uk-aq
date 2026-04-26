@@ -39,7 +39,7 @@
         --fog:         rgba(16, 24, 34, 0.07);
         --card:        var(--surface);
         --tab-inactive: var(--line-soft);
-        --map-wrap:    var(--surface-3);
+        --map-wrap:    #FEFAF4;
         --sun:         #f4b942;
         --no-data:     #efe6d8;
         --heat-0: #00a85a;
@@ -53,6 +53,10 @@
         box-sizing: border-box;
       }
 
+      html {
+        font-size: 120%;
+      }
+
       body {
         margin: 0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -63,7 +67,7 @@
 
       main {
         position: relative;
-        padding: 32px 28px 64px;
+        padding: 8px 28px 64px;
         display: grid;
         gap: 20px;
       }
@@ -76,15 +80,15 @@
       }
 
       .logo {
-        height: 80px;
+        height: 64px;
         width: auto;
         flex-shrink: 0;
       }
       .page-title {
-        height: 52px;
+        height: 42px;
         width: auto;
         flex-shrink: 0;
-        margin-top: 12px;
+        margin-top: 10px;
       }
 
       .title {
@@ -125,9 +129,9 @@
         border-radius: 14px;
         border: 1px solid var(--line);
         box-shadow: 0 1px 4px rgba(16, 24, 34, 0.06);
-        padding: 24px;
+        padding: 16px;
         display: grid;
-        gap: 16px;
+        gap: 12px;
       }
 
       .tab-slot {
@@ -1104,18 +1108,44 @@
       }
 
       .network-panel {
-        padding: 12px;
-        border-radius: 10px;
-        background: var(--surface);
-        border: 1px solid var(--line);
+        padding: 8px 0 12px 16px;
+        border-radius: 0;
+        background: transparent;
+        border: none;
+        border-left: 2px solid var(--line);
         display: grid;
         gap: 12px;
+        align-content: start;
       }
 
       .network-heading {
         font-size: 0.85rem;
         color: var(--ink-soft);
         font-weight: 600;
+      }
+
+      .network-list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px 6px 14px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--line-soft);
+        margin-bottom: 2px;
+      }
+
+      .network-count {
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--accent);
+        flex-shrink: 0;
+        padding-left: 8px;
       }
 
       .network-actions {
@@ -1153,10 +1183,7 @@
         width: 100%;
         min-width: 0;
         box-sizing: border-box;
-        padding: 6px 10px;
-        border-radius: 10px;
-        border: 1px solid rgba(20, 34, 37, 0.12);
-        background: var(--mist);
+        padding: 4px 10px;
         font-weight: 600;
         color: var(--ink);
         font-size: 0.85rem;
@@ -1188,13 +1215,13 @@
 
       .map-wrap {
         border-radius: 12px;
-        background: var(--surface-3);
-        padding: 16px;
-        margin-top: 24px;
+        background: var(--map-wrap);
+        padding: 8px;
+        margin-top: 12px;
         border: 1px solid var(--line-soft);
         display: grid;
         grid-template-columns: minmax(640px, 1fr) 340px;
-        gap: 16px;
+        gap: 10px;
         align-items: start;
         position: relative;
       }
@@ -1307,7 +1334,7 @@
 
       @media (min-width: 981px) {
         .map-wrap .map-header {
-          grid-column: 1 / -1;
+          grid-column: 1;
           grid-row: 1;
         }
 
@@ -1318,7 +1345,12 @@
 
         .map-wrap .network-panel {
           grid-column: 2;
-          grid-row: 2 / span 2;
+          grid-row: 1 / span 3;
+          align-self: stretch;
+          margin-top: -8px;
+          margin-bottom: -8px;
+          padding-top: 16px;
+          padding-bottom: 20px;
         }
 
         .map-wrap .map-legend {
@@ -2016,13 +2048,16 @@
                 <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
               </div>
               <aside class="network-panel">
+                <div class="network-list-header">
+                  <span>Network</span>
+                  <span>Active sensors</span>
+                </div>
+                <div class="network-list" id="network-list">
+                  <span class="network-empty">Loading networks...</span>
+                </div>
                 <div class="network-actions" role="group" aria-label="Network selection actions">
                   <button type="button" id="network-select-all">Select All</button>
                   <button type="button" id="network-deselect-all">Deselect All</button>
-                </div>
-                <span class="hint">Networks</span>
-                <div class="network-list" id="network-list">
-                  <span class="network-empty">Loading networks...</span>
                 </div>
               </aside>
               <!-- summary-card IDs moved to stat-row above -->
@@ -2532,13 +2567,16 @@
                       </optgroup>
                     </select>
                   </label>
-                  <span class="network-heading">Networks</span>
-                  <div class="network-actions" role="group" aria-label="Network selection actions">
-                    <button type="button" id="cr-network-select-all">Select All</button>
-                    <button type="button" id="cr-network-deselect-all">Deselect All</button>
+                  <div class="network-list-header">
+                    <span>Network</span>
+                    <span>Active sensors</span>
                   </div>
                   <div class="network-list" id="cr-network-list">
                     <span class="network-empty">Loading networks...</span>
+                  </div>
+                  <div class="network-actions" role="group" aria-label="Network selection actions">
+                    <button type="button" id="cr-network-select-all">Select All</button>
+                    <button type="button" id="cr-network-deselect-all">Deselect All</button>
                   </div>
                 </aside>
                 <div class="map-canvas">
@@ -4824,14 +4862,14 @@
       function buildNetworkDefs(rows) {
         const byCode = new Map();
         rows.forEach((row) => {
+          const seen = new Set();
           collectNetworkEntries(row).forEach((entry) => {
-            if (!entry.code || byCode.has(entry.code)) {
-              return;
+            if (!entry.code || seen.has(entry.code)) return;
+            seen.add(entry.code);
+            if (!byCode.has(entry.code)) {
+              byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
             }
-            byCode.set(entry.code, {
-              code: entry.code,
-              label: entry.label || entry.code,
-            });
+            byCode.get(entry.code).count++;
           });
         });
         return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
@@ -4848,7 +4886,7 @@
         if (!defs.length) {
           return "empty";
         }
-        return defs.map((def) => `${def.code}:${def.label}`).join("|");
+        return defs.map((def) => `${def.code}:${def.label}:${def.count}`).join("|");
       }
 
       function renderNetworkFiltersIfNeeded(defs, selectedCodes, defaultAll) {
@@ -4956,7 +4994,10 @@
           input.checked = defaultAll || (hasSelection ? selectedCodes.has(def.code) : true);
           const text = document.createElement("span");
           text.textContent = def.label;
-          label.append(input, text);
+          const count = document.createElement("span");
+          count.className = "network-count";
+          if (def.count > 0) count.textContent = def.count.toLocaleString();
+          label.append(input, text, count);
           fragment.appendChild(label);
         });
         networkList.appendChild(fragment);
@@ -5185,17 +5226,6 @@
           }
         });
         return Array.from(stationMap.values());
-      }
-
-      function countStationsByNetwork(entries) {
-        const counts = new Map();
-        entries.forEach((entry) => {
-          const label = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
-          counts.set(label, (counts.get(label) || 0) + 1);
-        });
-        return Array.from(counts.entries())
-          .map(([label, count]) => ({ label, count }))
-          .sort((a, b) => a.label.localeCompare(b.label));
       }
 
       function countStationsByNetwork(entries) {
@@ -8392,14 +8422,14 @@
       function buildNetworkDefs(rows) {
         const byCode = new Map();
         rows.forEach((row) => {
+          const seen = new Set();
           collectNetworkEntries(row).forEach((entry) => {
-            if (!entry.code || byCode.has(entry.code)) {
-              return;
+            if (!entry.code || seen.has(entry.code)) return;
+            seen.add(entry.code);
+            if (!byCode.has(entry.code)) {
+              byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
             }
-            byCode.set(entry.code, {
-              code: entry.code,
-              label: entry.label || entry.code,
-            });
+            byCode.get(entry.code).count++;
           });
         });
         return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
@@ -8416,7 +8446,7 @@
         if (!defs.length) {
           return "empty";
         }
-        return defs.map((def) => `${def.code}:${def.label}`).join("|");
+        return defs.map((def) => `${def.code}:${def.label}:${def.count}`).join("|");
       }
 
       function renderNetworkFiltersIfNeeded(defs, selectedCodes, defaultAll) {
@@ -8525,7 +8555,10 @@
           input.checked = defaultAll || (hasSelection ? selectedCodes.has(def.code) : true);
           const text = document.createElement("span");
           text.textContent = def.label;
-          label.append(input, text);
+          const count = document.createElement("span");
+          count.className = "network-count";
+          if (def.count > 0) count.textContent = def.count.toLocaleString();
+          label.append(input, text, count);
           fragment.appendChild(label);
         });
         networkList.appendChild(fragment);

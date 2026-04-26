@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UK-AQ Hex Map — Teal blue · brand accent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/shared.css">
+  <style id="accent-style"></style>
+  <style>
+    /* ── Tab system inside map card ─────────────────────────── */
+    .map-tab-bar {
+      display: inline-flex;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .map-tab-bar button {
+      border: 0;
+      background: transparent;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+    .map-tab-bar button[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--accent-deep);
+      box-shadow: 0 1px 3px rgba(16,24,34,0.10);
+      font-weight: 600;
+    }
+
+    /* ── Status indicator ───────────────────────────────────── */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--ink-3);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      font-family: var(--font);
+      white-space: nowrap;
+    }
+    .status-pill .pulse {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #35b56a;
+      box-shadow: 0 0 0 0 rgba(53,181,106,0.55);
+      animation: pulse 1.8s ease-out infinite;
+    }
+    .status-pill .pulse.loading {
+      background: var(--ink-4);
+      animation: none;
+    }
+    @keyframes pulse {
+      0%  { box-shadow: 0 0 0 0 rgba(53,181,106,0.55); }
+      80% { box-shadow: 0 0 0 7px rgba(53,181,106,0); }
+      100%{ box-shadow: 0 0 0 0 rgba(53,181,106,0); }
+    }
+
+    /* ── Tab panels ─────────────────────────────────────────── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: contents; }
+
+    /* ── Map card-head override: wrap on small screens ──────── */
+    .card-head.map-head {
+      flex-wrap: wrap;
+      row-gap: 10px;
+    }
+    .map-head-left { display: flex; align-items: center; gap: 14px; flex: 1 1 auto; flex-wrap: wrap; }
+
+    /* Status + Refresh bar at top-right of the map panel */
+    .map-panel-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-bottom: 8px;
+    }
+
+    /* ── C&R region selector ─────────────────────────────────── */
+    .region-selector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+    .region-selector label {
+      font-size: 11.5px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--ink-3);
+    }
+    .region-selector select {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--ink-1);
+      font-family: var(--font);
+    }
+
+    /* ── Full-bleed layout ──────────────────────────────────── */
+    .content {
+      max-width: none;
+      padding: 20px 24px 48px;
+    }
+
+    /* ── Two-column map: map gets all spare space, aside fixed ─ */
+    .map-layout {
+      grid-template-columns: minmax(640px, 1fr) 340px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============= SIDEBAR ============= -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <a href="index.html" class="sidebar-brand" aria-label="UK-AQ home">
+      <svg viewBox="0 0 240 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+        <g transform="translate(4 6)">
+          <polygon points="22,0 44,12 44,36 22,48 0,36 0,12" fill="currentColor" opacity="0.14"/>
+          <polygon points="22,8 37,16 37,32 22,40 7,32 7,16" fill="currentColor" opacity="0.32"/>
+          <polygon points="22,16 30,20 30,28 22,32 14,28 14,20" fill="currentColor"/>
+        </g>
+        <text x="62" y="37" font-family="Inter,sans-serif" font-weight="700" letter-spacing="-0.5" font-size="28" fill="currentColor">UK</text>
+        <text x="112" y="37" font-family="Inter,sans-serif" font-weight="600" font-size="28" fill="currentColor" opacity="0.55">·</text>
+        <text x="126" y="37" font-family="Inter,sans-serif" font-weight="700" letter-spacing="-0.5" font-size="28" fill="currentColor">AQ</text>
+      </svg>
+    </a>
+
+    <nav class="nav-section" aria-label="Live data">
+      <div class="nav-section-label">Live data</div>
+      <a class="nav-item active" href="#"><span class="nav-icon">◆</span><span class="label">Hex map</span><span style="margin-left:auto" class="num muted">UK</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">▲</span><span class="label">Station chart</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">●</span><span class="label">Sensor map</span></a>
+    </nav>
+
+    <nav class="nav-section" aria-label="Explorers">
+      <div class="nav-section-label">Explorers</div>
+      <a class="nav-item" href="#"><span class="nav-icon">○</span><span class="label">Bubble chart</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">↗</span><span class="label">Line chart</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">≡</span><span class="label">Eco replaces</span></a>
+    </nav>
+
+    <nav class="nav-section" aria-label="Reference">
+      <div class="nav-section-label">Reference</div>
+      <a class="nav-item" href="#"><span class="nav-icon">i</span><span class="label">Category info</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">?</span><span class="label">User guide</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">⎆</span><span class="label">Resources</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      Hosted on GitHub Pages ·
+      <a href="#">v2026.04</a>
+    </div>
+  </aside>
+
+  <!-- ============= MAIN ============= -->
+  <div class="main">
+
+    <!-- TOP BAR — logo only -->
+    <header class="topbar" style="padding: 10px 28px;">
+      <img src="assets/UK-AQ-logo.png" alt="UK-AQ" style="height: 100px; width: auto; display: block; padding: 0px; object-fit: fill" />
+      <div class="spacer"></div>
+      <button class="btn">Share</button>
+    </header>
+
+    <div class="content">
+
+      <!-- STAT ROW -->
+      <section class="stats">
+        <div class="stat">
+          <div class="label">Stations reporting</div>
+          <div class="num">1,284</div>
+          <div class="delta">of 1,317 active</div>
+        </div>
+        <div class="stat">
+          <div class="label">UK mean PM2.5</div>
+          <div class="num">8.4<span class="muted" style="font-size:14px;font-weight:500"> µg/m³</span></div>
+          <div class="delta down">▼ 0.6 vs yesterday</div>
+        </div>
+        <div class="stat">
+          <div class="label">Highest constituency</div>
+          <div class="num">31.2</div>
+          <div class="delta">Cities of London &amp; Westminster</div>
+        </div>
+        <div class="stat">
+          <div class="label">WHO 2021 exceedances</div>
+          <div class="num">142</div>
+          <div class="delta up">▲ 14 constituencies today</div>
+        </div>
+      </section>
+
+      <!-- MAP CARD ─ tabs + refresh/status live INSIDE here -->
+      <section class="card">
+
+        <!-- Card header: title · [UK | C&R tabs] · [status] [refresh] -->
+        <div class="card-head map-head">
+          <div class="map-head-left">
+            <div>
+              <h2 id="map-card-title">Latest PM2.5 by constituency</h2>
+              <span class="sub" id="map-card-sub">Hex tiles · 650 UK constituencies · observations within last 2 hours</span>
+            </div>
+
+            <!-- UK / C&R tab switcher -->
+            <div class="map-tab-bar" role="tablist" aria-label="Map scope" id="map-tab-bar">
+              <button role="tab" id="tab-uk" aria-selected="true" aria-controls="panel-uk">United Kingdom</button>
+              <button role="tab" id="tab-cr" aria-selected="false" aria-controls="panel-cr">Countries &amp; Regions</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Shared toolbar (pollutant + scope selectors) -->
+        <div class="toolbar">
+          <div class="field">
+            <label>Pollutant</label>
+            <div class="pill-group" role="radiogroup">
+              <button class="pill" aria-pressed="true">PM2.5</button>
+              <button class="pill" aria-pressed="false">PM10</button>
+              <button class="pill" aria-pressed="false">NO₂</button>
+              <button class="pill" aria-pressed="false">O₃</button>
+              <button class="pill" aria-pressed="false">SO₂</button>
+            </div>
+          </div>
+          <div class="field" id="scope-field">
+            <label for="scope">Scope</label>
+            <select id="scope">
+              <option>Parliamentary constituencies (2023)</option>
+              <option>Local authority districts</option>
+              <option>Intermediate zones (Scotland)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="window">Window</label>
+            <select id="window">
+              <option>Latest reading</option>
+              <option>Last 1 hour</option>
+              <option>Last 24 hours (mean)</option>
+            </select>
+          </div>
+          <div style="flex:1"></div>
+          <button class="btn">Export CSV</button>
+          <button class="btn">Copy link</button>
+        </div>
+
+        <div class="card-body flush">
+          <div class="map-layout">
+
+            <!-- MAP PANEL -->
+            <div class="map-panel">
+
+              <!-- Status + Refresh — top right of map panel -->
+              <div class="map-panel-topbar">
+                <div class="status-pill" id="status-pill">
+                  <span class="pulse loading" id="pulse-dot"></span>
+                  <span id="status-text">Loading…</span>
+                </div>
+                <button class="btn btn-primary" id="refresh-btn">Refresh</button>
+              </div>
+
+              <!-- ── UK TAB PANEL ── -->
+              <div class="tab-panel active" id="panel-uk" role="tabpanel" aria-labelledby="tab-uk">
+                <div class="map-meta">
+                  <span class="num">1,284</span> stations ·
+                  feeding <span class="num">650</span> constituencies ·
+                  scale exp 0.8
+                </div>
+
+                <div class="hex-frame" id="hex-frame-uk">
+                  <svg viewBox="0 0 640 620" role="img" aria-label="UK hex map of PM2.5 by constituency" id="hex-svg-uk">
+                    <defs>
+                      <pattern id="grid-uk" width="32" height="32" patternUnits="userSpaceOnUse">
+                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(16,24,34,0.04)" stroke-width="1"/>
+                      </pattern>
+                    </defs>
+                    <rect width="640" height="620" fill="url(#grid-uk)"/>
+                    <g id="hexes-uk"></g>
+                    <g id="callout-uk" style="display:none;">
+                      <rect x="0" y="0" width="180" height="70" rx="8" fill="#101822" opacity="0.95"/>
+                      <text x="12" y="22" font-family="Inter" font-weight="600" font-size="13" fill="#fff">Bristol West</text>
+                      <text x="12" y="42" font-family="JetBrains Mono" font-size="12" fill="#ffd54a">PM2.5 · 14.8 µg/m³</text>
+                      <text x="12" y="58" font-family="Inter" font-size="11" fill="#9aa7b3">12 sensors · 4 networks</text>
+                    </g>
+                  </svg>
+                </div>
+
+                <div class="legend" aria-label="PM2.5 legend">
+                  <span class="muted">PM2.5 (µg/m³)</span>
+                  <span class="legend-val">0</span>
+                  <div class="legend-scale"><div class="legend-bar"></div></div>
+                  <span class="legend-val">50+</span>
+                  <span class="muted">continuous · power scale 0.8</span>
+                </div>
+              </div>
+
+              <!-- ── C&R TAB PANEL ── -->
+              <div class="tab-panel" id="panel-cr" role="tabpanel" aria-labelledby="tab-cr">
+                <!-- Region selector -->
+                <div class="toolbar" style="border-top:0; background:transparent; padding: 0 0 8px 0;">
+                  <div class="region-selector">
+                    <label for="region-select">Region</label>
+                    <select id="region-select">
+                      <option>All regions</option>
+                      <option>England</option>
+                      <option>Scotland</option>
+                      <option>Wales</option>
+                      <option>Northern Ireland</option>
+                      <option>London</option>
+                      <option>South East</option>
+                      <option>North West</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="map-meta">
+                  <span class="num">1,284</span> stations ·
+                  <span class="num">18</span> countries &amp; regions ·
+                  scale exp 0.8
+                </div>
+
+                <div class="hex-frame" id="hex-frame-cr">
+                  <svg viewBox="0 0 640 400" role="img" aria-label="Countries and regions hex map" id="hex-svg-cr">
+                    <defs>
+                      <pattern id="grid-cr" width="32" height="32" patternUnits="userSpaceOnUse">
+                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(16,24,34,0.04)" stroke-width="1"/>
+                      </pattern>
+                    </defs>
+                    <rect width="640" height="400" fill="url(#grid-cr)"/>
+                    <g id="hexes-cr"></g>
+                  </svg>
+                </div>
+
+                <div class="legend" aria-label="PM2.5 legend">
+                  <span class="muted">PM2.5 (µg/m³)</span>
+                  <span class="legend-val">0</span>
+                  <div class="legend-scale"><div class="legend-bar"></div></div>
+                  <span class="legend-val">50+</span>
+                  <span class="muted">continuous · power scale 0.8</span>
+                </div>
+              </div>
+
+            </div><!-- /map-panel -->
+
+            <!-- ASIDE -->
+            <aside class="map-aside">
+              <div>
+                <div class="nav-section-label" style="padding-left:0">Networks</div>
+                <div class="network-list">
+                  <label class="network-row"><input type="checkbox" checked><span class="swatch" style="background:#3C78AC"></span>DEFRA AURN<span class="count">213</span></label>
+                  <label class="network-row"><input type="checkbox" checked><span class="swatch" style="background:#00a85a"></span>Breathe London<span class="count">412</span></label>
+                  <label class="network-row"><input type="checkbox" checked><span class="swatch" style="background:#f4b942"></span>OpenAQ community<span class="count">389</span></label>
+                  <label class="network-row"><input type="checkbox" checked><span class="swatch" style="background:#e03c3c"></span>Scottish Comm.<span class="count">142</span></label>
+                  <label class="network-row"><input type="checkbox"><span class="swatch" style="background:#8b1e3f"></span>Sensor.Community<span class="count">128</span></label>
+                </div>
+              </div>
+
+              <div>
+                <div class="nav-section-label" style="padding-left:0">Selected</div>
+                <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2);">
+                  <div style="font-weight:600;color:var(--ink-1)" id="selected-name">Bristol West</div>
+                  <div class="muted small" style="margin-top:2px" id="selected-meta">12 sensors · 4 networks reporting</div>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;">
+                    <div>
+                      <div class="muted small">PM2.5</div>
+                      <div class="num" style="font-size:18px;font-weight:600">14.8</div>
+                      <div class="small"><span class="status-dot heat-2"></span> Moderate</div>
+                    </div>
+                    <div>
+                      <div class="muted small">PM10</div>
+                      <div class="num" style="font-size:18px;font-weight:600">22.1</div>
+                      <div class="small"><span class="status-dot heat-1"></span> Low</div>
+                    </div>
+                    <div>
+                      <div class="muted small">NO₂</div>
+                      <div class="num" style="font-size:18px;font-weight:600">38</div>
+                      <div class="small"><span class="status-dot heat-2"></span> Moderate</div>
+                    </div>
+                  </div>
+                  <div style="margin-top:10px;font-size:11.5px;color:var(--ink-3)">
+                    Last reading 14:02 BST · WHO 2021 limit 15 µg/m³
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TREND CARD -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Station trend — Bristol West</h2>
+          <span class="sub">Hourly PM2.5 observations · DAQI banding overlay</span>
+          <div style="flex:1"></div>
+          <div class="field">
+            <label>Metric</label>
+            <select><option>PM2.5 observations</option><option>DAQI</option><option>EAQI</option></select>
+          </div>
+          <div class="field">
+            <label>Window</label>
+            <select><option>24 hours</option><option selected>7 days</option><option>31 days</option></select>
+          </div>
+        </div>
+        <div class="card-body">
+          <svg id="trend-chart" viewBox="0 0 1200 280" preserveAspectRatio="none" style="width:100%;height:260px;display:block"></svg>
+          <div class="hstack" style="justify-content:space-between;margin-top:10px">
+            <div class="hstack small muted" style="gap:14px;flex-wrap:wrap">
+              <span><span class="status-dot heat-0"></span> DAQI 1–3 Low</span>
+              <span><span class="status-dot heat-2"></span> DAQI 4–6 Moderate</span>
+              <span><span class="status-dot heat-4"></span> DAQI 7–9 High</span>
+              <span><span class="status-dot heat-6"></span> DAQI 10 Very high</span>
+            </div>
+            <div class="small muted">WHO 24-hr guideline 15 µg/m³ · UK AQS annual 10 µg/m³</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SENSOR DETAILS -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Constituency sensors</h2>
+          <span class="sub">12 sensors in Bristol West</span>
+          <div style="flex:1"></div>
+          <div class="field">
+            <label>Sort</label>
+            <select><option>Highest reading</option><option>Most recent</option><option>Station name</option></select>
+          </div>
+          <button class="btn">Open station chart ↗</button>
+        </div>
+        <div class="card-body">
+          <div class="sensor-grid" id="sensor-grid"></div>
+        </div>
+      </section>
+
+      <div class="mockup-note">
+        mockup · hex grid and readings are illustrative · tabs + refresh/status now live inside the map card
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Accent ──────────────────────────────────────────────────────────
+  const params = new URLSearchParams(location.search);
+  const accent = params.get('accent') || 'teal';
+  const palettes = {
+    teal: { accent: '#3C78AC', deep: '#285A84' },
+    ink:  { accent: '#2B4A6F', deep: '#1F3A5F' },
+  };
+  const p = palettes[accent] || palettes.teal;
+  document.getElementById('accent-style').textContent =
+    `:root{--accent:${p.accent};--accent-deep:${p.deep};}`;
+
+  // ── Tab switching ────────────────────────────────────────────────────
+  const tabUk = document.getElementById('tab-uk');
+  const tabCr = document.getElementById('tab-cr');
+  const panelUk = document.getElementById('panel-uk');
+  const panelCr = document.getElementById('panel-cr');
+  const cardTitle = document.getElementById('map-card-title');
+  const cardSub = document.getElementById('map-card-sub');
+
+  function setTab(which) {
+    const isUk = which === 'uk';
+    tabUk.setAttribute('aria-selected', isUk ? 'true' : 'false');
+    tabCr.setAttribute('aria-selected', isUk ? 'false' : 'true');
+    panelUk.classList.toggle('active', isUk);
+    panelCr.classList.toggle('active', !isUk);
+    // Update card title + subtitle
+    if (isUk) {
+      cardTitle.textContent = 'Latest PM2.5 by constituency';
+      cardSub.textContent = 'Hex tiles · 650 UK constituencies · observations within last 2 hours';
+    } else {
+      cardTitle.textContent = 'Latest PM2.5 by country & region';
+      cardSub.textContent = 'Hex tiles · 18 countries & regions · observations within last 2 hours';
+    }
+  }
+  tabUk.addEventListener('click', () => setTab('uk'));
+  tabCr.addEventListener('click', () => setTab('cr'));
+
+  // ── Status mock ──────────────────────────────────────────────────────
+  const pulseDot = document.getElementById('pulse-dot');
+  const statusText = document.getElementById('status-text');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  function setLive() {
+    pulseDot.className = 'pulse';
+    statusText.textContent = 'Live';
+  }
+  function setLoading() {
+    pulseDot.className = 'pulse loading';
+    statusText.textContent = 'Loading…';
+  }
+
+  refreshBtn.addEventListener('click', () => {
+    setLoading();
+    setTimeout(setLive, 1200);
+  });
+
+  // Simulate initial load
+  setTimeout(setLive, 1400);
+
+  // ── Shared helpers ──────────────────────────────────────────────────
+  const heatStops = [
+    [0.00,'#00a85a'],[0.18,'#8dc63f'],[0.36,'#ffd54a'],
+    [0.54,'#ff9b3a'],[0.72,'#e03c3c'],[0.86,'#8b1e3f'],[1.00,'#5b2a86']
+  ];
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function hexToRgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+  function rgbToHex(r){return'#'+r.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');}
+  function rampColor(t){
+    t=Math.max(0,Math.min(1,t));
+    for(let i=0;i<heatStops.length-1;i++){
+      const[ta,ca]=heatStops[i],[tb,cb]=heatStops[i+1];
+      if(t>=ta&&t<=tb){const k=(t-ta)/(tb-ta);const a=hexToRgb(ca),b=hexToRgb(cb);return rgbToHex([lerp(a[0],b[0],k),lerp(a[1],b[1],k),lerp(a[2],b[2],k)]);}
+    }
+    return heatStops[heatStops.length-1][1];
+  }
+  function rnd(i){const x=Math.sin(i*9301.7+49297.3)*233280;return x-Math.floor(x);}
+  function hexPath(cx,cy,s){let d='';for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30);const x=cx+s*Math.cos(a),y=cy+s*Math.sin(a);d+=(i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';}return d+'Z';}
+
+  // ── UK hex grid ──────────────────────────────────────────────────────
+  (function buildUkGrid(){
+    const cols=18,rows=22,size=15;
+    const dx=size*Math.sqrt(3),dy=size*1.5;
+    const offsetX=40,offsetY=30;
+    function inUK(cx,cy){
+      if(cy<180) return cx>170&&cx<340&&(Math.abs(cx-250)+(180-cy)*0.6)<150;
+      if(cy<440){const mid=290+Math.sin(cy/60)*30;const w=160-Math.abs(cy-320)*0.1;return cx>mid-w&&cx<mid+w;}
+      if(cy<520){const mid=300+Math.sin(cy/40)*10;const w=130-(cy-440)*0.7;return cx>mid-w&&cx<mid+w;}
+      return cx>110&&cx<210&&cy>300&&cy<380;
+    }
+    let idx=0,pathsSvg='';
+    const selectedIdx=184;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cx=offsetX+c*dx+(r%2?dx/2:0);
+        const cy=offsetY+r*dy;
+        if(!inUK(cx,cy)){idx++;continue;}
+        let base=0.2+rnd(idx)*0.4;
+        const dL=Math.hypot(cx-360,cy-390);if(dL<70)base+=(1-dL/70)*0.45;
+        const dB=Math.hypot(cx-310,cy-330);if(dB<55)base+=(1-dB/55)*0.30;
+        const dM=Math.hypot(cx-285,cy-265);if(dM<50)base+=(1-dM/50)*0.20;
+        if(cy<220)base*=0.55;
+        const t=Math.max(0,Math.min(1,base));
+        const color=rampColor(t);
+        const sel=(idx===selectedIdx);
+        pathsSvg+=`<path d="${hexPath(cx,cy,size-1.2)}" fill="${color}" stroke="${sel?'#101822':'rgba(255,255,255,0.75)'}" stroke-width="${sel?2:0.8}" opacity="0.95">
+          <title>${['Bristol West','Cardiff Central','Leeds East','Islington South','Birmingham Ladywood','Manchester Withington'][idx%6]} · PM2.5 ${(t*35+2).toFixed(1)} µg/m³</title>
+        </path>`;
+        if(sel){
+          const cg=document.getElementById('callout-uk');
+          cg.setAttribute('transform',`translate(${cx+18},${cy-42})`);
+          cg.style.display='block';
+        }
+        idx++;
+      }
+    }
+    document.getElementById('hexes-uk').innerHTML=pathsSvg;
+  })();
+
+  // ── C&R hex grid (large region tiles) ──────────────────────────────
+  (function buildCrGrid(){
+    const regions = [
+      // [label, cx, cy, value 0-1]
+      ['Scotland',       200, 80,  0.12],
+      ['N. Ireland',     100, 180, 0.18],
+      ['North East',     310, 175, 0.28],
+      ['North West',     250, 225, 0.32],
+      ['Yorkshire',      340, 230, 0.35],
+      ['E. Midlands',    330, 290, 0.38],
+      ['W. Midlands',    270, 290, 0.42],
+      ['Wales',          200, 280, 0.22],
+      ['East of Eng.',   380, 295, 0.40],
+      ['Greater London', 360, 340, 0.72],
+      ['South West',     240, 345, 0.25],
+      ['South East',     390, 350, 0.55],
+    ];
+    const size = 34;
+    let svg = '';
+    regions.forEach(([label, cx, cy, t], i) => {
+      const color = rampColor(t);
+      const sel = i === 9; // London selected
+      svg += `<path d="${hexPath(cx, cy, size-2)}" fill="${color}" stroke="${sel?'#101822':'rgba(255,255,255,0.9)'}" stroke-width="${sel?2.5:1.2}" opacity="0.93">
+        <title>${label} · PM2.5 ${(t*40+3).toFixed(1)} µg/m³</title>
+      </path>`;
+      svg += `<text x="${cx}" y="${cy+3}" text-anchor="middle" font-family="Inter" font-size="9" font-weight="600" fill="${t>0.55?'rgba(255,255,255,0.9)':'rgba(16,24,34,0.75)'}" pointer-events="none">${label}</text>`;
+    });
+    document.getElementById('hexes-cr').innerHTML = svg;
+  })();
+
+  // ── Trend chart ─────────────────────────────────────────────────────
+  (function trend(){
+    const svg=document.getElementById('trend-chart');
+    const W=1200,H=280;
+    const pad={t:16,r:16,b:28,l:40};
+    const n=7*24;
+    const data=[];
+    for(let i=0;i<n;i++){
+      const diurnal=6+Math.sin((i%24)/24*Math.PI*2-1.1)*3.4;
+      const weekly=Math.sin(i/n*Math.PI*2)*2;
+      const noise=(rnd(i+500)-0.5)*2.2;
+      const spike=(i===92||i===140)?6:0;
+      data.push(Math.max(0.5,diurnal+weekly+noise+spike));
+    }
+    const yMax=20;
+    const x=i=>pad.l+i*(W-pad.l-pad.r)/(n-1);
+    const y=v=>H-pad.b-(v/yMax)*(H-pad.t-pad.b);
+    const bands=[
+      {lo:0,hi:11,c:'#00a85a',op:0.08},{lo:11,hi:23,c:'#8dc63f',op:0.07},
+      {lo:23,hi:35,c:'#ffd54a',op:0.09},{lo:35,hi:50,c:'#ff9b3a',op:0.10},
+      {lo:50,hi:71,c:'#e03c3c',op:0.10}
+    ];
+    let out='';
+    bands.forEach(b=>{
+      const y0=y(Math.min(b.hi,yMax));const y1=y(Math.min(b.lo,yMax));
+      if(b.lo>yMax)return;
+      out+=`<rect x="${pad.l}" y="${y0}" width="${W-pad.l-pad.r}" height="${y1-y0}" fill="${b.c}" opacity="${b.op}"/>`;
+    });
+    const whoY=y(15);
+    out+=`<line x1="${pad.l}" y1="${whoY}" x2="${W-pad.r}" y2="${whoY}" stroke="#8b1e3f" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.7"/>`;
+    out+=`<text x="${W-pad.r-4}" y="${whoY-4}" text-anchor="end" font-family="Inter" font-size="11" fill="#8b1e3f" font-weight="600">WHO 15 µg/m³</text>`;
+    [0,5,10,15,20].forEach(v=>{
+      const yy=y(v);
+      out+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="#e4e6ea" stroke-width="0.8"/>`;
+      out+=`<text x="${pad.l-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6b7a88">${v}</text>`;
+    });
+    for(let d=0;d<=7;d++){
+      out+=`<text x="${x(d*24)}" y="${H-pad.b+16}" text-anchor="middle" font-family="Inter" font-size="10" fill="#6b7a88">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Mon'][d]}</text>`;
+    }
+    let path='',area='';
+    data.forEach((v,i)=>{
+      const px=x(i),py=y(v);
+      path+=(i===0?'M':'L')+px.toFixed(1)+','+py.toFixed(1)+' ';
+      area+=(i===0?'M':'L')+px.toFixed(1)+','+py.toFixed(1)+' ';
+    });
+    area+=`L ${x(n-1).toFixed(1)},${y(0)} L ${x(0).toFixed(1)},${y(0)} Z`;
+    const ac=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    const acd=getComputedStyle(document.documentElement).getPropertyValue('--accent-deep').trim();
+    svg.innerHTML=out+
+      `<path d="${area}" fill="${ac}" opacity="0.10"/>` +
+      `<path d="${path}" fill="none" stroke="${acd}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<circle cx="${x(n-1)}" cy="${y(data[n-1])}" r="4" fill="${acd}" stroke="#fff" stroke-width="2"/>`;
+  })();
+
+  // ── Sensor grid ──────────────────────────────────────────────────────
+  const sensors = [
+    ["St Paul's AURN",'DEFRA AURN',[['PM2.5','14.8',2],['NO₂','41',2],['O₃','52',1]],'14:02'],
+    ['Bristol Centre','Breathe London',[['PM2.5','16.2',2],['PM10','22.1',1]],'14:00'],
+    ['Temple Meads','Breathe London',[['PM2.5','18.9',3],['NO₂','54',3]],'13:58'],
+    ['Cabot Circus','OpenAQ',[['PM2.5','13.1',2],['PM10','19.8',1]],'14:01'],
+    ['Clifton Down','OpenAQ',[['PM2.5','9.4',1],['NO₂','28',1]],'14:02'],
+    ['Bedminster','Sensor.Community',[['PM2.5','12.7',2],['PM10','21.4',1]],'13:55'],
+    ['Whitehall Road','DEFRA AURN',[['PM2.5','17.6',3],['NO₂','48',3]],'13:59'],
+    ['Ashton Gate','Breathe London',[['PM2.5','11.9',2]],'14:01'],
+  ];
+  document.getElementById('sensor-grid').innerHTML = sensors.map(([name,net,readings,t])=>`
+    <article class="sensor-card">
+      <div>
+        <div class="name">${name}</div>
+        <div class="meta"><span>${net}</span><span>·</span><span>${t} BST</span></div>
+      </div>
+      <div class="readings">
+        ${readings.map(([k,v,h])=>`<span class="reading-chip"><span class="status-dot heat-${h}"></span><span class="k">${k}</span><span class="v">${v}</span><span class="u">µg/m³</span></span>`).join('')}
+      </div>
+    </article>
+  `).join('');
+</script>
+</body>
+</html>
