@@ -63,23 +63,28 @@
 
       main {
         position: relative;
-        max-width: 1280px;
-        margin: 0 auto;
         padding: 32px 28px 64px;
         display: grid;
         gap: 20px;
       }
 
       header {
-        display: grid;
-        gap: 12px;
-        align-items: start;
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 20px;
       }
 
       .logo {
-        width: 120px;
-        height: auto;
-        margin-bottom: 8px;
+        height: 80px;
+        width: auto;
+        flex-shrink: 0;
+      }
+      .page-title {
+        height: 52px;
+        width: auto;
+        flex-shrink: 0;
+        margin-top: 12px;
       }
 
       .title {
@@ -1188,7 +1193,7 @@
         margin-top: 24px;
         border: 1px solid var(--line-soft);
         display: grid;
-        grid-template-columns: 1fr minmax(220px, 0.3fr);
+        grid-template-columns: minmax(640px, 1fr) 340px;
         gap: 16px;
         align-items: start;
         position: relative;
@@ -1920,6 +1925,7 @@
     <main>
       <header>
         <img src="images/UK-AQ-logo-alpha-1-Line-v2.svg" alt="UK AQ Logo" class="logo" />
+        <img src="images/UK AQ Page Titles.hex-map.svg" alt="Hex Map" class="page-title" />
       </header>
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">

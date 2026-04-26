@@ -67,7 +67,7 @@
     clearTimeout(autoCollapseTimer);
     autoCollapseTimer = setTimeout(() => {
       if (getBreakpoint() === 'desktop' && getState() === EXPANDED) {
-        setState(MINI);
+        setState(COLLAPSED);
       }
     }, 3000);
   }
@@ -150,7 +150,7 @@
     /* ── Hamburger button ── */
     #cic-hamburger {
       position: fixed;
-      top: 16px; left: 10px;
+      top: 16px; left: 16px;
       z-index: 300;
       background: none;
       border: none;
@@ -166,6 +166,7 @@
       box-shadow: 0 8px 14px rgba(20,34,37,0.12);
     }
     #cic-hamburger img { width: 44px; height: 44px; object-fit: contain; display: block; }
+    body[data-sidebar-state="mini"] #cic-hamburger { display: none; }
 
     /* ── Top-right CIC home logo ── */
     #cic-home-logo {
@@ -386,7 +387,7 @@
         document.body.classList.toggle('cic-drawer-open');
       } else {
         clearTimeout(autoCollapseTimer);
-        setState(getState() === EXPANDED ? MINI : EXPANDED);
+        setState(getState() === EXPANDED ? COLLAPSED : EXPANDED);
       }
     });
 
@@ -398,7 +399,7 @@
     // Left-edge hover re-expand (desktop)
     document.addEventListener('mousemove', e => {
       if (getBreakpoint() !== 'desktop') return;
-      if (e.clientX < 20 && getState() === MINI) {
+      if (e.clientX < 20 && getState() === COLLAPSED) {
         clearTimeout(autoCollapseTimer);
         setState(EXPANDED);
       }
@@ -428,7 +429,7 @@
         document.body.classList.remove('cic-drawer-open');
       } else if (getState() === MINI || getState() === DRAWER) {
         document.body.classList.remove('cic-drawer-open');
-        setState(isHomePage() ? EXPANDED : MINI);
+        setState(isHomePage() ? EXPANDED : COLLAPSED);
       }
     });
   }

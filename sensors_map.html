@@ -22,15 +22,44 @@
         color: #142225;
       }
 
+      #uk-aq-header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 80px;
+        z-index: 250;
+        background: #ffffff;
+        border-bottom: 1px solid #e4e6ea;
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        padding: 8px 20px;
+      }
+      /* Push sidebar panel below the page header */
+      #cic-sidebar {
+        top: 80px !important;
+        height: calc(100vh - 80px) !important;
+      }
+      #uk-aq-header .logo {
+        height: 64px;
+        width: auto;
+        flex-shrink: 0;
+      }
+      #uk-aq-header .page-title {
+        height: 42px;
+        width: auto;
+        flex-shrink: 0;
+        margin-top: 10px;
+      }
+
       #map {
-        width: 100%;
-        height: 100%;
+        position: absolute;
+        top: 80px; left: 0; right: 0; bottom: 0;
         background: #f4f7f8;
       }
 
       .control-bar {
         position: fixed;
-        top: 12px;
+        top: 92px;
         left: 12px;
         right: 12px;
         z-index: 1000;
@@ -50,11 +79,6 @@
         flex-wrap: wrap;
         align-items: center;
         gap: 10px;
-      }
-
-      .bar-title {
-        font-size: 1rem;
-        font-weight: 700;
       }
 
       #status {
@@ -157,7 +181,7 @@
 
       @media (max-width: 720px) {
         .control-bar {
-          top: 8px;
+          top: 88px;
           left: 8px;
           right: 8px;
           padding: 8px 10px;
@@ -172,10 +196,13 @@
   </head>
   <body>
     <div id="cic-sidebar-mount"></div>
+    <header id="uk-aq-header">
+      <img src="images/UK-AQ-logo-alpha-1-Line-v2.svg" alt="UK AQ Logo" class="logo" />
+      <img src="images/UK AQ Page Titles.sensors-map.svg" alt="Sensors Map" class="page-title" />
+    </header>
     <div id="map" role="application" aria-label="UK AQ sensor map"></div>
     <div class="control-bar" role="region" aria-label="Map controls">
       <div class="bar-top">
-        <span class="bar-title">UK AQ sensor map</span>
         <span class="spacer"></span>
         <label for="reading-scope">Readings</label>
         <select id="reading-scope">

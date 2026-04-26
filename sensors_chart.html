@@ -67,8 +67,25 @@
 
       header {
         display: grid;
-        gap: 12px;
+        gap: 8px;
         align-items: start;
+      }
+      .header-brand {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 8px;
+      }
+      .logo {
+        height: 80px;
+        width: auto;
+        flex-shrink: 0;
+      }
+      .page-title {
+        height: 52px;
+        width: auto;
+        flex-shrink: 0;
+        margin-top: 12px;
       }
 
       .title {
@@ -412,8 +429,10 @@
     <div id="cic-sidebar-mount"></div>
     <main>
       <header>
-        <p class="badge" id="region-badge">Station Search</p>
-        <h1 class="title">UK AQ station chart</h1>
+        <div class="header-brand">
+          <img src="images/UK-AQ-logo-alpha-1-Line-v2.svg" alt="UK AQ Logo" class="logo" />
+          <img src="images/UK AQ Page Titles.sensors.svg" alt="Sensors" class="page-title" />
+        </div>
         <p class="subtitle">
           Search by station name (for example Bristol or Surbiton) and view latest readings with trend charts.
         </p>
