@@ -22,16 +22,20 @@
       ],
     },
     {
-      id: 'resources',
-      label: 'Resources',
+      id: 'quick-links',
+      showLabel: false,
+      dividerBefore: true,
       children: [
+        {
+          label: 'YouTube',
+          iconImg: 'youtube-logo.svg',
+          labelImg: 'youtube-logo-Word.svg',
+          href: 'https://youtube.com/@chronicillnesschannel',
+          external: true,
+        },
         { label: 'Resources', iconImg: 'chain-link-icon-grey.svg', href: '/data-explorer/resources/' },
+        { label: 'Contact', iconPlaceholder: true, href: '/contact.html' },
       ],
-    },
-    {
-      id: 'contact',
-      label: 'Contact',
-      children: [],
     },
   ];
   const HOME_ITEM = {
@@ -228,6 +232,12 @@
       margin-left: 0;
     }
 
+    .cic-section-divider {
+      height: 0;
+      border-top: 1px solid var(--cic-line);
+      margin: 10px 12px 8px;
+    }
+
     .cic-section-label {
       font-family: var(--cic-font);
       font-size: 20px;
@@ -279,6 +289,22 @@
       object-fit: contain;
       display: block;
     }
+    .cic-nav-icon-placeholder {
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
+      border: 2px dashed var(--cic-ink-4);
+      border-radius: 10px;
+      display: inline-block;
+      opacity: 0.75;
+    }
+    .cic-nav-label-img {
+      display: block;
+      height: 16px;
+      width: auto;
+      max-width: 136px;
+      object-fit: contain;
+    }
     .cic-nav-label { overflow: hidden; text-overflow: ellipsis; }
 
     body[data-sidebar-state="mini"] .cic-nav-label { display: none; }
@@ -320,19 +346,30 @@
     const className = item.className ? ` ${item.className}` : '';
     const iconHtml = item.iconImg
       ? `<img class="cic-nav-icon-img" src="${location.origin}/sidebar-images/${item.iconImg}" alt="">`
-      : `<i class="cic-nav-icon">${item.icon}</i>`;
+      : item.iconPlaceholder
+        ? `<span class="cic-nav-icon-placeholder" aria-hidden="true"></span>`
+        : `<i class="cic-nav-icon">${item.icon}</i>`;
+    const labelHtml = item.labelImg
+      ? `<img class="cic-nav-label-img" src="${location.origin}/sidebar-images/${item.labelImg}" alt="${item.label}">`
+      : item.label;
+    const targetAttrs = item.external ? ' target="_blank" rel="noopener noreferrer"' : '';
     return `
-      <a class="cic-nav-item${className}${isActive ? ' active' : ''}" href="${href}">
+      <a class="cic-nav-item${className}${isActive ? ' active' : ''}" href="${href}"${targetAttrs}>
         ${iconHtml}
-        <span class="cic-nav-label">${item.label}</span>
+        <span class="cic-nav-label">${labelHtml}</span>
       </a>`;
   }
 
   function buildSection(section) {
     const childrenHtml = section.children.map(buildNavItem).join('');
+    const sectionLabel = section.showLabel === false
+      ? ''
+      : `<div class="cic-section-label">${section.label}</div>`;
+    const divider = section.dividerBefore ? '<div class="cic-section-divider" aria-hidden="true"></div>' : '';
     return `
       <div class="cic-nav-section">
-        <div class="cic-section-label">${section.label}</div>
+        ${divider}
+        ${sectionLabel}
         ${childrenHtml}
       </div>`;
   }
