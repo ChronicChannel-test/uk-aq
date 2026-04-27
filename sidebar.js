@@ -46,6 +46,8 @@
   const COLLAPSED = 'collapsed';
   const MINI      = 'mini';
   const DRAWER    = 'drawer';
+  const HAMBURGER_ICON_OFF = '/sidebar-images/CIC-hamburger-button.svg';
+  const HAMBURGER_ICON_ON = '/sidebar-images/CIC%20Hamburger%20Button-SidebarOn.svg';
 
   let autoCollapseTimer = null;
   let pinnedOpenDesktop = false;
@@ -79,6 +81,15 @@
         setState(MINI);
       }
     }, 3000);
+  }
+
+  function updateHamburgerIcon(btn) {
+    const img = btn?.querySelector('img');
+    if (!img) return;
+    const mobileOpen = getBreakpoint() === 'mobile' && document.body.classList.contains('cic-drawer-open');
+    const shouldShowOn = pinnedOpenDesktop || mobileOpen;
+    const target = `${location.origin}${shouldShowOn ? HAMBURGER_ICON_ON : HAMBURGER_ICON_OFF}`;
+    if (img.src !== target) img.src = target;
   }
 
   // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -368,7 +379,7 @@
     const btn = document.createElement('button');
     btn.id = 'cic-hamburger';
     btn.setAttribute('aria-label', 'Toggle navigation');
-    btn.innerHTML = `<img src="${location.origin}/sidebar-images/CIC-hamburger-button.svg" alt="Menu">`;
+    btn.innerHTML = `<img src="${location.origin}${HAMBURGER_ICON_OFF}" alt="Menu">`;
 
     // Top-right home logo (hidden on homepage)
     const homeLogo = isHomePage() ? null : (() => {
@@ -402,6 +413,7 @@
     } else {
       setState(MINI);
     }
+    updateHamburgerIcon(btn);
 
     bindEvents(btn, overlay);
   }
@@ -423,11 +435,13 @@
           setState(EXPANDED);
         }
       }
+      updateHamburgerIcon(btn);
     });
 
     // Close drawer on overlay click
     overlay.addEventListener('click', () => {
       document.body.classList.remove('cic-drawer-open');
+      updateHamburgerIcon(btn);
     });
 
     // Left-edge hover re-expand (desktop)
@@ -469,6 +483,7 @@
       } else {
         setState(pinnedOpenDesktop ? EXPANDED : MINI);
       }
+      updateHamburgerIcon(btn);
     });
   }
 
