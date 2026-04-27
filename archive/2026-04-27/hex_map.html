@@ -971,13 +971,18 @@
         align-items: center;
       }
 
-      .map-title-strip {
+      .map-header {
         width: 100%;
+        align-items: flex-start;
+      }
+
+      .map-header-left {
         display: flex;
-        align-items: center;
-        min-height: 54px;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--line-soft);
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 280px;
+        align-items: flex-start;
       }
 
       .card-title {
@@ -1000,6 +1005,18 @@
         gap: 8px;
         align-items: center;
       }
+
+      .map-header-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .map-header-controls:empty {
+        display: none;
+      }
+
 
       .status-indicator {
         display: inline-flex;
@@ -1289,13 +1306,12 @@
       .map-legend {
         grid-column: 1 / -1;
         justify-content: center;
-        margin-bottom: 6px;
       }
 
       .map-settings {
         position: absolute;
         left: 16px;
-        top: 16px;
+        bottom: 16px;
         z-index: 2;
         width: 40px;
         height: 40px;
@@ -1324,7 +1340,7 @@
       .map-settings-panel {
         position: absolute;
         left: 16px;
-        top: 68px;
+        bottom: 68px;
         width: auto;
         background: #fff;
         border-radius: 14px;
@@ -1384,25 +1400,19 @@
       }
 
       @media (min-width: 981px) {
-        .map-wrap .map-title-strip {
-          grid-column: 1 / -1;
-          grid-row: 1;
-        }
-
-        .map-wrap #uk-toolbar-slot,
-        .map-wrap #cr-toolbar-slot {
+        .map-wrap .map-header {
           grid-column: 1;
-          grid-row: 2;
+          grid-row: 1;
         }
 
         .map-wrap .map-canvas {
           grid-column: 1;
-          grid-row: 3;
+          grid-row: 2;
         }
 
         .map-wrap .network-panel {
           grid-column: 2;
-          grid-row: 2 / span 3;
+          grid-row: 1 / span 3;
           align-self: stretch;
           margin-top: -8px;
           margin-bottom: -8px;
@@ -1412,7 +1422,7 @@
 
         .map-wrap .map-legend {
           grid-column: 1;
-          grid-row: 4;
+          grid-row: 3;
         }
       }
 
@@ -2026,237 +2036,6 @@
         border-bottom: 1px solid var(--line-soft);
         margin-bottom: 4px;
       }
-
-      /* Prevent the global svg{width:100%;height:560px} rule from blowing up UI icons */
-      .map-topbar svg,
-      .toolbar svg {
-        width: auto;
-        height: auto;
-        display: inline;
-        flex-shrink: 0;
-        transition: none;
-      }
-
-      /* ── Toolbar ──────────────────────────────────────────────── */
-      #uk-toolbar-slot:empty,
-      #cr-toolbar-slot:empty {
-        display: none;
-      }
-
-      .toolbar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        padding: 6px 14px 8px;
-        border-bottom: 1px solid var(--line-soft);
-        background: var(--surface-2);
-        overflow: visible;
-      }
-      .toolbar-divider {
-        width: 1px;
-        height: 20px;
-        background: var(--line);
-        flex-shrink: 0;
-      }
-      .field-label {
-        font-size: 12px;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        font-weight: 600;
-        color: var(--ink-3);
-        white-space: nowrap;
-      }
-
-      /* Segmented control */
-      .segmented {
-        display: inline-flex;
-        background: var(--surface-2);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 3px;
-        gap: 2px;
-      }
-      .segmented button {
-        border: 0;
-        background: transparent;
-        padding: 6px 14px;
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--ink-2);
-        border-radius: 6px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: background 0.12s, color 0.12s;
-      }
-      .segmented button.active {
-        background: var(--surface);
-        color: var(--accent-deep);
-        box-shadow: 0 1px 3px rgba(16, 24, 34, 0.10);
-        font-weight: 600;
-      }
-
-      /* Pollutant pills (toolbar) */
-      .pill-group {
-        display: inline-flex;
-        gap: 3px;
-      }
-      .pill {
-        border: 1px solid var(--line);
-        background: var(--surface-2);
-        color: var(--ink-2);
-        font-size: 15px;
-        font-weight: 500;
-        padding: 5px 12px;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: background 0.12s, color 0.12s, border-color 0.12s;
-      }
-      .pill[aria-checked="true"],
-      .pill.active {
-        background: color-mix(in oklab, var(--accent) 12%, white);
-        color: var(--accent-deep);
-        border-color: color-mix(in oklab, var(--accent) 35%, white);
-        font-weight: 600;
-      }
-
-      /* Region popover */
-      .popover-wrap { position: relative; }
-      .popover-trigger {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        border: 1px solid var(--line);
-        background: var(--surface);
-        padding: 6px 11px;
-        border-radius: 6px;
-        font-size: 15px;
-        color: var(--ink-1);
-        font-family: inherit;
-        cursor: pointer;
-        font-weight: 500;
-        transition: border-color 0.12s;
-      }
-      .popover-trigger.open {
-        border-color: var(--accent);
-        color: var(--accent-deep);
-      }
-      .popover-trigger .chevron { transition: transform 0.15s; }
-      .popover-trigger.open .chevron { transform: rotate(180deg); }
-      .popover-menu {
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        box-shadow: 0 8px 28px rgba(16, 24, 34, 0.14);
-        min-width: 210px;
-        padding: 6px;
-        z-index: 200;
-      }
-      .popover-group-head {
-        font-size: 10px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: var(--ink-4);
-        padding: 7px 10px 3px;
-      }
-      .popover-item {
-        padding: 6px 10px;
-        border-radius: 6px;
-        font-size: 12.5px;
-        color: var(--ink-2);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-      }
-      .popover-item:hover { background: var(--surface-2); }
-      .popover-item.active {
-        color: var(--accent-deep);
-        font-weight: 600;
-        background: color-mix(in oklab, var(--accent) 8%, white);
-      }
-      .popover-item.active::after {
-        content: '✓';
-        margin-left: auto;
-        font-size: 11px;
-        opacity: 0.8;
-      }
-      .popover-divider {
-        height: 1px;
-        background: var(--line-soft);
-        margin: 4px 6px;
-      }
-      .toolbar-region-section {
-        display: none;
-        align-items: center;
-        gap: 10px;
-      }
-      .toolbar-region-section.visible {
-        display: flex;
-      }
-
-      /* Map topbar — floating over canvas */
-      .map-canvas { position: relative; }
-      .map-topbar {
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        z-index: 10;
-      }
-      .search-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.88);
-        border: 1px solid rgba(16, 24, 34, 0.12);
-        border-radius: 999px;
-        padding: 5px 12px;
-        font-size: 14px;
-        color: var(--ink-3);
-        box-shadow: 0 1px 4px rgba(16, 24, 34, 0.08);
-        backdrop-filter: blur(4px);
-      }
-      .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--ink-2);
-        padding: 4px 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(16, 24, 34, 0.12);
-        background: rgba(255, 255, 255, 0.88);
-        backdrop-filter: blur(4px);
-        box-shadow: 0 1px 4px rgba(16, 24, 34, 0.08);
-      }
-      .btn-refresh {
-        background: var(--accent);
-        border: 1px solid var(--accent);
-        color: #fff;
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        font-family: inherit;
-        box-shadow: 0 1px 4px rgba(16, 24, 34, 0.12);
-        transition: transform 0.15s, box-shadow 0.15s;
-      }
-      .btn-refresh:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(16, 24, 34, 0.16);
-      }
-      /* Hide old tab bar (kept in DOM for JS) */
-      .tab-bar { display: none; }
-      /* Collapse old actions block (status+refresh moved to map-topbar) */
-      .map-header .actions { display: none; }
     </style>
   </head>
   <body>
@@ -2326,141 +2105,44 @@
           <div class="map-layout">
             <div class="map-panel">
               <div class="map-wrap">
-                <div class="map-title-strip">
-                  <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
-                </div>
-                <div id="uk-toolbar-slot">
-                  <!-- ── Toolbar: scope switcher + region popover + pollutant pills ── -->
-                  <div class="toolbar" id="main-toolbar">
-                    <span class="field-label">View</span>
-                    <div class="segmented">
-                      <button type="button" id="toolbar-tab-uk" class="active">United Kingdom</button>
-                      <button type="button" id="toolbar-tab-cr">Countries &amp; Regions</button>
-                    </div>
-
-                    <div class="toolbar-region-section" id="toolbar-region-section">
-                      <div class="toolbar-divider"></div>
-                      <div class="popover-wrap" id="toolbar-popover-wrap">
-                        <button type="button" class="popover-trigger" id="toolbar-region-trigger" aria-haspopup="true" aria-expanded="false">
-                          <span id="toolbar-region-label">London</span>
-                          <svg class="chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-                            <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                          </svg>
-                        </button>
-                        <div class="popover-menu" id="toolbar-region-menu" hidden>
-                          <div class="popover-group-head">Countries</div>
-                          <div class="popover-item" data-region="Northern Ireland">Northern Ireland</div>
-                          <div class="popover-item" data-region="Scotland">Scotland</div>
-                          <div class="popover-item" data-region="Wales">Wales</div>
-                          <div class="popover-divider"></div>
-                          <div class="popover-group-head">English Regions</div>
-                          <div class="popover-item" data-region="East Midlands">East Midlands</div>
-                          <div class="popover-item" data-region="East of England">East of England</div>
-                          <div class="popover-item" data-region="London">London</div>
-                          <div class="popover-item" data-region="North East">North East</div>
-                          <div class="popover-item" data-region="North West">North West</div>
-                          <div class="popover-item" data-region="South East">South East</div>
-                          <div class="popover-item" data-region="South West">South West</div>
-                          <div class="popover-item" data-region="West Midlands">West Midlands</div>
-                          <div class="popover-item" data-region="Yorkshire and The Humber">Yorkshire and The Humber</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="toolbar-divider"></div>
-                    <span class="field-label">Pollutant</span>
-                    <div class="pill-group">
+                <div class="card-header map-header">
+                  <div class="map-header-left">
+                    <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
+                    <div class="pollutant-slot" data-pollutant-slot>
                       <div class="pollutant-selector" id="pollutant-selector" role="radiogroup" aria-label="Pollutant">
-                        <button type="button" class="pill" data-pollutant="pm25" role="radio" aria-checked="true" tabindex="0">PM2.5</button>
-                        <button type="button" class="pill" data-pollutant="pm10" role="radio" aria-checked="false" tabindex="-1">PM10</button>
-                        <button type="button" class="pill" data-pollutant="no2" role="radio" aria-checked="false" tabindex="-1">NO₂</button>
+                        <button type="button" class="pill-button" data-pollutant="pm25" role="radio" aria-checked="true" tabindex="0">
+                          PM2.5
+                        </button>
+                        <button type="button" class="pill-button" data-pollutant="pm10" role="radio" aria-checked="false" tabindex="-1">
+                          PM10
+                        </button>
+                        <button type="button" class="pill-button" data-pollutant="no2" role="radio" aria-checked="false" tabindex="-1">
+                          NO2
+                        </button>
                       </div>
                     </div>
+                    <div class="map-header-controls" data-scope-controls></div>
+                  </div>
+                  <div class="actions">
+                    <span class="status-indicator" data-state="loading">
+                      <span class="pulse-dot" aria-hidden="true"></span>
+                    <span class="hint" id="status">Loading...</span>
+                    </span>
+                    <button id="refresh">Refresh</button>
                   </div>
                 </div>
-                <div class="tab-slot" data-tab-slot style="display:none">
+                <div class="tab-slot" data-tab-slot>
                   <div class="tab-bar" role="tablist" aria-label="Map views">
-                    <button type="button" class="tab-button" id="tab-uk" role="tab" aria-selected="true" aria-controls="tab-panel-uk">United Kingdom</button>
-                    <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">Countries &amp; Regions</button>
+                    <button type="button" class="tab-button" id="tab-uk" role="tab" aria-selected="true" aria-controls="tab-panel-uk">
+                      United Kingdom
+                    </button>
+                    <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">
+                      Countries & Regions
+                    </button>
                   </div>
                 </div>
               <div class="map-canvas">
-                <div class="map-topbar">
-                  <div class="search-pill" aria-label="Search">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4" stroke="#9aa7b3" stroke-width="1.4"/><path d="M9 9l3 3" stroke="#9aa7b3" stroke-width="1.4" stroke-linecap="round"/></svg>
-                    <span>Search</span>
-                  </div>
-                  <span class="status-indicator status-pill" data-state="loading">
-                    <span class="pulse-dot" aria-hidden="true"></span>
-                    <span class="hint" id="status">Loading...</span>
-                  </span>
-                  <button class="btn-refresh" id="refresh">Refresh</button>
-                </div>
                 <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
-                <div class="map-settings-panel" id="map-settings-panel" role="dialog" aria-label="Sensor data settings">
-                  <div class="map-settings-header">
-                    <span class="map-settings-title">Sensor Data</span>
-                    <button type="button" class="map-settings-close" id="map-settings-close" aria-label="Close colour scale">
-                      <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
-                    </button>
-                  </div>
-                  <div class="map-settings-section">
-                    <span class="map-settings-label">Updated within:</span>
-                    <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="3h" />
-                        <span class="window-text">3 Hours</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="6h" />
-                        <span class="window-text">6 Hours</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="1d" />
-                        <span class="window-text">1 Day</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="7d" />
-                        <span class="window-text">7 Days</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="all" checked />
-                        <span class="window-text">No limit</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="map-settings-section">
-                    <span class="map-settings-label">Averaging Method</span>
-                    <div class="map-settings-options metric-group" role="radiogroup" aria-label="Averaging method" data-active="mean">
-                      <span class="metric-toggle" aria-hidden="true"></span>
-                      <label class="colour-scale-option" data-value="mean">
-                        <input type="radio" name="metricSelect" value="mean" checked />
-                        <span class="colour-scale-text">Average (mean)</span>
-                      </label>
-                      <label class="colour-scale-option" data-value="median">
-                        <input type="radio" name="metricSelect" value="median" />
-                        <span class="colour-scale-text">Typical (median)</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="map-settings-section">
-                    <span class="map-settings-label">Colour Scale</span>
-                    <div class="map-settings-options colour-scale-group" role="radiogroup" aria-label="Colour scale options" data-active="power">
-                      <span class="colour-scale-toggle" aria-hidden="true"></span>
-                      <label class="colour-scale-option" data-value="power">
-                        <input type="radio" name="colourScale" value="power" />
-                        <span class="colour-scale-text">Power-eased</span>
-                      </label>
-                      <label class="colour-scale-option" data-value="linear">
-                        <input type="radio" name="colourScale" value="linear" />
-                        <span class="colour-scale-text">Linear</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
-                  <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
-                </button>
               </div>
               <aside class="network-panel">
                 <div class="network-list-header">
@@ -2500,6 +2182,70 @@
                 </div>
                 <span id="legend-label"></span>
               </div>
+              <div class="map-settings-panel" id="map-settings-panel" role="dialog" aria-label="Sensor data settings">
+                <div class="map-settings-header">
+                  <span class="map-settings-title">Sensor Data</span>
+                  <button type="button" class="map-settings-close" id="map-settings-close" aria-label="Close colour scale">
+                    <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
+                  </button>
+                </div>
+                <div class="map-settings-section">
+                  <span class="map-settings-label">Updated within:</span>
+                  <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="3h" />
+                      <span class="window-text">3 Hours</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="6h" />
+                      <span class="window-text">6 Hours</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="1d" />
+                      <span class="window-text">1 Day</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="7d" />
+                      <span class="window-text">7 Days</span>
+                    </label>
+                    <label class="window-option">
+                      <input type="radio" name="averagingWindow" value="all" checked />
+                      <span class="window-text">No limit</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="map-settings-section">
+                  <span class="map-settings-label">Averaging Method</span>
+                  <div class="map-settings-options metric-group" role="radiogroup" aria-label="Averaging method" data-active="mean">
+                    <span class="metric-toggle" aria-hidden="true"></span>
+                    <label class="colour-scale-option" data-value="mean">
+                      <input type="radio" name="metricSelect" value="mean" checked />
+                      <span class="colour-scale-text">Average (mean)</span>
+                    </label>
+                    <label class="colour-scale-option" data-value="median">
+                      <input type="radio" name="metricSelect" value="median" />
+                      <span class="colour-scale-text">Typical (median)</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="map-settings-section">
+                  <span class="map-settings-label">Colour Scale</span>
+                  <div class="map-settings-options colour-scale-group" role="radiogroup" aria-label="Colour scale options" data-active="power">
+                    <span class="colour-scale-toggle" aria-hidden="true"></span>
+                    <label class="colour-scale-option" data-value="power">
+                      <input type="radio" name="colourScale" value="power" />
+                      <span class="colour-scale-text">Power-eased</span>
+                    </label>
+                    <label class="colour-scale-option" data-value="linear">
+                      <input type="radio" name="colourScale" value="linear" />
+                      <span class="colour-scale-text">Linear</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
+                <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
+              </button>
             </div>
           </div>
         </div>
@@ -2851,68 +2597,49 @@
       </div>
 
       <div class="tab-panel" id="tab-panel-cr" role="tabpanel" aria-labelledby="tab-cr" hidden>
-        <section class="top-summary-grid" aria-label="Selected air quality summary for countries and regions">
-          <article class="top-summary-card">
-            <div class="top-summary-label">Total Active Sensors</div>
-            <div class="top-summary-value" id="cr-top-total-sensors">—</div>
-            <div class="top-summary-subtext">from selected networks</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Coverage</div>
-            <div class="top-summary-value" id="cr-top-coverage-percent">—</div>
-            <div class="top-summary-subtext" id="cr-top-coverage-detail">—</div>
-            <div
-              class="top-summary-coverage-bar"
-              id="cr-top-coverage-bar"
-              role="progressbar"
-              aria-label="Coverage percentage"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            >
-              <span class="top-summary-coverage-fill" id="cr-top-coverage-fill"></span>
-            </div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
-            <div class="top-summary-value top-summary-value-with-icon">
-              <svg class="top-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-              <span id="cr-top-highest-value">—</span>
-            </div>
-            <div class="top-summary-subtext" id="cr-top-highest-sensor">—</div>
-            <div class="top-summary-subtext" id="cr-top-highest-network">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Updates</div>
-            <div class="top-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
-            <div class="top-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
-          </article>
-        </section>
-        <!-- Hidden anchors for legacy cr-summary-* IDs (JS still updates these) -->
-        <span id="cr-summary-overall-title" hidden></span>
-        <span id="cr-summary-stations" hidden></span>
-        <span id="cr-summary-highest-label" hidden></span>
-        <span id="cr-summary-lowest-label" hidden></span>
-        <span id="cr-summary-highest-value" hidden></span>
-        <span id="cr-summary-highest-datetime" hidden></span>
-        <span id="cr-summary-highest-connector" hidden></span>
-        <span id="cr-summary-highest-name" hidden></span>
-        <span id="cr-summary-lowest-value" hidden></span>
-        <span id="cr-summary-lowest-datetime" hidden></span>
-        <span id="cr-summary-lowest-connector" hidden></span>
-        <span id="cr-summary-lowest-name" hidden></span>
         <section class="card">
           <div class="hint" id="cr-endpoint-hint" hidden></div>
           <div class="error" id="cr-error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
               <div class="map-wrap">
-                <div class="map-title-strip">
-                  <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
+                <div class="card-header map-header">
+                  <div class="map-header-left">
+                    <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
+                    <div class="pollutant-slot" data-pollutant-slot></div>
+                    <div class="map-header-controls" data-scope-controls></div>
+                  </div>
+                  <div class="actions">
+                    <span class="status-indicator" data-state="loading">
+                      <span class="pulse-dot" aria-hidden="true"></span>
+                    <span class="hint" id="cr-status">Loading...</span>
+                    </span>
+                    <button id="cr-refresh">Refresh</button>
+                  </div>
                 </div>
-                <div id="cr-toolbar-slot"></div>
-                <div class="tab-slot" data-tab-slot style="display:none"></div>
+                <div class="tab-slot" data-tab-slot></div>
                 <aside class="network-panel">
+                  <label class="map-select">
+                    <span>Country or Region</span>
+                    <select id="cr-map-select">
+                      <optgroup label="Countries">
+                        <option value="Northern Ireland">Northern Ireland</option>
+                        <option value="Scotland">Scotland</option>
+                        <option value="Wales">Wales</option>
+                      </optgroup>
+                      <optgroup label="English Regions">
+                        <option value="East Midlands">East Midlands</option>
+                        <option value="East of England">East of England</option>
+                        <option value="London" selected>London</option>
+                        <option value="North East">North East</option>
+                        <option value="North West">North West</option>
+                        <option value="South East">South East</option>
+                        <option value="South West">South West</option>
+                        <option value="West Midlands">West Midlands</option>
+                        <option value="Yorkshire and The Humber">Yorkshire and The Humber</option>
+                      </optgroup>
+                    </select>
+                  </label>
                   <div class="network-list-header">
                     <span>Network</span>
                     <span>Active sensors</span>
@@ -2926,83 +2653,31 @@
                   </div>
                 </aside>
                 <div class="map-canvas">
-                  <div class="map-topbar">
-                    <div class="search-pill" aria-label="Search">
-                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4" stroke="#9aa7b3" stroke-width="1.4"/><path d="M9 9l3 3" stroke="#9aa7b3" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      <span>Search</span>
-                    </div>
-                    <span class="status-indicator status-pill" data-state="loading">
-                      <span class="pulse-dot" aria-hidden="true"></span>
-                      <span class="hint" id="cr-status">Loading...</span>
-                    </span>
-                    <button class="btn-refresh" id="cr-refresh">Refresh</button>
-                  </div>
                   <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
-                  <div class="map-settings-panel" id="cr-map-settings-panel" role="dialog" aria-label="Sensor data settings">
-                    <div class="map-settings-header">
-                      <span class="map-settings-title">Sensor Data</span>
-                      <button type="button" class="map-settings-close" id="cr-map-settings-close" aria-label="Close colour scale">
-                        <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
-                      </button>
+                </div>
+                <aside class="summary-card">
+                  <h3 class="summary-title" id="cr-summary-overall-title">PM2.5 summary</h3>
+                  <div class="summary-list">
+                    <div class="summary-item">
+                      <span class="summary-label">Number of sensors</span>
+                      <span class="summary-value" id="cr-summary-stations">-</span>
                     </div>
-                    <div class="map-settings-section">
-                      <span class="map-settings-label">Updated within:</span>
-                      <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="3h" />
-                          <span class="window-text">3 Hours</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="6h" />
-                          <span class="window-text">6 Hours</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="1d" />
-                          <span class="window-text">1 Day</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="7d" />
-                          <span class="window-text">7 Days</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="all" checked />
-                          <span class="window-text">No limit</span>
-                        </label>
-                      </div>
+                    <div class="summary-item">
+                      <span class="summary-label" id="cr-summary-highest-label">Highest PM2.5</span>
+                      <span class="summary-value" id="cr-summary-highest-value">-</span>
+                      <span class="summary-datetime" id="cr-summary-highest-datetime">-</span>
+                      <span class="summary-connector" id="cr-summary-highest-connector">-</span>
+                      <span class="summary-name" id="cr-summary-highest-name">-</span>
                     </div>
-                    <div class="map-settings-section">
-                      <span class="map-settings-label">Averaging Method</span>
-                      <div class="map-settings-options metric-group" role="radiogroup" aria-label="Averaging method" data-active="mean">
-                        <span class="metric-toggle" aria-hidden="true"></span>
-                        <label class="colour-scale-option" data-value="mean">
-                          <input type="radio" name="cr-metricSelect" value="mean" checked />
-                          <span class="colour-scale-text">Average (mean)</span>
-                        </label>
-                        <label class="colour-scale-option" data-value="median">
-                          <input type="radio" name="cr-metricSelect" value="median" />
-                          <span class="colour-scale-text">Typical (median)</span>
-                        </label>
-                      </div>
-                    </div>
-                    <div class="map-settings-section">
-                      <span class="map-settings-label">Colour Scale</span>
-                      <div class="map-settings-options colour-scale-group" role="radiogroup" aria-label="Colour scale options" data-active="power">
-                        <span class="colour-scale-toggle" aria-hidden="true"></span>
-                        <label class="colour-scale-option" data-value="power">
-                          <input type="radio" name="cr-colourScale" value="power" />
-                          <span class="colour-scale-text">Power-eased</span>
-                        </label>
-                        <label class="colour-scale-option" data-value="linear">
-                          <input type="radio" name="cr-colourScale" value="linear" />
-                          <span class="colour-scale-text">Linear</span>
-                        </label>
-                      </div>
+                    <div class="summary-item">
+                      <span class="summary-label" id="cr-summary-lowest-label">Lowest PM2.5 (Non-zero)</span>
+                      <span class="summary-value" id="cr-summary-lowest-value">-</span>
+                      <span class="summary-datetime" id="cr-summary-lowest-datetime">-</span>
+                      <span class="summary-connector" id="cr-summary-lowest-connector">-</span>
+                      <span class="summary-name" id="cr-summary-lowest-name">-</span>
                     </div>
                   </div>
-                  <button type="button" class="map-settings" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
-                    <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
-                  </button>
-                </div>
+                </aside>
                 <div class="legend map-legend">
                   <span id="cr-legend-pollutant">PM2.5 (µg/m³)</span>
                   <div
@@ -3027,6 +2702,70 @@
                   </div>
                   <span id="cr-legend-label"></span>
                 </div>
+                <div class="map-settings-panel" id="cr-map-settings-panel" role="dialog" aria-label="Sensor data settings">
+                  <div class="map-settings-header">
+                    <span class="map-settings-title">Sensor Data</span>
+                    <button type="button" class="map-settings-close" id="cr-map-settings-close" aria-label="Close colour scale">
+                      <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div class="map-settings-section">
+                    <span class="map-settings-label">Updated within:</span>
+                    <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
+                      <label class="window-option">
+                        <input type="radio" name="cr-averagingWindow" value="3h" />
+                        <span class="window-text">3 Hours</span>
+                      </label>
+                      <label class="window-option">
+                        <input type="radio" name="cr-averagingWindow" value="6h" />
+                        <span class="window-text">6 Hours</span>
+                      </label>
+                      <label class="window-option">
+                        <input type="radio" name="cr-averagingWindow" value="1d" />
+                        <span class="window-text">1 Day</span>
+                      </label>
+                      <label class="window-option">
+                        <input type="radio" name="cr-averagingWindow" value="7d" />
+                        <span class="window-text">7 Days</span>
+                      </label>
+                      <label class="window-option">
+                        <input type="radio" name="cr-averagingWindow" value="all" checked />
+                        <span class="window-text">No limit</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="map-settings-section">
+                    <span class="map-settings-label">Averaging Method</span>
+                    <div class="map-settings-options metric-group" role="radiogroup" aria-label="Averaging method" data-active="mean">
+                      <span class="metric-toggle" aria-hidden="true"></span>
+                      <label class="colour-scale-option" data-value="mean">
+                        <input type="radio" name="cr-metricSelect" value="mean" checked />
+                        <span class="colour-scale-text">Average (mean)</span>
+                      </label>
+                      <label class="colour-scale-option" data-value="median">
+                        <input type="radio" name="cr-metricSelect" value="median" />
+                        <span class="colour-scale-text">Typical (median)</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="map-settings-section">
+                    <span class="map-settings-label">Colour Scale</span>
+                    <div class="map-settings-options colour-scale-group" role="radiogroup" aria-label="Colour scale options" data-active="power">
+                      <span class="colour-scale-toggle" aria-hidden="true"></span>
+                      <label class="colour-scale-option" data-value="power">
+                        <input type="radio" name="cr-colourScale" value="power" />
+                        <span class="colour-scale-text">Power-eased</span>
+                      </label>
+                      <label class="colour-scale-option" data-value="linear">
+                        <input type="radio" name="cr-colourScale" value="linear" />
+                        <span class="colour-scale-text">Linear</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="map-settings" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
+                  <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
+                </button>
               </div>
             </div>
           </div>
@@ -3384,13 +3123,11 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
     <script>
       // ── Top summary boxes — shared updater ───────────────────────────────────
-      window.updateTopSummary = function(data, idPrefix) {
-        const pre = idPrefix || 'top';
+      window.updateTopSummary = function(data) {
         const elById = (id) => document.getElementById(id);
-        const p = (name) => elById(`${pre}-${name}`);
 
         // Box 1: Total Active Sensors
-        const sensorsEl = p('total-sensors');
+        const sensorsEl = elById('top-total-sensors');
         if (sensorsEl) {
           sensorsEl.textContent = Number.isFinite(data.totalSensors)
             ? data.totalSensors.toLocaleString()
@@ -3398,10 +3135,10 @@
         }
 
         // Box 2: Coverage
-        const coveragePct = p('coverage-percent');
-        const coverageDetail = p('coverage-detail');
-        const coverageBar = p('coverage-bar');
-        const coverageFill = p('coverage-fill');
+        const coveragePct = elById('top-coverage-percent');
+        const coverageDetail = elById('top-coverage-detail');
+        const coverageBar = elById('top-coverage-bar');
+        const coverageFill = elById('top-coverage-fill');
         if (coveragePct && coverageDetail) {
           const covered = data.pconCovered ?? 0;
           const total = data.pconTotal ?? 0;
@@ -3426,11 +3163,11 @@
         }
 
         // Box 3: Highest reading
-        const highestLabel = p('highest-label');
-        const highestHex = p('highest-hex');
-        const highestValue = p('highest-value');
-        const highestSensor = p('highest-sensor');
-        const highestNetwork = p('highest-network');
+        const highestLabel = elById('top-highest-label');
+        const highestHex = elById('top-highest-hex');
+        const highestValue = elById('top-highest-value');
+        const highestSensor = elById('top-highest-sensor');
+        const highestNetwork = elById('top-highest-network');
         if (highestLabel) {
           highestLabel.textContent = `Highest ${data.pollutantLabel || 'PM2.5'}`;
         }
@@ -3461,8 +3198,8 @@
           const min = String(d.getMinutes()).padStart(2, '0');
           return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
         };
-        const latestEl = p('latest-update');
-        const oldestEl = p('oldest-update');
+        const latestEl = elById('top-latest-update');
+        const oldestEl = elById('top-oldest-update');
         if (latestEl) latestEl.textContent = fmtTime(data.newestReadingISO);
         if (oldestEl) oldestEl.textContent = fmtTime(data.oldestReadingISO);
       };
@@ -9366,7 +9103,7 @@
               highestNetwork: '—',
               newestReadingISO: null,
               oldestReadingISO: null,
-            }, 'cr-top');
+            });
           }
           return;
         }
@@ -9425,7 +9162,7 @@
             highestNetwork: resolveConnectorLabel(highest.row),
             newestReadingISO: newest ? (newest.toISOString?.() || newest) : null,
             oldestReadingISO: oldest ? (oldest.toISOString?.() || oldest) : null,
-          }, 'cr-top');
+          });
         }
       }
 
@@ -11370,6 +11107,11 @@
     uk: panelUk.querySelector("[data-tab-slot]"),
     cr: panelCr.querySelector("[data-tab-slot]"),
   };
+  const pollutantSelector = document.getElementById("pollutant-selector");
+  const pollutantSlots = {
+    uk: panelUk.querySelector("[data-pollutant-slot]"),
+    cr: panelCr.querySelector("[data-pollutant-slot]"),
+  };
 
   const REGION_OPTIONS = [
     "Northern Ireland",
@@ -11423,12 +11165,6 @@
 
   window.updateMapParam = updateMapParam;
 
-  const toolbarEl = document.getElementById("main-toolbar");
-  const toolbarSlots = {
-    uk: document.getElementById("uk-toolbar-slot"),
-    cr: document.getElementById("cr-toolbar-slot"),
-  };
-
   function setActiveTab(tabKey) {
     const isUk = tabKey === "uk";
     tabUk.setAttribute("aria-selected", isUk ? "true" : "false");
@@ -11437,9 +11173,9 @@
     if (tabBar && targetSlot && tabBar.parentElement !== targetSlot) {
       targetSlot.appendChild(tabBar);
     }
-    const toolbarSlot = isUk ? toolbarSlots.uk : toolbarSlots.cr;
-    if (toolbarEl && toolbarSlot && toolbarEl.parentElement !== toolbarSlot) {
-      toolbarSlot.appendChild(toolbarEl);
+    const pollutantSlot = isUk ? pollutantSlots.uk : pollutantSlots.cr;
+    if (pollutantSelector && pollutantSlot && pollutantSelector.parentElement !== pollutantSlot) {
+      pollutantSlot.appendChild(pollutantSelector);
     }
     panelUk.hidden = !isUk;
     panelCr.hidden = isUk;
@@ -11450,7 +11186,6 @@
       window.crMap?.render();
       window.crMap?.restoreNetworks();
     }
-    window.syncToolbar?.(tabKey);
   }
 
   function applyMap(mapValue, options = {}) {
@@ -11491,81 +11226,6 @@
     mapState.lastCrMap = initialMap;
   }
   applyMap(initialMap, { updateUrl: !params.get("map"), push: false });
-})();
-    </script>
-    <script>
-(() => {
-  const toolbarTabUk = document.getElementById("toolbar-tab-uk");
-  const toolbarTabCr = document.getElementById("toolbar-tab-cr");
-  const regionSection = document.getElementById("toolbar-region-section");
-  const regionTrigger = document.getElementById("toolbar-region-trigger");
-  const regionLabel = document.getElementById("toolbar-region-label");
-  const regionMenu = document.getElementById("toolbar-region-menu");
-  const popoverWrap = document.getElementById("toolbar-popover-wrap");
-  const tabUk = document.getElementById("tab-uk");
-  const tabCr = document.getElementById("tab-cr");
-
-  // Segmented control → delegate to existing hidden tab buttons
-  toolbarTabUk?.addEventListener("click", () => tabUk?.click());
-  toolbarTabCr?.addEventListener("click", () => tabCr?.click());
-
-  // Region popover — open/close
-  regionTrigger?.addEventListener("click", () => {
-    const isOpen = !regionMenu.hidden;
-    regionMenu.hidden = isOpen;
-    regionTrigger.classList.toggle("open", !isOpen);
-    regionTrigger.setAttribute("aria-expanded", String(!isOpen));
-    if (!isOpen) syncRegionActive();
-  });
-
-  // Close on outside click
-  document.addEventListener("mousedown", (e) => {
-    if (popoverWrap && !popoverWrap.contains(e.target)) {
-      regionMenu.hidden = true;
-      regionTrigger?.classList.remove("open");
-      regionTrigger?.setAttribute("aria-expanded", "false");
-    }
-  });
-
-  // Region item clicks
-  regionMenu?.querySelectorAll("[data-region]").forEach((item) => {
-    item.addEventListener("click", () => {
-      const region = item.dataset.region;
-      regionMenu.hidden = true;
-      regionTrigger?.classList.remove("open");
-      regionTrigger?.setAttribute("aria-expanded", "false");
-      if (regionLabel) regionLabel.textContent = region;
-      syncRegionActive(region);
-      window.crMap?.setRegion(region, { updateUrl: true });
-    });
-  });
-
-  function syncRegionActive(active) {
-    const current = active ?? window.crMap?.getRegion?.();
-    if (!regionMenu || !current) return;
-    regionMenu.querySelectorAll("[data-region]").forEach((item) => {
-      item.classList.toggle("active", item.dataset.region === current);
-    });
-  }
-
-  // Called by setActiveTab whenever the active tab changes
-  window.syncToolbar = function (tabKey) {
-    const isUk = tabKey === "uk";
-    toolbarTabUk?.classList.toggle("active", isUk);
-    toolbarTabCr?.classList.toggle("active", !isUk);
-    if (regionSection) regionSection.classList.toggle("visible", !isUk);
-    if (!isUk && regionLabel) {
-      const region = window.crMap?.getRegion?.();
-      if (region) {
-        regionLabel.textContent = region;
-        syncRegionActive(region);
-      }
-    }
-  };
-
-  // Sync toolbar to the tab state that was already set before this script ran
-  const initialTabKey = tabUk?.getAttribute("aria-selected") === "true" ? "uk" : "cr";
-  window.syncToolbar(initialTabKey);
 })();
     </script>
     <script src="sidebar.js"></script>
