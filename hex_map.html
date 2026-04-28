@@ -7810,7 +7810,7 @@
       let populationLookup = new Map();
 	      let networkInputs = [];
 	      let networkSelectionMismatch = false;
-	      let selectedPconCode = null;
+	      let selectedAreaCode = null;
 	      let selectedCell = null;
 	      const CACHE_SESSION_SKEW_MS = 10000;
 	      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:cr`;
@@ -8499,7 +8499,7 @@
         const merged = new Map();
         const extras = [];
         const upsert = (row) => {
-          const key = row?.pcon_code;
+          const key = resolveAreaCode(row);
           if (!key) {
             extras.push(row);
             return;
@@ -9001,20 +9001,47 @@
         return collectNetworkEntries(row).map((entry) => entry.code);
       }
 
-      function resolvePconCode(row) {
-        return row?.la_code
+      function resolveAreaCode(row) {
+        return row?.area_code
+          || row?.la_code
           || row?.lad_code
           || row?.la
           || row?.lad
           || row?.local_authority_code
           || row?.local_authority
+          || row?.pcon_code
           || row?.station?.la_code
           || row?.station?.lad_code
           || row?.station?.la
           || row?.station?.lad
           || row?.station?.local_authority_code
           || row?.station?.local_authority
+          || row?.station?.pcon_code
           || null;
+      }
+
+      function resolveAreaName(row) {
+        return row?.area_name
+          || row?.la_name
+          || row?.pcon_name
+          || row?.local_authority_name
+          || row?.station?.la_name
+          || row?.station?.local_authority_name
+          || row?.station?.pcon_name
+          || null;
+      }
+
+      function resolveCellAreaCode(cell) {
+        return cell?.area_code || cell?.pcon_code || null;
+      }
+
+      function resolveCellAreaName(cell) {
+        return cell?.area_name || cell?.pcon_name || null;
+      }
+
+      // Backward-compatible alias used by existing helpers.
+      function resolvePconCode(row) {
+        return resolveAreaCode(row);
       }
 
       function resolveStationKey(row) {
@@ -9504,19 +9531,19 @@
         if (!hexes.size()) {
           return;
         }
-        if (!selectedPconCode) {
+        if (!selectedAreaCode) {
           hexes.classed("is-selected", false).classed("is-dimmed", false);
           return;
         }
         hexes
-          .classed("is-selected", (cell) => cell.pcon_code === selectedPconCode)
-          .classed("is-dimmed", (cell) => cell.pcon_code !== selectedPconCode);
+          .classed("is-selected", (cell) => resolveCellAreaCode(cell) === selectedAreaCode)
+          .classed("is-dimmed", (cell) => resolveCellAreaCode(cell) !== selectedAreaCode);
       }
 
       function setSelectedCell(cell) {
         selectedCell = cell || null;
-        selectedPconCode = cell?.pcon_code || null;
-        if (!selectedPconCode) {
+        selectedAreaCode = resolveCellAreaCode(cell);
+        if (!selectedAreaCode) {
           pinnedTooltipCell = null;
           if (tooltip) {
             tooltip.classList.remove("visible");
@@ -9633,7 +9660,7 @@
           return;
         }
         const pollutantUnits = getPollutantUnits(activePollutant);
-        if (!selectedPconCode) {
+        if (!selectedAreaCode) {
           detailsTitle.textContent = "Selected Networks";
           detailsMeta.textContent = "Network summary for the current window.";
           detailsEmpty.hidden = true;
@@ -9644,11 +9671,11 @@
           return;
         }
         networkSummary.hidden = true;
-        const row = pconLookup.get(selectedPconCode);
-        const areaName = selectedCell?.pcon_name || row?.pcon_name || selectedPconCode;
+        const row = pconLookup.get(selectedAreaCode);
+        const areaName = resolveCellAreaName(selectedCell) || resolveAreaName(row) || selectedAreaCode;
         detailsTitle.textContent = areaName;
         const scopedRows = getRowsForActivePollutant(scopedLatestRows);
-        const stationEntries = collectStationEntries(scopedRows, selectedPconCode);
+        const stationEntries = collectStationEntries(scopedRows, selectedAreaCode);
         if (!stationEntries.length) {
           detailsMeta.textContent = formatSensorCount(0);
           detailsEmpty.textContent = "No sensors found for this local authority.";
@@ -9840,6 +9867,8 @@
             cy: y,
             q,
             r,
+            area_code: key,
+            area_name: value?.n || null,
             pcon_code: key,
             pcon_name: value?.n || null,
             region_code: value?.region || null,
@@ -10147,8 +10176,8 @@
           const name = laName || code;
           cells.push({
             id: code,
-            pcon_code: code || null,
-            pcon_name: name || null,
+            area_code: code || null,
+            area_name: name || null,
             region_name: regionName || null,
             paths: rings,
           });
@@ -10549,17 +10578,17 @@
         const groups = new Map();
         const scopedRows = getRowsForActivePollutant(rows);
         scopedRows.forEach((row, index) => {
-          const pconCode = resolvePconCode(row);
-          if (!pconCode) {
+          const areaCode = resolveAreaCode(row);
+          if (!areaCode) {
             return;
           }
           const value = resolveLatestValue(row);
           if (!Number.isFinite(value)) {
             return;
           }
-          const stationKey = resolveStationKey(row) || `${pconCode}-${index}`;
+          const stationKey = resolveStationKey(row) || `${areaCode}-${index}`;
           const timestamp = parseDate(row?.last_value_at || row?.observed_at || row?.latest_value_at);
-          const group = groups.get(pconCode) || { stations: new Map(), latestAt: null };
+          const group = groups.get(areaCode) || { stations: new Map(), latestAt: null };
           const existing = group.stations.get(stationKey);
           if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
             group.stations.set(stationKey, { value, timestamp });
@@ -10567,11 +10596,11 @@
           if (timestamp && (!group.latestAt || timestamp > group.latestAt)) {
             group.latestAt = timestamp;
           }
-          groups.set(pconCode, group);
+          groups.set(areaCode, group);
         });
 
         const rowsForMap = [];
-        groups.forEach((group, pconCode) => {
+        groups.forEach((group, areaCode) => {
           const values = Array.from(group.stations.values())
             .map((entry) => entry.value)
             .filter((value) => Number.isFinite(value));
@@ -10584,10 +10613,10 @@
             ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
             : sorted[midpoint];
           const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-          const baseRow = basePconLookup.get(pconCode) || {};
+          const baseRow = basePconLookup.get(areaCode) || {};
           rowsForMap.push({
-            pcon_code: pconCode,
-            pcon_name: baseRow.pcon_name || null,
+            area_code: areaCode,
+            area_name: resolveAreaName(baseRow),
             pcon_version: baseRow.pcon_version || baseRow.la_version || activeLaVersion,
             station_count: values.length,
             single_site: values.length === 1,
@@ -10623,7 +10652,7 @@
         latestRows = filterRowsByWindow(filteredLatest);
         const derived = latestRows.length ? buildPconRowsFromLatest(latestRows) : [];
         pconRows = derived;
-        pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+        pconLookup = new Map(pconRows.map((row) => [resolveAreaCode(row), row]));
         updateRowCountText();
         updateSummary();
         renderMap();
@@ -10728,7 +10757,8 @@
             return buildPathFromRings(rings, projection);
           })
           .attr("fill", (cell) => {
-            const row = pconLookup.get(cell.pcon_code);
+            const areaCode = resolveCellAreaCode(cell);
+            const row = areaCode ? pconLookup.get(areaCode) : null;
             const value = getMetricValue(row);
             if (!colorScale || !Number.isFinite(value)) {
               return "var(--no-data)";
@@ -10740,13 +10770,14 @@
             setSelectedCell(cell);
           })
           .on("mouseenter", (event, cell) => {
-            const row = pconLookup.get(cell.pcon_code);
+            const areaCode = resolveCellAreaCode(cell);
+            const row = areaCode ? pconLookup.get(areaCode) : null;
             const metricValue = getMetricValue(row);
-            const areaName = cell.pcon_name || row?.pcon_name || cell.pcon_code || "Unknown local authority";
+            const areaName = resolveCellAreaName(cell) || resolveAreaName(row) || areaCode || "Unknown local authority";
             const regionLabel = cell.region_name || cell.region_code || "Unknown region";
             const pollutantLabel = getPollutantLabel(activePollutant);
             const pollutantUnits = getPollutantUnits(activePollutant);
-            const populationEntry = populationLookup.get(cell.pcon_code);
+            const populationEntry = areaCode ? populationLookup.get(areaCode) : null;
             const populationValue = normalizeNumber(populationEntry?.population_value);
             const populationDate = parseDate(populationEntry?.reference_date);
             const populationYear = populationDate ? populationDate.getFullYear() : null;
@@ -10757,8 +10788,8 @@
               ? `${formatValue(metricValue)} ${pollutantUnits}`
               : `No ${pollutantLabel} data`;
             const rowsForTooltip = getRowsForActivePollutant(latestRows)
-              .filter((item) => resolvePconCode(item) === cell.pcon_code);
-            const stationEntries = collectStationEntries(rowsForTooltip, cell.pcon_code);
+              .filter((item) => resolveAreaCode(item) === areaCode);
+            const stationEntries = collectStationEntries(rowsForTooltip, areaCode);
             const networkCounts = countStationsByNetwork(stationEntries);
             const networkLines = stationEntries.length
               ? networkCounts.map((entry) =>
@@ -10963,7 +10994,7 @@
           }
           hexData = await hexResponse.json();
           prepareHexGrid();
-          pconCodes = new Set(hexCells.map((cell) => cell.pcon_code).filter(Boolean));
+          pconCodes = new Set(hexCells.map((cell) => resolveCellAreaCode(cell)).filter(Boolean));
           const laNotModified = Boolean(canLoadData && laResponse && laResponse.status === 304);
           const laOk = Boolean(canLoadData && laResponse && (laResponse.ok || laNotModified));
           if (laOk) {
@@ -10975,23 +11006,26 @@
             }
             if (laResponse && laResponse.status === 304) {
               pconRows = basePconRows;
-              pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+              pconLookup = new Map(pconRows.map((row) => [resolveAreaCode(row), row]));
             } else {
               const payload = await laResponse.json();
               const laSince = laCacheKey ? normalizeIsoTimestamp(laSinceByKey.get(laCacheKey)) : null;
               const rawRows = payload?.data || [];
               const incomingRows = rawRows.map((row) => ({
                 ...row,
-                pcon_code: row?.la_code || null,
-                pcon_name: row?.pcon_name || row?.la_name || null,
+                area_code: row?.area_code || row?.la_code || null,
+                area_name: row?.area_name || row?.la_name || row?.pcon_name || null,
                 region_name: row?.region_name || row?.region_nation || row?.region || null,
-              })).filter((row) => !pconCodes.size || pconCodes.has(row.pcon_code));
+              })).filter((row) => {
+                const code = resolveAreaCode(row);
+                return !pconCodes.size || (code && pconCodes.has(code));
+              });
               basePconRows = laSince
                 ? mergePconRows(basePconRows, incomingRows)
                 : incomingRows;
-              basePconLookup = new Map(basePconRows.map((row) => [row.pcon_code, row]));
+              basePconLookup = new Map(basePconRows.map((row) => [resolveAreaCode(row), row]));
               pconRows = basePconRows;
-              pconLookup = new Map(pconRows.map((row) => [row.pcon_code, row]));
+              pconLookup = new Map(pconRows.map((row) => [resolveAreaCode(row), row]));
               const nextSince = normalizeIsoTimestamp(payload?.next_since) || laSince;
               if (laCacheKey) {
                 if (nextSince) {
