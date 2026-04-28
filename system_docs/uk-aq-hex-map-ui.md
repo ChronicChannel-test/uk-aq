@@ -37,6 +37,42 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - `activeRegion` drives the C&R map scope.
 - URL param `map=` persists the active region in the address bar.
 
+## Name source files (local)
+- Display names for map areas are sourced from local geometry files in this repo, fetched directly by the browser.
+- UK constituencies (PCON):
+  - `data/PCON/uk-constituencies-2023.hexjson`
+  - `data/PCON/uk-constituencies-2017.hexjson`
+  - Name field: `hexes[<pcon_code>].n`
+- Local authorities (C&R / LA):
+  - `data/LAD/uk_aq_la_hex_2023.json`
+  - Name field: `features[].properties.la_name`
+  - Code field: `features[].properties.la_code`
+- Supabase/cache responses provide metrics and station data; when name fields are null in those responses, map labels still resolve from the local geometry files above.
+
+## Search/autocomplete
+- The map topbar now uses a real combobox search UI (`.map-search`) in both UK and C&R panels.
+- Endpoint config comes from URL params with defaults:
+  - `postcode_suggest_url` (default `/api/postcode_suggest`)
+  - `postcode_lookup_url` (default `/api/postcode_lookup`)
+- Query behavior:
+  - Postcode-like input (`B`, `BS2`, `SW1A`, etc.) calls postcode suggest.
+  - Non-postcode text uses local in-memory indexes.
+  - Local text matching starts at 2 chars for constituency / local authority / sensor.
+- Result groups and order:
+  1. Postcode
+  2. Constituency
+  3. Local authority
+  4. Sensor
+  - Up to 2 per type first, then remaining slots fill in this same order up to 6 total.
+- Selection routing:
+  - Postcode result triggers exact lookup, then selects `pcon_code` on UK tab or `la_code` on C&R tab.
+  - Constituency result switches to UK tab and selects PCON.
+  - Local authority result switches to C&R tab and selects LA.
+  - Sensor result selects containing PCON/LA based on active tab and available codes.
+- C&R region fallback:
+  - Local authority code-to-region lookup is built from `data/LAD/uk_aq_la_hex_2023.json`.
+  - If an LA code is outside the current C&R region view, the map switches region and applies pending selection after the next load.
+
 ## Cache session auth
 - Cache API calls now try the request first with `credentials: include`.
 - A Turnstile-backed `POST /api/aq/session/start` is attempted only after a `401` response.
