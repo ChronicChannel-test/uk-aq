@@ -57,7 +57,7 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - Query behavior:
   - Postcode-like input (`B`, `BS2`, `SW1A`, etc.) calls postcode suggest.
   - Non-postcode text uses local in-memory indexes.
-  - Local text matching starts at 2 chars for constituency / local authority / sensor.
+  - Local text matching starts at 1 char for constituency / local authority / sensor.
 - Result groups and order:
   1. Postcode
   2. Constituency

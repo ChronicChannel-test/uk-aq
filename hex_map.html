@@ -12102,13 +12102,29 @@
   }
 
   const params = new URLSearchParams(window.location.search);
-  const postcodeSuggestUrl = (params.get("postcode_suggest_url") || "/api/postcode_suggest").trim();
-  const postcodeLookupUrl = (params.get("postcode_lookup_url") || "/api/postcode_lookup").trim();
+  const postcodeSuggestUrlOverrides = params.getAll("postcode_suggest_url")
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const postcodeLookupUrlOverrides = params.getAll("postcode_lookup_url")
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const postcodeSuggestUrlCandidates = postcodeSuggestUrlOverrides.length
+    ? postcodeSuggestUrlOverrides
+    : ["/api/postcode_suggest", "/v1/postcode_suggest"];
+  const postcodeLookupUrlCandidates = postcodeLookupUrlOverrides.length
+    ? postcodeLookupUrlOverrides
+    : ["/api/postcode_lookup", "/v1/postcode_lookup"];
+  let workingPostcodeSuggestUrl = null;
+  let workingPostcodeLookupUrl = null;
+  const failedPostcodeSuggestUrls = new Set();
+  const failedPostcodeLookupUrls = new Set();
+  let postcodeSuggestDisabled = false;
+  let postcodeLookupDisabled = false;
   const MAX_RESULTS = 6;
   const MAX_PER_TYPE = 2;
   const MAX_LIMIT = 10;
   const POSTCODE_DEBOUNCE_MS = 250;
-  const LOCAL_SEARCH_MIN_CHARS = 2;
+  const LOCAL_SEARCH_MIN_CHARS = 1;
   const MOBILE_BREAKPOINT_QUERY = "(max-width: 720px)";
 
   function normalizeText(value) {
@@ -12265,66 +12281,138 @@
   }
 
   async function fetchPostcodeSuggestions(query, signal, limit) {
-    const requestUrl = makeRequestUrl(postcodeSuggestUrl, {
-      q: query,
-      limit,
-    });
-    const response = await fetch(requestUrl, { signal });
-    const payload = await safeReadJson(response);
-    if (!response.ok) {
-      if (response.status === 400 || response.status === 404) {
-        return [];
-      }
-      const message = payload?.message || "Postcode search unavailable";
-      const error = new Error(message);
-      error.status = response.status;
+    if (postcodeSuggestDisabled) {
+      const error = new Error("Postcode search unavailable");
+      error.status = 503;
       throw error;
     }
-    const rows = Array.isArray(payload?.results) ? payload.results : [];
-    return rows.map((row) => {
-      if (row?.type === "postcode_hint") {
-        const prefix = normalizePostcode(row.prefix || row.query || "");
-        const count = Number.isFinite(Number(row.count)) ? Number(row.count) : null;
+    const baseCandidates = workingPostcodeSuggestUrl
+      ? [workingPostcodeSuggestUrl]
+      : postcodeSuggestUrlCandidates;
+    const candidates = baseCandidates.filter((url) => !failedPostcodeSuggestUrls.has(url));
+    if (!candidates.length) {
+      postcodeSuggestDisabled = true;
+      const error = new Error("Postcode search unavailable");
+      error.status = 503;
+      throw error;
+    }
+    let lastError = null;
+    for (const baseUrl of candidates) {
+      const requestUrl = makeRequestUrl(baseUrl, {
+        q: query,
+        limit,
+      });
+      const response = await fetch(requestUrl, { signal });
+      const payload = await safeReadJson(response);
+      if (!response.ok) {
+        if (response.status === 404 && !workingPostcodeSuggestUrl) {
+          failedPostcodeSuggestUrls.add(baseUrl);
+          continue;
+        }
+        if (response.status === 400) {
+          workingPostcodeSuggestUrl = baseUrl;
+          return [];
+        }
+        const message = payload?.message || "Postcode search unavailable";
+        const error = new Error(message);
+        error.status = response.status;
+        lastError = error;
+        if (!workingPostcodeSuggestUrl && (response.status === 401 || response.status === 403 || response.status === 405)) {
+          failedPostcodeSuggestUrls.add(baseUrl);
+          continue;
+        }
+        throw error;
+      }
+      workingPostcodeSuggestUrl = baseUrl;
+      const rows = Array.isArray(payload?.results) ? payload.results : [];
+      return rows.map((row) => {
+        if (row?.type === "postcode_hint") {
+          const prefix = normalizePostcode(row.prefix || row.query || "");
+          const count = Number.isFinite(Number(row.count)) ? Number(row.count) : null;
+          return {
+            group: "postcode",
+            kind: "postcode_hint",
+            type_label: getResultTypeLabel("postcode_hint"),
+            prefix,
+            count,
+            primary: row.label || `${prefix} postcodes`,
+            secondary: count !== null ? `${count.toLocaleString()} matches` : "",
+          };
+        }
+        const postcode = String(row?.postcode || "").trim();
+        const postcodeNormalised = normalizePostcode(row?.postcode_normalised || postcode);
+        const areaName = String(row?.area_name || "").trim();
+        const postTown = String(row?.post_town || "").trim();
         return {
           group: "postcode",
-          kind: "postcode_hint",
-          type_label: getResultTypeLabel("postcode_hint"),
-          prefix,
-          count,
-          primary: row.label || `${prefix} postcodes`,
-          secondary: count !== null ? `${count.toLocaleString()} matches` : "",
+          kind: "postcode",
+          type_label: getResultTypeLabel("postcode"),
+          postcode,
+          postcode_normalised: postcodeNormalised,
+          area_name: areaName || null,
+          post_town: postTown || null,
+          area_town_id: Number.isFinite(Number(row?.area_town_id)) ? Number(row.area_town_id) : null,
+          primary: postcode || postcodeNormalised,
+          secondary: buildPostcodeLabel("", areaName, postTown),
         };
-      }
-      const postcode = String(row?.postcode || "").trim();
-      const postcodeNormalised = normalizePostcode(row?.postcode_normalised || postcode);
-      const areaName = String(row?.area_name || "").trim();
-      const postTown = String(row?.post_town || "").trim();
-      return {
-        group: "postcode",
-        kind: "postcode",
-        type_label: getResultTypeLabel("postcode"),
-        postcode,
-        postcode_normalised: postcodeNormalised,
-        area_name: areaName || null,
-        post_town: postTown || null,
-        area_town_id: Number.isFinite(Number(row?.area_town_id)) ? Number(row.area_town_id) : null,
-        primary: postcode || postcodeNormalised,
-        secondary: buildPostcodeLabel("", areaName, postTown),
-      };
-    }).filter((row) => row?.primary);
+      }).filter((row) => row?.primary);
+    }
+    postcodeSuggestDisabled = true;
+    if (lastError) {
+      throw lastError;
+    }
+    const error = new Error("Postcode search unavailable");
+    error.status = 503;
+    throw error;
   }
 
   async function fetchExactPostcode(postcode) {
-    const requestUrl = makeRequestUrl(postcodeLookupUrl, { postcode });
-    const response = await fetch(requestUrl);
-    const payload = await safeReadJson(response);
-    if (!response.ok || payload?.ok === false) {
-      const error = new Error(payload?.message || "Postcode lookup unavailable");
-      error.status = response.status;
-      error.code = payload?.error || null;
+    if (postcodeLookupDisabled) {
+      const error = new Error("Postcode lookup unavailable");
+      error.status = 503;
       throw error;
     }
-    return payload || {};
+    const baseCandidates = workingPostcodeLookupUrl
+      ? [workingPostcodeLookupUrl]
+      : postcodeLookupUrlCandidates;
+    const candidates = baseCandidates.filter((url) => !failedPostcodeLookupUrls.has(url));
+    if (!candidates.length) {
+      postcodeLookupDisabled = true;
+      const error = new Error("Postcode lookup unavailable");
+      error.status = 503;
+      throw error;
+    }
+    let lastError = null;
+    for (const baseUrl of candidates) {
+      const requestUrl = makeRequestUrl(baseUrl, { postcode });
+      const response = await fetch(requestUrl);
+      const payload = await safeReadJson(response);
+      if (!response.ok || payload?.ok === false) {
+        const status = response.status || 500;
+        if (status === 404 && !workingPostcodeLookupUrl) {
+          failedPostcodeLookupUrls.add(baseUrl);
+          continue;
+        }
+        const error = new Error(payload?.message || "Postcode lookup unavailable");
+        error.status = status;
+        error.code = payload?.error || null;
+        lastError = error;
+        if (!workingPostcodeLookupUrl && (status === 401 || status === 403 || status === 405)) {
+          failedPostcodeLookupUrls.add(baseUrl);
+          continue;
+        }
+        throw error;
+      }
+      workingPostcodeLookupUrl = baseUrl;
+      return payload || {};
+    }
+    postcodeLookupDisabled = true;
+    if (lastError) {
+      throw lastError;
+    }
+    const error = new Error("Postcode lookup unavailable");
+    error.status = 503;
+    throw error;
   }
 
   function buildConstituencySearchIndex() {
