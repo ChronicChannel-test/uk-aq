@@ -12110,10 +12110,20 @@
     .filter(Boolean);
   const postcodeSuggestUrlCandidates = postcodeSuggestUrlOverrides.length
     ? postcodeSuggestUrlOverrides
-    : ["/api/postcode_suggest", "/v1/postcode_suggest"];
+    : [
+      "/api/aq/postcode_suggest",
+      "/api/aq/postcode-suggest",
+      "/api/postcode_suggest",
+      "/v1/postcode_suggest",
+    ];
   const postcodeLookupUrlCandidates = postcodeLookupUrlOverrides.length
     ? postcodeLookupUrlOverrides
-    : ["/api/postcode_lookup", "/v1/postcode_lookup"];
+    : [
+      "/api/aq/postcode_lookup",
+      "/api/aq/postcode-lookup",
+      "/api/postcode_lookup",
+      "/v1/postcode_lookup",
+    ];
   let workingPostcodeSuggestUrl = null;
   let workingPostcodeLookupUrl = null;
   const failedPostcodeSuggestUrls = new Set();
