@@ -16,7 +16,7 @@
       children: [
         { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/bubblechart/' },
         { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/linechart/' },
-        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '#' },
+        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '#', className: 'cic-nav-item--eco-replaces' },
         { label: 'Category Info',      icon: 'i', href: '/data-explorer/resources/' },
         { label: 'User Guide',         icon: '?', href: '/data-explorer/user-guide/' },
       ],
@@ -306,6 +306,15 @@
       object-fit: contain;
     }
     .cic-nav-label { overflow: hidden; text-overflow: ellipsis; }
+    .cic-nav-item--eco-replaces .cic-nav-label {
+      display: block;
+      width: 92px;
+      white-space: normal;
+      line-height: 1.15;
+      text-align: left;
+      overflow: visible;
+      text-overflow: clip;
+    }
 
     body[data-sidebar-state="mini"] .cic-nav-label { display: none; }
     body[data-sidebar-state="mini"] .cic-nav-item  { padding: 11px; justify-content: center; }

@@ -2310,6 +2310,7 @@
         color: var(--ink-4);
         min-width: 88px;
         padding-top: 2px;
+        white-space: pre-line;
       }
       .map-search-result-copy {
         display: flex;
@@ -12221,7 +12222,7 @@
       return "CONSTITUENCY";
     }
     if (kind === "local_authority") {
-      return "LOCAL AUTHORITY";
+      return "LOCAL\nAUTHORITY";
     }
     if (kind === "sensor") {
       return "SENSOR";
@@ -12552,26 +12553,23 @@
       pools[type] = Array.isArray(groups[type]) ? [...groups[type]] : [];
     });
     const output = [];
+
     orderedTypes.forEach((type) => {
       const pool = pools[type];
-      while (pool.length && output.length < limit && output.filter((item) => item.group === type).length < MAX_PER_TYPE) {
+      let taken = 0;
+      while (pool.length && output.length < limit && taken < MAX_PER_TYPE) {
+        output.push(pool.shift());
+        taken += 1;
+      }
+    });
+
+    orderedTypes.forEach((type) => {
+      const pool = pools[type];
+      while (pool.length && output.length < limit) {
         output.push(pool.shift());
       }
     });
-    while (output.length < limit) {
-      let appended = false;
-      orderedTypes.forEach((type) => {
-        const pool = pools[type];
-        if (!pool.length || output.length >= limit) {
-          return;
-        }
-        output.push(pool.shift());
-        appended = true;
-      });
-      if (!appended) {
-        break;
-      }
-    }
+
     return output;
   }
 
