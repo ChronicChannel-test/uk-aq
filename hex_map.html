@@ -2416,6 +2416,599 @@
       .tab-bar { display: none; }
       /* Collapse old actions block (status+refresh moved to map-topbar) */
       .map-header .actions { display: none; }
+
+      /* ══════════════════════════════════════════════════════
+         LAYOUT TEST ONLY — cohesive dashboard card layout
+         ══════════════════════════════════════════════════════ */
+
+      #tab-panel-uk > .card:first-of-type,
+      #tab-panel-cr > .card:first-of-type {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        gap: 0;
+      }
+
+      .map-dashboard-card {
+        background: var(--map-wrap);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgba(16, 24, 34, 0.08);
+        padding: 18px;
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-rows: auto auto auto auto auto;
+        column-gap: 0;
+        row-gap: 0;
+        align-items: start;
+        position: relative;
+      }
+
+      .map-title-strip {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        min-height: 0;
+        padding: 0 2px 18px;
+        border: 0;
+        margin: 0;
+      }
+
+      .map-dashboard-title {
+        font-size: clamp(1.35rem, 1.65vw, 1.5rem) !important;
+        font-weight: 700;
+        margin: 0;
+        color: var(--ink-1);
+      }
+
+      .map-summary-grid {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0 0 12px;
+        padding: 0;
+      }
+
+      .map-summary-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px 18px;
+        box-shadow: 0 1px 3px rgba(16, 24, 34, 0.04);
+      }
+
+      .map-summary-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-weight: 700;
+        color: var(--ink-3);
+        margin-bottom: 6px;
+      }
+
+      .map-summary-value {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.15;
+      }
+
+      .map-summary-value-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .map-summary-hex {
+        flex-shrink: 0;
+        width: 18px;
+        height: 21px;
+      }
+
+      .map-summary-hex polygon {
+        fill: var(--hex-fill, var(--no-data));
+        transition: fill 0.3s ease;
+      }
+
+      .map-summary-subtext {
+        font-size: 0.8rem;
+        color: var(--ink-3);
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .map-summary-coverage-bar {
+        margin-top: 10px;
+        height: 12px;
+        border-radius: 999px;
+        background: #d0d4da;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .map-summary-coverage-fill {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: #3c78ac;
+        transition: width 0.25s ease;
+      }
+
+      .map-summary-update-line {
+        font-size: 0.82rem;
+        color: var(--ink-3);
+        margin-top: 3px;
+      }
+
+      .map-summary-update-line span {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .map-controls-row {
+        grid-column: 1;
+        grid-row: 3;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        margin: 0 0 0 -18px;
+        padding: 0 0 0 18px;
+        border-top: 1px solid var(--line-soft);
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .map-dashboard-card #uk-toolbar-slot,
+      .map-dashboard-card #cr-toolbar-slot {
+        grid-column: 1;
+        grid-row: 3;
+      }
+
+      .toolbar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 6px 14px 8px;
+        border-bottom: none;
+        background: var(--surface-2);
+        border-radius: 0;
+        overflow: visible;
+      }
+
+      .map-dashboard-card .map-canvas-wrap {
+        grid-column: 1;
+        grid-row: 4;
+        --map-footer-safe: 64px;
+        border: 1px solid var(--line-soft);
+        border-radius: 0 0 0 14px;
+        background: var(--map-wrap);
+        margin-left: -18px;
+        margin-bottom: -18px;
+        min-width: 0;
+        min-height: 700px;
+        overflow: hidden;
+      }
+
+      .map-svg-viewport {
+        position: absolute;
+        inset: 0 0 var(--map-footer-safe) 0;
+        overflow: visible;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      .map-svg-viewport.is-dragging {
+        cursor: grabbing;
+      }
+
+      .map-svg-viewport > svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .map-canvas {
+        position: relative;
+      }
+
+      .map-topbar {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 55;
+      }
+
+      .map-floating-search {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: clamp(340px, 38vw, 420px);
+        z-index: 70;
+      }
+
+      .map-search-results {
+        width: max(100%, 460px);
+        max-width: min(620px, calc(100vw - 32px));
+        z-index: 280;
+      }
+
+      .map-floating-tools {
+        left: 12px;
+        top: 64px;
+        z-index: 58;
+      }
+
+      .map-settings-panel {
+        left: 12px;
+        top: 114px;
+        z-index: 130;
+      }
+
+      .map-zoom-controls {
+        position: absolute;
+        left: 12px;
+        bottom: 8px;
+        display: grid;
+        gap: 0;
+        width: 40px;
+        border: 1px solid rgba(20, 34, 37, 0.18);
+        border-radius: 12px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.94);
+        z-index: 58;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+
+      .map-zoom-controls:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(60, 120, 172, 0.22);
+        border-color: rgba(60, 120, 172, 0.35);
+      }
+
+      .map-zoom-controls button + button {
+        border-top: 1px solid rgba(20, 34, 37, 0.16);
+      }
+
+      .map-zoom-controls button {
+        border: none;
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--ink-1);
+        border-radius: 0;
+        font-weight: 700;
+        font-size: 0.84rem;
+        min-height: 34px;
+        min-width: 0;
+        width: 100%;
+        padding: 0;
+        cursor: pointer;
+        box-shadow: none;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .map-zoom-controls button[data-zoom-action="in"],
+      .map-zoom-controls button[data-zoom-action="out"] {
+        min-height: 36px;
+        height: 36px;
+      }
+
+      .map-zoom-controls button[data-zoom-action="reset"] {
+        min-width: 0;
+        min-height: 32px;
+        font-size: 0.6rem;
+        letter-spacing: 0.02em;
+        font-weight: 700;
+      }
+
+      .zoom-icon {
+        width: 28px;
+        height: 28px;
+        display: block;
+        transform: translateX(1px);
+      }
+
+      .zoom-icon .zoom-ring,
+      .zoom-icon .zoom-handle,
+      .zoom-icon .zoom-mark {
+        stroke: currentColor;
+        stroke-width: 4;
+        stroke-linecap: round;
+      }
+
+      .zoom-icon .zoom-ring {
+        fill: none;
+      }
+
+      .zoom-icon .zoom-handle,
+      .zoom-icon .zoom-mark {
+        fill: none;
+      }
+
+      .map-floating-tools {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        box-shadow: none;
+      }
+
+      .map-search-clear {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        width: 26px;
+        height: 26px;
+      }
+
+      .map-floating-tools,
+      .map-zoom-controls button,
+      .btn-refresh,
+      .network-actions button,
+      .toolbar button,
+      .tab-button,
+      .pill,
+      .popover-trigger {
+        box-shadow: none;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          border-color 0.15s ease,
+          background-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .map-floating-tools:hover,
+      .btn-refresh:hover,
+      .network-actions button:hover:not(:disabled),
+      .toolbar button:hover,
+      .tab-button:hover,
+      .pill:hover,
+      .popover-trigger:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(60, 120, 172, 0.22);
+        border-color: rgba(60, 120, 172, 0.35);
+      }
+
+      .map-search-clear:hover {
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+      }
+
+      .map-floating-tools:hover {
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .map-zoom-controls button:hover {
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .map-floating-tools:active,
+      .map-zoom-controls button:active,
+      .btn-refresh:active,
+      .network-actions button:active:not(:disabled),
+      .toolbar button:active,
+      .tab-button:active,
+      .pill:active,
+      .popover-trigger:active {
+        transform: translateY(0);
+        box-shadow: none;
+        background-color: rgba(246, 249, 252, 0.96);
+      }
+
+      .map-zoom-controls:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      .map-search-clear:active {
+        transform: none;
+        box-shadow: none;
+        background: transparent;
+      }
+
+      .map-floating-tools:focus-visible,
+      .map-zoom-controls button:focus-visible,
+      .btn-refresh:focus-visible,
+      .network-actions button:focus-visible,
+      .toolbar button:focus-visible,
+      .tab-button:focus-visible,
+      .pill:focus-visible,
+      .popover-trigger:focus-visible {
+        outline: 2px solid rgba(60, 120, 172, 0.45);
+        outline-offset: 2px;
+      }
+
+      .map-search-clear:focus-visible {
+        outline: none;
+      }
+
+      .map-dashboard-card .network-panel {
+        grid-column: 2;
+        grid-row: 3 / span 3;
+        border-left: 2px solid var(--line);
+        border-top: 1px solid var(--line-soft);
+        border-radius: 0;
+        background: var(--map-wrap);
+        padding: 6px 12px 18px 12px;
+        margin-top: 0;
+        margin-right: 0;
+        margin-bottom: -18px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        align-self: stretch;
+      }
+
+      .map-dashboard-card .network-list-header {
+        margin: 0;
+        padding: 6px 10px 8px 14px;
+      }
+
+      .map-dashboard-card .map-legend {
+        grid-column: 1;
+        grid-row: 5;
+        justify-content: center;
+        margin-bottom: 2px;
+      }
+
+      @media (max-width: 1200px) {
+        .map-dashboard-card {
+          grid-template-columns: minmax(0, 1fr) 300px;
+        }
+        .map-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 980px) {
+        .map-dashboard-card {
+          grid-template-columns: 1fr;
+          padding: 16px;
+          row-gap: 10px;
+        }
+        .map-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .map-controls-row {
+          grid-column: 1;
+          grid-row: 3;
+          margin: 0;
+          padding: 0;
+        }
+        .map-dashboard-card .map-canvas-wrap {
+          grid-column: 1;
+          grid-row: 4;
+          border: none;
+          border-radius: 0;
+          background: var(--map-wrap);
+          margin-left: 0;
+          margin-bottom: 0;
+        }
+        .map-dashboard-card .network-panel {
+          grid-column: 1;
+          grid-row: 5;
+          border-left: none;
+          border-top: 1px solid var(--line);
+          padding: 10px 0 0;
+          margin-right: 0;
+          margin-bottom: 0;
+          min-height: 0;
+        }
+        .map-zoom-controls {
+          bottom: 12px;
+        }
+        .map-dashboard-card .map-legend {
+          grid-column: 1;
+          grid-row: 6;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .map-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .map-summary-card {
+          padding: 13px 14px;
+        }
+        .map-floating-search {
+          width: min(100%, 340px);
+          max-width: calc(100vw - 32px);
+        }
+        .map-search-results {
+          width: 100%;
+          max-width: calc(100vw - 32px);
+          max-height: min(52vh, 340px);
+        }
+        .map-topbar {
+          top: 16px;
+          right: 16px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .map-summary-grid {
+          grid-template-columns: 1fr;
+        }
+        .map-dashboard-card {
+          padding: 14px;
+        }
+        .map-floating-search {
+          width: calc(100% - 32px);
+        }
+      }
+
+      /* ── Floating legend pill ───────────────────────────────── */
+      .legend-pill {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: inline-flex !important;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        white-space: nowrap;
+        background: color-mix(in srgb, var(--no-data) 78%, white 22%);
+        border: 1px solid rgba(20, 34, 37, 0.12);
+        border-radius: 999px;
+        padding: 10px 16px;
+        box-shadow: 0 1px 6px rgba(16, 24, 34, 0.1);
+        font-size: 0.85rem;
+        line-height: 1.2;
+        color: var(--ink-soft);
+        z-index: 15;
+        grid-template-columns: unset;
+        margin: 0;
+      }
+
+      .legend-pill > span:first-child,
+      .legend-pill > #legend-label,
+      .legend-pill > #cr-legend-label {
+        display: inline-flex;
+        align-items: center;
+        min-height: 18px;
+        text-align: center;
+        justify-self: auto;
+      }
+
+      .legend-pill .legend-bar-wrap {
+        width: 200px;
+        height: 22px;
+      }
+
+      .legend-pill .legend-scale {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-self: unset;
+        position: relative;
+        top: -2px;
+      }
+
+      .legend-pill .legend-tick-label {
+        top: 17px;
+      }
+
+      /* Keep map controls/legend close to map frame */
+      .map-canvas-wrap {
+        padding-bottom: 0;
+      }
     </style>
   </head>
   <body>
@@ -2428,44 +3021,7 @@
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">
 
-        <!-- ── Top summary boxes ── -->
-        <section class="top-summary-grid" aria-label="Selected air quality summary">
-          <article class="top-summary-card">
-            <div class="top-summary-label">Total Active Sensors</div>
-            <div class="top-summary-value" id="top-total-sensors">—</div>
-            <div class="top-summary-subtext">from selected networks</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Coverage</div>
-            <div class="top-summary-value" id="top-coverage-percent">—</div>
-            <div class="top-summary-subtext" id="top-coverage-detail">—</div>
-            <div
-              class="top-summary-coverage-bar"
-              id="top-coverage-bar"
-              role="progressbar"
-              aria-label="Coverage percentage"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            >
-              <span class="top-summary-coverage-fill" id="top-coverage-fill"></span>
-            </div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label" id="top-highest-label">Highest PM2.5</div>
-            <div class="top-summary-value top-summary-value-with-icon">
-              <svg class="top-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-              <span id="top-highest-value">—</span>
-            </div>
-            <div class="top-summary-subtext" id="top-highest-sensor">—</div>
-            <div class="top-summary-subtext" id="top-highest-network">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Updates</div>
-            <div class="top-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
-            <div class="top-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
-          </article>
-        </section>
+        <!-- ── Top summary boxes moved inside map card (layout test) ── -->
         <!-- Hidden anchors for old summary-* IDs (existing JS still references them) -->
         <span id="summary-stations" hidden></span>
         <span id="summary-highest-label" hidden></span>
@@ -2484,11 +3040,11 @@
           <div class="error" id="error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap">
+              <div class="map-wrap map-dashboard-card map-main-grid">
                 <div class="map-title-strip">
-                  <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
+                  <h2 class="card-title map-dashboard-title" id="map-title">Latest PM2.5 by constituency</h2>
                 </div>
-                <div id="uk-toolbar-slot">
+                <div id="uk-toolbar-slot" class="map-controls-row">
                   <!-- ── Toolbar: scope switcher + region popover + pollutant pills ── -->
                   <div class="toolbar" id="main-toolbar">
                     <span class="field-label">View</span>
@@ -2543,35 +3099,75 @@
                     <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">Countries &amp; Regions</button>
                   </div>
                 </div>
-                <div class="map-canvas">
-                  <div class="map-topbar">
-                    <div class="map-search" data-map-search data-map-kind="uk">
-                      <span class="map-search-icon" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      </span>
-                      <input
-                        id="uk-map-search-input"
-                        class="map-search-input"
-                        type="search"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        role="combobox"
-                        aria-autocomplete="list"
-                        aria-expanded="false"
-                        aria-controls="uk-map-search-results"
-                        placeholder="Search postcodes, constituencies, sensors…"
-                      />
-                      <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
-                      <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
+                <!-- ── Summary strip inside map card (layout test) ── -->
+                <section class="map-summary-strip map-summary-grid" aria-label="Selected air quality summary">
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Total Active Sensors</div>
+                    <div class="map-summary-value" id="top-total-sensors">—</div>
+                    <div class="map-summary-subtext">from selected networks</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Coverage</div>
+                    <div class="map-summary-value" id="top-coverage-percent">—</div>
+                    <div class="map-summary-subtext" id="top-coverage-detail">—</div>
+                    <div
+                      class="map-summary-coverage-bar"
+                      id="top-coverage-bar"
+                      role="progressbar"
+                      aria-label="Coverage percentage"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow="0"
+                    >
+                      <span class="map-summary-coverage-fill" id="top-coverage-fill"></span>
                     </div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label" id="top-highest-label">Highest PM2.5</div>
+                    <div class="map-summary-value map-summary-value-with-icon">
+                      <svg class="map-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+                      <span id="top-highest-value">—</span>
+                    </div>
+                    <div class="map-summary-subtext" id="top-highest-sensor">—</div>
+                    <div class="map-summary-subtext" id="top-highest-network">—</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Updates</div>
+                    <div class="map-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
+                    <div class="map-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
+                  </article>
+                </section>
+                <div class="map-canvas map-canvas-wrap">
+                  <div class="map-search map-floating-search" data-map-search data-map-kind="uk">
+                    <span class="map-search-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    </span>
+                    <input
+                      id="uk-map-search-input"
+                      class="map-search-input"
+                      type="search"
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck="false"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded="false"
+                      aria-controls="uk-map-search-results"
+                      placeholder="Search postcodes, constituencies, sensors…"
+                    />
+                    <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
+                    <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
+                  </div>
+                  <div class="map-topbar">
                   <span class="status-indicator status-pill" data-state="loading">
                     <span class="pulse-dot" aria-hidden="true"></span>
                     <span class="hint" id="status">Loading...</span>
                   </span>
                   <button class="btn-refresh" id="refresh">Refresh</button>
                 </div>
-                <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+                <div class="map-svg-viewport">
+                  <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
+                </div>
                 <div class="map-settings-panel" id="map-settings-panel" role="dialog" aria-label="Sensor data settings">
                   <div class="map-settings-header">
                     <span class="map-settings-title">Sensor Data</span>
@@ -2633,9 +3229,52 @@
                     </div>
                   </div>
                 </div>
-                <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
+                <button type="button" class="map-settings map-floating-tools" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
                   <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
                 </button>
+                <div class="map-zoom-controls" data-map-zoom-controls data-map-svg-id="hex-map">
+                  <button type="button" data-zoom-action="in" aria-label="Zoom in">
+                    <svg class="zoom-icon" viewBox="0 0 64 64" aria-hidden="true">
+                      <circle class="zoom-ring" cx="30" cy="24" r="15"></circle>
+                      <line class="zoom-handle" x1="20" y1="36" x2="10" y2="49"></line>
+                      <line class="zoom-mark" x1="23" y1="24" x2="37" y2="24"></line>
+                      <line class="zoom-mark" x1="30" y1="17" x2="30" y2="31"></line>
+                    </svg>
+                  </button>
+                  <button type="button" data-zoom-action="reset" aria-label="Reset zoom">Reset</button>
+                  <button type="button" data-zoom-action="out" aria-label="Zoom out">
+                    <svg class="zoom-icon" viewBox="0 0 64 64" aria-hidden="true">
+                      <circle class="zoom-ring" cx="30" cy="24" r="15"></circle>
+                      <line class="zoom-handle" x1="20" y1="36" x2="10" y2="49"></line>
+                      <line class="zoom-mark" x1="23" y1="24" x2="37" y2="24"></line>
+                    </svg>
+                  </button>
+                </div>
+                <!-- ── Floating legend pill (layout test) ── -->
+                <div class="legend map-legend legend-pill">
+                  <span id="legend-pollutant">PM2.5 (µg/m³)</span>
+                  <div
+                    id="legend-scale"
+                    class="legend-scale"
+                    title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                    aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                  >
+                    <span class="legend-value" id="legend-min">-</span>
+                    <div class="legend-bar-wrap" aria-hidden="true">
+                      <span class="legend-bar"></span>
+                      <span class="legend-tick" data-value="10"></span>
+                      <span class="legend-tick" data-value="20"></span>
+                      <span class="legend-tick" data-value="30"></span>
+                      <span class="legend-tick" data-value="40"></span>
+                      <span class="legend-tick-label" data-value="10">10</span>
+                      <span class="legend-tick-label" data-value="20">20</span>
+                      <span class="legend-tick-label" data-value="30">30</span>
+                      <span class="legend-tick-label" data-value="40">40</span>
+                    </div>
+                    <span class="legend-value" id="legend-max">-</span>
+                  </div>
+                  <span id="legend-label"></span>
+                </div>
               </div>
               <aside class="network-panel">
                 <div class="network-list-header">
@@ -2650,31 +3289,6 @@
                   <button type="button" id="network-deselect-all">Deselect All</button>
                 </div>
               </aside>
-              <!-- summary-card IDs moved to stat-row above -->
-              <div class="legend map-legend">
-                <span id="legend-pollutant">PM2.5 (µg/m³)</span>
-                <div
-                  id="legend-scale"
-                  class="legend-scale"
-                  title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
-                  aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
-                >
-                  <span class="legend-value" id="legend-min">-</span>
-                  <div class="legend-bar-wrap" aria-hidden="true">
-                    <span class="legend-bar"></span>
-                    <span class="legend-tick" data-value="10"></span>
-                    <span class="legend-tick" data-value="20"></span>
-                    <span class="legend-tick" data-value="30"></span>
-                    <span class="legend-tick" data-value="40"></span>
-                    <span class="legend-tick-label" data-value="10">10</span>
-                    <span class="legend-tick-label" data-value="20">20</span>
-                    <span class="legend-tick-label" data-value="30">30</span>
-                    <span class="legend-tick-label" data-value="40">40</span>
-                  </div>
-                  <span class="legend-value" id="legend-max">-</span>
-                </div>
-                <span id="legend-label"></span>
-              </div>
             </div>
           </div>
         </div>
@@ -3026,43 +3640,7 @@
       </div>
 
       <div class="tab-panel" id="tab-panel-cr" role="tabpanel" aria-labelledby="tab-cr" hidden>
-        <section class="top-summary-grid" aria-label="Selected air quality summary for countries and regions">
-          <article class="top-summary-card">
-            <div class="top-summary-label">Total Active Sensors</div>
-            <div class="top-summary-value" id="cr-top-total-sensors">—</div>
-            <div class="top-summary-subtext">from selected networks</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Coverage</div>
-            <div class="top-summary-value" id="cr-top-coverage-percent">—</div>
-            <div class="top-summary-subtext" id="cr-top-coverage-detail">—</div>
-            <div
-              class="top-summary-coverage-bar"
-              id="cr-top-coverage-bar"
-              role="progressbar"
-              aria-label="Coverage percentage"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            >
-              <span class="top-summary-coverage-fill" id="cr-top-coverage-fill"></span>
-            </div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
-            <div class="top-summary-value top-summary-value-with-icon">
-              <svg class="top-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-              <span id="cr-top-highest-value">—</span>
-            </div>
-            <div class="top-summary-subtext" id="cr-top-highest-sensor">—</div>
-            <div class="top-summary-subtext" id="cr-top-highest-network">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Updates</div>
-            <div class="top-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
-            <div class="top-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
-          </article>
-        </section>
+        <!-- ── CR top summary boxes moved inside map card (layout test) ── -->
         <!-- Hidden anchors for legacy cr-summary-* IDs (JS still updates these) -->
         <span id="cr-summary-overall-title" hidden></span>
         <span id="cr-summary-stations" hidden></span>
@@ -3081,12 +3659,50 @@
           <div class="error" id="cr-error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap">
+              <div class="map-wrap map-dashboard-card map-main-grid">
                 <div class="map-title-strip">
-                  <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
+                  <h2 class="card-title map-dashboard-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
                 </div>
-                <div id="cr-toolbar-slot"></div>
+                <div id="cr-toolbar-slot" class="map-controls-row"></div>
                 <div class="tab-slot" data-tab-slot style="display:none"></div>
+                <!-- ── CR Summary strip inside map card (layout test) ── -->
+                <section class="map-summary-strip map-summary-grid" aria-label="Selected air quality summary for countries and regions">
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Total Active Sensors</div>
+                    <div class="map-summary-value" id="cr-top-total-sensors">—</div>
+                    <div class="map-summary-subtext">from selected networks</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Coverage</div>
+                    <div class="map-summary-value" id="cr-top-coverage-percent">—</div>
+                    <div class="map-summary-subtext" id="cr-top-coverage-detail">—</div>
+                    <div
+                      class="map-summary-coverage-bar"
+                      id="cr-top-coverage-bar"
+                      role="progressbar"
+                      aria-label="Coverage percentage"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow="0"
+                    >
+                      <span class="map-summary-coverage-fill" id="cr-top-coverage-fill"></span>
+                    </div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
+                    <div class="map-summary-value map-summary-value-with-icon">
+                      <svg class="map-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+                      <span id="cr-top-highest-value">—</span>
+                    </div>
+                    <div class="map-summary-subtext" id="cr-top-highest-sensor">—</div>
+                    <div class="map-summary-subtext" id="cr-top-highest-network">—</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Updates</div>
+                    <div class="map-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
+                    <div class="map-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
+                  </article>
+                </section>
                 <aside class="network-panel">
                   <div class="network-list-header">
                     <span>Network</span>
@@ -3100,35 +3716,37 @@
                     <button type="button" id="cr-network-deselect-all">Deselect All</button>
                   </div>
                 </aside>
-                <div class="map-canvas">
+                <div class="map-canvas map-canvas-wrap">
+                  <div class="map-search map-floating-search" data-map-search data-map-kind="cr">
+                    <span class="map-search-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    </span>
+                    <input
+                      id="cr-map-search-input"
+                      class="map-search-input"
+                      type="search"
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck="false"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded="false"
+                      aria-controls="cr-map-search-results"
+                      placeholder="Search postcodes, local authorities, sensors…"
+                    />
+                    <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
+                    <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
+                  </div>
                   <div class="map-topbar">
-                    <div class="map-search" data-map-search data-map-kind="cr">
-                      <span class="map-search-icon" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      </span>
-                      <input
-                        id="cr-map-search-input"
-                        class="map-search-input"
-                        type="search"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        role="combobox"
-                        aria-autocomplete="list"
-                        aria-expanded="false"
-                        aria-controls="cr-map-search-results"
-                        placeholder="Search postcodes, local authorities, sensors…"
-                      />
-                      <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
-                      <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
-                    </div>
                     <span class="status-indicator status-pill" data-state="loading">
                       <span class="pulse-dot" aria-hidden="true"></span>
                       <span class="hint" id="cr-status">Loading...</span>
                     </span>
                     <button class="btn-refresh" id="cr-refresh">Refresh</button>
                   </div>
-                  <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
+                  <div class="map-svg-viewport">
+                    <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
+                  </div>
                   <div class="map-settings-panel" id="cr-map-settings-panel" role="dialog" aria-label="Sensor data settings">
                     <div class="map-settings-header">
                       <span class="map-settings-title">Sensor Data</span>
@@ -3190,33 +3808,52 @@
                       </div>
                     </div>
                   </div>
-                  <button type="button" class="map-settings" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
+                  <button type="button" class="map-settings map-floating-tools" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
                     <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
                   </button>
-                </div>
-                <div class="legend map-legend">
-                  <span id="cr-legend-pollutant">PM2.5 (µg/m³)</span>
-                  <div
-                    id="cr-legend-scale"
-                    class="legend-scale"
-                    title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
-                    aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
-                  >
-                    <span class="legend-value" id="cr-legend-min">-</span>
-                    <div class="legend-bar-wrap" aria-hidden="true">
-                      <span class="legend-bar"></span>
-                      <span class="legend-tick" data-value="10"></span>
-                      <span class="legend-tick" data-value="20"></span>
-                      <span class="legend-tick" data-value="30"></span>
-                      <span class="legend-tick" data-value="40"></span>
-                      <span class="legend-tick-label" data-value="10">10</span>
-                      <span class="legend-tick-label" data-value="20">20</span>
-                      <span class="legend-tick-label" data-value="30">30</span>
-                      <span class="legend-tick-label" data-value="40">40</span>
-                    </div>
-                    <span class="legend-value" id="cr-legend-max">-</span>
+                  <div class="map-zoom-controls" data-map-zoom-controls data-map-svg-id="cr-hex-map">
+                    <button type="button" data-zoom-action="in" aria-label="Zoom in">
+                      <svg class="zoom-icon" viewBox="0 0 64 64" aria-hidden="true">
+                        <circle class="zoom-ring" cx="30" cy="24" r="15"></circle>
+                        <line class="zoom-handle" x1="20" y1="36" x2="10" y2="49"></line>
+                        <line class="zoom-mark" x1="23" y1="24" x2="37" y2="24"></line>
+                        <line class="zoom-mark" x1="30" y1="17" x2="30" y2="31"></line>
+                      </svg>
+                    </button>
+                    <button type="button" data-zoom-action="reset" aria-label="Reset zoom">Reset</button>
+                  <button type="button" data-zoom-action="out" aria-label="Zoom out">
+                      <svg class="zoom-icon" viewBox="0 0 64 64" aria-hidden="true">
+                        <circle class="zoom-ring" cx="30" cy="24" r="15"></circle>
+                        <line class="zoom-handle" x1="20" y1="36" x2="10" y2="49"></line>
+                        <line class="zoom-mark" x1="23" y1="24" x2="37" y2="24"></line>
+                      </svg>
+                    </button>
                   </div>
-                  <span id="cr-legend-label"></span>
+                  <!-- ── Floating legend pill (layout test) ── -->
+                  <div class="legend map-legend legend-pill">
+                    <span id="cr-legend-pollutant">PM2.5 (µg/m³)</span>
+                    <div
+                      id="cr-legend-scale"
+                      class="legend-scale"
+                      title="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                      aria-label="Power scale (exp 0.8 with a slight top boost): pulls low values toward mid-range; values above 50 are shown as 50+."
+                    >
+                      <span class="legend-value" id="cr-legend-min">-</span>
+                      <div class="legend-bar-wrap" aria-hidden="true">
+                        <span class="legend-bar"></span>
+                        <span class="legend-tick" data-value="10"></span>
+                        <span class="legend-tick" data-value="20"></span>
+                        <span class="legend-tick" data-value="30"></span>
+                        <span class="legend-tick" data-value="40"></span>
+                        <span class="legend-tick-label" data-value="10">10</span>
+                        <span class="legend-tick-label" data-value="20">20</span>
+                        <span class="legend-tick-label" data-value="30">30</span>
+                        <span class="legend-tick-label" data-value="40">40</span>
+                      </div>
+                      <span class="legend-value" id="cr-legend-max">-</span>
+                    </div>
+                    <span id="cr-legend-label"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -13052,6 +13689,238 @@
   } else {
     void ensureUkSearchDataLoaded();
   }
+})();
+
+    </script>
+    <script>
+(() => {
+  const controls = Array.from(document.querySelectorAll("[data-map-zoom-controls]"));
+  if (!controls.length) {
+    return;
+  }
+
+  const MIN_SCALE = 0.8;
+  const MAX_SCALE = 3;
+  const STEP = 1.15;
+  const mapState = new Map();
+
+  function getSvgElement(control) {
+    const id = control.getAttribute("data-map-svg-id");
+    if (!id) {
+      return null;
+    }
+    return document.getElementById(id);
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getState(svgId) {
+    const state = mapState.get(svgId);
+    if (state) {
+      return state;
+    }
+    const initial = { scale: 1, tx: 0, ty: 0 };
+    mapState.set(svgId, initial);
+    return initial;
+  }
+
+  function clampPan(viewport, state) {
+    const width = viewport.clientWidth || 0;
+    const height = viewport.clientHeight || 0;
+    const maxTx = Math.max(0, ((state.scale - 1) * width) / 2);
+    const maxTy = Math.max(0, ((state.scale - 1) * height) / 2);
+    return {
+      scale: state.scale,
+      tx: clamp(state.tx, -maxTx, maxTx),
+      ty: clamp(state.ty, -maxTy, maxTy),
+    };
+  }
+
+  function applyTransform(svg, viewport, nextState, animate = false) {
+    const clampedScale = clamp(nextState.scale, MIN_SCALE, MAX_SCALE);
+    const clampedState = clampPan(viewport, {
+      scale: clampedScale,
+      tx: nextState.tx,
+      ty: nextState.ty,
+    });
+    mapState.set(svg.id, clampedState);
+    svg.style.transformOrigin = "50% 50%";
+    svg.style.transform = `translate(${clampedState.tx}px, ${clampedState.ty}px) scale(${clampedState.scale})`;
+    svg.style.transition = animate ? "transform 0.18s ease" : "none";
+  }
+
+  function setScale(svg, viewport, nextScale, animate = true) {
+    const current = getState(svg.id);
+    applyTransform(svg, viewport, {
+      scale: nextScale,
+      tx: current.tx,
+      ty: current.ty,
+    }, animate);
+  }
+
+  function zoomAroundPoint(svg, viewport, factor, anchorX, anchorY, animate = false) {
+    const current = getState(svg.id);
+    const nextScale = clamp(current.scale * factor, MIN_SCALE, MAX_SCALE);
+    if (Math.abs(nextScale - current.scale) < 0.0001) {
+      return;
+    }
+    const width = viewport.clientWidth || 0;
+    const height = viewport.clientHeight || 0;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const ratio = nextScale / current.scale;
+    const nextTx = (current.tx * ratio) + ((anchorX - centerX) * (1 - ratio));
+    const nextTy = (current.ty * ratio) + ((anchorY - centerY) * (1 - ratio));
+    applyTransform(svg, viewport, {
+      scale: nextScale,
+      tx: nextTx,
+      ty: nextTy,
+    }, animate);
+  }
+
+  function resetView(svg, viewport) {
+    applyTransform(svg, viewport, { scale: 1, tx: 0, ty: 0 }, true);
+  }
+
+  controls.forEach((control) => {
+    const svg = getSvgElement(control);
+    if (!svg || !svg.id) {
+      return;
+    }
+    const canvasWrap = control.closest(".map-canvas-wrap");
+    const viewport = canvasWrap ? canvasWrap.querySelector(".map-svg-viewport") : null;
+    if (!viewport) {
+      return;
+    }
+    resetView(svg, viewport);
+
+    let drag = null;
+    let suppressClickUntil = 0;
+
+    control.addEventListener("click", (event) => {
+      const button = event.target instanceof Element
+        ? event.target.closest("[data-zoom-action]")
+        : null;
+      if (!button) {
+        return;
+      }
+      const action = button.getAttribute("data-zoom-action");
+      const current = getState(svg.id).scale;
+      if (action === "in") {
+        setScale(svg, viewport, current * STEP, true);
+        return;
+      }
+      if (action === "out") {
+        setScale(svg, viewport, current / STEP, true);
+        return;
+      }
+      if (action === "reset") {
+        resetView(svg, viewport);
+      }
+    });
+
+    viewport.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const current = getState(svg.id);
+      if (current.scale <= 1.001) {
+        return;
+      }
+      drag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startTx: current.tx,
+        startTy: current.ty,
+        moved: false,
+      };
+      viewport.classList.add("is-dragging");
+    });
+
+    viewport.addEventListener("wheel", (event) => {
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+      const rect = viewport.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        return;
+      }
+      const anchorX = event.clientX - rect.left;
+      const anchorY = event.clientY - rect.top;
+      const speed = 0.006;
+      const factor = Math.exp(-event.deltaY * speed);
+      zoomAroundPoint(svg, viewport, factor, anchorX, anchorY, false);
+      event.preventDefault();
+    }, { passive: false });
+
+    let gestureStartScale = 1;
+    viewport.addEventListener("gesturestart", (event) => {
+      gestureStartScale = getState(svg.id).scale;
+      event.preventDefault();
+    }, { passive: false });
+
+    viewport.addEventListener("gesturechange", (event) => {
+      const rect = viewport.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        return;
+      }
+      const anchorX = event.clientX - rect.left;
+      const anchorY = event.clientY - rect.top;
+      const targetScale = clamp(gestureStartScale * event.scale, MIN_SCALE, MAX_SCALE);
+      const current = getState(svg.id);
+      const factor = targetScale / current.scale;
+      zoomAroundPoint(svg, viewport, factor, anchorX, anchorY, false);
+      event.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener("pointermove", (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) {
+        return;
+      }
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (!drag.moved && Math.hypot(dx, dy) > 3) {
+        drag.moved = true;
+      }
+      if (!drag.moved) {
+        return;
+      }
+      applyTransform(svg, viewport, {
+        scale: getState(svg.id).scale,
+        tx: drag.startTx + dx,
+        ty: drag.startTy + dy,
+      }, false);
+      event.preventDefault();
+    }, { passive: false });
+
+    function endDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) {
+        return;
+      }
+      if (drag.moved) {
+        suppressClickUntil = performance.now() + 220;
+      }
+      drag = null;
+      viewport.classList.remove("is-dragging");
+    }
+
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+
+    viewport.addEventListener("click", (event) => {
+      if (performance.now() < suppressClickUntil) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, true);
+
+    window.addEventListener("resize", () => {
+      applyTransform(svg, viewport, getState(svg.id), false);
+    });
+  });
 })();
     </script>
     <script src="sidebar.js"></script>
