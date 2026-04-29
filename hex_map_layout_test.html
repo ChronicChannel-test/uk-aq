@@ -2403,6 +2403,161 @@
       .tab-bar { display: none; }
       /* Collapse old actions block (status+refresh moved to map-topbar) */
       .map-header .actions { display: none; }
+
+      /* ══════════════════════════════════════════════════════
+         LAYOUT TEST ONLY — Summary strip inside map card
+         ══════════════════════════════════════════════════════ */
+
+      .layout-test-badge {
+        display: inline-block;
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        font-weight: 700;
+        color: var(--ink-3);
+        background: color-mix(in oklab, var(--sun) 22%, var(--surface));
+        border: 1px solid color-mix(in oklab, var(--sun) 40%, #d0c89a);
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-left: 10px;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+
+      /* Summary strip container — direct child of .map-wrap */
+      .map-summary-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px 8px 0;
+        margin: 0;
+      }
+
+      @media (max-width: 720px) {
+        .map-summary-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 420px) {
+        .map-summary-strip {
+          grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+      }
+
+      /* Compact summary card */
+      .map-summary-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        box-shadow: none;
+      }
+
+      .map-summary-label {
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-weight: 700;
+        color: var(--ink-3);
+        margin-bottom: 4px;
+      }
+
+      .map-summary-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.15;
+      }
+
+      .map-summary-value-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .map-summary-hex {
+        flex-shrink: 0;
+        width: 15px;
+        height: 17px;
+      }
+
+      .map-summary-hex polygon {
+        fill: var(--hex-fill, var(--no-data));
+        transition: fill 0.3s ease;
+      }
+
+      .map-summary-subtext {
+        font-size: 0.72rem;
+        color: var(--ink-3);
+        margin-top: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .map-summary-coverage-bar {
+        margin-top: 6px;
+        height: 8px;
+        border-radius: 999px;
+        background: #d0d4da;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .map-summary-coverage-fill {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: #3c78ac;
+        transition: width 0.25s ease;
+      }
+
+      .map-summary-update-line {
+        font-size: 0.72rem;
+        color: var(--ink-3);
+        margin-top: 2px;
+      }
+
+      .map-summary-update-line span {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      /* Grid positioning override: toolbar full-width, summary strip at row 3 */
+      @media (min-width: 981px) {
+        .map-wrap #uk-toolbar-slot,
+        .map-wrap #cr-toolbar-slot {
+          grid-column: 1 / -1;
+          grid-row: 2;
+        }
+
+        .map-wrap .map-summary-strip {
+          grid-column: 1 / -1;
+          grid-row: 3;
+        }
+
+        .map-wrap .map-canvas {
+          grid-column: 1;
+          grid-row: 4;
+        }
+
+        .map-wrap .network-panel {
+          grid-column: 2;
+          grid-row: 4;
+          align-self: stretch;
+          margin-top: 0;
+          margin-bottom: -8px;
+          padding-top: 16px;
+          padding-bottom: 20px;
+        }
+
+        .map-wrap .map-legend {
+          grid-column: 1;
+          grid-row: 5;
+        }
+      }
     </style>
   </head>
   <body>
@@ -2415,44 +2570,7 @@
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">
 
-        <!-- ── Top summary boxes ── -->
-        <section class="top-summary-grid" aria-label="Selected air quality summary">
-          <article class="top-summary-card">
-            <div class="top-summary-label">Total Active Sensors</div>
-            <div class="top-summary-value" id="top-total-sensors">—</div>
-            <div class="top-summary-subtext">from selected networks</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Coverage</div>
-            <div class="top-summary-value" id="top-coverage-percent">—</div>
-            <div class="top-summary-subtext" id="top-coverage-detail">—</div>
-            <div
-              class="top-summary-coverage-bar"
-              id="top-coverage-bar"
-              role="progressbar"
-              aria-label="Coverage percentage"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            >
-              <span class="top-summary-coverage-fill" id="top-coverage-fill"></span>
-            </div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label" id="top-highest-label">Highest PM2.5</div>
-            <div class="top-summary-value top-summary-value-with-icon">
-              <svg class="top-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-              <span id="top-highest-value">—</span>
-            </div>
-            <div class="top-summary-subtext" id="top-highest-sensor">—</div>
-            <div class="top-summary-subtext" id="top-highest-network">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Updates</div>
-            <div class="top-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
-            <div class="top-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
-          </article>
-        </section>
+        <!-- ── Top summary boxes moved inside map card (layout test) ── -->
         <!-- Hidden anchors for old summary-* IDs (existing JS still references them) -->
         <span id="summary-stations" hidden></span>
         <span id="summary-highest-label" hidden></span>
@@ -2474,6 +2592,7 @@
               <div class="map-wrap">
                 <div class="map-title-strip">
                   <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
+                  <span class="layout-test-badge" aria-label="Layout test page">Layout test</span>
                 </div>
                 <div id="uk-toolbar-slot">
                   <!-- ── Toolbar: scope switcher + region popover + pollutant pills ── -->
@@ -2530,6 +2649,44 @@
                     <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">Countries &amp; Regions</button>
                   </div>
                 </div>
+                <!-- ── Summary strip inside map card (layout test) ── -->
+                <section class="map-summary-strip" aria-label="Selected air quality summary">
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Total Active Sensors</div>
+                    <div class="map-summary-value" id="top-total-sensors">—</div>
+                    <div class="map-summary-subtext">from selected networks</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Coverage</div>
+                    <div class="map-summary-value" id="top-coverage-percent">—</div>
+                    <div class="map-summary-subtext" id="top-coverage-detail">—</div>
+                    <div
+                      class="map-summary-coverage-bar"
+                      id="top-coverage-bar"
+                      role="progressbar"
+                      aria-label="Coverage percentage"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow="0"
+                    >
+                      <span class="map-summary-coverage-fill" id="top-coverage-fill"></span>
+                    </div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label" id="top-highest-label">Highest PM2.5</div>
+                    <div class="map-summary-value map-summary-value-with-icon">
+                      <svg class="map-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+                      <span id="top-highest-value">—</span>
+                    </div>
+                    <div class="map-summary-subtext" id="top-highest-sensor">—</div>
+                    <div class="map-summary-subtext" id="top-highest-network">—</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Updates</div>
+                    <div class="map-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
+                    <div class="map-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
+                  </article>
+                </section>
                 <div class="map-canvas">
                   <div class="map-topbar">
                     <div class="map-search" data-map-search data-map-kind="uk">
@@ -3013,43 +3170,7 @@
       </div>
 
       <div class="tab-panel" id="tab-panel-cr" role="tabpanel" aria-labelledby="tab-cr" hidden>
-        <section class="top-summary-grid" aria-label="Selected air quality summary for countries and regions">
-          <article class="top-summary-card">
-            <div class="top-summary-label">Total Active Sensors</div>
-            <div class="top-summary-value" id="cr-top-total-sensors">—</div>
-            <div class="top-summary-subtext">from selected networks</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Coverage</div>
-            <div class="top-summary-value" id="cr-top-coverage-percent">—</div>
-            <div class="top-summary-subtext" id="cr-top-coverage-detail">—</div>
-            <div
-              class="top-summary-coverage-bar"
-              id="cr-top-coverage-bar"
-              role="progressbar"
-              aria-label="Coverage percentage"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            >
-              <span class="top-summary-coverage-fill" id="cr-top-coverage-fill"></span>
-            </div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
-            <div class="top-summary-value top-summary-value-with-icon">
-              <svg class="top-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-              <span id="cr-top-highest-value">—</span>
-            </div>
-            <div class="top-summary-subtext" id="cr-top-highest-sensor">—</div>
-            <div class="top-summary-subtext" id="cr-top-highest-network">—</div>
-          </article>
-          <article class="top-summary-card">
-            <div class="top-summary-label">Updates</div>
-            <div class="top-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
-            <div class="top-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
-          </article>
-        </section>
+        <!-- ── CR top summary boxes moved inside map card (layout test) ── -->
         <!-- Hidden anchors for legacy cr-summary-* IDs (JS still updates these) -->
         <span id="cr-summary-overall-title" hidden></span>
         <span id="cr-summary-stations" hidden></span>
@@ -3071,9 +3192,48 @@
               <div class="map-wrap">
                 <div class="map-title-strip">
                   <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
+                  <span class="layout-test-badge" aria-label="Layout test page">Layout test</span>
                 </div>
                 <div id="cr-toolbar-slot"></div>
                 <div class="tab-slot" data-tab-slot style="display:none"></div>
+                <!-- ── CR Summary strip inside map card (layout test) ── -->
+                <section class="map-summary-strip" aria-label="Selected air quality summary for countries and regions">
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Total Active Sensors</div>
+                    <div class="map-summary-value" id="cr-top-total-sensors">—</div>
+                    <div class="map-summary-subtext">from selected networks</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Coverage</div>
+                    <div class="map-summary-value" id="cr-top-coverage-percent">—</div>
+                    <div class="map-summary-subtext" id="cr-top-coverage-detail">—</div>
+                    <div
+                      class="map-summary-coverage-bar"
+                      id="cr-top-coverage-bar"
+                      role="progressbar"
+                      aria-label="Coverage percentage"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow="0"
+                    >
+                      <span class="map-summary-coverage-fill" id="cr-top-coverage-fill"></span>
+                    </div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
+                    <div class="map-summary-value map-summary-value-with-icon">
+                      <svg class="map-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+                      <span id="cr-top-highest-value">—</span>
+                    </div>
+                    <div class="map-summary-subtext" id="cr-top-highest-sensor">—</div>
+                    <div class="map-summary-subtext" id="cr-top-highest-network">—</div>
+                  </article>
+                  <article class="map-summary-card">
+                    <div class="map-summary-label">Updates</div>
+                    <div class="map-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
+                    <div class="map-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
+                  </article>
+                </section>
                 <aside class="network-panel">
                   <div class="network-list-header">
                     <span>Network</span>
