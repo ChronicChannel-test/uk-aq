@@ -4052,6 +4052,7 @@
       let selectedPconCode = null;
       let selectedCell = null;
       let pinnedTooltipCell = null;
+      let ukSearchPreloadPromise = null;
       const CACHE_SESSION_SKEW_MS = 10000;
       const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:uk`;
       let cacheAuthToken = null;
@@ -7184,8 +7185,9 @@
         updateSelectedHexStyles();
       }
 
-      async function loadMapData() {
-        if (!isUkMapVisible()) {
+      async function loadMapData(options = {}) {
+        const force = Boolean(options?.force);
+        if (!force && !isUkMapVisible()) {
           return;
         }
         const requestPollutant = activePollutant;
@@ -7724,6 +7726,25 @@
         return Array.from(recordsByKey.values());
       }
 
+      function ensureUkSearchDataLoaded() {
+        if (hexCells.length) {
+          return Promise.resolve(true);
+        }
+        if (ukSearchPreloadPromise) {
+          return ukSearchPreloadPromise;
+        }
+        ukSearchPreloadPromise = loadMapData({ force: true })
+          .then(() => Boolean(hexCells.length))
+          .catch((error) => {
+            console.warn("uk_aq UK search preload failed", error);
+            return false;
+          })
+          .finally(() => {
+            ukSearchPreloadPromise = null;
+          });
+        return ukSearchPreloadPromise;
+      }
+
       window.ukMap = {
         render: () => {
           if (statusEl.textContent === "Live") {
@@ -7739,6 +7760,7 @@
         },
         selectPconByCode: (code) => selectPconByCode(code),
         getActivePconCode: () => selectedPconCode,
+        ensureSearchDataLoaded: () => ensureUkSearchDataLoaded(),
         getConstituencySearchRecords: () => buildConstituencySearchRecords(),
         getSensorSearchRecords: () => buildSensorSearchRecords(),
       };
@@ -8113,6 +8135,7 @@
 	      let selectedCell = null;
 	      let pendingSelectedAreaCode = null;
 	      let areaRegionLookup = new Map();
+	      let crSearchPreloadPromise = null;
 	      const CACHE_SESSION_SKEW_MS = 10000;
 	      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:cr`;
 	      let cacheAuthToken = null;
@@ -11261,8 +11284,9 @@
         loadMapData();
       }
 
-      async function loadMapData() {
-        if (!isCrMapVisible()) {
+      async function loadMapData(options = {}) {
+        const force = Boolean(options?.force);
+        if (!force && !isCrMapVisible()) {
           return;
         }
         const requestPollutant = activePollutant;
@@ -11841,6 +11865,32 @@
         return Array.from(recordsByKey.values());
       }
 
+      function hasCrSearchData() {
+        if (hexData?.type === "FeatureCollection") {
+          return Array.isArray(hexData.features) && hexData.features.length > 0;
+        }
+        return hexCells.length > 0;
+      }
+
+      function ensureCrSearchDataLoaded() {
+        if (hasCrSearchData()) {
+          return Promise.resolve(true);
+        }
+        if (crSearchPreloadPromise) {
+          return crSearchPreloadPromise;
+        }
+        crSearchPreloadPromise = loadMapData({ force: true })
+          .then(() => hasCrSearchData())
+          .catch((error) => {
+            console.warn("uk_aq C&R search preload failed", error);
+            return false;
+          })
+          .finally(() => {
+            crSearchPreloadPromise = null;
+          });
+        return crSearchPreloadPromise;
+      }
+
 	      window.crMap = {
 	        render: () => {
 	          if (statusEl.textContent === "Live") {
@@ -11860,6 +11910,7 @@
 	        getRegion: () => activeRegion,
 	        selectAreaByCode: (code, options) => selectAreaByCode(code, options),
 	        getActiveAreaCode: () => selectedAreaCode,
+	        ensureSearchDataLoaded: () => ensureCrSearchDataLoaded(),
 	        getLocalAuthoritySearchRecords: () => buildLocalAuthoritySearchRecords(),
 	        getSensorSearchRecords: () => buildSensorSearchRecords(),
 	      };
@@ -11956,9 +12007,11 @@
     if (isUk) {
       window.ukMap?.render();
       window.ukMap?.restoreNetworks();
+      void window.crMap?.ensureSearchDataLoaded?.();
     } else {
       window.crMap?.render();
       window.crMap?.restoreNetworks();
+      void window.ukMap?.ensureSearchDataLoaded?.();
     }
     window.syncToolbar?.(tabKey);
   }
@@ -12254,6 +12307,64 @@
     return Boolean(window.crMap.selectAreaByCode(code, { allowRegionSwitch: true, updateUrl: true }));
   }
 
+  function delay(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
+  async function ensureUkSearchDataLoaded() {
+    if (!window.ukMap?.ensureSearchDataLoaded) {
+      return false;
+    }
+    try {
+      return Boolean(await window.ukMap.ensureSearchDataLoaded());
+    } catch (error) {
+      console.warn("uk_aq UK search ensure failed", error);
+      return false;
+    }
+  }
+
+  async function ensureCrSearchDataLoaded() {
+    if (!window.crMap?.ensureSearchDataLoaded) {
+      return false;
+    }
+    try {
+      return Boolean(await window.crMap.ensureSearchDataLoaded());
+    } catch (error) {
+      console.warn("uk_aq C&R search ensure failed", error);
+      return false;
+    }
+  }
+
+  async function selectConstituencyCode(code) {
+    const normalized = normalizeCode(code);
+    if (!normalized) {
+      return false;
+    }
+    switchToUkTab();
+    await ensureUkSearchDataLoaded();
+    if (selectPconByCode(normalized)) {
+      return true;
+    }
+    await delay(120);
+    return selectPconByCode(normalized);
+  }
+
+  async function selectLocalAuthorityCode(code, regionName = null) {
+    const normalized = normalizeCode(code);
+    if (!normalized) {
+      return false;
+    }
+    switchToCrTab(regionName || null);
+    await ensureCrSearchDataLoaded();
+    if (selectLaByCode(normalized)) {
+      return true;
+    }
+    await delay(120);
+    return selectLaByCode(normalized);
+  }
+
   function makeRequestUrl(basePath, paramsObject) {
     const requestUrl = new URL(basePath, window.location.origin);
     Object.entries(paramsObject).forEach(([key, value]) => {
@@ -12520,6 +12631,7 @@
 
   function mergeSearchResults(groups, limit) {
     const orderedTypes = ["postcode", "constituency", "local_authority", "sensor"];
+    const typePriority = new Map(orderedTypes.map((type, index) => [type, index]));
     const pools = {};
     orderedTypes.forEach((type) => {
       pools[type] = Array.isArray(groups[type]) ? [...groups[type]] : [];
@@ -12540,6 +12652,13 @@
       while (pool.length && output.length < limit) {
         output.push(pool.shift());
       }
+    });
+
+    // Keep strict display grouping by type priority while preserving ranking within each type.
+    output.sort((left, right) => {
+      const leftPriority = typePriority.get(left?.group) ?? Number.MAX_SAFE_INTEGER;
+      const rightPriority = typePriority.get(right?.group) ?? Number.MAX_SAFE_INTEGER;
+      return leftPriority - rightPriority;
     });
 
     return output;
@@ -12669,26 +12788,20 @@
         const pconCode = normalizeCode(exact?.pcon_code);
         const laCode = normalizeCode(exact?.la_code);
         if (activeTab === "uk") {
-          if (pconCode && selectPconByCode(pconCode)) {
+          if (pconCode && await selectConstituencyCode(pconCode)) {
             closeResults();
             return;
           }
-          if (laCode) {
-            switchToCrTab();
-            selectLaByCode(laCode);
+          if (laCode && await selectLocalAuthorityCode(laCode)) {
             closeResults();
             return;
           }
         } else {
-          if (laCode) {
-            switchToCrTab();
-            selectLaByCode(laCode);
+          if (laCode && await selectLocalAuthorityCode(laCode)) {
             closeResults();
             return;
           }
-          if (pconCode) {
-            switchToUkTab();
-            selectPconByCode(pconCode);
+          if (pconCode && await selectConstituencyCode(pconCode)) {
             closeResults();
             return;
           }
@@ -12704,39 +12817,33 @@
       }
     }
 
-    function selectConstituencyResult(result) {
-      switchToUkTab();
-      selectPconByCode(result.code);
+    async function selectConstituencyResult(result) {
+      await selectConstituencyCode(result.code);
       inputEl.value = result.primary;
       clearEl.hidden = !inputEl.value;
       closeResults();
     }
 
-    function selectLocalAuthorityResult(result) {
-      switchToCrTab(result.region_name || null);
-      selectLaByCode(result.code);
+    async function selectLocalAuthorityResult(result) {
+      await selectLocalAuthorityCode(result.code, result.region_name || null);
       inputEl.value = result.primary;
       clearEl.hidden = !inputEl.value;
       closeResults();
     }
 
-    function selectSensorResult(result) {
+    async function selectSensorResult(result) {
       const activeTab = getActiveTab();
       if (activeTab === "uk") {
         if (result.pcon_code) {
-          switchToUkTab();
-          selectPconByCode(result.pcon_code);
+          await selectConstituencyCode(result.pcon_code);
         } else if (result.la_code) {
-          switchToCrTab();
-          selectLaByCode(result.la_code);
+          await selectLocalAuthorityCode(result.la_code);
         }
       } else {
         if (result.la_code) {
-          switchToCrTab();
-          selectLaByCode(result.la_code);
+          await selectLocalAuthorityCode(result.la_code);
         } else if (result.pcon_code) {
-          switchToUkTab();
-          selectPconByCode(result.pcon_code);
+          await selectConstituencyCode(result.pcon_code);
         }
       }
       inputEl.value = result.primary;
@@ -12759,15 +12866,15 @@
         return;
       }
       if (result.kind === "constituency") {
-        selectConstituencyResult(result);
+        await selectConstituencyResult(result);
         return;
       }
       if (result.kind === "local_authority") {
-        selectLocalAuthorityResult(result);
+        await selectLocalAuthorityResult(result);
         return;
       }
       if (result.kind === "sensor") {
-        selectSensorResult(result);
+        await selectSensorResult(result);
       }
     }
 
@@ -12927,6 +13034,11 @@
     });
   });
   syncAllPlaceholders();
+  if (getActiveTab() === "uk") {
+    void ensureCrSearchDataLoaded();
+  } else {
+    void ensureUkSearchDataLoaded();
+  }
 })();
     </script>
     <script src="sidebar.js"></script>
