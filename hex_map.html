@@ -12338,17 +12338,7 @@
       const rows = Array.isArray(payload?.results) ? payload.results : [];
       return rows.map((row) => {
         if (row?.type === "postcode_hint") {
-          const prefix = normalizePostcode(row.prefix || row.query || "");
-          const count = Number.isFinite(Number(row.count)) ? Number(row.count) : null;
-          return {
-            group: "postcode",
-            kind: "postcode_hint",
-            type_label: getResultTypeLabel("postcode_hint"),
-            prefix,
-            count,
-            primary: row.label || `${prefix} postcodes`,
-            secondary: count !== null ? `${count.toLocaleString()} matches` : "",
-          };
+          return null;
         }
         const postcode = String(row?.postcode || "").trim();
         const postcodeNormalised = normalizePostcode(row?.postcode_normalised || postcode);
