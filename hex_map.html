@@ -1277,8 +1277,16 @@
       }
 
       .map-wrap.is-loading .map-canvas svg {
-        opacity: 0.35;
-        filter: grayscale(0.35);
+        opacity: 0.96;
+      }
+
+      .map-wrap.is-loading .map-svg-viewport .hex {
+        opacity: 0.74;
+        filter: saturate(0.55) brightness(1.08);
+      }
+
+      .map-wrap.is-loading .map-svg-viewport .hex-label {
+        opacity: 0.9;
       }
 
 
@@ -1587,7 +1595,7 @@
       .hex {
         stroke: rgba(20, 34, 37, 0.12);
         stroke-width: 1;
-        transition: fill 0.2s ease, stroke 0.2s ease;
+        transition: fill 0.24s ease, stroke 0.2s ease, opacity 0.24s ease, filter 0.24s ease;
       }
 
       .hex:hover {
@@ -2615,6 +2623,51 @@
       .map-svg-viewport > svg {
         width: 100%;
         height: 100%;
+      }
+
+      .map-svg-viewport::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 5;
+        opacity: 0;
+        background: linear-gradient(
+          35deg,
+          rgba(255, 255, 255, 0) 34%,
+          rgba(255, 255, 255, 0.3) 50%,
+          rgba(255, 255, 255, 0) 66%
+        );
+        background-size: 240% 240%;
+        background-position: 0% 100%;
+      }
+
+      .map-wrap.is-loading .map-svg-viewport::after {
+        animation: hexMapLoadingShimmer 2.1s ease-in-out infinite;
+      }
+
+      @keyframes hexMapLoadingShimmer {
+        0% {
+          opacity: 0;
+          background-position: 0% 100%;
+        }
+        18% {
+          opacity: 0.85;
+        }
+        82% {
+          opacity: 0.85;
+        }
+        100% {
+          opacity: 0;
+          background-position: 100% 0%;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .map-wrap.is-loading .map-svg-viewport::after {
+          animation: none;
+          opacity: 0;
+        }
       }
 
       .map-canvas {
@@ -7848,6 +7901,7 @@
           || requestPollutant !== activePollutant
           || requestWindow !== currentWindow;
         setStatus("Loading...");
+        setMapLoading(true);
         if (errorEl) {
           errorEl.textContent = "";
           errorEl.hidden = true;
@@ -7919,38 +7973,51 @@
           //   }
           //   populationUrl.searchParams.set("limit", "2000");
           // }
-          const [hexResponse, pconResponse, latestResponse, populationResponse] = await Promise.all([
-            fetch(HEX_DATA_URL),
-            fetchCacheApi(pconUrl.toString(), {
-              headers: pconHeaders,
-            }),
-            fetchCacheApi(latestUrl.toString(), {
-              headers: latestHeaders,
-            }).catch(() => null),
-            // populationUrl
-            //   ? fetch(populationUrl.toString(), {
-            //     headers: {
-            //       Authorization: `Bearer ${anonKey}`,
-            //       apikey: anonKey,
-            //     },
-            //   }).catch(() => null)
-            //   : Promise.resolve(null),
-            Promise.resolve(null),
-          ]);
+          const hexRequest = fetch(HEX_DATA_URL);
+          const pconRequest = fetchCacheApi(pconUrl.toString(), {
+            headers: pconHeaders,
+          });
+          const latestRequest = fetchCacheApi(latestUrl.toString(), {
+            headers: latestHeaders,
+          }).catch(() => null);
+          // const populationRequest = populationUrl
+          //   ? fetch(populationUrl.toString(), {
+          //     headers: {
+          //       Authorization: `Bearer ${anonKey}`,
+          //       apikey: anonKey,
+          //     },
+          //   }).catch(() => null)
+          //   : Promise.resolve(null);
+          const populationRequest = Promise.resolve(null);
+          const hexResponse = await hexRequest;
           if (isStale()) {
             return;
           }
           if (!hexResponse.ok) {
             throw new Error(`Hex data request failed: ${hexResponse.status}`);
           }
+          hexData = await hexResponse.json();
+          areaRegionLookup = hexData?.type === "FeatureCollection"
+            ? buildAreaRegionLookupFromGeojson(hexData)
+            : new Map();
+          prepareHexGrid();
+          renderMapIfReady();
+          requestAnimationFrame(() => {
+            if (!isStale()) {
+              renderMapIfReady();
+            }
+          });
+          const [pconResponse, latestResponse, populationResponse] = await Promise.all([
+            pconRequest,
+            latestRequest,
+            populationRequest,
+          ]);
+          if (isStale()) {
+            return;
+          }
           if (!pconResponse.ok && pconResponse.status !== 304) {
             throw new Error(`Constituency request failed: ${pconResponse.status}`);
           }
-	          hexData = await hexResponse.json();
-	          areaRegionLookup = hexData?.type === "FeatureCollection"
-	            ? buildAreaRegionLookupFromGeojson(hexData)
-	            : new Map();
-	          prepareHexGrid();
           const pconResponseEtag = pconResponse.headers.get("ETag");
           if (pconResponseEtag) {
             pconEtagByKey.set(pconCacheKey, pconResponseEtag);
@@ -11949,6 +12016,7 @@
           || requestWindow !== currentWindow
           || requestRegion !== activeRegion;
         setStatus("Loading...");
+        setMapLoading(true);
         if (errorEl) {
           errorEl.textContent = "";
           errorEl.hidden = true;
@@ -12040,12 +12108,7 @@
             //   }).catch(() => null)
             //   : Promise.resolve(null);
           }
-          const [hexResponse, laResponse, latestResponse, populationResponse] = await Promise.all([
-            hexPromise,
-            laPromise,
-            latestPromise,
-            populationPromise,
-          ]);
+          const hexResponse = await hexPromise;
           if (isStale()) {
             return;
           }
@@ -12054,6 +12117,20 @@
           }
           hexData = await hexResponse.json();
           prepareHexGrid();
+          renderMapIfReady();
+          requestAnimationFrame(() => {
+            if (!isStale()) {
+              renderMapIfReady();
+            }
+          });
+          const [laResponse, latestResponse, populationResponse] = await Promise.all([
+            laPromise,
+            latestPromise,
+            populationPromise,
+          ]);
+          if (isStale()) {
+            return;
+          }
           pconCodes = new Set(hexCells.map((cell) => resolveCellAreaCode(cell)).filter(Boolean));
           const laNotModified = Boolean(canLoadData && laResponse && laResponse.status === 304);
           const laOk = Boolean(canLoadData && laResponse && (laResponse.ok || laNotModified));

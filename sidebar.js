@@ -17,8 +17,8 @@
         { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/bubblechart/' },
         { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/linechart/' },
         { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '#', className: 'cic-nav-item--eco-replaces' },
-        { label: 'Category Info',      icon: 'i', href: '/data-explorer/resources/' },
-        { label: 'User Guide',         icon: '?', href: '/data-explorer/user-guide/' },
+        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/resources/' },
+        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide/' },
       ],
     },
     {
@@ -34,7 +34,7 @@
           external: true,
         },
         { label: 'Resources', iconImg: 'chain-link-icon-grey.svg', href: '/data-explorer/resources/' },
-        { label: 'Contact', iconPlaceholder: true, href: '/contact.html' },
+        { label: 'Contact', iconImg: 'Contacts-Email-icon-cic-web.svg', href: '/contact.html' },
       ],
     },
   ];
