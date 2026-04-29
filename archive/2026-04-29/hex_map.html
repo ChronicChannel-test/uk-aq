@@ -2416,384 +2416,6 @@
       .tab-bar { display: none; }
       /* Collapse old actions block (status+refresh moved to map-topbar) */
       .map-header .actions { display: none; }
-
-      /* ══════════════════════════════════════════════════════
-         LAYOUT TEST ONLY — cohesive dashboard card layout
-         ══════════════════════════════════════════════════════ */
-
-      #tab-panel-uk > .card:first-of-type,
-      #tab-panel-cr > .card:first-of-type {
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        padding: 0;
-        gap: 0;
-      }
-
-      .map-dashboard-card {
-        background: #fffdf9;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: 0 4px 14px rgba(16, 24, 34, 0.08);
-        padding: 18px;
-        margin-top: 10px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
-        grid-template-rows: auto auto auto auto auto;
-        column-gap: 0;
-        row-gap: 0;
-        align-items: start;
-        position: relative;
-      }
-
-      .map-title-strip {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        min-height: 0;
-        padding: 0 2px;
-        border: 0;
-        margin: 0;
-      }
-
-      .map-dashboard-title {
-        font-size: clamp(1.35rem, 1.65vw, 1.5rem) !important;
-        font-weight: 700;
-        margin: 0;
-        color: var(--ink-1);
-      }
-
-      .layout-test-badge {
-        display: inline-block;
-        font-size: 0.62rem;
-        text-transform: uppercase;
-        letter-spacing: 0.09em;
-        font-weight: 700;
-        color: var(--ink-3);
-        background: color-mix(in oklab, var(--sun) 22%, var(--surface));
-        border: 1px solid color-mix(in oklab, var(--sun) 40%, #d0c89a);
-        padding: 2px 8px;
-        border-radius: 999px;
-        margin-left: 10px;
-        vertical-align: middle;
-        white-space: nowrap;
-      }
-
-      .map-summary-grid {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin: 0 0 12px;
-        padding: 0;
-      }
-
-      .map-summary-card {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 16px 18px;
-        box-shadow: 0 1px 3px rgba(16, 24, 34, 0.04);
-      }
-
-      .map-summary-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        font-weight: 700;
-        color: var(--ink-3);
-        margin-bottom: 6px;
-      }
-
-      .map-summary-value {
-        font-size: 1.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        line-height: 1.15;
-      }
-
-      .map-summary-value-with-icon {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .map-summary-hex {
-        flex-shrink: 0;
-        width: 18px;
-        height: 21px;
-      }
-
-      .map-summary-hex polygon {
-        fill: var(--hex-fill, var(--no-data));
-        transition: fill 0.3s ease;
-      }
-
-      .map-summary-subtext {
-        font-size: 0.8rem;
-        color: var(--ink-3);
-        margin-top: 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .map-summary-coverage-bar {
-        margin-top: 10px;
-        height: 12px;
-        border-radius: 999px;
-        background: #d0d4da;
-        overflow: hidden;
-        width: 100%;
-      }
-
-      .map-summary-coverage-fill {
-        display: block;
-        height: 100%;
-        width: 0%;
-        background: #3c78ac;
-        transition: width 0.25s ease;
-      }
-
-      .map-summary-update-line {
-        font-size: 0.82rem;
-        color: var(--ink-3);
-        margin-top: 3px;
-      }
-
-      .map-summary-update-line span {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--accent);
-      }
-
-      .map-controls-row {
-        grid-column: 1;
-        grid-row: 3;
-        min-height: 0;
-        display: flex;
-        align-items: center;
-        margin: 0 0 0 -18px;
-        padding: 0 0 0 18px;
-        border-top: 1px solid var(--line-soft);
-        margin-bottom: 0;
-      }
-
-      .map-dashboard-card #uk-toolbar-slot,
-      .map-dashboard-card #cr-toolbar-slot {
-        grid-column: 1;
-        grid-row: 3;
-      }
-
-      .toolbar {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        padding: 6px 14px 8px;
-        border-bottom: 1px solid var(--line-soft);
-        background: var(--surface-2);
-        border-radius: 0;
-        overflow: visible;
-      }
-
-      .map-dashboard-card .map-canvas-wrap {
-        grid-column: 1;
-        grid-row: 4;
-        border: none;
-        border-radius: 0;
-        background: transparent;
-        min-width: 0;
-        min-height: 560px;
-        overflow: visible;
-      }
-
-      .map-canvas {
-        position: relative;
-      }
-
-      .map-topbar {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        left: auto;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        z-index: 55;
-      }
-
-      .map-floating-search {
-        position: absolute;
-        top: 16px;
-        left: 16px;
-        width: clamp(340px, 38vw, 420px);
-        z-index: 70;
-      }
-
-      .map-search-results {
-        width: max(100%, 460px);
-        max-width: min(620px, calc(100vw - 32px));
-        z-index: 280;
-      }
-
-      .map-floating-tools {
-        left: 16px;
-        top: 72px;
-        z-index: 58;
-      }
-
-      .map-settings-panel {
-        left: 16px;
-        top: 122px;
-        z-index: 130;
-      }
-
-      .map-zoom-controls {
-        position: absolute;
-        left: 16px;
-        bottom: 16px;
-        display: grid;
-        gap: 6px;
-        z-index: 58;
-      }
-
-      .map-zoom-controls button {
-        border: 1px solid rgba(20, 34, 37, 0.24);
-        background: rgba(255, 255, 255, 0.92);
-        color: var(--ink-1);
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.98rem;
-        min-height: 34px;
-        min-width: 34px;
-        padding: 0 10px;
-        cursor: pointer;
-        box-shadow: 0 8px 16px rgba(20, 34, 37, 0.12);
-      }
-
-      .map-zoom-controls button[data-zoom-action="reset"] {
-        min-width: 58px;
-        font-size: 0.75rem;
-        letter-spacing: 0.02em;
-      }
-
-      .map-zoom-controls button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 12px 22px rgba(20, 34, 37, 0.16);
-      }
-
-      .map-dashboard-card .network-panel {
-        grid-column: 2;
-        grid-row: 3 / span 3;
-        border-left: 2px solid var(--line);
-        border-top: 1px solid var(--line-soft);
-        border-radius: 0;
-        background: transparent;
-        padding: 6px 0 20px 16px;
-        margin-top: 0;
-        margin-right: -18px;
-        margin-bottom: 0;
-        display: grid;
-        gap: 12px;
-        align-content: start;
-        align-self: stretch;
-      }
-
-      .map-dashboard-card .network-list-header {
-        margin: 0;
-        padding: 6px 10px 8px 14px;
-      }
-
-      .map-dashboard-card .map-legend {
-        grid-column: 1;
-        grid-row: 5;
-        justify-content: center;
-        margin-bottom: 2px;
-      }
-
-      @media (max-width: 1200px) {
-        .map-dashboard-card {
-          grid-template-columns: minmax(0, 1fr) 300px;
-        }
-        .map-summary-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-
-      @media (max-width: 980px) {
-        .map-dashboard-card {
-          grid-template-columns: 1fr;
-          padding: 16px;
-          row-gap: 10px;
-        }
-        .map-summary-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .map-controls-row {
-          grid-column: 1;
-          grid-row: 3;
-          margin: 0;
-          padding: 0;
-        }
-        .map-dashboard-card .map-canvas-wrap {
-          grid-column: 1;
-          grid-row: 4;
-          border: 1px solid var(--line-soft);
-          border-radius: 14px;
-          background: var(--surface-2);
-        }
-        .map-dashboard-card .network-panel {
-          grid-column: 1;
-          grid-row: 5;
-          border-left: none;
-          border-top: 1px solid var(--line);
-          padding: 10px 0 0;
-          margin-right: 0;
-          margin-bottom: 0;
-          min-height: 0;
-        }
-        .map-dashboard-card .map-legend {
-          grid-column: 1;
-          grid-row: 6;
-        }
-      }
-
-      @media (max-width: 720px) {
-        .map-summary-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
-        }
-        .map-summary-card {
-          padding: 13px 14px;
-        }
-        .map-floating-search {
-          width: min(100%, 340px);
-          max-width: calc(100vw - 32px);
-        }
-        .map-search-results {
-          width: 100%;
-          max-width: calc(100vw - 32px);
-          max-height: min(52vh, 340px);
-        }
-        .map-topbar {
-          top: 16px;
-          right: 16px;
-        }
-      }
-
-      @media (max-width: 520px) {
-        .map-summary-grid {
-          grid-template-columns: 1fr;
-        }
-        .map-dashboard-card {
-          padding: 14px;
-        }
-        .map-floating-search {
-          width: calc(100% - 32px);
-        }
-      }
     </style>
   </head>
   <body>
@@ -2806,7 +2428,44 @@
 
       <div class="tab-panel" id="tab-panel-uk" role="tabpanel" aria-labelledby="tab-uk">
 
-        <!-- ── Top summary boxes moved inside map card (layout test) ── -->
+        <!-- ── Top summary boxes ── -->
+        <section class="top-summary-grid" aria-label="Selected air quality summary">
+          <article class="top-summary-card">
+            <div class="top-summary-label">Total Active Sensors</div>
+            <div class="top-summary-value" id="top-total-sensors">—</div>
+            <div class="top-summary-subtext">from selected networks</div>
+          </article>
+          <article class="top-summary-card">
+            <div class="top-summary-label">Coverage</div>
+            <div class="top-summary-value" id="top-coverage-percent">—</div>
+            <div class="top-summary-subtext" id="top-coverage-detail">—</div>
+            <div
+              class="top-summary-coverage-bar"
+              id="top-coverage-bar"
+              role="progressbar"
+              aria-label="Coverage percentage"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+              <span class="top-summary-coverage-fill" id="top-coverage-fill"></span>
+            </div>
+          </article>
+          <article class="top-summary-card">
+            <div class="top-summary-label" id="top-highest-label">Highest PM2.5</div>
+            <div class="top-summary-value top-summary-value-with-icon">
+              <svg class="top-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+              <span id="top-highest-value">—</span>
+            </div>
+            <div class="top-summary-subtext" id="top-highest-sensor">—</div>
+            <div class="top-summary-subtext" id="top-highest-network">—</div>
+          </article>
+          <article class="top-summary-card">
+            <div class="top-summary-label">Updates</div>
+            <div class="top-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
+            <div class="top-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
+          </article>
+        </section>
         <!-- Hidden anchors for old summary-* IDs (existing JS still references them) -->
         <span id="summary-stations" hidden></span>
         <span id="summary-highest-label" hidden></span>
@@ -2825,12 +2484,11 @@
           <div class="error" id="error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap map-dashboard-card map-main-grid">
+              <div class="map-wrap">
                 <div class="map-title-strip">
-                  <h2 class="card-title map-dashboard-title" id="map-title">Latest PM2.5 by constituency</h2>
-                  <span class="layout-test-badge" aria-label="Layout test page">Layout test</span>
+                  <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
                 </div>
-                <div id="uk-toolbar-slot" class="map-controls-row">
+                <div id="uk-toolbar-slot">
                   <!-- ── Toolbar: scope switcher + region popover + pollutant pills ── -->
                   <div class="toolbar" id="main-toolbar">
                     <span class="field-label">View</span>
@@ -2885,66 +2543,28 @@
                     <button type="button" class="tab-button" id="tab-cr" role="tab" aria-selected="false" aria-controls="tab-panel-cr">Countries &amp; Regions</button>
                   </div>
                 </div>
-                <!-- ── Summary strip inside map card (layout test) ── -->
-                <section class="map-summary-strip map-summary-grid" aria-label="Selected air quality summary">
-                  <article class="map-summary-card">
-                    <div class="map-summary-label">Total Active Sensors</div>
-                    <div class="map-summary-value" id="top-total-sensors">—</div>
-                    <div class="map-summary-subtext">from selected networks</div>
-                  </article>
-                  <article class="map-summary-card">
-                    <div class="map-summary-label">Coverage</div>
-                    <div class="map-summary-value" id="top-coverage-percent">—</div>
-                    <div class="map-summary-subtext" id="top-coverage-detail">—</div>
-                    <div
-                      class="map-summary-coverage-bar"
-                      id="top-coverage-bar"
-                      role="progressbar"
-                      aria-label="Coverage percentage"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                      aria-valuenow="0"
-                    >
-                      <span class="map-summary-coverage-fill" id="top-coverage-fill"></span>
-                    </div>
-                  </article>
-                  <article class="map-summary-card">
-                    <div class="map-summary-label" id="top-highest-label">Highest PM2.5</div>
-                    <div class="map-summary-value map-summary-value-with-icon">
-                      <svg class="map-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-                      <span id="top-highest-value">—</span>
-                    </div>
-                    <div class="map-summary-subtext" id="top-highest-sensor">—</div>
-                    <div class="map-summary-subtext" id="top-highest-network">—</div>
-                  </article>
-                  <article class="map-summary-card">
-                    <div class="map-summary-label">Updates</div>
-                    <div class="map-summary-update-line">Latest: <span id="top-latest-update">—</span></div>
-                    <div class="map-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
-                  </article>
-                </section>
-                <div class="map-canvas map-canvas-wrap">
-                  <div class="map-search map-floating-search" data-map-search data-map-kind="uk">
-                    <span class="map-search-icon" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                    </span>
-                    <input
-                      id="uk-map-search-input"
-                      class="map-search-input"
-                      type="search"
-                      autocomplete="off"
-                      autocapitalize="characters"
-                      spellcheck="false"
-                      role="combobox"
-                      aria-autocomplete="list"
-                      aria-expanded="false"
-                      aria-controls="uk-map-search-results"
-                      placeholder="Search postcodes, constituencies, sensors…"
-                    />
-                    <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
-                    <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
-                  </div>
+                <div class="map-canvas">
                   <div class="map-topbar">
+                    <div class="map-search" data-map-search data-map-kind="uk">
+                      <span class="map-search-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                      </span>
+                      <input
+                        id="uk-map-search-input"
+                        class="map-search-input"
+                        type="search"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded="false"
+                        aria-controls="uk-map-search-results"
+                        placeholder="Search postcodes, constituencies, sensors…"
+                      />
+                      <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
+                      <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
+                    </div>
                   <span class="status-indicator status-pill" data-state="loading">
                     <span class="pulse-dot" aria-hidden="true"></span>
                     <span class="hint" id="status">Loading...</span>
@@ -3013,14 +2633,9 @@
                     </div>
                   </div>
                 </div>
-                <button type="button" class="map-settings map-floating-tools" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
+                <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
                   <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
                 </button>
-                <div class="map-zoom-controls" data-map-zoom-controls data-map-svg-id="hex-map">
-                  <button type="button" data-zoom-action="in" aria-label="Zoom in">+</button>
-                  <button type="button" data-zoom-action="reset" aria-label="Reset zoom">Reset</button>
-                  <button type="button" data-zoom-action="out" aria-label="Zoom out">−</button>
-                </div>
               </div>
               <aside class="network-panel">
                 <div class="network-list-header">
@@ -3411,7 +3026,43 @@
       </div>
 
       <div class="tab-panel" id="tab-panel-cr" role="tabpanel" aria-labelledby="tab-cr" hidden>
-        <!-- ── CR top summary boxes moved inside map card (layout test) ── -->
+        <section class="top-summary-grid" aria-label="Selected air quality summary for countries and regions">
+          <article class="top-summary-card">
+            <div class="top-summary-label">Total Active Sensors</div>
+            <div class="top-summary-value" id="cr-top-total-sensors">—</div>
+            <div class="top-summary-subtext">from selected networks</div>
+          </article>
+          <article class="top-summary-card">
+            <div class="top-summary-label">Coverage</div>
+            <div class="top-summary-value" id="cr-top-coverage-percent">—</div>
+            <div class="top-summary-subtext" id="cr-top-coverage-detail">—</div>
+            <div
+              class="top-summary-coverage-bar"
+              id="cr-top-coverage-bar"
+              role="progressbar"
+              aria-label="Coverage percentage"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+              <span class="top-summary-coverage-fill" id="cr-top-coverage-fill"></span>
+            </div>
+          </article>
+          <article class="top-summary-card">
+            <div class="top-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
+            <div class="top-summary-value top-summary-value-with-icon">
+              <svg class="top-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+              <span id="cr-top-highest-value">—</span>
+            </div>
+            <div class="top-summary-subtext" id="cr-top-highest-sensor">—</div>
+            <div class="top-summary-subtext" id="cr-top-highest-network">—</div>
+          </article>
+          <article class="top-summary-card">
+            <div class="top-summary-label">Updates</div>
+            <div class="top-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
+            <div class="top-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
+          </article>
+        </section>
         <!-- Hidden anchors for legacy cr-summary-* IDs (JS still updates these) -->
         <span id="cr-summary-overall-title" hidden></span>
         <span id="cr-summary-stations" hidden></span>
@@ -3430,51 +3081,12 @@
           <div class="error" id="cr-error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap map-dashboard-card map-main-grid">
+              <div class="map-wrap">
                 <div class="map-title-strip">
-                  <h2 class="card-title map-dashboard-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
-                  <span class="layout-test-badge" aria-label="Layout test page">Layout test</span>
+                  <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
                 </div>
-                <div id="cr-toolbar-slot" class="map-controls-row"></div>
+                <div id="cr-toolbar-slot"></div>
                 <div class="tab-slot" data-tab-slot style="display:none"></div>
-                <!-- ── CR Summary strip inside map card (layout test) ── -->
-                <section class="map-summary-strip map-summary-grid" aria-label="Selected air quality summary for countries and regions">
-                  <article class="map-summary-card">
-                    <div class="map-summary-label">Total Active Sensors</div>
-                    <div class="map-summary-value" id="cr-top-total-sensors">—</div>
-                    <div class="map-summary-subtext">from selected networks</div>
-                  </article>
-                  <article class="map-summary-card">
-                    <div class="map-summary-label">Coverage</div>
-                    <div class="map-summary-value" id="cr-top-coverage-percent">—</div>
-                    <div class="map-summary-subtext" id="cr-top-coverage-detail">—</div>
-                    <div
-                      class="map-summary-coverage-bar"
-                      id="cr-top-coverage-bar"
-                      role="progressbar"
-                      aria-label="Coverage percentage"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                      aria-valuenow="0"
-                    >
-                      <span class="map-summary-coverage-fill" id="cr-top-coverage-fill"></span>
-                    </div>
-                  </article>
-                  <article class="map-summary-card">
-                    <div class="map-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
-                    <div class="map-summary-value map-summary-value-with-icon">
-                      <svg class="map-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
-                      <span id="cr-top-highest-value">—</span>
-                    </div>
-                    <div class="map-summary-subtext" id="cr-top-highest-sensor">—</div>
-                    <div class="map-summary-subtext" id="cr-top-highest-network">—</div>
-                  </article>
-                  <article class="map-summary-card">
-                    <div class="map-summary-label">Updates</div>
-                    <div class="map-summary-update-line">Latest: <span id="cr-top-latest-update">—</span></div>
-                    <div class="map-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
-                  </article>
-                </section>
                 <aside class="network-panel">
                   <div class="network-list-header">
                     <span>Network</span>
@@ -3488,28 +3100,28 @@
                     <button type="button" id="cr-network-deselect-all">Deselect All</button>
                   </div>
                 </aside>
-                <div class="map-canvas map-canvas-wrap">
-                  <div class="map-search map-floating-search" data-map-search data-map-kind="cr">
-                    <span class="map-search-icon" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                    </span>
-                    <input
-                      id="cr-map-search-input"
-                      class="map-search-input"
-                      type="search"
-                      autocomplete="off"
-                      autocapitalize="characters"
-                      spellcheck="false"
-                      role="combobox"
-                      aria-autocomplete="list"
-                      aria-expanded="false"
-                      aria-controls="cr-map-search-results"
-                      placeholder="Search postcodes, local authorities, sensors…"
-                    />
-                    <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
-                    <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
-                  </div>
+                <div class="map-canvas">
                   <div class="map-topbar">
+                    <div class="map-search" data-map-search data-map-kind="cr">
+                      <span class="map-search-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                      </span>
+                      <input
+                        id="cr-map-search-input"
+                        class="map-search-input"
+                        type="search"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded="false"
+                        aria-controls="cr-map-search-results"
+                        placeholder="Search postcodes, local authorities, sensors…"
+                      />
+                      <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
+                      <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
+                    </div>
                     <span class="status-indicator status-pill" data-state="loading">
                       <span class="pulse-dot" aria-hidden="true"></span>
                       <span class="hint" id="cr-status">Loading...</span>
@@ -3578,14 +3190,9 @@
                       </div>
                     </div>
                   </div>
-                  <button type="button" class="map-settings map-floating-tools" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
+                  <button type="button" class="map-settings" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
                     <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
                   </button>
-                  <div class="map-zoom-controls" data-map-zoom-controls data-map-svg-id="cr-hex-map">
-                    <button type="button" data-zoom-action="in" aria-label="Zoom in">+</button>
-                    <button type="button" data-zoom-action="reset" aria-label="Reset zoom">Reset</button>
-                    <button type="button" data-zoom-action="out" aria-label="Zoom out">−</button>
-                  </div>
                 </div>
                 <div class="legend map-legend">
                   <span id="cr-legend-pollutant">PM2.5 (µg/m³)</span>
@@ -4458,6 +4065,7 @@
       let selectedPconCode = null;
       let selectedCell = null;
       let pinnedTooltipCell = null;
+      let ukSearchPreloadPromise = null;
       const CACHE_SESSION_SKEW_MS = 10000;
       const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:uk`;
       let cacheAuthToken = null;
@@ -7590,8 +7198,9 @@
         updateSelectedHexStyles();
       }
 
-      async function loadMapData() {
-        if (!isUkMapVisible()) {
+      async function loadMapData(options = {}) {
+        const force = Boolean(options?.force);
+        if (!force && !isUkMapVisible()) {
           return;
         }
         const requestPollutant = activePollutant;
@@ -8130,6 +7739,25 @@
         return Array.from(recordsByKey.values());
       }
 
+      function ensureUkSearchDataLoaded() {
+        if (hexCells.length) {
+          return Promise.resolve(true);
+        }
+        if (ukSearchPreloadPromise) {
+          return ukSearchPreloadPromise;
+        }
+        ukSearchPreloadPromise = loadMapData({ force: true })
+          .then(() => Boolean(hexCells.length))
+          .catch((error) => {
+            console.warn("uk_aq UK search preload failed", error);
+            return false;
+          })
+          .finally(() => {
+            ukSearchPreloadPromise = null;
+          });
+        return ukSearchPreloadPromise;
+      }
+
       window.ukMap = {
         render: () => {
           if (statusEl.textContent === "Live") {
@@ -8145,6 +7773,7 @@
         },
         selectPconByCode: (code) => selectPconByCode(code),
         getActivePconCode: () => selectedPconCode,
+        ensureSearchDataLoaded: () => ensureUkSearchDataLoaded(),
         getConstituencySearchRecords: () => buildConstituencySearchRecords(),
         getSensorSearchRecords: () => buildSensorSearchRecords(),
       };
@@ -8519,6 +8148,7 @@
 	      let selectedCell = null;
 	      let pendingSelectedAreaCode = null;
 	      let areaRegionLookup = new Map();
+	      let crSearchPreloadPromise = null;
 	      const CACHE_SESSION_SKEW_MS = 10000;
 	      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:cr`;
 	      let cacheAuthToken = null;
@@ -11667,8 +11297,9 @@
         loadMapData();
       }
 
-      async function loadMapData() {
-        if (!isCrMapVisible()) {
+      async function loadMapData(options = {}) {
+        const force = Boolean(options?.force);
+        if (!force && !isCrMapVisible()) {
           return;
         }
         const requestPollutant = activePollutant;
@@ -12247,6 +11878,32 @@
         return Array.from(recordsByKey.values());
       }
 
+      function hasCrSearchData() {
+        if (hexData?.type === "FeatureCollection") {
+          return Array.isArray(hexData.features) && hexData.features.length > 0;
+        }
+        return hexCells.length > 0;
+      }
+
+      function ensureCrSearchDataLoaded() {
+        if (hasCrSearchData()) {
+          return Promise.resolve(true);
+        }
+        if (crSearchPreloadPromise) {
+          return crSearchPreloadPromise;
+        }
+        crSearchPreloadPromise = loadMapData({ force: true })
+          .then(() => hasCrSearchData())
+          .catch((error) => {
+            console.warn("uk_aq C&R search preload failed", error);
+            return false;
+          })
+          .finally(() => {
+            crSearchPreloadPromise = null;
+          });
+        return crSearchPreloadPromise;
+      }
+
 	      window.crMap = {
 	        render: () => {
 	          if (statusEl.textContent === "Live") {
@@ -12266,6 +11923,7 @@
 	        getRegion: () => activeRegion,
 	        selectAreaByCode: (code, options) => selectAreaByCode(code, options),
 	        getActiveAreaCode: () => selectedAreaCode,
+	        ensureSearchDataLoaded: () => ensureCrSearchDataLoaded(),
 	        getLocalAuthoritySearchRecords: () => buildLocalAuthoritySearchRecords(),
 	        getSensorSearchRecords: () => buildSensorSearchRecords(),
 	      };
@@ -12362,9 +12020,11 @@
     if (isUk) {
       window.ukMap?.render();
       window.ukMap?.restoreNetworks();
+      void window.crMap?.ensureSearchDataLoaded?.();
     } else {
       window.crMap?.render();
       window.crMap?.restoreNetworks();
+      void window.ukMap?.ensureSearchDataLoaded?.();
     }
     window.syncToolbar?.(tabKey);
   }
@@ -12660,6 +12320,64 @@
     return Boolean(window.crMap.selectAreaByCode(code, { allowRegionSwitch: true, updateUrl: true }));
   }
 
+  function delay(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
+  async function ensureUkSearchDataLoaded() {
+    if (!window.ukMap?.ensureSearchDataLoaded) {
+      return false;
+    }
+    try {
+      return Boolean(await window.ukMap.ensureSearchDataLoaded());
+    } catch (error) {
+      console.warn("uk_aq UK search ensure failed", error);
+      return false;
+    }
+  }
+
+  async function ensureCrSearchDataLoaded() {
+    if (!window.crMap?.ensureSearchDataLoaded) {
+      return false;
+    }
+    try {
+      return Boolean(await window.crMap.ensureSearchDataLoaded());
+    } catch (error) {
+      console.warn("uk_aq C&R search ensure failed", error);
+      return false;
+    }
+  }
+
+  async function selectConstituencyCode(code) {
+    const normalized = normalizeCode(code);
+    if (!normalized) {
+      return false;
+    }
+    switchToUkTab();
+    await ensureUkSearchDataLoaded();
+    if (selectPconByCode(normalized)) {
+      return true;
+    }
+    await delay(120);
+    return selectPconByCode(normalized);
+  }
+
+  async function selectLocalAuthorityCode(code, regionName = null) {
+    const normalized = normalizeCode(code);
+    if (!normalized) {
+      return false;
+    }
+    switchToCrTab(regionName || null);
+    await ensureCrSearchDataLoaded();
+    if (selectLaByCode(normalized)) {
+      return true;
+    }
+    await delay(120);
+    return selectLaByCode(normalized);
+  }
+
   function makeRequestUrl(basePath, paramsObject) {
     const requestUrl = new URL(basePath, window.location.origin);
     Object.entries(paramsObject).forEach(([key, value]) => {
@@ -12926,6 +12644,7 @@
 
   function mergeSearchResults(groups, limit) {
     const orderedTypes = ["postcode", "constituency", "local_authority", "sensor"];
+    const typePriority = new Map(orderedTypes.map((type, index) => [type, index]));
     const pools = {};
     orderedTypes.forEach((type) => {
       pools[type] = Array.isArray(groups[type]) ? [...groups[type]] : [];
@@ -12946,6 +12665,13 @@
       while (pool.length && output.length < limit) {
         output.push(pool.shift());
       }
+    });
+
+    // Keep strict display grouping by type priority while preserving ranking within each type.
+    output.sort((left, right) => {
+      const leftPriority = typePriority.get(left?.group) ?? Number.MAX_SAFE_INTEGER;
+      const rightPriority = typePriority.get(right?.group) ?? Number.MAX_SAFE_INTEGER;
+      return leftPriority - rightPriority;
     });
 
     return output;
@@ -13075,26 +12801,20 @@
         const pconCode = normalizeCode(exact?.pcon_code);
         const laCode = normalizeCode(exact?.la_code);
         if (activeTab === "uk") {
-          if (pconCode && selectPconByCode(pconCode)) {
+          if (pconCode && await selectConstituencyCode(pconCode)) {
             closeResults();
             return;
           }
-          if (laCode) {
-            switchToCrTab();
-            selectLaByCode(laCode);
+          if (laCode && await selectLocalAuthorityCode(laCode)) {
             closeResults();
             return;
           }
         } else {
-          if (laCode) {
-            switchToCrTab();
-            selectLaByCode(laCode);
+          if (laCode && await selectLocalAuthorityCode(laCode)) {
             closeResults();
             return;
           }
-          if (pconCode) {
-            switchToUkTab();
-            selectPconByCode(pconCode);
+          if (pconCode && await selectConstituencyCode(pconCode)) {
             closeResults();
             return;
           }
@@ -13110,39 +12830,33 @@
       }
     }
 
-    function selectConstituencyResult(result) {
-      switchToUkTab();
-      selectPconByCode(result.code);
+    async function selectConstituencyResult(result) {
+      await selectConstituencyCode(result.code);
       inputEl.value = result.primary;
       clearEl.hidden = !inputEl.value;
       closeResults();
     }
 
-    function selectLocalAuthorityResult(result) {
-      switchToCrTab(result.region_name || null);
-      selectLaByCode(result.code);
+    async function selectLocalAuthorityResult(result) {
+      await selectLocalAuthorityCode(result.code, result.region_name || null);
       inputEl.value = result.primary;
       clearEl.hidden = !inputEl.value;
       closeResults();
     }
 
-    function selectSensorResult(result) {
+    async function selectSensorResult(result) {
       const activeTab = getActiveTab();
       if (activeTab === "uk") {
         if (result.pcon_code) {
-          switchToUkTab();
-          selectPconByCode(result.pcon_code);
+          await selectConstituencyCode(result.pcon_code);
         } else if (result.la_code) {
-          switchToCrTab();
-          selectLaByCode(result.la_code);
+          await selectLocalAuthorityCode(result.la_code);
         }
       } else {
         if (result.la_code) {
-          switchToCrTab();
-          selectLaByCode(result.la_code);
+          await selectLocalAuthorityCode(result.la_code);
         } else if (result.pcon_code) {
-          switchToUkTab();
-          selectPconByCode(result.pcon_code);
+          await selectConstituencyCode(result.pcon_code);
         }
       }
       inputEl.value = result.primary;
@@ -13165,15 +12879,15 @@
         return;
       }
       if (result.kind === "constituency") {
-        selectConstituencyResult(result);
+        await selectConstituencyResult(result);
         return;
       }
       if (result.kind === "local_authority") {
-        selectLocalAuthorityResult(result);
+        await selectLocalAuthorityResult(result);
         return;
       }
       if (result.kind === "sensor") {
-        selectSensorResult(result);
+        await selectSensorResult(result);
       }
     }
 
@@ -13333,69 +13047,11 @@
     });
   });
   syncAllPlaceholders();
-})();
-    </script>
-    <script>
-(() => {
-  const controls = Array.from(document.querySelectorAll("[data-map-zoom-controls]"));
-  if (!controls.length) {
-    return;
+  if (getActiveTab() === "uk") {
+    void ensureCrSearchDataLoaded();
+  } else {
+    void ensureUkSearchDataLoaded();
   }
-
-  const MIN_SCALE = 0.8;
-  const MAX_SCALE = 3;
-  const STEP = 1.15;
-  const mapScale = new Map();
-
-  function getSvgElement(control) {
-    const id = control.getAttribute("data-map-svg-id");
-    if (!id) {
-      return null;
-    }
-    return document.getElementById(id);
-  }
-
-  function getScale(svgId) {
-    return mapScale.get(svgId) || 1;
-  }
-
-  function setScale(svg, nextScale) {
-    const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScale));
-    mapScale.set(svg.id, clamped);
-    svg.style.transformOrigin = "50% 50%";
-    svg.style.transform = `scale(${clamped})`;
-    svg.style.transition = "transform 0.18s ease";
-  }
-
-  controls.forEach((control) => {
-    const svg = getSvgElement(control);
-    if (!svg || !svg.id) {
-      return;
-    }
-    setScale(svg, getScale(svg.id));
-
-    control.addEventListener("click", (event) => {
-      const button = event.target instanceof Element
-        ? event.target.closest("[data-zoom-action]")
-        : null;
-      if (!button) {
-        return;
-      }
-      const action = button.getAttribute("data-zoom-action");
-      const current = getScale(svg.id);
-      if (action === "in") {
-        setScale(svg, current * STEP);
-        return;
-      }
-      if (action === "out") {
-        setScale(svg, current / STEP);
-        return;
-      }
-      if (action === "reset") {
-        setScale(svg, 1);
-      }
-    });
-  });
 })();
     </script>
     <script src="sidebar.js"></script>
