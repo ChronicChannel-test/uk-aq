@@ -2029,7 +2029,8 @@
 
       /* Prevent the global svg{width:100%;height:560px} rule from blowing up UI icons */
       .map-topbar svg,
-      .toolbar svg {
+      .toolbar svg,
+      .map-search svg {
         width: auto;
         height: auto;
         display: inline;
@@ -2251,6 +2252,18 @@
       .map-search-input::placeholder {
         color: color-mix(in oklab, var(--ink-4) 78%, white);
       }
+      .map-search-input::-webkit-search-cancel-button,
+      .map-search-input::-webkit-search-decoration {
+        -webkit-appearance: none;
+        appearance: none;
+        display: none;
+      }
+      .map-search-input::-ms-clear,
+      .map-search-input::-ms-reveal {
+        display: none;
+        width: 0;
+        height: 0;
+      }
       .map-search-clear {
         border: none;
         background: transparent;
@@ -2405,12 +2418,53 @@
       .map-header .actions { display: none; }
 
       /* ══════════════════════════════════════════════════════
-         LAYOUT TEST ONLY — Summary strip inside map card
+         LAYOUT TEST ONLY — cohesive dashboard card layout
          ══════════════════════════════════════════════════════ */
+
+      #tab-panel-uk > .card:first-of-type,
+      #tab-panel-cr > .card:first-of-type {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        gap: 0;
+      }
+
+      .map-dashboard-card {
+        background: #fffdf9;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgba(16, 24, 34, 0.08);
+        padding: 18px;
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-rows: auto auto auto auto auto;
+        column-gap: 14px;
+        row-gap: 0;
+        align-items: start;
+        position: relative;
+      }
+
+      .map-title-strip {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        min-height: 0;
+        padding: 0 2px;
+        border: 0;
+        margin: 0;
+      }
+
+      .map-dashboard-title {
+        font-size: clamp(1.35rem, 1.65vw, 1.5rem) !important;
+        font-weight: 700;
+        margin: 0;
+        color: var(--ink-1);
+      }
 
       .layout-test-badge {
         display: inline-block;
-        font-size: 0.6rem;
+        font-size: 0.62rem;
         text-transform: uppercase;
         letter-spacing: 0.09em;
         font-weight: 700;
@@ -2424,62 +2478,50 @@
         white-space: nowrap;
       }
 
-      /* Summary strip container — direct child of .map-wrap */
-      .map-summary-strip {
+      .map-summary-grid {
+        grid-column: 1 / -1;
+        grid-row: 2;
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 8px;
-        padding: 8px 8px 0;
-        margin: 0;
+        gap: 12px;
+        margin: 0 0 12px;
+        padding: 0;
       }
 
-      @media (max-width: 720px) {
-        .map-summary-strip {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-
-      @media (max-width: 420px) {
-        .map-summary-strip {
-          grid-template-columns: repeat(1, minmax(0, 1fr));
-        }
-      }
-
-      /* Compact summary card */
       .map-summary-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 10px 12px;
-        box-shadow: none;
+        border-radius: 12px;
+        padding: 16px 18px;
+        box-shadow: 0 1px 3px rgba(16, 24, 34, 0.05);
       }
 
       .map-summary-label {
-        font-size: 0.62rem;
+        font-size: 0.76rem;
         text-transform: uppercase;
-        letter-spacing: 0.07em;
+        letter-spacing: 0.06em;
         font-weight: 700;
         color: var(--ink-3);
-        margin-bottom: 4px;
+        margin-bottom: 6px;
       }
 
       .map-summary-value {
-        font-size: 1.25rem;
+        font-size: clamp(1.95rem, 2.4vw, 2.3rem);
         font-weight: 700;
         color: var(--accent);
-        line-height: 1.15;
+        line-height: 1.05;
       }
 
       .map-summary-value-with-icon {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
       }
 
       .map-summary-hex {
         flex-shrink: 0;
-        width: 15px;
-        height: 17px;
+        width: 17px;
+        height: 20px;
       }
 
       .map-summary-hex polygon {
@@ -2488,17 +2530,17 @@
       }
 
       .map-summary-subtext {
-        font-size: 0.72rem;
+        font-size: 0.86rem;
         color: var(--ink-3);
-        margin-top: 3px;
+        margin-top: 5px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
       .map-summary-coverage-bar {
-        margin-top: 6px;
-        height: 8px;
+        margin-top: 10px;
+        height: 10px;
         border-radius: 999px;
         background: #d0d4da;
         overflow: hidden;
@@ -2514,48 +2556,233 @@
       }
 
       .map-summary-update-line {
-        font-size: 0.72rem;
+        font-size: 0.88rem;
         color: var(--ink-3);
-        margin-top: 2px;
+        margin-top: 4px;
       }
 
       .map-summary-update-line span {
-        font-size: 1.1rem;
+        font-size: 1.65rem;
         font-weight: 700;
         color: var(--accent);
+        line-height: 1.05;
       }
 
-      /* Grid positioning override: toolbar full-width, summary strip at row 3 */
-      @media (min-width: 981px) {
-        .map-wrap #uk-toolbar-slot,
-        .map-wrap #cr-toolbar-slot {
-          grid-column: 1 / -1;
-          grid-row: 2;
-        }
+      .map-controls-row {
+        grid-column: 1;
+        grid-row: 3;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        margin-bottom: 0;
+      }
 
-        .map-wrap .map-summary-strip {
-          grid-column: 1 / -1;
+      .map-dashboard-card #uk-toolbar-slot,
+      .map-dashboard-card #cr-toolbar-slot {
+        grid-column: 1;
+        grid-row: 3;
+      }
+
+      .toolbar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 6px 14px 8px;
+        border-bottom: 1px solid var(--line-soft);
+        background: var(--surface-2);
+        border-radius: 0;
+        overflow: visible;
+      }
+
+      .map-dashboard-card .map-canvas-wrap {
+        grid-column: 1;
+        grid-row: 4;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        min-width: 0;
+        min-height: 560px;
+        overflow: visible;
+      }
+
+      .map-canvas {
+        position: relative;
+      }
+
+      .map-topbar {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 55;
+      }
+
+      .map-floating-search {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        width: clamp(340px, 38vw, 420px);
+        z-index: 70;
+      }
+
+      .map-search-results {
+        width: max(100%, 460px);
+        max-width: min(620px, calc(100vw - 32px));
+        z-index: 280;
+      }
+
+      .map-floating-tools {
+        left: 16px;
+        top: 72px;
+        z-index: 58;
+      }
+
+      .map-settings-panel {
+        left: 16px;
+        top: 122px;
+        z-index: 130;
+      }
+
+      .map-zoom-controls {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        display: grid;
+        gap: 6px;
+        z-index: 58;
+      }
+
+      .map-zoom-controls button {
+        border: 1px solid rgba(20, 34, 37, 0.24);
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--ink-1);
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.98rem;
+        min-height: 34px;
+        min-width: 34px;
+        padding: 0 10px;
+        cursor: pointer;
+        box-shadow: 0 8px 16px rgba(20, 34, 37, 0.12);
+      }
+
+      .map-zoom-controls button[data-zoom-action="reset"] {
+        min-width: 58px;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+      }
+
+      .map-zoom-controls button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(20, 34, 37, 0.16);
+      }
+
+      .map-dashboard-card .network-panel {
+        grid-column: 2;
+        grid-row: 3 / span 3;
+        border-left: 2px solid var(--line);
+        border-radius: 0;
+        background: transparent;
+        padding: 16px 0 20px 16px;
+        margin-top: -8px;
+        margin-bottom: -8px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        align-self: stretch;
+      }
+
+      .map-dashboard-card .network-list-header {
+        margin: 0;
+        padding: 0 10px 6px 14px;
+      }
+
+      .map-dashboard-card .map-legend {
+        grid-column: 1;
+        grid-row: 5;
+        justify-content: center;
+        margin-bottom: 2px;
+      }
+
+      @media (max-width: 1200px) {
+        .map-dashboard-card {
+          grid-template-columns: minmax(0, 1fr) 300px;
+        }
+        .map-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 980px) {
+        .map-dashboard-card {
+          grid-template-columns: 1fr;
+          padding: 16px;
+          row-gap: 10px;
+        }
+        .map-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .map-controls-row {
+          grid-column: 1;
           grid-row: 3;
         }
-
-        .map-wrap .map-canvas {
+        .map-dashboard-card .map-canvas-wrap {
           grid-column: 1;
           grid-row: 4;
+          border: 1px solid var(--line-soft);
+          border-radius: 14px;
+          background: var(--surface-2);
         }
-
-        .map-wrap .network-panel {
-          grid-column: 2;
-          grid-row: 4;
-          align-self: stretch;
-          margin-top: 0;
-          margin-bottom: -8px;
-          padding-top: 16px;
-          padding-bottom: 20px;
-        }
-
-        .map-wrap .map-legend {
+        .map-dashboard-card .network-panel {
           grid-column: 1;
           grid-row: 5;
+          border-left: none;
+          border-top: 1px solid var(--line);
+          padding: 10px 0 0;
+          min-height: 0;
+        }
+        .map-dashboard-card .map-legend {
+          grid-column: 1;
+          grid-row: 6;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .map-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .map-summary-card {
+          padding: 13px 14px;
+        }
+        .map-floating-search {
+          width: min(100%, 340px);
+          max-width: calc(100vw - 32px);
+        }
+        .map-search-results {
+          width: 100%;
+          max-width: calc(100vw - 32px);
+          max-height: min(52vh, 340px);
+        }
+        .map-topbar {
+          top: 16px;
+          right: 16px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .map-summary-grid {
+          grid-template-columns: 1fr;
+        }
+        .map-dashboard-card {
+          padding: 14px;
+        }
+        .map-floating-search {
+          width: calc(100% - 32px);
         }
       }
     </style>
@@ -2589,12 +2816,12 @@
           <div class="error" id="error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap">
+              <div class="map-wrap map-dashboard-card map-main-grid">
                 <div class="map-title-strip">
-                  <h2 class="card-title" id="map-title">Latest PM2.5 by constituency</h2>
+                  <h2 class="card-title map-dashboard-title" id="map-title">Latest PM2.5 by constituency</h2>
                   <span class="layout-test-badge" aria-label="Layout test page">Layout test</span>
                 </div>
-                <div id="uk-toolbar-slot">
+                <div id="uk-toolbar-slot" class="map-controls-row">
                   <!-- ── Toolbar: scope switcher + region popover + pollutant pills ── -->
                   <div class="toolbar" id="main-toolbar">
                     <span class="field-label">View</span>
@@ -2650,7 +2877,7 @@
                   </div>
                 </div>
                 <!-- ── Summary strip inside map card (layout test) ── -->
-                <section class="map-summary-strip" aria-label="Selected air quality summary">
+                <section class="map-summary-strip map-summary-grid" aria-label="Selected air quality summary">
                   <article class="map-summary-card">
                     <div class="map-summary-label">Total Active Sensors</div>
                     <div class="map-summary-value" id="top-total-sensors">—</div>
@@ -2687,28 +2914,28 @@
                     <div class="map-summary-update-line">Oldest: <span id="top-oldest-update">—</span></div>
                   </article>
                 </section>
-                <div class="map-canvas">
+                <div class="map-canvas map-canvas-wrap">
+                  <div class="map-search map-floating-search" data-map-search data-map-kind="uk">
+                    <span class="map-search-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    </span>
+                    <input
+                      id="uk-map-search-input"
+                      class="map-search-input"
+                      type="search"
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck="false"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded="false"
+                      aria-controls="uk-map-search-results"
+                      placeholder="Search postcodes, constituencies, sensors…"
+                    />
+                    <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
+                    <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
+                  </div>
                   <div class="map-topbar">
-                    <div class="map-search" data-map-search data-map-kind="uk">
-                      <span class="map-search-icon" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      </span>
-                      <input
-                        id="uk-map-search-input"
-                        class="map-search-input"
-                        type="search"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        role="combobox"
-                        aria-autocomplete="list"
-                        aria-expanded="false"
-                        aria-controls="uk-map-search-results"
-                        placeholder="Search postcodes, constituencies, sensors…"
-                      />
-                      <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
-                      <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
-                    </div>
                   <span class="status-indicator status-pill" data-state="loading">
                     <span class="pulse-dot" aria-hidden="true"></span>
                     <span class="hint" id="status">Loading...</span>
@@ -2777,9 +3004,14 @@
                     </div>
                   </div>
                 </div>
-                <button type="button" class="map-settings" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
+                <button type="button" class="map-settings map-floating-tools" aria-label="Map settings" aria-controls="map-settings-panel" aria-expanded="false">
                   <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
                 </button>
+                <div class="map-zoom-controls" data-map-zoom-controls data-map-svg-id="hex-map">
+                  <button type="button" data-zoom-action="in" aria-label="Zoom in">+</button>
+                  <button type="button" data-zoom-action="reset" aria-label="Reset zoom">Reset</button>
+                  <button type="button" data-zoom-action="out" aria-label="Zoom out">−</button>
+                </div>
               </div>
               <aside class="network-panel">
                 <div class="network-list-header">
@@ -3189,15 +3421,15 @@
           <div class="error" id="cr-error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap">
+              <div class="map-wrap map-dashboard-card map-main-grid">
                 <div class="map-title-strip">
-                  <h2 class="card-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
+                  <h2 class="card-title map-dashboard-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
                   <span class="layout-test-badge" aria-label="Layout test page">Layout test</span>
                 </div>
-                <div id="cr-toolbar-slot"></div>
+                <div id="cr-toolbar-slot" class="map-controls-row"></div>
                 <div class="tab-slot" data-tab-slot style="display:none"></div>
                 <!-- ── CR Summary strip inside map card (layout test) ── -->
-                <section class="map-summary-strip" aria-label="Selected air quality summary for countries and regions">
+                <section class="map-summary-strip map-summary-grid" aria-label="Selected air quality summary for countries and regions">
                   <article class="map-summary-card">
                     <div class="map-summary-label">Total Active Sensors</div>
                     <div class="map-summary-value" id="cr-top-total-sensors">—</div>
@@ -3247,28 +3479,28 @@
                     <button type="button" id="cr-network-deselect-all">Deselect All</button>
                   </div>
                 </aside>
-                <div class="map-canvas">
+                <div class="map-canvas map-canvas-wrap">
+                  <div class="map-search map-floating-search" data-map-search data-map-kind="cr">
+                    <span class="map-search-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    </span>
+                    <input
+                      id="cr-map-search-input"
+                      class="map-search-input"
+                      type="search"
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck="false"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded="false"
+                      aria-controls="cr-map-search-results"
+                      placeholder="Search postcodes, local authorities, sensors…"
+                    />
+                    <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
+                    <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
+                  </div>
                   <div class="map-topbar">
-                    <div class="map-search" data-map-search data-map-kind="cr">
-                      <span class="map-search-icon" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                      </span>
-                      <input
-                        id="cr-map-search-input"
-                        class="map-search-input"
-                        type="search"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        role="combobox"
-                        aria-autocomplete="list"
-                        aria-expanded="false"
-                        aria-controls="cr-map-search-results"
-                        placeholder="Search postcodes, local authorities, sensors…"
-                      />
-                      <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
-                      <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
-                    </div>
                     <span class="status-indicator status-pill" data-state="loading">
                       <span class="pulse-dot" aria-hidden="true"></span>
                       <span class="hint" id="cr-status">Loading...</span>
@@ -3337,9 +3569,14 @@
                       </div>
                     </div>
                   </div>
-                  <button type="button" class="map-settings" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
+                  <button type="button" class="map-settings map-floating-tools" aria-label="Map settings" aria-controls="cr-map-settings-panel" aria-expanded="false">
                     <img src="images/settings-cog.svg" alt="" aria-hidden="true" />
                   </button>
+                  <div class="map-zoom-controls" data-map-zoom-controls data-map-svg-id="cr-hex-map">
+                    <button type="button" data-zoom-action="in" aria-label="Zoom in">+</button>
+                    <button type="button" data-zoom-action="reset" aria-label="Reset zoom">Reset</button>
+                    <button type="button" data-zoom-action="out" aria-label="Zoom out">−</button>
+                  </div>
                 </div>
                 <div class="legend map-legend">
                   <span id="cr-legend-pollutant">PM2.5 (µg/m³)</span>
@@ -13087,6 +13324,69 @@
     });
   });
   syncAllPlaceholders();
+})();
+    </script>
+    <script>
+(() => {
+  const controls = Array.from(document.querySelectorAll("[data-map-zoom-controls]"));
+  if (!controls.length) {
+    return;
+  }
+
+  const MIN_SCALE = 0.8;
+  const MAX_SCALE = 3;
+  const STEP = 1.15;
+  const mapScale = new Map();
+
+  function getSvgElement(control) {
+    const id = control.getAttribute("data-map-svg-id");
+    if (!id) {
+      return null;
+    }
+    return document.getElementById(id);
+  }
+
+  function getScale(svgId) {
+    return mapScale.get(svgId) || 1;
+  }
+
+  function setScale(svg, nextScale) {
+    const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScale));
+    mapScale.set(svg.id, clamped);
+    svg.style.transformOrigin = "50% 50%";
+    svg.style.transform = `scale(${clamped})`;
+    svg.style.transition = "transform 0.18s ease";
+  }
+
+  controls.forEach((control) => {
+    const svg = getSvgElement(control);
+    if (!svg || !svg.id) {
+      return;
+    }
+    setScale(svg, getScale(svg.id));
+
+    control.addEventListener("click", (event) => {
+      const button = event.target instanceof Element
+        ? event.target.closest("[data-zoom-action]")
+        : null;
+      if (!button) {
+        return;
+      }
+      const action = button.getAttribute("data-zoom-action");
+      const current = getScale(svg.id);
+      if (action === "in") {
+        setScale(svg, current * STEP);
+        return;
+      }
+      if (action === "out") {
+        setScale(svg, current / STEP);
+        return;
+      }
+      if (action === "reset") {
+        setScale(svg, 1);
+      }
+    });
+  });
 })();
     </script>
     <script src="sidebar.js"></script>

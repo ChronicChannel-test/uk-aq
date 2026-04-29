@@ -2029,7 +2029,8 @@
 
       /* Prevent the global svg{width:100%;height:560px} rule from blowing up UI icons */
       .map-topbar svg,
-      .toolbar svg {
+      .toolbar svg,
+      .map-search svg {
         width: auto;
         height: auto;
         display: inline;
@@ -2250,6 +2251,18 @@
       }
       .map-search-input::placeholder {
         color: color-mix(in oklab, var(--ink-4) 78%, white);
+      }
+      .map-search-input::-webkit-search-cancel-button,
+      .map-search-input::-webkit-search-decoration {
+        -webkit-appearance: none;
+        appearance: none;
+        display: none;
+      }
+      .map-search-input::-ms-clear,
+      .map-search-input::-ms-reveal {
+        display: none;
+        width: 0;
+        height: 0;
       }
       .map-search-clear {
         border: none;
