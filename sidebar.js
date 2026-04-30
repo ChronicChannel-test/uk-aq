@@ -1,4 +1,13 @@
 (() => {
+  try {
+    const embedded = window.parent && window.parent !== window;
+    if (embedded) {
+      return;
+    }
+  } catch (error) {
+    return;
+  }
+
   // ─── Nav config ──────────────────────────────────────────────────────────────
   const NAV = [
     {
@@ -14,11 +23,11 @@
       id: 'data-explorer',
       label: 'Data Explorer',
       children: [
-        { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/bubblechart/' },
-        { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/linechart/' },
-        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '#', className: 'cic-nav-item--eco-replaces' },
-        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/resources/' },
-        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide/' },
+        { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/bubblechart/index.html' },
+        { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/linechart/index.html' },
+        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '/data-explorer/EcoReplacesAll/index.html', className: 'cic-nav-item--eco-replaces' },
+        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/category-info/index.html' },
+        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide/index.html' },
       ],
     },
     {
@@ -136,7 +145,7 @@
       border-right: 1px solid var(--cic-line);
       display: flex;
       flex-direction: column;
-      z-index: 1200;
+      z-index: 10010;
       overflow-y: auto;
       overflow-x: hidden;
       transition: transform var(--cic-ease), width var(--cic-ease);
@@ -164,7 +173,7 @@
       position: fixed;
       inset: 0;
       background: rgba(16,24,34,0.35);
-      z-index: 1190;
+      z-index: 10009;
       opacity: 0;
       transition: opacity var(--cic-ease);
     }
@@ -175,7 +184,7 @@
     #cic-hamburger {
       position: fixed;
       top: 16px; left: 10px;
-      z-index: 1300;
+      z-index: 10012;
       background: none;
       border: none;
       cursor: pointer;
@@ -195,7 +204,7 @@
     #cic-home-logo {
       position: absolute;
       top: 16px; right: 28px;
-      z-index: 1310;
+      z-index: 10011;
       display: block;
       border-radius: 16px;
       overflow: hidden;
@@ -222,8 +231,12 @@
       margin-bottom: 0;
     }
     .cic-home-nav-item .cic-nav-icon-img {
-      width: 44px;
-      height: 44px;
+      width: 44px !important;
+      height: 44px !important;
+      min-width: 44px !important;
+      min-height: 44px !important;
+      max-width: 44px !important;
+      max-height: 44px !important;
     }
     .cic-home-nav-item + .cic-nav-section .cic-section-label {
       padding-top: 6px;
@@ -284,8 +297,14 @@
       font-style: normal; font-size: 13px;
     }
     .cic-nav-icon-img {
-      width: 40px; height: 40px;
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      min-height: 40px !important;
+      max-width: 40px !important;
+      max-height: 40px !important;
       flex-shrink: 0;
+      max-width: none !important;
       object-fit: contain;
       display: block;
     }
@@ -300,9 +319,10 @@
     }
     .cic-nav-label-img {
       display: block;
-      height: 16px;
-      width: auto;
-      max-width: 136px;
+      height: 16px !important;
+      width: auto !important;
+      max-width: 136px !important;
+      max-height: 16px !important;
       object-fit: contain;
     }
     .cic-nav-label { overflow: hidden; text-overflow: ellipsis; }
