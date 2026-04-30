@@ -33,7 +33,7 @@
           href: 'https://youtube.com/@chronicillnesschannel',
           external: true,
         },
-        { label: 'Resources', iconImg: 'chain-link-icon-grey.svg', href: '/data-explorer/resources/' },
+        { label: 'Resources', iconImg: 'chain-link-icon-grey.svg', href: '/resources/' },
         { label: 'Contact', iconImg: 'Contacts-Email-icon-cic-web.svg', href: '/contact.html' },
       ],
     },
