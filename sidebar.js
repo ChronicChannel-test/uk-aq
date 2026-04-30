@@ -26,8 +26,8 @@
         { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/?page=bubblechart' },
         { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/?page=linechart' },
         { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '/data-explorer/?page=eco-replaces-all', className: 'cic-nav-item--eco-replaces' },
-        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/category-info' },
-        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide' },
+        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/category-info/' },
+        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide/' },
       ],
     },
     {
