@@ -23,11 +23,11 @@
       id: 'data-explorer',
       label: 'Data Explorer',
       children: [
-        { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/bubblechart/index.html' },
-        { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/linechart/index.html' },
-        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '/data-explorer/EcoReplacesAll/index.html', className: 'cic-nav-item--eco-replaces' },
-        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/category-info/index.html' },
-        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide/index.html' },
+        { label: 'Bubble Chart',       iconImg: 'Bubble-Chart-Icon.svg', href: '/data-explorer/?page=bubblechart' },
+        { label: 'Line Chart',         iconImg: 'Line-Chart-Icon.svg', href: '/data-explorer/?page=linechart' },
+        { label: 'Ecodesign Replaces', iconImg: 'Stove Ecodesign 430x683.svg', href: '/data-explorer/?page=eco-replaces-all', className: 'cic-nav-item--eco-replaces' },
+        { label: 'Category Info',      iconImg: 'Category Info - Icon.svg', href: '/data-explorer/category-info' },
+        { label: 'User Guide',         iconImg: 'user-guide.svg', href: '/data-explorer/user-guide' },
       ],
     },
     {
@@ -366,11 +366,12 @@
 
   function buildNavItem(item) {
     const path = location.pathname;
+    const pathWithSearch = location.pathname + location.search;
     const href = resolveHref(item.href);
     const isActive = href !== '#' && (
       href === '/' || href === '/index.html'
         ? isHomePage()
-        : path.includes(href)
+        : (href.includes('?') ? pathWithSearch.includes(href) : path.includes(href))
     );
     const className = item.className ? ` ${item.className}` : '';
     const iconHtml = item.iconImg
