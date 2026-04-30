@@ -287,9 +287,9 @@
       text-decoration: none;
     }
     .cic-nav-item.active {
-      background: color-mix(in oklab, var(--cic-accent) 10%, white);
+      background: #FBFAF7;
       color: var(--cic-accent-deep);
-      border-color: color-mix(in oklab, var(--cic-accent) 25%, white);
+      border-color: #d6d0c8;
     }
     .cic-nav-icon {
       width: 20px; flex-shrink: 0;
