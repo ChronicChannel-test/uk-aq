@@ -12990,7 +12990,7 @@
       return false;
     }
     if (compact.length <= 2) {
-      return /^[A-Z]{1,2}$/.test(compact);
+      return /^[A-Z][A-Z0-9]?$/.test(compact);
     }
     if (compact.length === 3) {
       return /^[A-Z]{1,2}\d[A-Z0-9]?$/.test(compact);
@@ -13305,7 +13305,7 @@
         primary: name,
         secondary: "",
         _nameNorm: normalizeText(name),
-        _searchNorm: normalizeText(`${name} ${code}`),
+        _searchNorm: normalizeText(name),
       };
     }).filter(Boolean);
   }
@@ -13328,7 +13328,7 @@
         primary: name,
         secondary: regionName || "",
         _nameNorm: normalizeText(name),
-        _searchNorm: normalizeText(`${name} ${regionName} ${code}`),
+        _searchNorm: normalizeText(`${name} ${regionName}`),
       };
     }).filter(Boolean);
   }
@@ -13367,7 +13367,7 @@
         primary: stationName,
         secondary: networkName || "",
         _nameNorm: normalizeText(stationName),
-        _searchNorm: normalizeText(`${stationName} ${networkName} ${stationId}`),
+        _searchNorm: normalizeText(`${stationName} ${networkName}`),
       });
     });
     return Array.from(mergedByKey.values());
