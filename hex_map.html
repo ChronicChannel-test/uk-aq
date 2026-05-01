@@ -12915,6 +12915,43 @@
   const POSTCODE_DEBOUNCE_MS = 250;
   const LOCAL_SEARCH_MIN_CHARS = 1;
   const MOBILE_BREAKPOINT_QUERY = "(max-width: 720px)";
+  const POSTCODE_PREFIX_HINTS_URL = "/api/aq/postcode_prefix_hints";
+
+  let prefixHintsCache = null;
+
+  async function loadPrefixHints() {
+    try {
+      const response = await fetch(POSTCODE_PREFIX_HINTS_URL, { credentials: "include" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (payload?.ok && payload.postcode_samples_1 && payload.postcode_samples_2) {
+        prefixHintsCache = payload;
+      }
+    } catch (_err) {
+      // best-effort; fall back to API fetch on demand
+    }
+  }
+
+  function getHintRows(normalizedQuery) {
+    if (!prefixHintsCache) return null;
+    const sampleList = normalizedQuery.length === 1
+      ? prefixHintsCache.postcode_samples_1[normalizedQuery]
+      : prefixHintsCache.postcode_samples_2[normalizedQuery];
+    if (!Array.isArray(sampleList) || !sampleList.length) return null;
+    const requestLimit = parseLimit(params.get("search_limit"), MAX_RESULTS);
+    return sampleList.slice(0, requestLimit).map((row) => ({
+      group: "postcode",
+      kind: "postcode",
+      type_label: getResultTypeLabel("postcode"),
+      postcode: row.postcode,
+      postcode_normalised: row.postcode_normalised,
+      area_name: row.area_name || null,
+      post_town: row.post_town || null,
+      area_town_id: null,
+      primary: row.postcode || row.postcode_normalised,
+      secondary: buildPostcodeLabel("", row.area_name, row.post_town),
+    }));
+  }
 
   function normalizeText(value) {
     return String(value || "")
@@ -13647,6 +13684,15 @@
         mergeAndRender(localGroups, [], "");
         return;
       }
+      // For 1-2 char queries use preloaded hints to avoid the 4→6 jump
+      const compactQuery = normalizePostcode(trimmed);
+      if (compactQuery.length <= 2) {
+        const hintRows = getHintRows(compactQuery);
+        if (hintRows) {
+          mergeAndRender(localGroups, hintRows, "");
+          return;
+        }
+      }
       const requestSeq = ++state.requestSeq;
       const requestLimit = parseLimit(params.get("search_limit"), MAX_RESULTS);
       const triggerFetch = async () => {
@@ -13781,6 +13827,12 @@
     void ensureCrSearchDataLoaded();
   } else {
     void ensureUkSearchDataLoaded();
+  }
+  // Preload prefix hints after page settles so 1-2 char searches render immediately
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => { void loadPrefixHints(); });
+  } else {
+    window.setTimeout(() => { void loadPrefixHints(); }, 1000);
   }
 })();
 
