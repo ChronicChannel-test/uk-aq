@@ -4925,12 +4925,22 @@
             }
           },
           "error-callback": () => {
+            const _api = window.turnstile;
+            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
+              _api.remove(turnstileWidgetId);
+            }
+            turnstileWidgetId = null;
             if (turnstileTokenRejecter) {
               turnstileTokenRejecter(new Error("Turnstile verification failed."));
               clearTurnstilePendingState();
             }
           },
           "expired-callback": () => {
+            const _api = window.turnstile;
+            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
+              _api.remove(turnstileWidgetId);
+            }
+            turnstileWidgetId = null;
             if (turnstileTokenRejecter) {
               turnstileTokenRejecter(new Error("Turnstile token expired."));
               clearTurnstilePendingState();
@@ -4946,9 +4956,6 @@
             const turnstileApi = window.turnstile;
             if (!turnstileApi || typeof turnstileApi.execute !== "function") {
               throw new Error("Turnstile execute unavailable.");
-            }
-            if (typeof turnstileApi.reset === "function") {
-              turnstileApi.reset(turnstileWidgetId);
             }
             const token = await new Promise((resolve, reject) => {
               turnstileTokenResolver = resolve;
@@ -9029,12 +9036,22 @@
 	            }
 	          },
 	          "error-callback": () => {
+	            const _api = window.turnstile;
+	            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
+	              _api.remove(turnstileWidgetId);
+	            }
+	            turnstileWidgetId = null;
 	            if (turnstileTokenRejecter) {
 	              turnstileTokenRejecter(new Error("Turnstile verification failed."));
 	              clearTurnstilePendingState();
 	            }
 	          },
 	          "expired-callback": () => {
+	            const _api = window.turnstile;
+	            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
+	              _api.remove(turnstileWidgetId);
+	            }
+	            turnstileWidgetId = null;
 	            if (turnstileTokenRejecter) {
 	              turnstileTokenRejecter(new Error("Turnstile token expired."));
 	              clearTurnstilePendingState();
@@ -9050,9 +9067,6 @@
 	            const turnstileApi = window.turnstile;
 	            if (!turnstileApi || typeof turnstileApi.execute !== "function") {
 	              throw new Error("Turnstile execute unavailable.");
-	            }
-	            if (typeof turnstileApi.reset === "function") {
-	              turnstileApi.reset(turnstileWidgetId);
 	            }
 	            const token = await new Promise((resolve, reject) => {
 	              turnstileTokenResolver = resolve;
