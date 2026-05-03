@@ -2320,9 +2320,9 @@
         position: absolute;
         top: calc(100% + 8px);
         left: 0;
-        width: max(100%, 760px);
-        max-width: min(920px, calc(100vw - 32px));
-        max-height: min(58vh, 420px);
+        width: max(100%, 910px);
+        max-width: min(1100px, calc(100vw - 32px));
+        max-height: min(58vh, 500px);
         overflow-y: auto;
         padding: 6px;
         border-radius: 12px;
@@ -2337,7 +2337,7 @@
         background: transparent;
         border-radius: 8px;
         display: grid;
-        grid-template-columns: 90px 1fr 260px;
+        grid-template-columns: 108px 1fr 330px;
         align-items: stretch;
         min-width: 0;
         text-align: left;
@@ -2348,33 +2348,46 @@
         background: color-mix(in oklab, var(--accent) 8%, white);
       }
       .map-search-result-type {
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.2;
         letter-spacing: 0.06em;
         text-transform: uppercase;
         font-weight: 700;
         color: var(--ink-4);
-        padding: 8px 10px 8px 10px;
+        padding: 10px 12px 10px 12px;
         white-space: pre-line;
         display: flex;
         align-items: center;
       }
       .map-search-result-copy {
         display: flex;
-        flex-direction: column;
-        gap: 3px;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
         min-width: 0;
-        padding: 8px 10px;
+        padding: 10px 12px 10px 20px;
+      }
+      .map-search-result-col2-icon {
+        width: 20px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
         justify-content: center;
       }
+      .map-search-result-text-block {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
       .map-search-result-primary {
-        font-size: 14px;
+        font-size: 17px;
         color: var(--ink-1);
         font-weight: 600;
         line-height: 1.3;
       }
       .map-search-result-secondary {
-        font-size: 12px;
+        font-size: 14px;
         color: var(--ink-3);
         line-height: 1.35;
         overflow: hidden;
@@ -2388,16 +2401,16 @@
         min-width: 0;
       }
       .map-search-result-dest {
-        padding: 8px 12px;
+        padding: 10px 14px 10px 10px;
         border-left: 1px solid var(--line-soft);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         min-width: 0;
       }
       .map-search-result-dest.is-self {
         justify-content: flex-end;
-        gap: 10px;
+        gap: 12px;
       }
       .map-search-result-dest-text {
         flex: 1;
@@ -2405,7 +2418,7 @@
         overflow: hidden;
       }
       .map-search-result-dest-name {
-        font-size: 12.5px;
+        font-size: 17px;
         font-weight: 600;
         color: var(--accent);
         white-space: nowrap;
@@ -2413,7 +2426,7 @@
         text-overflow: ellipsis;
       }
       .map-search-result-dest-region {
-        font-size: 11px;
+        font-size: 14px;
         color: var(--ink-4);
         margin-top: 1px;
         white-space: nowrap;
@@ -2422,9 +2435,9 @@
       }
       .map-search-result-arrow {
         flex-shrink: 0;
-        width: 24px;
-        height: 24px;
-        border-radius: 5px;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
         background: color-mix(in srgb, var(--accent) 12%, transparent);
         display: flex;
         align-items: center;
@@ -2439,20 +2452,20 @@
         stroke: #fff;
       }
       .map-search-message {
-        font-size: 12px;
+        font-size: 14px;
         line-height: 1.35;
         color: var(--ink-3);
-        padding: 8px 10px;
+        padding: 10px 12px;
       }
       .sensor-reading-pill {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        padding: 2px 8px 2px 5px;
+        gap: 6px;
+        padding: 3px 10px 3px 6px;
         border-radius: 999px;
         background: color-mix(in srgb, var(--no-data) 78%, white 22%);
         border: 1px solid rgba(20, 34, 37, 0.12);
-        font-size: 10.5px;
+        font-size: 12.5px;
         font-weight: 600;
         color: var(--ink-2);
         white-space: nowrap;
@@ -2460,24 +2473,24 @@
         line-height: 1.4;
       }
       .sensor-reading-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         flex-shrink: 0;
       }
       .sensor-reading-dot.has-data {
-        box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+        box-shadow: 0 0 0 0.75px rgba(0, 0, 0, 0.18);
       }
       .sensor-reading-dot.no-data {
         background: color-mix(in srgb, var(--no-data) 78%, white 22%);
-        box-shadow: 0 0 0 1.5px rgba(20, 34, 37, 0.35);
+        box-shadow: 0 0 0 0.75px rgba(20, 34, 37, 0.2);
       }
       @media (max-width: 980px) {
         .map-search {
           width: min(100%, 380px);
         }
         .map-search-results {
-          width: max(100%, 760px);
+          width: max(100%, 910px);
         }
       }
       @media (max-width: 720px) {
@@ -2496,10 +2509,10 @@
         .map-search-results {
           width: 100%;
           max-width: calc(100vw - 24px);
-          max-height: min(52vh, 340px);
+          max-height: min(52vh, 400px);
         }
         .map-search-result {
-          grid-template-columns: 72px 1fr 190px;
+          grid-template-columns: 86px 1fr 210px;
         }
       }
       .status-pill {
@@ -2622,15 +2635,14 @@
         gap: 8px;
       }
 
-      .map-summary-hex {
+      .map-summary-dot {
         flex-shrink: 0;
-        width: 18px;
-        height: 21px;
-      }
-
-      .map-summary-hex polygon {
-        fill: var(--hex-fill, var(--no-data));
-        transition: fill 0.3s ease;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--no-data);
+        box-shadow: 0 0 0 0.75px rgba(0, 0, 0, 0.18);
+        transition: background 0.3s ease;
       }
 
       .map-summary-subtext {
@@ -2806,8 +2818,8 @@
       }
 
       .map-search-results {
-        width: max(100%, 760px);
-        max-width: min(920px, calc(100vw - 32px));
+        width: max(100%, 910px);
+        max-width: min(1100px, calc(100vw - 32px));
         z-index: 280;
       }
 
@@ -3100,7 +3112,7 @@
         .map-search-results {
           width: 100%;
           max-width: calc(100vw - 32px);
-          max-height: min(52vh, 340px);
+          max-height: min(52vh, 400px);
         }
         .map-topbar {
           top: 16px;
@@ -3293,7 +3305,7 @@
                   <article class="map-summary-card">
                     <div class="map-summary-label" id="top-highest-label">Highest PM2.5</div>
                     <div class="map-summary-value map-summary-value-with-icon">
-                      <svg class="map-summary-hex" id="top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+                      <span class="map-summary-dot" id="top-highest-hex" aria-hidden="true"></span>
                       <span id="top-highest-value">—</span>
                     </div>
                     <div class="map-summary-subtext" id="top-highest-sensor">—</div>
@@ -3859,7 +3871,7 @@
                   <article class="map-summary-card">
                     <div class="map-summary-label" id="cr-top-highest-label">Highest PM2.5</div>
                     <div class="map-summary-value map-summary-value-with-icon">
-                      <svg class="map-summary-hex" id="cr-top-highest-hex" aria-hidden="true" viewBox="0 0 17.32 20" xmlns="http://www.w3.org/2000/svg"><polygon points="8.66,0 17.32,5 17.32,15 8.66,20 0,15 0,5"/></svg>
+                      <span class="map-summary-dot" id="cr-top-highest-hex" aria-hidden="true"></span>
                       <span id="cr-top-highest-value">—</span>
                     </div>
                     <div class="map-summary-subtext" id="cr-top-highest-sensor">—</div>
@@ -4436,7 +4448,7 @@
             : '—';
         }
         if (highestHex) {
-          highestHex.style.setProperty('--hex-fill', data.highestColor || '');
+          highestHex.style.background = data.highestColor || '';
         }
         if (highestSensor) {
           highestSensor.textContent = data.highestSensor || '—';
@@ -8615,6 +8627,8 @@
           if (!Number.isFinite(value)) return null;
           return colorScale(value);
         },
+        getPconMetricValue: (pconCode) => getMetricValue(basePconLookup.get(pconCode)),
+        applyColorScale: (value) => colorScale ? colorScale(value) : null,
         getSensorCurrentColor: (stationId) => {
           if (!colorScale) return null;
           const allRows = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
@@ -8994,6 +9008,9 @@
       let scopedLatestRows = [];
       let latestRows = [];
       let latestPollutant = null;
+      let allRegionsMetricLookup = new Map();
+      let allRegionsFetchState = "idle"; // "idle" | "fetching" | "done"
+      let allRegionsFetchPollutant = null;
       let crRefreshTimer = null;
       let crWasHidden = true;
       let populationLookup = new Map();
@@ -12779,6 +12796,31 @@
         return crSearchPreloadPromise;
       }
 
+      async function fetchAllRegionsForSearch() {
+        if (!LATEST_URL) return;
+        if (allRegionsFetchState === "fetching") return;
+        allRegionsFetchState = "fetching";
+        const fetchPollutant = activePollutant;
+        try {
+          const url = new URL(LATEST_URL);
+          url.searchParams.set("pollutant", fetchPollutant);
+          url.searchParams.set("window", currentWindow);
+          url.searchParams.set("scope", "all");
+          url.searchParams.set("limit", "10000");
+          const response = await fetchCacheApi(url.toString(), {});
+          if (!response || !response.ok) return;
+          const payload = await response.json();
+          const rawRows = (payload?.data || []).filter((row) => Number.isFinite(resolveLatestValue(row)));
+          const windowed = filterRowsByWindow(rawRows);
+          const derived = buildPconRowsFromLatest(windowed);
+          allRegionsMetricLookup = new Map(derived.map((row) => [resolveAreaCode(row), row]));
+          allRegionsFetchPollutant = fetchPollutant;
+          allRegionsFetchState = "done";
+        } catch (e) {
+          allRegionsFetchState = "idle";
+        }
+      }
+
 	      window.crMap = {
 	        render: () => {
 	          if (statusEl.textContent === "Live") {
@@ -12804,11 +12846,20 @@
         getPollutantLabel: () => getPollutantLabel(activePollutant),
         getColorForLaCode: (laCode) => {
           if (!colorScale) return null;
-          const row = pconLookup.get(laCode);
+          const row = pconLookup.get(laCode) || basePconLookup.get(laCode);
           const value = getMetricValue(row);
           if (!Number.isFinite(value)) return null;
           return colorScale(value);
         },
+        getLaMetricValue: (laCode) => getMetricValue(pconLookup.get(laCode)),
+        getUniversalLaMetricValue: (laCode) => getMetricValue(allRegionsMetricLookup.get(laCode) || pconLookup.get(laCode)),
+        ensureAllRegionsFetched: () => {
+          if (allRegionsFetchState === "idle" || allRegionsFetchPollutant !== activePollutant) {
+            allRegionsFetchState = "idle";
+            fetchAllRegionsForSearch();
+          }
+        },
+        applyColorScale: (value) => colorScale ? colorScale(value) : null,
         getSensorCurrentColor: (stationId) => {
           if (!colorScale) return null;
           const allRows = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
@@ -12904,6 +12955,14 @@
 
   function setActiveTab(tabKey) {
     const isUk = tabKey === "uk";
+    const fromInput = document.getElementById(isUk ? "cr-map-search-input" : "uk-map-search-input");
+    const toInput = document.getElementById(isUk ? "uk-map-search-input" : "cr-map-search-input");
+    if (fromInput && toInput) {
+      const text = fromInput.value;
+      toInput.value = text;
+      const toClear = toInput.closest("[data-map-search]")?.querySelector(".map-search-clear");
+      if (toClear) toClear.hidden = !text;
+    }
     tabUk.setAttribute("aria-selected", isUk ? "true" : "false");
     tabCr.setAttribute("aria-selected", isUk ? "false" : "true");
     const targetSlot = isUk ? tabSlots.uk : tabSlots.cr;
@@ -13509,43 +13568,25 @@
   }
 
   function buildSensorSearchIndex() {
-    const ukRows = window.ukMap?.getSensorSearchRecords?.() || [];
-    const crRows = window.crMap?.getSensorSearchRecords?.() || [];
-    const mergedByKey = new Map();
-    [...ukRows, ...crRows].forEach((row) => {
+    const rows = window.ukMap?.getSensorSearchRecords?.() || [];
+    return rows.map((row) => {
       const stationName = String(row?.station_name || "").trim();
-      if (!stationName) {
-        return;
-      }
+      if (!stationName) return null;
       const stationId = String(row?.station_id || "").trim();
       const networkName = String(row?.network_name || "").trim();
-      const pconCode = normalizeCode(row?.pcon_code);
-      const laCode = normalizeCode(row?.la_code);
-      const key = stationId || `${normalizeText(stationName)}::${normalizeText(networkName)}`;
-      const existing = mergedByKey.get(key);
-      if (existing) {
-        if (!existing.pcon_code && pconCode) {
-          existing.pcon_code = pconCode;
-        }
-        if (!existing.la_code && laCode) {
-          existing.la_code = laCode;
-        }
-        return;
-      }
-      mergedByKey.set(key, {
+      return {
         group: "sensor",
         kind: "sensor",
         type_label: getResultTypeLabel("sensor"),
         station_id: stationId || null,
-        pcon_code: pconCode,
-        la_code: laCode,
+        pcon_code: normalizeCode(row?.pcon_code),
+        la_code: normalizeCode(row?.la_code),
         primary: stationName,
         secondary: networkName || "",
         _nameNorm: normalizeText(stationName),
         _searchNorm: normalizeText(`${stationName} ${networkName}`),
-      });
-    });
-    return Array.from(mergedByKey.values());
+      };
+    }).filter(Boolean);
   }
 
   function rankLocalMatches(records, rawQuery) {
@@ -13623,9 +13664,18 @@
     const activeClass = isActive ? " is-active" : "";
     const noDataFill = getComputedStyle(document.documentElement).getPropertyValue("--no-data").trim() || "#efe6d8";
     const kind = context?.kind || "uk";
-    const getHexColor = context?.getHexColor || (() => null);
     const getSensorColor = context?.getSensorColor || (() => null);
     const pollutantLabel = context?.pollutantLabel || "PM2.5";
+    const getPconColor = (code) => {
+      const value = window.ukMap?.getPconMetricValue?.(code);
+      if (!Number.isFinite(value)) return null;
+      return window.ukMap?.applyColorScale?.(value) ?? window.crMap?.applyColorScale?.(value) ?? null;
+    };
+    const getLaColor = (code) => {
+      const value = window.crMap?.getUniversalLaMetricValue?.(code);
+      if (!Number.isFinite(value)) return null;
+      return window.crMap?.applyColorScale?.(value) ?? window.ukMap?.applyColorScale?.(value) ?? null;
+    };
 
     function makeHexSvg(fillColor) {
       // fillColor is null when no data
@@ -13653,8 +13703,8 @@
       return rows.find((r) => r.code === code) || null;
     }
 
-    function makeDestCol(code, isSelf) {
-      const color = code ? getHexColor(code) : null;
+    function makeDestCol(code, isSelf, fallbackColor = null) {
+      const color = (code ? (kind === "cr" ? getLaColor(code) : getPconColor(code)) : null) ?? fallbackColor;
       const hexSvgStr = makeHexSvg(color);
       const arrowHtml = `<span class="map-search-result-arrow">${makeArrowSvg()}</span>`;
       if (isSelf) {
@@ -13674,15 +13724,17 @@
     let destHtml = "";
 
     if (result.kind === "constituency") {
+      const hexSvgStr = makeHexSvg(getPconColor(result.code));
       const secondary = result.secondary
         ? `<span class="map-search-result-secondary">${escapeHtml(result.secondary)}</span>` : "";
-      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span>`;
-      destHtml = makeDestCol(result.code, true);
+      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-col2-icon">${hexSvgStr}</span><span class="map-search-result-text-block"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span></span>`;
+      destHtml = `<span class="map-search-result-dest is-self"><span class="map-search-result-arrow">${makeArrowSvg()}</span></span>`;
     } else if (result.kind === "local_authority") {
+      const hexSvgStr = makeHexSvg(getLaColor(result.code));
       const secondary = result.secondary
         ? `<span class="map-search-result-secondary">${escapeHtml(result.secondary)}</span>` : "";
-      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span>`;
-      destHtml = makeDestCol(result.code, true);
+      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-col2-icon">${hexSvgStr}</span><span class="map-search-result-text-block"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span></span>`;
+      destHtml = `<span class="map-search-result-dest is-self"><span class="map-search-result-arrow">${makeArrowSvg()}</span></span>`;
     } else if (result.kind === "sensor") {
       const sensorColor = result.station_id ? getSensorColor(result.station_id) : null;
       const hasData = sensorColor !== null;
@@ -13691,14 +13743,14 @@
       const pillHtml = `<span class="sensor-reading-pill"><span class="sensor-reading-dot ${dotClass}"${dotStyle}></span>${escapeHtml(pollutantLabel)}</span>`;
       const networkHtml = result.secondary
         ? `<span class="map-search-result-secondary">${escapeHtml(result.secondary)}</span>` : "";
-      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span><span class="map-search-result-sub">${pillHtml}${networkHtml}</span></span>`;
+      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-text-block"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span><span class="map-search-result-sub">${pillHtml}${networkHtml}</span></span></span>`;
       const destCode = kind === "cr" ? result.la_code : result.pcon_code;
-      destHtml = makeDestCol(destCode, false);
+      destHtml = makeDestCol(destCode, false, sensorColor);
     } else {
       // postcode / postcode_hint — pcon/la codes not resolved until selection
       const secondary = result.secondary
         ? `<span class="map-search-result-secondary">${escapeHtml(result.secondary)}</span>` : "";
-      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span>`;
+      copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-text-block"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span></span>`;
       const destCode = kind === "cr" ? result.la_code : result.pcon_code;
       if (destCode) {
         destHtml = makeDestCol(destCode, false);
@@ -13746,12 +13798,7 @@
 
     const context = {
       kind,
-      getHexColor: kind === "cr"
-        ? (code) => window.crMap?.getColorForLaCode?.(code) ?? null
-        : (code) => window.ukMap?.getColorForPconCode?.(code) ?? null,
-      getSensorColor: kind === "cr"
-        ? (stationId) => window.crMap?.getSensorCurrentColor?.(stationId) ?? null
-        : (stationId) => window.ukMap?.getSensorCurrentColor?.(stationId) ?? null,
+      getSensorColor: (stationId) => window.ukMap?.getSensorCurrentColor?.(stationId) ?? null,
       get pollutantLabel() {
         const map = kind === "cr" ? window.crMap : window.ukMap;
         return map?.getPollutantLabel?.() || "PM2.5";
@@ -14032,6 +14079,7 @@
     });
 
     inputEl.addEventListener("focus", () => {
+      window.crMap?.ensureAllRegionsFetched?.();
       if (inputEl.value.trim()) {
         runSearch(true);
       }
