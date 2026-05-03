@@ -60,12 +60,12 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
   - Local text matching starts at 1 char for constituency / local authority / sensor.
 - Result groups and order:
   1. Postcode
-  2. Constituency
-  3. Local authority
-  4. Sensor
+  2. Sensor
+  3. Constituency
+  4. Local authority
   - Up to 2 per type first, then remaining slots fill in this same order up to 6 total.
 - Selection routing:
-  - Postcode result triggers exact lookup, then selects `pcon_code` on UK tab or `la_code` on C&R tab.
+  - Postcode suggestions may display destination `pcon_code` / `la_code` immediately when the suggest API provides them, then exact lookup confirms selection.
   - Constituency result switches to UK tab and selects PCON.
   - Local authority result switches to C&R tab and selects LA.
   - Sensor result selects containing PCON/LA based on active tab and available codes.

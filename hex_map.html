@@ -2320,8 +2320,8 @@
         position: absolute;
         top: calc(100% + 8px);
         left: 0;
-        width: max(100%, 660px);
-        max-width: min(800px, calc(100vw - 32px));
+        width: max(100%, 760px);
+        max-width: min(920px, calc(100vw - 32px));
         max-height: min(58vh, 420px);
         overflow-y: auto;
         padding: 6px;
@@ -2337,7 +2337,7 @@
         background: transparent;
         border-radius: 8px;
         display: grid;
-        grid-template-columns: 90px 1fr 200px;
+        grid-template-columns: 90px 1fr 260px;
         align-items: stretch;
         min-width: 0;
         text-align: left;
@@ -2477,7 +2477,7 @@
           width: min(100%, 380px);
         }
         .map-search-results {
-          width: max(100%, 660px);
+          width: max(100%, 760px);
         }
       }
       @media (max-width: 720px) {
@@ -2499,7 +2499,7 @@
           max-height: min(52vh, 340px);
         }
         .map-search-result {
-          grid-template-columns: 72px 1fr 160px;
+          grid-template-columns: 72px 1fr 190px;
         }
       }
       .status-pill {
@@ -2806,8 +2806,8 @@
       }
 
       .map-search-results {
-        width: max(100%, 660px);
-        max-width: min(800px, calc(100vw - 32px));
+        width: max(100%, 760px);
+        max-width: min(920px, calc(100vw - 32px));
         z-index: 280;
       }
 
@@ -8532,7 +8532,7 @@
         const rowsForSearch = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
         const recordsByKey = new Map();
         rowsForSearch.forEach((row, index) => {
-          const stationId = resolveStationKey(row) || `uk:${index}`;
+          const stationId = String(resolveStationKey(row) || `uk:${index}`);
           const stationName = resolveStationName(row);
           const networkName = resolvePrimaryNetworkLabel(row) || resolveConnectorLabel(row) || null;
           const pconRaw = resolvePconCode(row);
@@ -8619,7 +8619,8 @@
           if (!colorScale) return null;
           const allRows = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
           const pollutantRows = getRowsForActivePollutant(allRows);
-          const candidates = pollutantRows.filter((r) => resolveStationKey(r) === stationId);
+          const targetStationId = String(stationId || "");
+          const candidates = pollutantRows.filter((r) => String(resolveStationKey(r) || "") === targetStationId);
           if (!candidates.length) return null;
           candidates.sort((a, b) => {
             const ta = resolveLatestTimestamp(a);
@@ -12714,7 +12715,7 @@
         const rowsForSearch = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
         const recordsByKey = new Map();
         rowsForSearch.forEach((row, index) => {
-          const stationId = resolveStationKey(row) || `cr:${index}`;
+          const stationId = String(resolveStationKey(row) || `cr:${index}`);
           const stationName = resolveStationName(row);
           const networkName = resolvePrimaryNetworkLabel(row) || resolveConnectorLabel(row) || null;
           const areaRaw = resolveAreaCode(row);
@@ -12812,7 +12813,8 @@
           if (!colorScale) return null;
           const allRows = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
           const pollutantRows = getRowsForActivePollutant(allRows);
-          const candidates = pollutantRows.filter((r) => resolveStationKey(r) === stationId);
+          const targetStationId = String(stationId || "");
+          const candidates = pollutantRows.filter((r) => String(resolveStationKey(r) || "") === targetStationId);
           if (!candidates.length) return null;
           candidates.sort((a, b) => {
             const ta = resolveLatestTimestamp(a);
