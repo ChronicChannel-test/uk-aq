@@ -44,7 +44,7 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
   - `data/PCON/uk-constituencies-2017.hexjson`
   - Name field: `hexes[<pcon_code>].n`
 - Local authorities (C&R / LA):
-  - `data/LAD/uk_aq_la_hex_2023.json`
+  - `data/LAD/uk_aq_la_hex_2025.geojson`
   - Name field: `features[].properties.la_name`
   - Code field: `features[].properties.la_code`
 - Supabase/cache responses provide metrics and station data; when name fields are null in those responses, map labels still resolve from the local geometry files above.
@@ -70,7 +70,7 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
   - Local authority result switches to C&R tab and selects LA.
   - Sensor result selects containing PCON/LA based on active tab and available codes.
 - C&R region fallback:
-  - Local authority code-to-region lookup is built from `data/LAD/uk_aq_la_hex_2023.json`.
+  - Local authority code-to-region lookup is built from `data/LAD/uk_aq_la_hex_2025.geojson`.
   - If an LA code is outside the current C&R region view, the map switches region and applies pending selection after the next load.
 
 ## Cache session auth

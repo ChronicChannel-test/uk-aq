@@ -8724,11 +8724,26 @@
       const laEtagByKey = new Map();
       const laSinceByKey = new Map();
       let latestLoadId = 0;
+      // Postcode lookup uses ONSPD Feb 2026 lad25cd (LAD 2025 codes).
+      // The hex map must therefore use LAD 2025 codes. Barnsley and Sheffield
+      // received new GSS codes in the 2025 boundary revision:
+      //   Barnsley: E08000016 → E08000038
+      //   Sheffield: E08000019 → E08000039
+      // uk_aq_la_hex_2025.geojson uses the same cartogram layout as the 2023 file
+      // but with updated LA identifiers. Validate with: npm run validate:hexmap:2025
+      //
+      // Wales and Scotland use region-only GeoJSON files because their cartogram
+      // layouts have been manually adjusted; the full UK LAD GeoJSON is used for
+      // all other Countries & Regions selections.
       const LA_CONFIG = {
-        id: "la23",
-        label: "2023 local authorities",
-        hexUrl: "data/LAD/uk_aq_la_hex_2023.json",
-        version: "2023",
+        id: "la25",
+        label: "2025 local authorities",
+        hexUrl: "data/LAD/uk_aq_la_hex_2025.geojson",
+        regionHexUrls: {
+          Wales: "data/LAD/uk_aq_la_wales_hex_custom_2025.geojson",
+          Scotland: "data/LAD/uk_aq_la_scotland_hex_custom_2025.geojson",
+        },
+        version: "2025",
       };
       const DEFAULT_REGION = "London";
       const REGION_OPTIONS = [
@@ -9404,8 +9419,8 @@
         return REGION_LOOKUP.get(lower) || null;
       }
 
-      function getHexUrlForRegion() {
-        return LA_CONFIG.hexUrl;
+      function getHexUrlForRegion(region) {
+        return LA_CONFIG.regionHexUrls?.[region] || LA_CONFIG.hexUrl;
       }
 
 
@@ -10797,14 +10812,24 @@
         updateDetailsPanel();
       }
 
+      // Defensive alias map: maps retired 2023 codes → current 2025 codes so
+      // that any stale URLs or cached data using old codes still resolve.
+      const LA_CODE_ALIASES = {
+        E08000016: "E08000038", // Barnsley 2023 → 2025
+        E08000019: "E08000039", // Sheffield 2023 → 2025
+        E08000038: "E08000038",
+        E08000039: "E08000039",
+      };
+
       function selectAreaByCode(code, { allowRegionSwitch = true, updateUrl = true } = {}) {
         const normalized = typeof code === "string" ? code.trim().toUpperCase() : "";
         if (!normalized) {
           return false;
         }
+        const resolved = LA_CODE_ALIASES[normalized] || normalized;
         const match = hexCells.find((cell) => {
           const cellCode = resolveCellAreaCode(cell);
-          return typeof cellCode === "string" && cellCode.trim().toUpperCase() === normalized;
+          return typeof cellCode === "string" && cellCode.trim().toUpperCase() === resolved;
         }) || null;
         if (match) {
           setSelectedCell(match);
@@ -10814,18 +10839,24 @@
           return true;
         }
         if (!allowRegionSwitch) {
+          if (resolved !== normalized) {
+            console.warn(`[uk-aq] selectAreaByCode: alias resolved ${normalized} → ${resolved} but no hex feature found`);
+          } else {
+            console.warn(`[uk-aq] selectAreaByCode: no hex feature found for code ${normalized}`);
+          }
           return false;
         }
-        const targetRegion = areaRegionLookup.get(normalized) || null;
+        const targetRegion = areaRegionLookup.get(resolved) || null;
         if (targetRegion && targetRegion !== activeRegion) {
-          pendingSelectedAreaCode = normalized;
+          pendingSelectedAreaCode = resolved;
           setActiveRegion(targetRegion, { updateUrl });
           return true;
         }
         if (targetRegion && targetRegion === activeRegion && statusEl?.textContent === "Loading...") {
-          pendingSelectedAreaCode = normalized;
+          pendingSelectedAreaCode = resolved;
           return true;
         }
+        console.warn(`[uk-aq] selectAreaByCode: no region mapping found for code ${normalized}${resolved !== normalized ? ` (alias: ${resolved})` : ""}`);
         return false;
       }
 
@@ -13752,16 +13783,27 @@
         ? `<span class="map-search-result-secondary">${escapeHtml(result.secondary)}</span>` : "";
       copyHtml = `<span class="map-search-result-copy"><span class="map-search-result-text-block"><span class="map-search-result-primary">${escapeHtml(result.primary)}</span>${secondary}</span></span>`;
       const destCode = kind === "cr" ? result.la_code : result.pcon_code;
-      if (destCode) {
+      if (destCode && lookupDestRecord(destCode)) {
         destHtml = makeDestCol(destCode, false);
       } else {
-        // Show area hint from suggestion data — constituency unknown until API resolves it
-        const areaName = String(result.area_name || "").trim();
+        // destCode absent or not yet in hex data — use area hint from postcode metadata.
+        // Prefer area_name, then post_town. Only fall back to raw code as a last resort.
+        if (destCode && !lookupDestRecord(destCode)) {
+          console.warn(
+            `[uk-aq] postcode result has LA code not found in hex map: ${destCode}`,
+            { postcode: result.postcode || result.primary, la_code: destCode, area_name: result.area_name || null, post_town: result.post_town || null },
+          );
+        }
+        const color = destCode ? (kind === "cr" ? getLaColor(destCode) : getPconColor(destCode)) : null;
+        const hexSvgStr = destCode ? makeHexSvg(color) : "";
+        const areaName = String(result.area_name || result.lad_name || "").trim();
         const postTown = String(result.post_town || "").trim();
-        const nameHtml = areaName ? `<div class="map-search-result-dest-name">${escapeHtml(areaName)}</div>` : "";
-        const regionHtml = postTown ? `<div class="map-search-result-dest-region">${escapeHtml(postTown)}</div>` : "";
+        const fallbackLabel = areaName || postTown || destCode || "";
+        const nameHtml = areaName ? `<div class="map-search-result-dest-name">${escapeHtml(areaName)}</div>`
+          : (fallbackLabel ? `<div class="map-search-result-dest-name">${escapeHtml(fallbackLabel)}</div>` : "");
+        const regionHtml = (areaName && postTown) ? `<div class="map-search-result-dest-region">${escapeHtml(postTown)}</div>` : "";
         const textHtml = (nameHtml || regionHtml) ? `<span class="map-search-result-dest-text">${nameHtml}${regionHtml}</span>` : "";
-        destHtml = `<span class="map-search-result-dest">${textHtml}<span class="map-search-result-arrow">${makeArrowSvg()}</span></span>`;
+        destHtml = `<span class="map-search-result-dest">${hexSvgStr}${textHtml}<span class="map-search-result-arrow">${makeArrowSvg()}</span></span>`;
       }
     }
 
