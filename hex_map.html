@@ -2022,6 +2022,14 @@
         font-family: "Inter", system-ui, -apple-system, sans-serif;
       }
 
+      #legend-min, #cr-legend-min {
+        text-align: right;
+      }
+
+      #legend-max, #cr-legend-max {
+        text-align: left;
+      }
+
       .legend-tick {
         position: absolute;
         top: 0;
@@ -3510,6 +3518,13 @@
 
       .legend-pill .legend-tick-label {
         top: 17px;
+      }
+
+      /* Remove fixed 56px slot so min/max values sit flush against the bar */
+      .legend-pill .legend-value {
+        width: auto;
+        min-width: 0;
+        flex: 0 0 auto;
       }
 
       /* Keep map controls/legend close to map frame */
@@ -5065,6 +5080,20 @@
       const legendMin = document.getElementById("legend-min");
       const legendMax = document.getElementById("legend-max");
       const legendScale = document.getElementById("legend-scale");
+      requestAnimationFrame(() => {
+        if (!legendLabel) return;
+        const saved = legendLabel.textContent;
+        legendLabel.style.minWidth = "";
+        let maxW = 0;
+        for (const mk of Object.keys(METRIC_LABELS)) {
+          for (const wk of Object.keys(WINDOW_OPTIONS)) {
+            legendLabel.textContent = `${METRIC_LABELS[mk]} · Window: ${formatWindowLabel(wk)}`;
+            maxW = Math.max(maxW, legendLabel.scrollWidth);
+          }
+        }
+        legendLabel.textContent = saved;
+        if (maxW > 0) legendLabel.style.minWidth = `${maxW}px`;
+      });
       const legendTicks = Array.from(document.querySelectorAll(".legend-tick"));
       const legendTickLabels = Array.from(document.querySelectorAll(".legend-tick-label"));
       const summaryStations = document.getElementById("summary-stations");
@@ -7328,8 +7357,8 @@
           legendMax.textContent = "-";
           return;
         }
-        legendMin.textContent = formatValue(minValue);
-        legendMax.textContent = `${formatValue(capValue)}+`;
+        legendMin.textContent = String(Math.round(minValue));
+        legendMax.textContent = `${Math.round(capValue)}+`;
       }
 
       function mapValueToT(value, capValue) {
@@ -7660,11 +7689,11 @@
         const valueLabel = Number.isFinite(metricVal)
           ? `${formatValue(metricVal)} ${pollutantUnits}`
           : "No data";
-        const methodLabel = currentMetric === "median" ? "median" : "mean";
+        const methodDisplayLabel = currentMetric === "median" ? "Typical (median)" : "Average (mean)";
         if (inlinePanelWindowLabel) inlinePanelWindowLabel.textContent = "";
         if (inlinePanelTitle) inlinePanelTitle.textContent = areaName;
         if (inlinePanelReading) {
-          inlinePanelReading.innerHTML = `<span class="sensor-panel-value">${valueLabel}</span> <span class="sensor-panel-method">Average (${methodLabel})</span>`;
+          inlinePanelReading.innerHTML = `<span class="sensor-panel-value">${valueLabel}</span> <span class="sensor-panel-method">${methodDisplayLabel}</span>`;
         }
         if (inlinePanelNetworkLabel) inlinePanelNetworkLabel.textContent = "";
         if (inlinePanelHexIcon) {
@@ -8134,6 +8163,7 @@
         currentMetric = nextMetric;
         applyMetricState();
         renderMap();
+        updateDetailsPanel();
         if (!options.silent) {
           window.updateMapSettings?.({ metric: currentMetric }, "uk");
         }
@@ -8370,7 +8400,7 @@
           <div class="tooltip-title">${areaName}</div>
           <div class="tooltip-line">Region: ${regionLabel}</div>
           <div class="tooltip-line">${populationLabel}</div>
-          <div class="tooltip-line">Average: ${valueLabel}</div>
+          <div class="tooltip-line">${currentMetric === "median" ? "Typical" : "Average"}: ${valueLabel}</div>
           ${networkLines.join("")}
         `;
       }
@@ -9381,6 +9411,20 @@
       const legendMin = byId("legend-min");
       const legendMax = byId("legend-max");
       const legendScale = byId("legend-scale");
+      requestAnimationFrame(() => {
+        if (!legendLabel) return;
+        const saved = legendLabel.textContent;
+        legendLabel.style.minWidth = "";
+        let maxW = 0;
+        for (const mk of Object.keys(METRIC_LABELS)) {
+          for (const wk of Object.keys(WINDOW_OPTIONS)) {
+            legendLabel.textContent = `${METRIC_LABELS[mk]} · Window: ${formatWindowLabel(wk)}`;
+            maxW = Math.max(maxW, legendLabel.scrollWidth);
+          }
+        }
+        legendLabel.textContent = saved;
+        if (maxW > 0) legendLabel.style.minWidth = `${maxW}px`;
+      });
       const legendTicks = Array.from(queryAll(".legend-tick"));
       const legendTickLabels = Array.from(queryAll(".legend-tick-label"));
       const summaryStations = byId("summary-stations");
@@ -11308,8 +11352,8 @@
           legendMax.textContent = "-";
           return;
         }
-        legendMin.textContent = formatValue(minValue);
-        legendMax.textContent = `${formatValue(capValue)}+`;
+        legendMin.textContent = String(Math.round(minValue));
+        legendMax.textContent = `${Math.round(capValue)}+`;
       }
 
       function mapValueToT(value, capValue) {
@@ -11677,11 +11721,11 @@
         const valueLabel = Number.isFinite(metricVal)
           ? `${formatValue(metricVal)} ${pollutantUnits}`
           : "No data";
-        const methodLabel = currentMetric === "median" ? "median" : "mean";
+        const methodDisplayLabel = currentMetric === "median" ? "Typical (median)" : "Average (mean)";
         if (inlinePanelWindowLabel) inlinePanelWindowLabel.textContent = "";
         if (inlinePanelTitle) inlinePanelTitle.textContent = areaName;
         if (inlinePanelReading) {
-          inlinePanelReading.innerHTML = `<span class="sensor-panel-value">${valueLabel}</span> <span class="sensor-panel-method">Average (${methodLabel})</span>`;
+          inlinePanelReading.innerHTML = `<span class="sensor-panel-value">${valueLabel}</span> <span class="sensor-panel-method">${methodDisplayLabel}</span>`;
         }
         if (inlinePanelNetworkLabel) inlinePanelNetworkLabel.textContent = "";
         if (inlinePanelHexIcon) {
@@ -12519,6 +12563,23 @@
         }
       }
 
+      function setMetric(nextMetric, options = {}) {
+        if (!nextMetric) {
+          return;
+        }
+        if (nextMetric === currentMetric) {
+          applyMetricState();
+          return;
+        }
+        currentMetric = nextMetric;
+        applyMetricState();
+        renderMap();
+        updateDetailsPanel();
+        if (!options.silent) {
+          window.updateMapSettings?.({ metric: currentMetric }, "cr");
+        }
+      }
+
       function getMetricValue(row) {
         if (!row) {
           return null;
@@ -12856,7 +12917,7 @@
               <div class="tooltip-title">${areaName}</div>
               <div class="tooltip-line">Region: ${regionLabel}</div>
               <div class="tooltip-line">${populationLabel}</div>
-              <div class="tooltip-line">Average: ${valueLabel}</div>
+              <div class="tooltip-line">${currentMetric === "median" ? "Typical" : "Average"}: ${valueLabel}</div>
               ${networkLines.join("")}
             `;
             tooltip.classList.add("visible");
@@ -13396,8 +13457,13 @@
         if (detail.source === "cr") {
           return;
         }
-        if (detail.metric) {
-          setMetric(detail.metric, { silent: true });
+        if (detail.metric === "mean" || detail.metric === "median") {
+          if (detail.metric !== currentMetric) {
+            currentMetric = detail.metric;
+            applyMetricState();
+            renderMap();
+            updateDetailsPanel();
+          }
         }
         if (detail.colorScale) {
           setColorScale(detail.colorScale, { silent: true });
