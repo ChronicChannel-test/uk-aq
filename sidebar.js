@@ -481,7 +481,9 @@
       document.body.prepend(aside);
     }
 
-    // Initial state
+    // Initial state — suppress the body transition so the padding-left jump
+    // doesn't cause a mid-flight layout shift before the hex map first renders.
+    document.body.style.transition = 'none';
     const bp = getBreakpoint();
     pinnedOpenDesktop = false;
     if (bp === 'mobile') {
@@ -489,6 +491,8 @@
     } else {
       setState(MINI);
     }
+    document.body.offsetHeight; // force reflow, then restore CSS transition
+    document.body.style.transition = '';
     updateHamburgerIcon(btn);
 
     bindEvents(btn, overlay);
