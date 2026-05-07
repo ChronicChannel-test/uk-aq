@@ -1609,18 +1609,6 @@
         position: relative;
       }
 
-      .map-wrap.is-loading .map-canvas svg {
-        opacity: 0.96;
-      }
-
-      .map-wrap.is-loading .map-svg-viewport .hex {
-        opacity: 0.74;
-        filter: saturate(0.55) brightness(1.08);
-      }
-
-      .map-wrap.is-loading .map-svg-viewport .hex-label {
-        opacity: 0.9;
-      }
 
 
       .map-canvas {
@@ -3092,11 +3080,14 @@
         pointer-events: none;
         z-index: 5;
         opacity: 0;
-        background: linear-gradient(
+        background: repeating-linear-gradient(
           35deg,
-          rgba(255, 255, 255, 0) 34%,
-          rgba(255, 255, 255, 0.3) 50%,
-          rgba(255, 255, 255, 0) 66%
+          rgba(60, 120, 172, 0) 0px,
+          rgba(60, 120, 172, 0) 7px,
+          rgba(255, 255, 255, 0.28) 7px,
+          rgba(255, 255, 255, 0.28) 9px,
+          rgba(60, 120, 172, 0) 9px,
+          rgba(60, 120, 172, 0) 16px
         );
         background-size: 240% 240%;
         background-position: 0% 100%;
@@ -3112,10 +3103,10 @@
           background-position: 0% 100%;
         }
         18% {
-          opacity: 0.85;
+          opacity: 0.32;
         }
         82% {
-          opacity: 0.85;
+          opacity: 0.32;
         }
         100% {
           opacity: 0;
@@ -3563,7 +3554,7 @@
           <div class="error" id="error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap map-dashboard-card map-main-grid">
+              <div class="map-wrap map-dashboard-card map-main-grid is-loading">
                 <div class="map-title-strip">
                   <h2 class="card-title map-dashboard-title" id="map-title">Latest PM2.5 by constituency</h2>
                 </div>
@@ -4208,7 +4199,7 @@
           <div class="error" id="cr-error" hidden></div>
           <div class="map-layout">
             <div class="map-panel">
-              <div class="map-wrap map-dashboard-card map-main-grid">
+              <div class="map-wrap map-dashboard-card map-main-grid is-loading">
                 <div class="map-title-strip">
                   <h2 class="card-title map-dashboard-title" id="cr-map-title">Latest PM2.5 by local authority</h2>
                 </div>

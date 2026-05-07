@@ -53,6 +53,8 @@
     href: '/',
     className: 'cic-home-nav-item',
   };
+  const SIDEBAR_ICON_OFF = '/sidebar-images/CIC-Sidebar-Button-off.svg';
+  const SIDEBAR_ICON_ON = '/sidebar-images/CIC-Sidebar-Button-on.svg';
 
   // ─── Preload sidebar button images ───────────────────────────────────────────
   [SIDEBAR_ICON_OFF, SIDEBAR_ICON_ON].forEach(path => {
@@ -68,8 +70,6 @@
   const COLLAPSED = 'collapsed';
   const MINI      = 'mini';
   const DRAWER    = 'drawer';
-  const SIDEBAR_ICON_OFF = '/sidebar-images/CIC-Sidebar-Button-off.svg';
-  const SIDEBAR_ICON_ON = '/sidebar-images/CIC-Sidebar-Button-on.svg';
 
   let autoCollapseTimer = null;
   let pinnedOpenDesktop = false;
