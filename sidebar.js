@@ -54,6 +54,15 @@
     className: 'cic-home-nav-item',
   };
 
+  // ─── Preload sidebar button images ───────────────────────────────────────────
+  [SIDEBAR_ICON_OFF, SIDEBAR_ICON_ON].forEach(path => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = location.origin + path;
+    document.head.appendChild(link);
+  });
+
   // ─── State ────────────────────────────────────────────────────────────────────
   const EXPANDED  = 'expanded';
   const COLLAPSED = 'collapsed';
