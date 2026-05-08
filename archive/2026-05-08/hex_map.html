@@ -127,7 +127,7 @@
       .subtitle {
         margin: 0;
         color: var(--ink-soft);
-        font-size: 0.84rem;
+        font-size: 1.05rem;
         max-width: 720px;
       }
 
@@ -202,49 +202,6 @@
       .tab-button:focus-visible {
         outline: 2px solid rgba(60, 120, 172, 0.5);
         outline-offset: 2px;
-      }
-
-      .chart-back-pill {
-        appearance: none;
-        border: 1px solid #3C78AC;
-        background: rgba(60, 120, 172, 0.06);
-        color: #3C78AC;
-        border-radius: 10px;
-        padding: 8px 12px;
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        font-size: 0.84rem;
-        font-weight: 700;
-        line-height: 1;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
-      }
-
-      .chart-back-pill[hidden] {
-        display: none;
-      }
-
-      .chart-back-pill:hover {
-        background: rgba(60, 120, 172, 0.12);
-        box-shadow: 0 6px 16px rgba(60, 120, 172, 0.16);
-        transform: translateY(-1px);
-      }
-
-      .chart-back-pill:focus-visible {
-        outline: 2px solid rgba(60, 120, 172, 0.45);
-        outline-offset: 2px;
-      }
-
-      .chart-back-pill img {
-        width: 22px;
-        height: 22px;
-        display: block;
-      }
-
-      body.hex-chart-mode .chart-mode-view-control {
-        display: none !important;
       }
 
       .map-wrap .tab-slot {
@@ -1092,16 +1049,6 @@
         line-height: 1.25;
       }
 
-      .sensor-panel-title[role="button"] {
-        cursor: pointer;
-      }
-
-      .sensor-panel-title[role="button"]:hover {
-        color: var(--accent-deep);
-        text-decoration: underline;
-        text-underline-offset: 3px;
-      }
-
       .sensor-panel-reading {
         font-size: 1.12rem;
         line-height: 1.25;
@@ -1371,31 +1318,6 @@
 
       .sensor-row--excluded {
         background: #fdecec;
-      }
-
-      .sensor-name-button {
-        appearance: none;
-        border: 0;
-        background: transparent;
-        color: var(--ink);
-        cursor: pointer;
-        font: inherit;
-        font-weight: 400;
-        padding: 0;
-        text-align: left;
-        text-decoration: none;
-      }
-
-      .sensor-name-button:hover {
-        color: var(--accent-deep);
-        text-decoration: underline;
-        text-underline-offset: 3px;
-      }
-
-      .sensor-name-button:focus-visible {
-        outline: 2px solid rgba(60, 120, 172, 0.45);
-        outline-offset: 2px;
-        border-radius: 4px;
       }
 
       .sensor-status {
@@ -3600,296 +3522,6 @@
       .map-canvas-wrap {
         padding-bottom: 0;
       }
-
-      .hex-chart-mode-panel {
-        position: relative;
-        z-index: 12;
-        display: none;
-        min-height: 640px;
-        padding: 72px 18px 18px;
-        background: var(--map-wrap);
-        color: var(--ink);
-      }
-
-      .map-canvas-wrap.chart-mode {
-        min-height: 760px;
-      }
-
-      .map-canvas-wrap.chart-mode .hex-chart-mode-panel {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .map-canvas-wrap.chart-mode .map-svg-viewport,
-      .map-canvas-wrap.chart-mode .legend-pill,
-      .map-canvas-wrap.chart-mode .map-inline-sensor-panel,
-      .map-canvas-wrap.chart-mode .map-settings-panel,
-      .map-canvas-wrap.chart-mode .map-floating-tools,
-      .map-canvas-wrap.chart-mode .map-zoom-controls {
-        display: none !important;
-      }
-
-      .hex-chart-mode-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .hex-chart-mode-title {
-        margin: 0;
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        font-size: 1.22rem;
-        font-weight: 800;
-        line-height: 1.2;
-      }
-
-      .hex-chart-mode-title-line {
-        min-width: 0;
-      }
-
-      .hex-chart-mode-hex-icon {
-        width: 16px;
-        height: 18px;
-        flex-shrink: 0;
-        display: block;
-        overflow: visible;
-      }
-
-      .hex-chart-mode-controls {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--ink-soft);
-        font-size: 0.88rem;
-        font-weight: 700;
-      }
-
-      .hex-chart-mode-controls select {
-        border: 1px solid rgba(20, 34, 37, 0.16);
-        border-radius: 10px;
-        background: #fff;
-        color: var(--ink);
-        font: inherit;
-        font-weight: 400;
-        padding: 7px 10px;
-      }
-
-      .hex-chart-sensor-wrap {
-        max-height: calc(44px + (46px * 4));
-        overflow-y: auto;
-        background: #fff;
-        border: 1px solid rgba(20, 34, 37, 0.1);
-        border-radius: 10px;
-      }
-
-      .hex-chart-sensor-table {
-        width: 100%;
-        min-width: 760px;
-        border-collapse: collapse;
-        table-layout: fixed;
-        font-size: 0.9rem;
-      }
-
-      .hex-chart-sensor-table th,
-      .hex-chart-sensor-table td {
-        padding: 10px 12px;
-        border-bottom: 1px solid rgba(20, 34, 37, 0.08);
-        text-align: left;
-        vertical-align: middle;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .hex-chart-sensor-table th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background: #fff;
-        color: var(--ink-soft);
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-
-      .hex-chart-sensor-table th:nth-child(1),
-      .hex-chart-sensor-table td:nth-child(1) {
-        width: 42px;
-        text-align: center;
-        padding-left: 8px;
-        padding-right: 6px;
-      }
-
-      .hex-chart-sensor-table th:nth-child(2),
-      .hex-chart-sensor-table td:nth-child(2) {
-        width: 42%;
-      }
-
-      .hex-chart-sensor-table th:nth-child(3),
-      .hex-chart-sensor-table td:nth-child(3) {
-        width: 18%;
-      }
-
-      .hex-chart-sensor-table th:nth-child(4),
-      .hex-chart-sensor-table td:nth-child(4) {
-        width: 15%;
-      }
-
-      .hex-chart-sensor-table th:nth-child(5),
-      .hex-chart-sensor-table td:nth-child(5) {
-        width: 20%;
-      }
-
-      .hex-chart-sensor-table tbody tr {
-        height: 46px;
-      }
-
-      .hex-chart-sensor-table tbody tr.is-selected {
-        background: rgba(60, 120, 172, 0.1);
-        box-shadow: inset 4px 0 0 #3C78AC;
-      }
-
-      .hex-chart-sensor-name {
-        white-space: normal;
-        line-height: 1.22;
-        font-weight: 400;
-      }
-
-      .hex-chart-sensor-muted {
-        color: var(--ink-soft);
-      }
-
-      .hex-chart-selector {
-        appearance: none;
-        width: 22px;
-        height: 22px;
-        padding: 0;
-        border: 2px solid #3C78AC;
-        border-radius: 50%;
-        background: transparent;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .hex-chart-selector::after {
-        content: "";
-        width: 13px;
-        height: 13px;
-        border-radius: 50%;
-        background: transparent;
-      }
-
-      .hex-chart-selector[aria-pressed="true"]::after {
-        background: #3C78AC;
-      }
-
-      .hex-chart-selector:focus-visible {
-        outline: 2px solid rgba(60, 120, 172, 0.45);
-        outline-offset: 2px;
-      }
-
-      .hex-chart-message {
-        min-height: 1.2em;
-        color: var(--accent-deep);
-        font-size: 0.84rem;
-        font-weight: 700;
-      }
-
-      .hex-chart-message.is-error {
-        color: #8b1e3f;
-      }
-
-      .hex-chart-wrap {
-        position: relative;
-        flex: 1 1 auto;
-        min-height: 390px;
-        background: var(--map-wrap);
-        border: 0;
-        border-radius: 0;
-      }
-
-      .hex-chart-svg {
-        width: 100%;
-        height: 390px;
-        display: block;
-      }
-
-      .chart-axis path,
-      .chart-axis line {
-        stroke: rgba(20, 34, 37, 0.22);
-      }
-
-      .chart-axis text {
-        fill: var(--ink-soft);
-        font-size: 0.75rem;
-      }
-
-      .chart-line {
-        fill: none;
-        stroke: var(--series-color, #3C78AC);
-        stroke-width: 2.5px;
-      }
-
-      .chart-guideline {
-        stroke: #d24b3e;
-        stroke-width: 2px;
-        stroke-dasharray: 6 6;
-        opacity: 0.85;
-      }
-
-      .chart-guideline-label {
-        fill: #d24b3e;
-        font-size: 0.75rem;
-        font-weight: 600;
-      }
-
-      .chart-dot {
-        fill: var(--sun);
-        stroke: var(--accent-deep);
-        stroke-width: 1.5px;
-      }
-
-      .chart-tooltip {
-        position: absolute;
-        pointer-events: none;
-        background: rgba(20, 34, 37, 0.9);
-        color: #fff;
-        padding: 8px 10px;
-        border-radius: 10px;
-        font-size: 0.78rem;
-        line-height: 1.3;
-        opacity: 0;
-        transform: translateY(-4px);
-        transition: opacity 0.15s ease, transform 0.15s ease;
-        z-index: 2;
-      }
-
-      .chart-tooltip.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .hex-chart-loading {
-        position: absolute;
-        inset: 0;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        color: #3C78AC;
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        font-size: 1rem;
-        font-weight: 800;
-        background: rgba(251, 247, 239, 0.68);
-        z-index: 3;
-      }
-
-      .hex-chart-wrap.is-loading .hex-chart-loading {
-        display: flex;
-      }
     </style>
   </head>
   <body>
@@ -3929,17 +3561,13 @@
                 <div id="uk-toolbar-slot" class="map-controls-row">
                   <!-- ── Toolbar: scope switcher + region popover + pollutant pills ── -->
                   <div class="toolbar" id="main-toolbar">
-                    <button type="button" class="chart-back-pill" id="chart-back-to-map" aria-label="Back to map" hidden>
-                      <img src="images/UK-AQ-back-arrow.svg" alt="" aria-hidden="true" />
-                      <span>Back to map</span>
-                    </button>
-                    <span class="field-label chart-mode-view-control">View</span>
-                    <div class="segmented chart-mode-view-control">
+                    <span class="field-label">View</span>
+                    <div class="segmented">
                       <button type="button" id="toolbar-tab-uk" class="active">United Kingdom</button>
                       <button type="button" id="toolbar-tab-cr">Countries &amp; Regions</button>
                     </div>
 
-                    <div class="toolbar-region-section chart-mode-view-control" id="toolbar-region-section">
+                    <div class="toolbar-region-section" id="toolbar-region-section">
                       <div class="toolbar-divider"></div>
                       <div class="popover-wrap" id="toolbar-popover-wrap">
                         <button type="button" class="popover-trigger" id="toolbar-region-trigger" aria-haspopup="true" aria-expanded="false">
@@ -4051,67 +3679,6 @@
                   </span>
                   <button class="btn-refresh" id="refresh">Refresh</button>
                 </div>
-                <section class="hex-chart-mode-panel" id="uk-hex-chart-mode" aria-label="Selected constituency sensors chart" hidden>
-                  <div class="hex-chart-mode-header">
-                    <div class="sensor-panel-title-line hex-chart-mode-title-line">
-                      <h3 class="sensor-panel-title hex-chart-mode-title" id="uk-hex-chart-title"></h3>
-                      <svg class="hex-chart-mode-hex-icon" id="uk-hex-chart-hex-icon" viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M26 0L52 15V45L26 60L0 45V15L26 0Z" fill="currentColor"/>
-                      </svg>
-                      <div class="sensor-panel-reading" id="uk-hex-chart-reading"></div>
-                    </div>
-                    <label class="hex-chart-mode-controls" for="uk-hex-chart-window">
-                      <span>Time Range</span>
-                      <select id="uk-hex-chart-window">
-                        <option value="12h">Last 12 hours</option>
-                        <option value="24h" selected>Last 24 hours</option>
-                        <option value="7d">Last 7 days</option>
-                        <option value="31d">Last 31 days</option>
-                        <option value="90d">Last 90 days</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div class="hex-chart-sensor-wrap" id="uk-hex-chart-sensor-wrap">
-                    <table class="hex-chart-sensor-table">
-                      <thead>
-                        <tr>
-                          <th scope="col" aria-label="Selection"></th>
-                          <th scope="col" data-sort-key="sensor" aria-sort="none">
-                            <button type="button" class="sort-header" data-chart-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
-                              <span class="sort-label">Sensor</span>
-                              <span class="sort-icon" aria-hidden="true"></span>
-                            </button>
-                          </th>
-                          <th scope="col" data-sort-key="network" aria-sort="none">
-                            <button type="button" class="sort-header" data-chart-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
-                              <span class="sort-label">Network</span>
-                              <span class="sort-icon" aria-hidden="true"></span>
-                            </button>
-                          </th>
-                          <th scope="col" data-sort-key="pm25" aria-sort="none">
-                            <button type="button" class="sort-header" data-chart-sort-key="pm25" data-sort-type="number" title="Sort high→low">
-                              <span class="sort-label" id="uk-hex-chart-value-label">PM2.5</span>
-                              <span class="sort-icon" aria-hidden="true"></span>
-                            </button>
-                          </th>
-                          <th scope="col" data-sort-key="updated" aria-sort="none">
-                            <button type="button" class="sort-header" data-chart-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
-                              <span class="sort-label">Updated</span>
-                              <span class="sort-icon" aria-hidden="true"></span>
-                            </button>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody id="uk-hex-chart-sensor-body"></tbody>
-                    </table>
-                  </div>
-                  <div class="hex-chart-message" id="uk-hex-chart-message" aria-live="polite"></div>
-                  <div class="hex-chart-wrap" id="uk-hex-chart-wrap">
-                    <svg class="hex-chart-svg" id="uk-hex-chart-svg" role="img" aria-label="Selected sensor chart"></svg>
-                    <div class="hex-chart-loading" id="uk-hex-chart-loading">Loading chart data…</div>
-                    <div class="chart-tooltip" id="uk-hex-chart-tooltip"></div>
-                  </div>
-                </section>
                 <div class="map-svg-viewport">
                   <svg id="hex-map" role="img" aria-label="Hex cartogram of PM2.5 by constituency"></svg>
                 </div>
@@ -4228,7 +3795,7 @@
               <div class="sensor-panel-header-text">
                 <div class="sensor-window-label" id="sensor-panel-window-label">Select a hex</div>
                 <div class="sensor-panel-title-line">
-                  <button type="button" class="sensor-title-icon-button" aria-label="Open sensor chart" title="Open sensor chart">
+                  <button type="button" class="sensor-title-icon-button" aria-label="Sensor action" title="Sensor action">
                     <img src="images/UK-AQ-Sensor-Buttons-chart.svg" alt="" aria-hidden="true" />
                   </button>
                   <div class="sensor-panel-title" id="sensor-panel-title"></div>
@@ -4720,67 +4287,6 @@
                     </span>
                     <button class="btn-refresh" id="cr-refresh">Refresh</button>
                   </div>
-                  <section class="hex-chart-mode-panel" id="cr-hex-chart-mode" aria-label="Selected local authority sensors chart" hidden>
-                    <div class="hex-chart-mode-header">
-                      <div class="sensor-panel-title-line hex-chart-mode-title-line">
-                        <h3 class="sensor-panel-title hex-chart-mode-title" id="cr-hex-chart-title"></h3>
-                        <svg class="hex-chart-mode-hex-icon" id="cr-hex-chart-hex-icon" viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                          <path d="M26 0L52 15V45L26 60L0 45V15L26 0Z" fill="currentColor"/>
-                        </svg>
-                        <div class="sensor-panel-reading" id="cr-hex-chart-reading"></div>
-                      </div>
-                      <label class="hex-chart-mode-controls" for="cr-hex-chart-window">
-                        <span>Time Range</span>
-                        <select id="cr-hex-chart-window">
-                          <option value="12h">Last 12 hours</option>
-                          <option value="24h" selected>Last 24 hours</option>
-                          <option value="7d">Last 7 days</option>
-                          <option value="31d">Last 31 days</option>
-                          <option value="90d">Last 90 days</option>
-                        </select>
-                      </label>
-                    </div>
-                    <div class="hex-chart-sensor-wrap" id="cr-hex-chart-sensor-wrap">
-                      <table class="hex-chart-sensor-table">
-                        <thead>
-                          <tr>
-                            <th scope="col" aria-label="Selection"></th>
-                            <th scope="col" data-sort-key="sensor" aria-sort="none">
-                              <button type="button" class="sort-header" data-chart-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
-                                <span class="sort-label">Sensor</span>
-                                <span class="sort-icon" aria-hidden="true"></span>
-                              </button>
-                            </th>
-                            <th scope="col" data-sort-key="network" aria-sort="none">
-                              <button type="button" class="sort-header" data-chart-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
-                                <span class="sort-label">Network</span>
-                                <span class="sort-icon" aria-hidden="true"></span>
-                              </button>
-                            </th>
-                            <th scope="col" data-sort-key="pm25" aria-sort="none">
-                              <button type="button" class="sort-header" data-chart-sort-key="pm25" data-sort-type="number" title="Sort high→low">
-                                <span class="sort-label" id="cr-hex-chart-value-label">PM2.5</span>
-                                <span class="sort-icon" aria-hidden="true"></span>
-                              </button>
-                            </th>
-                            <th scope="col" data-sort-key="updated" aria-sort="none">
-                              <button type="button" class="sort-header" data-chart-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
-                                <span class="sort-label">Updated</span>
-                                <span class="sort-icon" aria-hidden="true"></span>
-                              </button>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody id="cr-hex-chart-sensor-body"></tbody>
-                      </table>
-                    </div>
-                    <div class="hex-chart-message" id="cr-hex-chart-message" aria-live="polite"></div>
-                    <div class="hex-chart-wrap" id="cr-hex-chart-wrap">
-                      <svg class="hex-chart-svg" id="cr-hex-chart-svg" role="img" aria-label="Selected sensor chart"></svg>
-                      <div class="hex-chart-loading" id="cr-hex-chart-loading">Loading chart data…</div>
-                      <div class="chart-tooltip" id="cr-hex-chart-tooltip"></div>
-                    </div>
-                  </section>
                   <div class="map-svg-viewport">
                     <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
                   </div>
@@ -4897,7 +4403,7 @@
               <div class="sensor-panel-header-text">
                 <div class="sensor-window-label" id="cr-sensor-panel-window-label">Select a hex</div>
                 <div class="sensor-panel-title-line">
-                  <button type="button" class="sensor-title-icon-button" aria-label="Open sensor chart" title="Open sensor chart">
+                  <button type="button" class="sensor-title-icon-button" aria-label="Sensor action" title="Sensor action">
                     <img src="images/UK-AQ-Sensor-Buttons-chart.svg" alt="" aria-hidden="true" />
                   </button>
                   <div class="sensor-panel-title" id="cr-sensor-panel-title"></div>
@@ -5738,44 +5244,9 @@
       if (inlinePanelClose) {
         inlinePanelClose.addEventListener("click", () => setSelectedCell(null));
       }
-      const openSelectedAreaChartMode = () => {
-        if (!selectedPconCode) {
-          return;
-        }
-        window.hexChartMode?.enter?.({ mapKey: "uk" });
-      };
-      document.querySelector("#tab-panel-uk .sensor-title-icon-button")?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openSelectedAreaChartMode();
-      });
-      inlinePanelTitle?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openSelectedAreaChartMode();
-      });
-      inlinePanelTitle?.setAttribute("role", "button");
-      inlinePanelTitle?.setAttribute("tabindex", "0");
-      inlinePanelTitle?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openSelectedAreaChartMode();
-        }
-      });
       if (detailsTableWrap) {
         detailsTableWrap.addEventListener("scroll", syncSensorScrollbarIndicator);
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
-        detailsTableWrap.addEventListener("click", (event) => {
-          const button = event.target instanceof Element
-            ? event.target.closest(".sensor-name-button[data-station-id]")
-            : null;
-          if (!button || !detailsTableWrap.contains(button)) {
-            return;
-          }
-          event.stopPropagation();
-          window.hexChartMode?.enter?.({
-            mapKey: "uk",
-            initialStationId: button.dataset.stationId || null,
-          });
-        });
       }
 
       let currentMetric = initialMetric;
@@ -6091,7 +5562,6 @@
         }
         return response;
       }
-      window.ukAqFetchCacheApi = fetchCacheApi;
 
       const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
 
@@ -6539,15 +6009,6 @@
         return numeric.toFixed(1);
       }
 
-      function escapeHtmlLocal(value) {
-        return String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
-
       function formatTimestamp(value) {
         if (!value) {
           return "unknown";
@@ -6728,11 +6189,7 @@
         }
         ukRefreshTimer = setInterval(() => {
           if (isUkMapVisible()) {
-            if (window.hexChartMode?.isActive?.("uk")) {
-              window.hexChartMode.refresh?.();
-            } else {
-              loadMapData();
-            }
+            loadMapData();
           }
         }, 60 * 1000);
       }
@@ -8298,7 +7755,6 @@
         networkSummary.hidden = true;
         detailsTableBody.innerHTML = entries.map((entry) => {
           const stationName = resolveStationName(entry.row);
-          const stationId = String(resolveStationKey(entry.row) || stationName || "");
           const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const windowLabel = entry.inWindow ? "Included" : "Outside window";
@@ -8309,8 +7765,8 @@
           const readingColor = colorScale && Number.isFinite(entry.value) ? colorScale(entry.value) : "var(--no-data)";
           return `
             <tr class="${rowClass}">
-              <td><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
-              <td>${escapeHtmlLocal(networkLabel)}</td>
+              <td>${stationName}</td>
+              <td>${networkLabel}</td>
               <td><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
               <td>${updatedText}</td>
               <td class="${statusClass}">${windowLabel}</td>
@@ -8921,7 +8377,6 @@
         updateSummary();
         renderMap();
         updateDetailsPanel();
-        window.hexChartMode?.syncFromMap?.("uk");
         refreshPinnedTooltip();
         persistNetworkSelection();
       }
@@ -9620,13 +9075,7 @@
         shareData: [],
       });
 
-      document.getElementById("refresh").addEventListener("click", () => {
-        if (window.hexChartMode?.isActive?.("uk")) {
-          window.hexChartMode.refresh?.();
-          return;
-        }
-        loadMapData();
-      });
+      document.getElementById("refresh").addEventListener("click", loadMapData);
       document.addEventListener("visibilitychange", syncUkPollingOnVisibility);
       if (ukRoot && typeof MutationObserver !== "undefined") {
         const ukVisibilityObserver = new MutationObserver(syncUkPollingOnVisibility);
@@ -9733,58 +9182,8 @@
           })
           .finally(() => {
             ukSearchPreloadPromise = null;
-        });
+          });
         return ukSearchPreloadPromise;
-      }
-
-      function normalizeTimeseriesId(value) {
-        if (value === null || value === undefined || value === "") {
-          return null;
-        }
-        const text = String(value).trim();
-        return /^\d+$/.test(text) ? text : null;
-      }
-
-      function resolveTimeseriesId(row) {
-        return normalizeTimeseriesId(row?.timeseries_id)
-          ?? normalizeTimeseriesId(row?.time_series_id)
-          ?? normalizeTimeseriesId(row?.timeseriesId)
-          ?? normalizeTimeseriesId(row?.timeSeriesId)
-          ?? normalizeTimeseriesId(row?.timeseries?.id)
-          ?? normalizeTimeseriesId(row?.timeseries?.timeseries_id)
-          ?? normalizeTimeseriesId(row?.offering?.timeseries_id)
-          ?? normalizeTimeseriesId(row?.id)
-          ?? normalizeTimeseriesId(row?.timeseries_ref);
-      }
-
-      function buildChartModeEntriesForSelectedArea() {
-        if (!selectedPconCode) {
-          return [];
-        }
-        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
-        const cutoff = getWindowCutoff();
-        const entries = collectStationEntries(scopedRows, selectedPconCode).map((entry) => ({
-          ...entry,
-          inWindow: isTimestampInWindow(entry.timestamp, cutoff),
-        }));
-        sortDetailEntries(entries);
-        return entries.map((entry) => {
-          const stationName = resolveStationName(entry.row);
-          const stationId = String(resolveStationKey(entry.row) || stationName || "");
-          return {
-            stationId,
-            stationName,
-            networkLabel: resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "Unknown network",
-            timeseriesId: resolveTimeseriesId(entry.row),
-            value: entry.value,
-            updatedText: formatSummaryTimestamp(entry.timestamp),
-            timestamp: entry.timestamp instanceof Date ? entry.timestamp.toISOString() : null,
-            pollutant: activePollutant,
-            pollutantLabel: getPollutantLabel(activePollutant),
-            units: getPollutantUnits(activePollutant),
-            row: entry.row,
-          };
-        });
       }
 
       window.ukMap = {
@@ -9802,26 +9201,6 @@
         },
         selectPconByCode: (code) => selectPconByCode(code),
         getActivePconCode: () => selectedPconCode,
-        getChartModeContext: () => {
-          const row = selectedPconCode ? pconLookup.get(selectedPconCode) : null;
-          const areaName = selectedCell?.pcon_name || row?.pcon_name || selectedPconCode || "";
-          const metricValue = getMetricValue(row);
-          return {
-            mapKey: "uk",
-            areaCode: selectedPconCode,
-            areaName,
-            entries: buildChartModeEntriesForSelectedArea(),
-            sortKey,
-            sortDir,
-            metricValue,
-            metricColor: colorScale && Number.isFinite(metricValue) ? colorScale(metricValue) : "var(--no-data)",
-            methodLabel: currentMetric === "median" ? "Typical (median)" : "Average (mean)",
-            pollutant: activePollutant,
-            pollutantLabel: getPollutantLabel(activePollutant),
-            units: getPollutantUnits(activePollutant),
-          };
-        },
-        refreshForChartMode: () => loadMapData({ preserveChartMode: true }),
         ensureSearchDataLoaded: () => ensureUkSearchDataLoaded(),
         getConstituencySearchRecords: () => buildConstituencySearchRecords(),
         getSensorSearchRecords: () => buildSensorSearchRecords(),
@@ -10240,44 +9619,9 @@
       if (inlinePanelClose) {
         inlinePanelClose.addEventListener("click", () => setSelectedCell(null));
       }
-      const openSelectedAreaChartMode = () => {
-        if (!selectedAreaCode) {
-          return;
-        }
-        window.hexChartMode?.enter?.({ mapKey: "cr" });
-      };
-      query(".sensor-title-icon-button")?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openSelectedAreaChartMode();
-      });
-      inlinePanelTitle?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openSelectedAreaChartMode();
-      });
-      inlinePanelTitle?.setAttribute("role", "button");
-      inlinePanelTitle?.setAttribute("tabindex", "0");
-      inlinePanelTitle?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openSelectedAreaChartMode();
-        }
-      });
       if (detailsTableWrap) {
         detailsTableWrap.addEventListener("scroll", syncSensorScrollbarIndicator);
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
-        detailsTableWrap.addEventListener("click", (event) => {
-          const button = event.target instanceof Element
-            ? event.target.closest(".sensor-name-button[data-station-id]")
-            : null;
-          if (!button || !detailsTableWrap.contains(button)) {
-            return;
-          }
-          event.stopPropagation();
-          window.hexChartMode?.enter?.({
-            mapKey: "cr",
-            initialStationId: button.dataset.stationId || null,
-          });
-        });
       }
 
       let currentMetric = sharedSettings.metric;
@@ -10604,7 +9948,6 @@
 	        }
 	        return response;
 	      }
-	      window.ukAqFetchCacheApi = fetchCacheApi;
 
 	      const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
 
@@ -10770,15 +10113,6 @@
           return "-";
         }
         return numeric.toFixed(1);
-      }
-
-      function escapeHtmlLocal(value) {
-        return String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
       }
 
       function formatTimestamp(value) {
@@ -10961,11 +10295,7 @@
         }
         crRefreshTimer = setInterval(() => {
           if (isCrMapVisible()) {
-            if (window.hexChartMode?.isActive?.("cr")) {
-              window.hexChartMode.refresh?.();
-            } else {
-              loadMapData();
-            }
+            loadMapData();
           }
         }, 60 * 1000);
       }
@@ -12488,7 +11818,6 @@
         networkSummary.hidden = true;
         detailsTableBody.innerHTML = entries.map((entry) => {
           const stationName = resolveStationName(entry.row);
-          const stationId = String(resolveStationKey(entry.row) || stationName || "");
           const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const windowLabel = entry.inWindow ? "Included" : "Outside window";
@@ -12499,8 +11828,8 @@
           const readingColor = colorScale && Number.isFinite(entry.value) ? colorScale(entry.value) : "var(--no-data)";
           return `
             <tr class="${rowClass}">
-              <td><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
-              <td>${escapeHtmlLocal(networkLabel)}</td>
+              <td>${stationName}</td>
+              <td>${networkLabel}</td>
               <td><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
               <td>${updatedText}</td>
               <td class="${statusClass}">${windowLabel}</td>
@@ -13485,7 +12814,6 @@
         updateSummary();
         renderMap();
         updateDetailsPanel();
-        window.hexChartMode?.syncFromMap?.("cr");
         persistNetworkSelection();
       }
 
@@ -14229,13 +13557,7 @@
       });
       syncSortHeaders();
 
-      byId("refresh").addEventListener("click", () => {
-        if (window.hexChartMode?.isActive?.("cr")) {
-          window.hexChartMode.refresh?.();
-          return;
-        }
-        loadMapData();
-      });
+      byId("refresh").addEventListener("click", loadMapData);
       document.addEventListener("visibilitychange", syncCrPollingOnVisibility);
       if (root && typeof MutationObserver !== "undefined") {
         const crVisibilityObserver = new MutationObserver(syncCrPollingOnVisibility);
@@ -14395,56 +13717,6 @@
         }
       }
 
-      function normalizeTimeseriesId(value) {
-        if (value === null || value === undefined || value === "") {
-          return null;
-        }
-        const text = String(value).trim();
-        return /^\d+$/.test(text) ? text : null;
-      }
-
-      function resolveTimeseriesId(row) {
-        return normalizeTimeseriesId(row?.timeseries_id)
-          ?? normalizeTimeseriesId(row?.time_series_id)
-          ?? normalizeTimeseriesId(row?.timeseriesId)
-          ?? normalizeTimeseriesId(row?.timeSeriesId)
-          ?? normalizeTimeseriesId(row?.timeseries?.id)
-          ?? normalizeTimeseriesId(row?.timeseries?.timeseries_id)
-          ?? normalizeTimeseriesId(row?.offering?.timeseries_id)
-          ?? normalizeTimeseriesId(row?.id)
-          ?? normalizeTimeseriesId(row?.timeseries_ref);
-      }
-
-      function buildChartModeEntriesForSelectedArea() {
-        if (!selectedAreaCode) {
-          return [];
-        }
-        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
-        const cutoff = getWindowCutoff();
-        const entries = collectStationEntries(scopedRows, selectedAreaCode).map((entry) => ({
-          ...entry,
-          inWindow: isTimestampInWindow(entry.timestamp, cutoff),
-        }));
-        sortDetailEntries(entries);
-        return entries.map((entry) => {
-          const stationName = resolveStationName(entry.row);
-          const stationId = String(resolveStationKey(entry.row) || stationName || "");
-          return {
-            stationId,
-            stationName,
-            networkLabel: resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "Unknown network",
-            timeseriesId: resolveTimeseriesId(entry.row),
-            value: entry.value,
-            updatedText: formatSummaryTimestamp(entry.timestamp),
-            timestamp: entry.timestamp instanceof Date ? entry.timestamp.toISOString() : null,
-            pollutant: activePollutant,
-            pollutantLabel: getPollutantLabel(activePollutant),
-            units: getPollutantUnits(activePollutant),
-            row: entry.row,
-          };
-        });
-      }
-
 	      window.crMap = {
 	        render: () => {
 	          if (statusEl.textContent === "Live") {
@@ -14464,26 +13736,6 @@
 	        getRegion: () => activeRegion,
 	        selectAreaByCode: (code, options) => selectAreaByCode(code, options),
 	        getActiveAreaCode: () => selectedAreaCode,
-        getChartModeContext: () => {
-          const row = selectedAreaCode ? pconLookup.get(selectedAreaCode) : null;
-          const areaName = resolveCellAreaName(selectedCell) || resolveAreaName(row) || selectedAreaCode || "";
-          const metricValue = getMetricValue(row);
-          return {
-            mapKey: "cr",
-            areaCode: selectedAreaCode,
-            areaName,
-            entries: buildChartModeEntriesForSelectedArea(),
-            sortKey,
-            sortDir,
-            metricValue,
-            metricColor: colorScale && Number.isFinite(metricValue) ? colorScale(metricValue) : "var(--no-data)",
-            methodLabel: currentMetric === "median" ? "Typical (median)" : "Average (mean)",
-            pollutant: activePollutant,
-            pollutantLabel: getPollutantLabel(activePollutant),
-            units: getPollutantUnits(activePollutant),
-          };
-        },
-        refreshForChartMode: () => loadMapData({ preserveChartMode: true }),
 	        ensureSearchDataLoaded: () => ensureCrSearchDataLoaded(),
 	        getLocalAuthoritySearchRecords: () => buildLocalAuthoritySearchRecords(),
 	        getSensorSearchRecords: () => buildSensorSearchRecords(),
@@ -14523,684 +13775,6 @@
 	      };
 })();
 
-    </script>
-    <script>
-(() => {
-  const MAX_SELECTED_SENSORS = 5;
-  const DAY_MS = 24 * 60 * 60 * 1000;
-  const HOUR_MS = 60 * 60 * 1000;
-  const AQI_HISTORY_ROW_LIMIT = 20000;
-  const SERIES_COLORS = ["#3C78AC", "#8b1e3f", "#35b56a", "#a65f2d", "#672C7F"];
-  const params = new URLSearchParams(window.location.search);
-  const cacheBaseUrl = resolveCacheBaseUrl(params.get("cache_base"));
-  const seriesUrl = cacheBaseUrl ? `${cacheBaseUrl}/timeseries` : "";
-  const aqiHistoryBaseUrl = resolveAqiHistoryBaseUrl(params.get("aqi_history_base"));
-  const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
-  const aqiHistoryBaseCandidates = dedupeStrings([
-    aqiHistoryBaseUrl,
-    cacheAqiHistoryBase,
-    "https://cic-test.chronicillnesschannel.co.uk/api/aq/aqi-history",
-  ]);
-
-  const backButton = document.getElementById("chart-back-to-map");
-  const domByMap = {
-    uk: collectChartDom("uk"),
-    cr: collectChartDom("cr"),
-  };
-  const state = {
-    isChartMode: false,
-    mapKey: null,
-    chartModeAreaCode: null,
-    chartModeSelectedSensors: new Set(),
-    chartModeTimeRange: "24h",
-    visibleEntries: [],
-    chartSortKey: "pm25",
-    chartSortDir: "desc",
-    loadToken: 0,
-    selectedPrimaryId: null,
-  };
-
-  function collectChartDom(prefix) {
-    const panel = document.getElementById(`${prefix}-hex-chart-mode`);
-    return {
-      panel,
-      canvasWrap: panel?.closest(".map-canvas-wrap") || null,
-      title: document.getElementById(`${prefix}-hex-chart-title`),
-      hexIcon: document.getElementById(`${prefix}-hex-chart-hex-icon`),
-      reading: document.getElementById(`${prefix}-hex-chart-reading`),
-      windowSelect: document.getElementById(`${prefix}-hex-chart-window`),
-      sensorBody: document.getElementById(`${prefix}-hex-chart-sensor-body`),
-      valueLabel: document.getElementById(`${prefix}-hex-chart-value-label`),
-      message: document.getElementById(`${prefix}-hex-chart-message`),
-      chartWrap: document.getElementById(`${prefix}-hex-chart-wrap`),
-      svg: d3.select(`#${prefix}-hex-chart-svg`),
-      tooltip: document.getElementById(`${prefix}-hex-chart-tooltip`),
-      sortButtons: Array.from(document.querySelectorAll(`#${prefix}-hex-chart-mode button[data-chart-sort-key]`)),
-    };
-  }
-
-  function resolveCacheBaseUrl(rawValue) {
-    const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
-    if (explicit) return explicit.replace(/\/+$/, "");
-    if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-      return `${window.location.origin.replace(/\/$/, "")}/api/aq`;
-    }
-    return "https://cic-test.chronicillnesschannel.co.uk/api/aq";
-  }
-
-  function resolveAqiHistoryBaseUrl(rawValue) {
-    const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
-    return explicit ? explicit.replace(/\/+$/, "") : "";
-  }
-
-  function dedupeStrings(values) {
-    const seen = new Set();
-    const result = [];
-    values.forEach((value) => {
-      const text = String(value || "").trim();
-      if (!text || seen.has(text)) return;
-      seen.add(text);
-      result.push(text);
-    });
-    return result;
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
-
-  function formatChartValue(value) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric.toFixed(1) : "-";
-  }
-
-  function normalizeAqiSupportedPollutant(label) {
-    const compact = String(label || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-    if (compact === "pm25" || compact === "particulatematter25") return "pm25";
-    if (compact === "pm10" || compact === "particulatematter10") return "pm10";
-    if (compact === "no2" || compact === "nitrogendioxide") return "no2";
-    return null;
-  }
-
-  function getAqiFieldMappingForPollutant(pollutantKey) {
-    if (pollutantKey === "pm25") return { daqiField: "daqi_pm25_rolling24h_index_level", eaqiField: "eaqi_pm25_index_level" };
-    if (pollutantKey === "pm10") return { daqiField: "daqi_pm10_rolling24h_index_level", eaqiField: "eaqi_pm10_index_level" };
-    if (pollutantKey === "no2") return { daqiField: "daqi_no2_index_level", eaqiField: "eaqi_no2_index_level" };
-    return null;
-  }
-
-  function normalizeAqiBandLevel(value, isEaqi) {
-    if (value === null || value === undefined || value === "") return null;
-    if (isEaqi && typeof value === "string" && Number.isNaN(Number(value))) {
-      const trimmed = value.trim();
-      return trimmed || null;
-    }
-    const numeric = Number(value);
-    return Number.isFinite(numeric) && numeric > 0 ? Math.trunc(numeric) : null;
-  }
-
-  function parseObservationNumericValue(rawValue) {
-    if (rawValue === null || rawValue === undefined) return Number.NaN;
-    if (typeof rawValue === "string") {
-      const trimmed = rawValue.trim();
-      if (!trimmed || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "nan") return Number.NaN;
-      return Number(trimmed);
-    }
-    return Number(rawValue);
-  }
-
-  function parseSeriesPayloadPoints(payload) {
-    const raw = Array.isArray(payload?.data) ? payload.data : [];
-    const dataFormat = String(payload?.data_format || "").toLowerCase();
-    const columns = Array.isArray(payload?.columns) ? payload.columns : [];
-    const observedIndex = columns.indexOf("observed_at");
-    const valueIndex = columns.indexOf("value");
-    return raw.map((row) => {
-      if (dataFormat === "compact" && Array.isArray(row)) {
-        return {
-          date: new Date(observedIndex >= 0 ? row[observedIndex] : row[0]),
-          value: parseObservationNumericValue(valueIndex >= 0 ? row[valueIndex] : row[1]),
-        };
-      }
-      return { date: new Date(row?.observed_at), value: parseObservationNumericValue(row?.value) };
-    }).filter((row) => Number.isFinite(row.date?.getTime()) && Number.isFinite(row.value) && row.value >= 0);
-  }
-
-  function parseAqiBandPayload(payload, pollutantKey) {
-    const mapping = getAqiFieldMappingForPollutant(pollutantKey);
-    if (!mapping) return [];
-    const dataFormat = String(payload?.data_format || "").toLowerCase();
-    const columns = Array.isArray(payload?.columns) ? payload.columns : [];
-    const periodStartIndex = columns.indexOf("period_start_utc");
-    const timestampHourIndex = columns.indexOf("timestamp_hour_utc");
-    const observedAtIndex = columns.indexOf("observed_at");
-    const daqiIndex = columns.indexOf(mapping.daqiField);
-    const eaqiIndex = columns.indexOf(mapping.eaqiField);
-    const rawPoints = Array.isArray(payload?.points) ? payload.points : Array.isArray(payload?.data) ? payload.data : [];
-    return rawPoints.map((row) => {
-      if (dataFormat === "compact" && Array.isArray(row)) {
-        const observedAt = periodStartIndex >= 0 ? row[periodStartIndex] : timestampHourIndex >= 0 ? row[timestampHourIndex] : observedAtIndex >= 0 ? row[observedAtIndex] : row[0];
-        return {
-          date: new Date(observedAt),
-          daqi: normalizeAqiBandLevel(daqiIndex >= 0 ? row[daqiIndex] : null, false),
-          eaqi: normalizeAqiBandLevel(eaqiIndex >= 0 ? row[eaqiIndex] : null, true),
-        };
-      }
-      return {
-        date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
-        daqi: normalizeAqiBandLevel(row?.[mapping.daqiField], false),
-        eaqi: normalizeAqiBandLevel(row?.[mapping.eaqiField], true),
-      };
-    }).filter((row) => Number.isFinite(row.date?.getTime()) && (row.daqi !== null || row.eaqi !== null))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }
-
-  function resolveRange(windowValue) {
-    const endDate = new Date();
-    const windowMs = windowValue === "12h" ? 12 * HOUR_MS : windowValue === "7d" ? 7 * DAY_MS : windowValue === "31d" ? 31 * DAY_MS : windowValue === "90d" ? 90 * DAY_MS : DAY_MS;
-    const startDate = new Date(endDate.getTime() - windowMs);
-    return { startDate, endDate, startMs: startDate.getTime(), endMs: endDate.getTime(), startIso: startDate.toISOString(), endIso: endDate.toISOString() };
-  }
-
-  function getAdapter(mapKey = state.mapKey) {
-    return mapKey === "cr" ? window.crMap : window.ukMap;
-  }
-
-  function getCurrentContext(mapKey = state.mapKey) {
-    return getAdapter(mapKey)?.getChartModeContext?.() || null;
-  }
-
-  function normalizeEntry(entry) {
-    if (!entry) return null;
-    const stationId = String(entry.stationId || entry.stationName || "").trim();
-    if (!stationId) return null;
-    return { ...entry, stationId, timeseriesId: entry.timeseriesId === null || entry.timeseriesId === undefined ? null : String(entry.timeseriesId) };
-  }
-
-  function getDefaultChartSortDir(key) {
-    return key === "sensor" || key === "network" ? "asc" : "desc";
-  }
-
-  function normalizeChartSortKey(key) {
-    return ["sensor", "network", "pm25", "updated"].includes(key) ? key : "pm25";
-  }
-
-  function normalizeChartSortDir(dir, key) {
-    return dir === "asc" || dir === "desc" ? dir : getDefaultChartSortDir(key);
-  }
-
-  function compareChartText(a, b) {
-    return String(a || "").localeCompare(String(b || ""), undefined, { sensitivity: "base" });
-  }
-
-  function compareChartNumbers(a, b) {
-    const left = Number.isFinite(Number(a)) ? Number(a) : null;
-    const right = Number.isFinite(Number(b)) ? Number(b) : null;
-    if (left === null && right === null) return 0;
-    if (left === null) return 1;
-    if (right === null) return -1;
-    return left - right;
-  }
-
-  function getChartSortValue(entry, key) {
-    if (key === "sensor") return entry.stationName || "";
-    if (key === "network") return entry.networkLabel || "";
-    if (key === "pm25") return entry.value;
-    if (key === "updated") {
-      const parsed = entry.timestamp ? new Date(entry.timestamp).getTime() : Number.NaN;
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return "";
-  }
-
-  function getVisibleEntriesForRender() {
-    const entries = state.visibleEntries.slice();
-    if (!state.chartSortKey) {
-      return entries;
-    }
-    const key = state.chartSortKey;
-    const direction = state.chartSortDir;
-    entries.sort((a, b) => {
-      const left = getChartSortValue(a, key);
-      const right = getChartSortValue(b, key);
-      const cmp = key === "sensor" || key === "network"
-        ? compareChartText(left, right)
-        : compareChartNumbers(left, right);
-      if (cmp !== 0) return direction === "asc" ? cmp : -cmp;
-      return compareChartText(a.stationName, b.stationName);
-    });
-    return entries;
-  }
-
-  function syncChartSortHeaders(context = null) {
-    const dom = domByMap[state.mapKey];
-    if (!dom) return;
-    if (dom.valueLabel) {
-      dom.valueLabel.textContent = context?.pollutantLabel || "Pollutant";
-    }
-    dom.sortButtons?.forEach((button) => {
-      const key = button.dataset.chartSortKey;
-      const isActive = key === state.chartSortKey;
-      const direction = isActive ? state.chartSortDir : getDefaultChartSortDir(key);
-      button.classList.toggle("is-active", isActive);
-      const th = button.closest("th");
-      if (th) {
-        th.setAttribute("aria-sort", isActive ? (state.chartSortDir === "asc" ? "ascending" : "descending") : "none");
-      }
-      const icon = button.querySelector(".sort-icon,.sort-arrow");
-      if (icon) {
-        icon.textContent = direction === "asc" ? "↑" : "↓";
-      }
-      if (isActive) {
-        const nextDir = state.chartSortDir === "asc" ? "desc" : "asc";
-        button.title = `Sort ${nextDir === "asc" ? "A→Z / low→high / oldest→newest" : "Z→A / high→low / newest→oldest"}`;
-      } else {
-        button.title = button.dataset.sortType === "number"
-          ? "Sort high→low"
-          : button.dataset.sortType === "date"
-          ? "Sort newest→oldest"
-          : "Sort A→Z";
-      }
-    });
-  }
-
-  function syncPanels() {
-    Object.entries(domByMap).forEach(([key, dom]) => {
-      const active = state.isChartMode && state.mapKey === key;
-      if (dom.panel) dom.panel.hidden = !active;
-      dom.canvasWrap?.classList.toggle("chart-mode", active);
-    });
-    document.body.classList.toggle("hex-chart-mode", state.isChartMode);
-    if (backButton) backButton.hidden = !state.isChartMode;
-  }
-
-  function setMessage(text, options = {}) {
-    const dom = domByMap[state.mapKey];
-    if (!dom?.message) return;
-    dom.message.textContent = text || "";
-    dom.message.classList.toggle("is-error", options.error === true);
-  }
-
-  function setLoading(isLoading) {
-    domByMap[state.mapKey]?.chartWrap?.classList.toggle("is-loading", Boolean(isLoading));
-  }
-
-  function enter(options = {}) {
-    const mapKey = options.mapKey || window.mapTabController?.getActiveTab?.() || "uk";
-    const context = getCurrentContext(mapKey);
-    if (!context?.areaCode) return;
-    const entries = (context.entries || []).map(normalizeEntry).filter(Boolean);
-    state.isChartMode = true;
-    state.mapKey = mapKey;
-    state.chartModeAreaCode = context.areaCode;
-    state.visibleEntries = entries;
-    state.chartSortKey = normalizeChartSortKey(context.sortKey);
-    state.chartSortDir = normalizeChartSortDir(context.sortDir, state.chartSortKey);
-    const initialSensorId = options.initialSensorId ? String(options.initialSensorId) : entries[0]?.stationId || null;
-    state.chartModeSelectedSensors = new Set(initialSensorId ? [initialSensorId] : []);
-    state.selectedPrimaryId = initialSensorId;
-    syncPanels();
-    syncWindowControl();
-    renderSensorList(context);
-    loadChartData();
-  }
-
-  function exit() {
-    state.isChartMode = false;
-    state.mapKey = null;
-    state.chartModeAreaCode = null;
-    state.chartModeSelectedSensors.clear();
-    state.visibleEntries = [];
-    state.loadToken += 1;
-    syncPanels();
-  }
-
-  function syncWindowControl() {
-    const dom = domByMap[state.mapKey];
-    if (dom?.windowSelect) dom.windowSelect.value = state.chartModeTimeRange || "24h";
-  }
-
-  function syncFromMap(mapKey = state.mapKey, options = {}) {
-    if (!state.isChartMode || state.mapKey !== mapKey) return;
-    const context = getCurrentContext(mapKey);
-    if (!context?.areaCode || context.areaCode !== state.chartModeAreaCode) {
-      if (options.preserveChartMode) {
-        syncPanels();
-        return;
-      }
-      exit();
-      return;
-    }
-    const entries = (context.entries || []).map(normalizeEntry).filter(Boolean);
-    const visibleIds = new Set(entries.map((entry) => entry.stationId));
-    state.visibleEntries = entries;
-    state.chartModeSelectedSensors = new Set(Array.from(state.chartModeSelectedSensors).filter((id) => visibleIds.has(id)));
-    if (!state.chartModeSelectedSensors.size && entries.length) state.chartModeSelectedSensors.add(entries[0].stationId);
-    if (!state.chartModeSelectedSensors.has(state.selectedPrimaryId)) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
-    renderSensorList(context);
-    loadChartData();
-  }
-
-  async function refresh() {
-    if (!state.isChartMode) return;
-    await getAdapter()?.refreshForChartMode?.();
-    syncFromMap(state.mapKey, { preserveChartMode: true });
-  }
-
-  function renderSensorList(context) {
-    const dom = domByMap[state.mapKey];
-    if (!dom?.sensorBody) return;
-    if (dom.title) dom.title.textContent = context.areaName || "Selected area";
-    if (dom.hexIcon) {
-      dom.hexIcon.style.color = context.metricColor || "var(--no-data)";
-    }
-    if (dom.reading) {
-      const metricValue = Number(context.metricValue);
-      const valueLabel = Number.isFinite(metricValue)
-        ? `${formatChartValue(metricValue)} ${context.units || ""}`.trim()
-        : "No data";
-      const methodLabel = context.methodLabel || "Average (mean)";
-      dom.reading.innerHTML = `<span class="sensor-panel-value">${escapeHtml(valueLabel)}</span> <span class="sensor-panel-method">${escapeHtml(methodLabel)}</span>`;
-    }
-    syncChartSortHeaders(context);
-    if (!state.visibleEntries.length) {
-      dom.sensorBody.innerHTML = `<tr><td colspan="5" class="hex-chart-sensor-muted">No sensors are visible for the selected filters.</td></tr>`;
-      setMessage("Select a sensor to view its history.");
-      renderEmptyChart("Select a sensor to view its history.");
-      return;
-    }
-    const adapter = getAdapter();
-    dom.sensorBody.innerHTML = getVisibleEntriesForRender().map((entry) => {
-      const selected = state.chartModeSelectedSensors.has(entry.stationId);
-      const valueLabel = Number.isFinite(Number(entry.value)) ? `${formatChartValue(entry.value)} ${entry.units || context.units || ""}`.trim() : "-";
-      const readingColor = adapter?.getSensorCurrentColor?.(entry.stationId) || "var(--no-data)";
-      return `
-        <tr class="${selected ? "is-selected" : ""}">
-          <td><button type="button" class="hex-chart-selector" data-station-id="${escapeHtml(entry.stationId)}" aria-label="${selected ? "Remove" : "Add"} ${escapeHtml(entry.stationName)} from chart" aria-pressed="${selected ? "true" : "false"}"></button></td>
-          <td class="hex-chart-sensor-name">${escapeHtml(entry.stationName)}</td>
-          <td>${escapeHtml(entry.networkLabel || "Unknown network")}</td>
-          <td><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${escapeHtml(readingColor)}"></span><span class="sensor-reading-text">${escapeHtml(valueLabel)}</span></span></td>
-          <td>${escapeHtml(entry.updatedText || "-")}</td>
-        </tr>
-      `;
-    }).join("");
-    setMessage(state.chartModeSelectedSensors.size ? "" : "Select a sensor to view its history.");
-  }
-
-  function toggleSensor(stationId) {
-    if (!stationId) return;
-    if (state.chartModeSelectedSensors.has(stationId)) {
-      state.chartModeSelectedSensors.delete(stationId);
-      if (state.selectedPrimaryId === stationId) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
-    } else {
-      if (state.chartModeSelectedSensors.size >= MAX_SELECTED_SENSORS) {
-        setMessage("Select up to 5 sensors.");
-        return;
-      }
-      state.chartModeSelectedSensors.add(stationId);
-      state.selectedPrimaryId = state.selectedPrimaryId || stationId;
-    }
-    renderSensorList(getCurrentContext() || {});
-    loadChartData();
-  }
-
-  function getCacheFetch() {
-    return typeof window.ukAqFetchCacheApi === "function" ? window.ukAqFetchCacheApi : null;
-  }
-
-  async function fetchChartJson(url) {
-    const init = { credentials: "include", headers: { Accept: "application/json" } };
-    const cacheFetch = getCacheFetch();
-    const response = cacheFetch ? await cacheFetch(url, init) : await fetch(url, init);
-    if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
-    return response.json();
-  }
-
-  async function fetchObservationSeries(entry, range) {
-    if (!seriesUrl || !entry?.timeseriesId) return { entry, points: [], guideline: null };
-    const url = new URL(seriesUrl);
-    url.searchParams.set("timeseries_id", entry.timeseriesId);
-    url.searchParams.set("start", range.startIso);
-    url.searchParams.set("end", range.endIso);
-    url.searchParams.set("format", "compact");
-    const payload = await fetchChartJson(url.toString());
-    return { entry, points: parseSeriesPayloadPoints(payload), guideline: payload?.guideline || null };
-  }
-
-  function buildAqiHistoryRequestCandidates(entry, pollutantKey, range) {
-    if (!entry?.timeseriesId || !getAqiFieldMappingForPollutant(pollutantKey)) return [];
-    return dedupeStrings(aqiHistoryBaseCandidates.map((base) => {
-      try {
-        const url = new URL(base);
-        url.searchParams.set("scope", "timeseries");
-        url.searchParams.set("grain", "hourly");
-        url.searchParams.set("timeseries_id", entry.timeseriesId);
-        url.searchParams.set("entity", entry.timeseriesId);
-        url.searchParams.set("pollutant", pollutantKey);
-        url.searchParams.set("row_limit", String(AQI_HISTORY_ROW_LIMIT));
-        url.searchParams.set("from_utc", range.startIso);
-        url.searchParams.set("to_utc", range.endIso);
-        return url.toString();
-      } catch (_err) {
-        return "";
-      }
-    }));
-  }
-
-  async function fetchAqiBands(entry, pollutantKey, range) {
-    const candidates = buildAqiHistoryRequestCandidates(entry, pollutantKey, range);
-    for (const url of candidates) {
-      try {
-        return parseAqiBandPayload(await fetchChartJson(url), pollutantKey);
-      } catch (_err) {
-      }
-    }
-    return [];
-  }
-
-  async function loadChartData() {
-    if (!state.isChartMode) return;
-    const token = ++state.loadToken;
-    const selectedEntries = state.visibleEntries.filter((entry) => state.chartModeSelectedSensors.has(entry.stationId));
-    if (!selectedEntries.length) {
-      renderEmptyChart("Select a sensor to view its history.");
-      setMessage("Select a sensor to view its history.");
-      return;
-    }
-    const usableEntries = selectedEntries.filter((entry) => entry.timeseriesId);
-    if (!usableEntries.length) {
-      renderEmptyChart("This pollutant is not available for the selected sensor.");
-      setMessage("This pollutant is not available for the selected sensor.", { error: true });
-      return;
-    }
-    setLoading(true);
-    setMessage("Loading chart data…");
-    const range = resolveRange(state.chartModeTimeRange || "24h");
-    try {
-      const seriesResults = await Promise.all(usableEntries.map((entry) => fetchObservationSeries(entry, range)));
-      if (token !== state.loadToken) return;
-      const primary = seriesResults.find((result) => result.entry.stationId === state.selectedPrimaryId) || seriesResults[0] || null;
-      const pollutantKey = normalizeAqiSupportedPollutant(primary?.entry?.pollutant || getCurrentContext()?.pollutant || "");
-      const aqiPoints = primary ? await fetchAqiBands(primary.entry, pollutantKey, range) : [];
-      if (token !== state.loadToken) return;
-      renderChart(seriesResults, { aqiPoints, guideline: primary?.guideline || null, range, units: primary?.entry?.units || getCurrentContext()?.units || "" });
-      const totalPoints = seriesResults.reduce((sum, result) => sum + result.points.length, 0);
-      setMessage(totalPoints ? "" : "No history available for this sensor.");
-    } catch (error) {
-      if (token !== state.loadToken) return;
-      console.warn("Could not load chart mode data.", error);
-      renderEmptyChart("Could not load chart data. Try Refresh.");
-      setMessage("Could not load chart data. Try Refresh.", { error: true });
-    } finally {
-      if (token === state.loadToken) setLoading(false);
-    }
-  }
-
-  function ensureChartFrame(dom, frame) {
-    const svg = dom.svg;
-    svg.selectAll("*").remove();
-    svg.attr("viewBox", `0 0 ${frame.width} ${frame.height}`);
-    return svg;
-  }
-
-  function renderEmptyChart(message) {
-    const dom = domByMap[state.mapKey];
-    if (!dom?.svg?.node()) return;
-    const width = dom.svg.node().clientWidth || 960;
-    const height = dom.svg.node().clientHeight || 390;
-    ensureChartFrame(dom, { width, height });
-    dom.svg.append("text")
-      .attr("x", width / 2)
-      .attr("y", height / 2)
-      .attr("text-anchor", "middle")
-      .attr("fill", "rgba(20, 34, 37, 0.55)")
-      .style("font-size", "0.95rem")
-      .style("font-weight", "700")
-      .text(message || "");
-  }
-
-  function renderAqiBands(svg, aqiPoints, frame, xScale) {
-    if (!Array.isArray(aqiPoints) || !aqiPoints.length) return;
-    const daqiColors = { 1: "#1DB100", 2: "#61D836", 3: "#34FF00", 4: "#FFFB00", 5: "#FFCE04", 6: "#FF9300", 7: "#FF6464", 8: "#FF2600", 9: "#A50026", 10: "#672C7F" };
-    const eaqiColors = { "Good": "#34FF00", "Fair": "#FFFB00", "Moderate": "#FF9300", "Poor": "#FF2600", "Very poor": "#A50026", "Extremely poor": "#672C7F", 1: "#34FF00", 2: "#FFFB00", 3: "#FF9300", 4: "#FF2600", 5: "#A50026", 6: "#672C7F" };
-    const pointByHour = new Map();
-    aqiPoints.forEach((point) => {
-      const hourMs = new Date(point.date).setMinutes(0, 0, 0);
-      if (Number.isFinite(hourMs)) pointByHour.set(hourMs, point);
-    });
-    const bandHeight = 22;
-    const gap = 4;
-    const slotWidth = Math.max(1, (frame.width - frame.margin.left - frame.margin.right) / Math.max(1, (frame.endMs - frame.startMs) / HOUR_MS));
-    const drawBand = (label, y, key, colors) => {
-      const group = svg.append("g").attr("transform", `translate(0, ${y})`);
-      group.append("text")
-        .attr("x", frame.margin.left - 8)
-        .attr("y", bandHeight / 2)
-        .attr("dy", "0.32em")
-        .attr("text-anchor", "end")
-        .style("font-size", "0.75rem")
-        .style("font-weight", "600")
-        .style("fill", "var(--ink-soft)")
-        .text(label);
-      for (let t = new Date(frame.startMs).setMinutes(0, 0, 0); t < frame.endMs; t += HOUR_MS) {
-        const point = pointByHour.get(t);
-        const color = point ? colors[point[key]] : null;
-        if (!color) continue;
-        const x = Math.max(frame.margin.left, xScale(new Date(t)));
-        const width = Math.min(slotWidth, frame.width - frame.margin.right - x);
-        if (width > 0) group.append("rect").attr("x", x).attr("y", 0).attr("width", width).attr("height", bandHeight).attr("fill", color);
-      }
-    };
-    drawBand("DAQI", 16, "daqi", daqiColors);
-    drawBand("EAQI", 16 + bandHeight + gap, "eaqi", eaqiColors);
-  }
-
-  function renderChart(seriesResults, options) {
-    const dom = domByMap[state.mapKey];
-    if (!dom?.svg?.node()) return;
-    const width = dom.svg.node().clientWidth || 960;
-    const height = dom.svg.node().clientHeight || 390;
-    const margin = { top: 78, right: 24, bottom: 44, left: 58 };
-    const frame = { width, height, margin, startMs: options.range.startMs, endMs: options.range.endMs };
-    const svg = ensureChartFrame(dom, frame);
-    const allPoints = seriesResults.flatMap((result) => result.points || []);
-    if (!allPoints.length) {
-      renderEmptyChart("No history available for this sensor.");
-      return;
-    }
-    const yExtent = d3.extent(allPoints, (point) => point.value);
-    const guidelineValue = Number(options.guideline?.limit_value);
-    const hasGuideline = Number.isFinite(guidelineValue);
-    const yMin = Math.min(0, Number.isFinite(yExtent[0]) ? yExtent[0] : 0, hasGuideline ? guidelineValue : 0);
-    const yMaxRaw = Math.max(Number.isFinite(yExtent[1]) ? yExtent[1] : 1, hasGuideline ? guidelineValue : 1);
-    const yScale = d3.scaleLinear().domain([yMin, yMaxRaw === yMin ? yMin + 1 : yMaxRaw]).nice().range([height - margin.bottom, margin.top]);
-    const xScale = d3.scaleTime().domain([options.range.startDate, options.range.endDate]).range([margin.left, width - margin.right]);
-    renderAqiBands(svg, options.aqiPoints, frame, xScale);
-    svg.append("g").attr("class", "chart-axis").attr("transform", `translate(0, ${height - margin.bottom})`).call(d3.axisBottom(xScale).ticks((options.range.endMs - options.range.startMs) <= DAY_MS ? 8 : 7).tickSizeOuter(0));
-    svg.append("g").attr("class", "chart-axis").attr("transform", `translate(${margin.left}, 0)`).call(d3.axisLeft(yScale).ticks(5).tickSizeOuter(0));
-    if (hasGuideline) {
-      const y = yScale(guidelineValue);
-      svg.append("line").attr("class", "chart-guideline").attr("x1", margin.left).attr("x2", width - margin.right).attr("y1", y).attr("y2", y);
-      svg.append("text").attr("class", "chart-guideline-label").attr("x", width - margin.right - 4).attr("y", Math.max(margin.top + 12, y - 6)).attr("text-anchor", "end").text(`WHO ${formatChartValue(guidelineValue)}${options.guideline?.uom ? ` ${options.guideline.uom}` : ""}`);
-    }
-    const line = d3.line().defined((point) => Number.isFinite(point.value)).x((point) => xScale(point.date)).y((point) => yScale(point.value));
-    seriesResults.forEach((result, index) => {
-      if (!result.points.length) return;
-      svg.append("path").datum(result.points).attr("class", "chart-line").attr("stroke", SERIES_COLORS[index % SERIES_COLORS.length]).attr("d", line);
-    });
-    const dot = svg.append("circle").attr("class", "chart-dot").attr("r", 5).style("opacity", 0);
-    const overlay = svg.append("rect").attr("x", margin.left).attr("y", margin.top).attr("width", Math.max(0, width - margin.left - margin.right)).attr("height", Math.max(0, height - margin.top - margin.bottom)).attr("fill", "transparent").style("pointer-events", "all");
-    overlay.on("mousemove", (event) => {
-      const [mx] = d3.pointer(event);
-      const targetDate = xScale.invert(Math.max(margin.left, Math.min(mx, width - margin.right)));
-      let closest = null;
-      seriesResults.forEach((result) => {
-        result.points.forEach((point) => {
-          const distance = Math.abs(point.date - targetDate);
-          if (!closest || distance < closest.distance) closest = { point, entry: result.entry, distance };
-        });
-      });
-      if (!closest) return;
-      const x = xScale(closest.point.date);
-      const y = yScale(closest.point.value);
-      dot.attr("cx", x).attr("cy", y).style("opacity", 1);
-      if (dom.tooltip) {
-        dom.tooltip.innerHTML = `<strong>${escapeHtml(closest.entry.stationName)}</strong><br>${escapeHtml(closest.point.date.toLocaleString())}<br>${formatChartValue(closest.point.value)} ${escapeHtml(options.units || "")}`;
-        dom.tooltip.style.left = `${Math.max(8, Math.min(x - 90, width - 180))}px`;
-        dom.tooltip.style.top = `${Math.max(8, y - 72)}px`;
-        dom.tooltip.classList.add("visible");
-      }
-    });
-    overlay.on("mouseleave", () => {
-      dot.style("opacity", 0);
-      dom.tooltip?.classList.remove("visible");
-    });
-  }
-
-  Object.values(domByMap).forEach((dom) => {
-    dom.sensorBody?.addEventListener("click", (event) => {
-      const button = event.target instanceof Element ? event.target.closest(".hex-chart-selector") : null;
-      if (button) toggleSensor(button.dataset.stationId || "");
-    });
-    dom.sortButtons?.forEach((button) => {
-      button.addEventListener("click", () => {
-        const key = button.dataset.chartSortKey;
-        if (!key) return;
-        if (state.chartSortKey === key) {
-          state.chartSortDir = state.chartSortDir === "asc" ? "desc" : "asc";
-        } else {
-          state.chartSortKey = key;
-          state.chartSortDir = getDefaultChartSortDir(key);
-        }
-        renderSensorList(getCurrentContext() || {});
-      });
-    });
-    dom.windowSelect?.addEventListener("change", () => {
-      state.chartModeTimeRange = dom.windowSelect.value || "24h";
-      loadChartData();
-    });
-  });
-  backButton?.addEventListener("click", exit);
-  window.addEventListener("pollutantchange", () => {
-    if (state.isChartMode) window.setTimeout(() => syncFromMap(state.mapKey), 0);
-  });
-  window.addEventListener("resize", () => {
-    if (state.isChartMode) loadChartData();
-  });
-
-  window.hexChartMode = {
-    enter,
-    exit,
-    refresh,
-    syncFromMap,
-    isActive: (mapKey = null) => Boolean(state.isChartMode && (!mapKey || state.mapKey === mapKey)),
-  };
-})();
     </script>
     <script>
 (() => {
