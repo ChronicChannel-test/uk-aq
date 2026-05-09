@@ -9,6 +9,8 @@
       content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com https://static.cloudflareinsights.com; script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: blob:; frame-src https://challenges.cloudflare.com;"
     />
     <title>UK AQ Hex Map – Power 0.8</title>
+    <link rel="preload" as="image" href="/sidebar-images/CIC-hamburger-button.svg" />
+    <link rel="preload" as="image" href="/sidebar-images/CIC%20Hamburger%20Button-SidebarOn.svg" />
     <link rel="preload" as="image" href="/sidebar-images/CIC-Square-Border-Words-Alpha.svg" />
     <link rel="preload" as="image" href="/sidebar-images/CIC-Home-Alpha.svg" />
     <link rel="preload" as="image" href="/sidebar-images/uk-aq-hex-map-icon.svg" />
@@ -5443,20 +5445,9 @@
       const REST_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/pcon-hex`
         : "";
-      const LATEST_SNAPSHOT_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/latest-snapshot`
-        : "";
-      const LATEST_LEGACY_URL = cacheBaseUrl
+      const LATEST_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/latest`
         : "";
-      const SNAPSHOT_WINDOWS = new Set(["3h", "6h", "1d"]);
-      function resolveLatestUrl(windowLabel) {
-        const normalizedWindow = String(windowLabel || "").trim().toLowerCase();
-        if (LATEST_SNAPSHOT_URL && SNAPSHOT_WINDOWS.has(normalizedWindow)) {
-          return LATEST_SNAPSHOT_URL;
-        }
-        return LATEST_LEGACY_URL || LATEST_SNAPSHOT_URL;
-      }
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
         : "";
@@ -9215,21 +9206,16 @@
           if (pconEtag) {
             pconHeaders["If-None-Match"] = pconEtag;
           }
-          const latestUrl = new URL(resolveLatestUrl(currentWindow));
+          const latestUrl = new URL(LATEST_URL);
           const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow);
-          const latestCursorEnabled = !latestUrl.pathname.endsWith("/latest-snapshot");
-          const latestSince = latestCursorEnabled
-            ? (latestSinceByKey.get(latestCacheKey) || null)
-            : null;
-          const latestSinceId = latestCursorEnabled
-            ? normalizeCursorId(latestSinceIdByKey.get(latestCacheKey))
-            : null;
+          const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+          const latestSinceId = normalizeCursorId(latestSinceIdByKey.get(latestCacheKey));
           const latestEtag = latestEtagByKey.get(latestCacheKey) || null;
           latestUrl.searchParams.set("pollutant", activePollutant);
           latestUrl.searchParams.set("window", currentWindow);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
-          if (latestCursorEnabled && latestSince) {
+          if (latestSince) {
             latestUrl.searchParams.set("since", latestSince);
             if (latestSinceId !== null) {
               latestUrl.searchParams.set("since_id", String(latestSinceId));
@@ -9352,20 +9338,16 @@
               const latestRaw = latestPayload?.data || [];
               const cleanedLatest = latestRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
               const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
-              const nextSince = latestCursorEnabled
-                ? (normalizeIsoTimestamp(latestPayload?.next_since) || latestSince)
-                : null;
-              const nextSinceId = latestCursorEnabled
-                ? (normalizeCursorId(latestPayload?.next_since_id)
-                  ?? latestSinceId
-                  ?? 0)
-                : 0;
-              const existingLatest = (latestCursorEnabled && latestSince)
+              const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
+              const nextSinceId = normalizeCursorId(latestPayload?.next_since_id)
+                ?? latestSinceId
+                ?? 0;
+              const existingLatest = latestSince
                 ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
                 : [];
-              const mergedLatest = (latestCursorEnabled && latestSince)
+              const mergedLatest = latestSince
                 ? mergeLatestRows(existingLatest, cleanedLatest)
-                : cleanedLatest;
+              : cleanedLatest;
             if (!isStale()) {
               baseLatestRows = mergedLatest;
               latestPollutant = responsePollutant;
@@ -9376,12 +9358,9 @@
                 nextSince,
                 nextSinceId,
               });
-              if (latestCursorEnabled && nextSince) {
+              if (nextSince) {
                 latestSinceByKey.set(latestCacheKey, nextSince);
                 latestSinceIdByKey.set(latestCacheKey, nextSinceId);
-              } else {
-                latestSinceByKey.delete(latestCacheKey);
-                latestSinceIdByKey.delete(latestCacheKey);
               }
             }
           } else if (!isStale()) {
@@ -9931,20 +9910,9 @@
 		      const REST_URL = cacheBaseUrl
 		        ? `${cacheBaseUrl}/la-hex`
 		        : "";
-      const LATEST_SNAPSHOT_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/latest-snapshot`
-        : "";
-      const LATEST_LEGACY_URL = cacheBaseUrl
-        ? `${cacheBaseUrl}/latest`
-        : "";
-      const SNAPSHOT_WINDOWS = new Set(["3h", "6h", "1d"]);
-      function resolveLatestUrl(windowLabel) {
-        const normalizedWindow = String(windowLabel || "").trim().toLowerCase();
-        if (LATEST_SNAPSHOT_URL && SNAPSHOT_WINDOWS.has(normalizedWindow)) {
-          return LATEST_SNAPSHOT_URL;
-        }
-        return LATEST_LEGACY_URL || LATEST_SNAPSHOT_URL;
-      }
+	      const LATEST_URL = cacheBaseUrl
+	        ? `${cacheBaseUrl}/latest`
+	        : "";
       const POPULATION_URL = projectRef
         ? `https://${projectRef}.supabase.co/functions/v1/uk_aq_population`
         : "";
@@ -13814,15 +13782,10 @@
 	            if (laEtag) {
 	              laHeaders["If-None-Match"] = laEtag;
 	            }
-            const latestUrl = new URL(resolveLatestUrl(currentWindow));
+            const latestUrl = new URL(LATEST_URL);
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
-            const latestCursorEnabled = !latestUrl.pathname.endsWith("/latest-snapshot");
-            const latestSince = latestCursorEnabled
-              ? (latestSinceByKey.get(latestCacheKey) || null)
-              : null;
-            const latestSinceId = latestCursorEnabled
-              ? normalizeCursorId(latestSinceIdByKey.get(latestCacheKey))
-              : null;
+            const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+            const latestSinceId = normalizeCursorId(latestSinceIdByKey.get(latestCacheKey));
             const latestEtag = latestEtagByKey.get(latestCacheKey) || null;
             latestUrl.searchParams.set("pollutant", activePollutant);
             latestUrl.searchParams.set("window", currentWindow);
@@ -13831,7 +13794,7 @@
             // scope to the selected LA hex codes immediately after fetch.
             latestUrl.searchParams.set("scope", "all");
             latestUrl.searchParams.set("limit", "10000");
-            if (latestCursorEnabled && latestSince) {
+            if (latestSince) {
               latestUrl.searchParams.set("since", latestSince);
               if (latestSinceId !== null) {
                 latestUrl.searchParams.set("since_id", String(latestSinceId));
@@ -13936,13 +13899,8 @@
               }
             }
             const latestCacheKey = getLatestCacheKey(requestPollutant, requestWindow, requestRegion);
-            const latestCursorEnabled = !new URL(resolveLatestUrl(currentWindow)).pathname.endsWith("/latest-snapshot");
-            const latestSince = latestCursorEnabled
-              ? (latestSinceByKey.get(latestCacheKey) || null)
-              : null;
-            const latestSinceId = latestCursorEnabled
-              ? normalizeCursorId(latestSinceIdByKey.get(latestCacheKey))
-              : null;
+            const latestSince = latestSinceByKey.get(latestCacheKey) || null;
+            const latestSinceId = normalizeCursorId(latestSinceIdByKey.get(latestCacheKey));
             if (latestResponse) {
               const responseEtag = latestResponse.headers.get("ETag");
               if (responseEtag) {
@@ -13975,18 +13933,14 @@
                 return !pconCodes.size || (code && pconCodes.has(code));
               });
               const responsePollutant = normalizePollutantKey(latestPayload?.pollutant) || requestPollutant;
-              const nextSince = latestCursorEnabled
-                ? (normalizeIsoTimestamp(latestPayload?.next_since) || latestSince)
-                : null;
-              const nextSinceId = latestCursorEnabled
-                ? (normalizeCursorId(latestPayload?.next_since_id)
-                  ?? latestSinceId
-                  ?? 0)
-                : 0;
-              const existingLatest = (latestCursorEnabled && latestSince)
+              const nextSince = normalizeIsoTimestamp(latestPayload?.next_since) || latestSince;
+              const nextSinceId = normalizeCursorId(latestPayload?.next_since_id)
+                ?? latestSinceId
+                ?? 0;
+              const existingLatest = latestSince
                 ? (pollutantCache.get(latestCacheKey)?.latestRows || baseLatestRows)
                 : [];
-              const mergedLatest = (latestCursorEnabled && latestSince)
+              const mergedLatest = latestSince
                 ? mergeLatestRows(existingLatest, scopedLatest)
                 : scopedLatest;
               if (!isStale()) {
@@ -13999,12 +13953,9 @@
                   nextSince,
                   nextSinceId,
                 });
-                if (latestCursorEnabled && nextSince) {
+                if (nextSince) {
                   latestSinceByKey.set(latestCacheKey, nextSince);
                   latestSinceIdByKey.set(latestCacheKey, nextSinceId);
-                } else {
-                  latestSinceByKey.delete(latestCacheKey);
-                  latestSinceIdByKey.delete(latestCacheKey);
                 }
               }
             } else if (!isStale()) {
@@ -14420,12 +14371,12 @@
       }
 
       async function fetchAllRegionsForSearch() {
-        if (!LATEST_SNAPSHOT_URL && !LATEST_LEGACY_URL) return;
+        if (!LATEST_URL) return;
         if (allRegionsFetchState === "fetching") return;
         allRegionsFetchState = "fetching";
         const fetchPollutant = activePollutant;
         try {
-          const url = new URL(resolveLatestUrl(currentWindow));
+          const url = new URL(LATEST_URL);
           url.searchParams.set("pollutant", fetchPollutant);
           url.searchParams.set("window", currentWindow);
           url.searchParams.set("scope", "all");

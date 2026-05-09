@@ -56,14 +56,24 @@
   const SIDEBAR_ICON_OFF = '/sidebar-images/CIC-Sidebar-Button-off.svg';
   const SIDEBAR_ICON_ON = '/sidebar-images/CIC-Sidebar-Button-on.svg';
 
-  // ─── Preload sidebar button images ───────────────────────────────────────────
-  [SIDEBAR_ICON_OFF, SIDEBAR_ICON_ON].forEach(path => {
+  // ─── Preload default sidebar button image; lazy-warm the alternate icon ─────
+  const sidebarIconOffHref = location.origin + SIDEBAR_ICON_OFF;
+  if (!document.head.querySelector(`link[rel="preload"][as="image"][href="${sidebarIconOffHref}"]`)) {
     const link = document.createElement('link');
     link.rel = 'preload';
     link.as = 'image';
-    link.href = location.origin + path;
+    link.href = sidebarIconOffHref;
     document.head.appendChild(link);
-  });
+  }
+  const warmSidebarOnIcon = () => {
+    const img = new Image();
+    img.src = location.origin + SIDEBAR_ICON_ON;
+  };
+  if (document.readyState === 'complete') {
+    warmSidebarOnIcon();
+  } else {
+    window.addEventListener('load', warmSidebarOnIcon, { once: true });
+  }
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const EXPANDED  = 'expanded';
