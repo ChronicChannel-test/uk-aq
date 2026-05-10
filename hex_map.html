@@ -872,6 +872,9 @@
 
       .sensor-table-wrap {
         overflow-x: auto;
+        overflow-y: scroll;
+        overscroll-behavior-y: contain;
+        scrollbar-width: none;
       }
 
       .sensor-table {
@@ -1177,23 +1180,51 @@
 
       .map-inline-sensor-panel-body {
         flex: 1;
-        overflow-y: auto;
+        overflow-y: hidden;
         padding: 0;
-        scrollbar-gutter: stable;
         overscroll-behavior-y: contain;
         position: relative;
       }
 
       .map-inline-sensor-panel-body.is-scroll-forced {
         overflow-y: hidden;
-        scrollbar-gutter: auto;
       }
 
       .sensor-table-wrap.is-scroll-forced {
         max-height: calc(44px + (46px * 8));
-        overflow-y: scroll;
-        overscroll-behavior-y: contain;
         scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: #b0b8c0 #f0f2f4;
+      }
+
+      /* width must be non-zero on the BASE class — WebKit treats width:0 as "no custom
+         scrollbar" and falls back to macOS overlay mode when the width later changes
+         via a compound selector. Keeping 6px always locks in non-overlay mode;
+         track/thumb are transparent so nothing is visible until is-scroll-forced. */
+      .sensor-table-wrap::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .sensor-table-wrap::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .sensor-table-wrap::-webkit-scrollbar-thumb {
+        background: transparent;
+      }
+
+      .sensor-table-wrap.is-scroll-forced::-webkit-scrollbar-track {
+        background: #f0f2f4;
+        border-radius: 3px;
+      }
+
+      .sensor-table-wrap.is-scroll-forced::-webkit-scrollbar-thumb {
+        background: #b0b8c0;
+        border-radius: 3px;
+      }
+
+      .sensor-table-wrap.is-scroll-forced::-webkit-scrollbar-thumb:hover {
+        background: #8a949e;
       }
 
       .sensor-scroll-indicator-shell {
@@ -3690,11 +3721,45 @@
 
       .hex-chart-sensor-wrap {
         max-height: calc(44px + (46px * 4));
-        overflow-y: auto;
-        scrollbar-gutter: stable;
+        overflow-y: scroll;
+        overscroll-behavior-y: contain;
         background: #fff;
         border: 1px solid rgba(20, 34, 37, 0.1);
         border-radius: 10px;
+        scrollbar-width: none;
+      }
+
+      .hex-chart-sensor-wrap.is-scrollable {
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: #b0b8c0 #f0f2f4;
+      }
+
+      /* Same reason as .sensor-table-wrap — keep 6px always, hide via transparency */
+      .hex-chart-sensor-wrap::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .hex-chart-sensor-wrap::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .hex-chart-sensor-wrap::-webkit-scrollbar-thumb {
+        background: transparent;
+      }
+
+      .hex-chart-sensor-wrap.is-scrollable::-webkit-scrollbar-track {
+        background: #f0f2f4;
+        border-radius: 3px;
+      }
+
+      .hex-chart-sensor-wrap.is-scrollable::-webkit-scrollbar-thumb {
+        background: #b0b8c0;
+        border-radius: 3px;
+      }
+
+      .hex-chart-sensor-wrap.is-scrollable::-webkit-scrollbar-thumb:hover {
+        background: #8a949e;
       }
 
       .hex-chart-sensor-table {
@@ -14646,6 +14711,7 @@
     <script>
 (() => {
   const MAX_SELECTED_SENSORS = 5;
+  const CHART_SENSOR_SCROLL_THRESHOLD = 4;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const HOUR_MS = 60 * 60 * 1000;
   const AQI_HISTORY_ROW_LIMIT = 20000;
@@ -15108,6 +15174,7 @@
     syncChartSortHeaders(context);
     const visibleEntriesForRender = getVisibleEntriesForRender();
     dom.sensorWrap?.classList.toggle("sensor-list-sort-hidden", visibleEntriesForRender.length <= 1);
+    dom.sensorWrap?.classList.toggle("is-scrollable", visibleEntriesForRender.length > CHART_SENSOR_SCROLL_THRESHOLD);
     if (!state.visibleEntries.length) {
       dom.sensorBody.innerHTML = `<tr><td colspan="6" class="hex-chart-sensor-muted">No sensors are visible for the selected filters.</td></tr>`;
       dom.scrollIndicators?.update?.();
