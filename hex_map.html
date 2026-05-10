@@ -15649,63 +15649,16 @@
     const rangeMs = range.endMs - range.startMs;
     cf.xAxisGroup.call(d3.axisBottom(cf.xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
 
-    // Compute y-domain from all accumulated points across all series.
-    cf.yScale.domain(computeYDomainNiced(seriesPointsMap, usableEntries, guideline));
-    cf.yAxisGroup.call(d3.axisLeft(cf.yScale).ticks(5).tickSizeOuter(0));
+    // Snapshot current y-domain before computing the new one.
+    const currentYDomain = cf.yScale.domain().slice();
+    const newYDomain     = computeYDomainNiced(seriesPointsMap, usableEntries, guideline);
+    const yChanged = Math.abs(newYDomain[0] - currentYDomain[0]) > 1e-9 ||
+                     Math.abs(newYDomain[1] - currentYDomain[1]) > 1e-9;
 
     // Store guideline for animation redraws.
     cf.currentGuideline = guideline || null;
 
-    // Update guideline.
-    const guidelineValue = Number(guideline?.limit_value);
-    const hasGuideline   = Number.isFinite(guidelineValue);
-    const allPoints = [];
-    usableEntries.forEach((e) => allPoints.push(...(seriesPointsMap.get(e.stationId) || [])));
-    if (hasGuideline && allPoints.length) {
-      const gy = cf.yScale(guidelineValue);
-      cf.guidelineEl.style("opacity", 0.85)
-        .attr("x1", cf.margin.left).attr("x2", cf.width - cf.margin.right)
-        .attr("y1", gy).attr("y2", gy);
-      cf.guidelineLabelEl.style("opacity", 1)
-        .attr("x", cf.width - cf.margin.right - 4)
-        .attr("y", Math.max(cf.margin.top + 12, gy - 6))
-        .text(`WHO ${formatChartValue(guidelineValue)}${guideline?.uom ? ` ${guideline.uom}` : ""}`);
-    } else {
-      cf.guidelineEl.style("opacity", 0);
-      cf.guidelineLabelEl.style("opacity", 0);
-    }
-
-    // Update each series path and symbols.
-    const lineFn = d3.line()
-      .x((p) => cf.xScale(p.date))
-      .y((p) => cf.yScale(p.value));
-    const windowValue = state.chartModeTimeRange || "24h";
-    const intervalMs  = ChartCore.getSymbolIntervalMs(windowValue);
-    const seriesSegments = [];
-
-    usableEntries.forEach((entry, i) => {
-      const points   = seriesPointsMap.get(entry.stationId) || [];
-      const segments = ChartCore.buildSegments(points);
-      seriesSegments.push(segments);
-      const pathD = segments.map((seg) => lineFn(seg)).join(" ");
-      if (cf.seriesPaths[i]) cf.seriesPaths[i].attr("d", pathD || null);
-      const symGroup = cf.seriesSymbolGroups[i];
-      if (symGroup) {
-        symGroup.selectAll("*").remove();
-        if (points.length && segments.length) {
-          const symbolSet = ChartCore.getSymbolPositions(points, segments, intervalMs);
-          ChartCore.renderSeriesSymbols(symGroup, points, symbolSet, cf.xScale, cf.yScale, i);
-        }
-      }
-    });
-
-    // Clear paths and symbols for slots beyond the active series count.
-    for (let i = usableEntries.length; i < cf.seriesPaths.length; i++) {
-      cf.seriesPaths[i]?.attr("d", null);
-      cf.seriesSymbolGroups[i]?.selectAll("*").remove();
-    }
-
-    // Update AQI bands (only when caller provides aqiPoints; undefined means "leave unchanged").
+    // Update AQI bands synchronously (positioned by x-scale / frame height, not y-scale).
     if (aqiPoints !== undefined) {
       cf.aqiBandsContainer.selectAll("*").remove();
       if (Array.isArray(aqiPoints) && aqiPoints.length) {
@@ -15713,8 +15666,107 @@
       }
     }
 
-    // Expose current data for the overlay mouse handler and future animations.
+    // Build line generator and segments (used every animation frame and at finalize).
+    const lineFn = d3.line()
+      .x((p) => cf.xScale(p.date))
+      .y((p) => cf.yScale(p.value));
+    const windowValue = state.chartModeTimeRange || "24h";
+    const intervalMs  = ChartCore.getSymbolIntervalMs(windowValue);
+    const seriesSegments = [];
+    usableEntries.forEach((entry) => {
+      seriesSegments.push(ChartCore.buildSegments(seriesPointsMap.get(entry.stationId) || []));
+    });
+
+    // Clear paths/symbols for slots beyond the active series count.
+    for (let i = usableEntries.length; i < cf.seriesPaths.length; i++) {
+      cf.seriesPaths[i]?.attr("d", null);
+      cf.seriesSymbolGroups[i]?.selectAll("*").remove();
+    }
+
+    // Expose current data immediately so the hover handler works during animation.
     cf.currentSeriesData = { entries: usableEntries, pointsMap: seriesPointsMap, seriesSegments, units };
+
+    // Redraws y-axis, all series paths, and the guideline line position each RAF frame.
+    function applyScales() {
+      cf.yAxisGroup.call(d3.axisLeft(cf.yScale).ticks(5).tickSizeOuter(0));
+      usableEntries.forEach((entry, i) => {
+        const segs = seriesSegments[i] || [];
+        if (cf.seriesPaths[i]) cf.seriesPaths[i].attr("d", segs.map((s) => lineFn(s)).join(" ") || null);
+      });
+      const guidelineValue = Number(guideline?.limit_value);
+      if (Number.isFinite(guidelineValue)) {
+        const gy = cf.yScale(guidelineValue);
+        cf.guidelineEl.attr("y1", gy).attr("y2", gy);
+        cf.guidelineLabelEl.attr("y", Math.max(cf.margin.top + 12, gy - 6));
+      }
+    }
+
+    // Called once the y-domain has reached its final value: sets guideline visibility and redraws symbols.
+    function finalizeSymbols() {
+      const guidelineValue = Number(guideline?.limit_value);
+      const hasGuideline   = Number.isFinite(guidelineValue);
+      const allPoints = [];
+      usableEntries.forEach((e) => allPoints.push(...(seriesPointsMap.get(e.stationId) || [])));
+      if (hasGuideline && allPoints.length) {
+        const gy = cf.yScale(guidelineValue);
+        cf.guidelineEl.style("opacity", 0.85)
+          .attr("x1", cf.margin.left).attr("x2", cf.width - cf.margin.right)
+          .attr("y1", gy).attr("y2", gy);
+        cf.guidelineLabelEl.style("opacity", 1)
+          .attr("x", cf.width - cf.margin.right - 4)
+          .attr("y", Math.max(cf.margin.top + 12, gy - 6))
+          .text(`WHO ${formatChartValue(guidelineValue)}${guideline?.uom ? ` ${guideline.uom}` : ""}`);
+      } else {
+        cf.guidelineEl.style("opacity", 0);
+        cf.guidelineLabelEl.style("opacity", 0);
+      }
+      usableEntries.forEach((entry, i) => {
+        const points   = seriesPointsMap.get(entry.stationId) || [];
+        const segments = seriesSegments[i] || [];
+        const symGroup = cf.seriesSymbolGroups[i];
+        if (symGroup) {
+          symGroup.selectAll("*").remove();
+          symGroup.style("opacity", 1);
+          if (points.length && segments.length) {
+            const symbolSet = ChartCore.getSymbolPositions(points, segments, intervalMs);
+            ChartCore.renderSeriesSymbols(symGroup, points, symbolSet, cf.xScale, cf.yScale, i);
+          }
+        }
+      });
+    }
+
+    if (!yChanged) {
+      // Domain unchanged — snap and finalize with no animation.
+      cf.yScale.domain(newYDomain);
+      applyScales();
+      finalizeSymbols();
+      return;
+    }
+
+    // y-domain is changing: hide symbols and animate over 150 ms.
+    cf.seriesSymbolGroups?.forEach((g) => g.style("opacity", 0));
+    const startY   = currentYDomain;
+    const t0       = performance.now();
+    const DURATION = 150;
+
+    function frame(now) {
+      const raw  = Math.min(1, (now - t0) / DURATION);
+      const ease = raw < 0.5 ? 2 * raw * raw : -1 + (4 - 2 * raw) * raw;
+      cf.yScale.domain([
+        startY[0] + (newYDomain[0] - startY[0]) * ease,
+        startY[1] + (newYDomain[1] - startY[1]) * ease,
+      ]);
+      applyScales();
+      if (raw < 1) {
+        cf.animFrameId = requestAnimationFrame(frame);
+      } else {
+        cf.animFrameId = null;
+        cf.yScale.domain(newYDomain);
+        applyScales();
+        finalizeSymbols();
+      }
+    }
+    cf.animFrameId = requestAnimationFrame(frame);
   }
 
   Object.values(domByMap).forEach((dom) => {
