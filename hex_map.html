@@ -1186,65 +1186,78 @@
 
       .map-inline-sensor-panel-body.is-scroll-forced {
         overflow-y: hidden;
-        scrollbar-width: none;
         scrollbar-gutter: auto;
-      }
-
-      .map-inline-sensor-panel-body.is-scroll-forced::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
       }
 
       .sensor-table-wrap.is-scroll-forced {
         max-height: calc(44px + (46px * 8));
         overflow-y: scroll;
         overscroll-behavior-y: contain;
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
+        scrollbar-gutter: stable;
       }
 
-      .sensor-table-wrap.is-scroll-forced::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
+      .sensor-scroll-indicator-shell {
+        position: relative;
       }
 
-      .sensor-scrollbar-rail {
+      .sensor-scroll-indicator {
         position: absolute;
-        top: 8px;
-        right: 4px;
-        bottom: 8px;
-        width: 12px;
-        border-radius: 999px;
-        background: rgba(60, 120, 172, 0.14);
+        left: 0;
+        right: 0;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3C78AC;
         pointer-events: none;
-        z-index: 5;
+        z-index: 6;
       }
 
-      .sensor-scrollbar-rail[hidden] {
+      .sensor-scroll-indicator[hidden] {
         display: none;
       }
 
-      .sensor-scrollbar-thumb {
-        position: absolute;
-        top: var(--sensor-scroll-thumb-top, 0px);
-        left: 2px;
-        width: 8px;
-        height: var(--sensor-scroll-thumb-height, 80px);
-        border-radius: 999px;
-        background: rgba(60, 120, 172, 0.82);
+      .sensor-scroll-indicator--top {
+        top: 0;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0));
       }
 
-      .sensor-scroll-hint {
-        flex: 0 0 auto;
-        padding: 5px 14px 6px;
-        border-bottom: 1px solid var(--line-soft);
-        background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-        color: var(--accent-deep);
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-align: center;
+      .sensor-scroll-indicator--bottom {
+        bottom: 0;
+        background: linear-gradient(to top, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0));
+      }
+
+      .sensor-scroll-indicator__chevron {
+        width: 10px;
+        height: 10px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.9));
+      }
+
+      .sensor-scroll-indicator--top .sensor-scroll-indicator__chevron {
+        transform: rotate(225deg);
+      }
+
+      .sensor-scroll-indicator--bottom .sensor-scroll-indicator__chevron {
+        transform: rotate(45deg);
+      }
+
+      .sensor-list-sort-hidden .sort-header {
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .sensor-list-sort-hidden .sort-icon {
+        display: none;
+      }
+
+      .sensor-list-sort-hidden .sort-header:not(.is-active),
+      .sensor-list-sort-hidden .sort-header.is-active {
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        color: inherit;
       }
 
       .map-inline-sensor-panel-body .sensor-table-wrap {
@@ -3678,6 +3691,7 @@
       .hex-chart-sensor-wrap {
         max-height: calc(44px + (46px * 4));
         overflow-y: auto;
+        scrollbar-gutter: stable;
         background: #fff;
         border: 1px solid rgba(20, 34, 37, 0.1);
         border-radius: 10px;
@@ -4260,7 +4274,6 @@
                 <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
               </button>
             </div>
-            <div class="sensor-scroll-hint" id="sensor-scroll-hint" hidden>Scroll for more sensors</div>
             <div class="map-inline-sensor-panel-body" id="sensor-panel-body">
               <div class="details-empty" id="details-empty">Select a constituency to see sensors.</div>
               <div class="sensor-table-wrap" id="sensor-table-wrap" hidden>
@@ -4296,9 +4309,6 @@
                   </thead>
                   <tbody id="sensor-table-body"></tbody>
                 </table>
-              </div>
-              <div class="sensor-scrollbar-rail" id="sensor-scrollbar-rail" hidden aria-hidden="true">
-                <span class="sensor-scrollbar-thumb"></span>
               </div>
             </div>
           </div>
@@ -4930,7 +4940,6 @@
                 <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
               </button>
             </div>
-            <div class="sensor-scroll-hint" id="cr-sensor-scroll-hint" hidden>Scroll for more sensors</div>
             <div class="map-inline-sensor-panel-body" id="cr-sensor-panel-body">
               <div class="details-empty" id="cr-details-empty">Select a local authority to see sensors.</div>
               <div class="sensor-table-wrap" id="cr-sensor-table-wrap" hidden>
@@ -4966,9 +4975,6 @@
                   </thead>
                   <tbody id="cr-sensor-table-body"></tbody>
                 </table>
-              </div>
-              <div class="sensor-scrollbar-rail" id="cr-sensor-scrollbar-rail" hidden aria-hidden="true">
-                <span class="sensor-scrollbar-thumb"></span>
               </div>
             </div>
           </div>
@@ -5380,6 +5386,82 @@
       };
     </script>
     <script>
+      window.attachScrollIndicators = function attachScrollIndicators(scrollEl, options = {}) {
+        if (!scrollEl) return null;
+
+        const threshold = Number.isFinite(options.threshold) ? options.threshold : 2;
+        const hostClass = options.hostClass || "sensor-scroll-indicator-shell";
+        let host = options.host || scrollEl.parentElement;
+        if (!host || !host.classList?.contains(hostClass)) {
+          host = document.createElement("div");
+          host.className = hostClass;
+          scrollEl.parentNode?.insertBefore(host, scrollEl);
+          host.appendChild(scrollEl);
+        } else {
+          host.classList.add(hostClass);
+        }
+
+        const makeIndicator = (position) => {
+          const indicator = document.createElement("div");
+          indicator.className = `sensor-scroll-indicator sensor-scroll-indicator--${position}`;
+          indicator.setAttribute("aria-hidden", "true");
+          indicator.hidden = true;
+          const chevron = document.createElement("span");
+          chevron.className = "sensor-scroll-indicator__chevron";
+          indicator.appendChild(chevron);
+          host.appendChild(indicator);
+          return indicator;
+        };
+
+        const topIndicator = makeIndicator("top");
+        const bottomIndicator = makeIndicator("bottom");
+        let rafId = 0;
+
+        const update = () => {
+          rafId = 0;
+          const canScroll = scrollEl.scrollHeight > scrollEl.clientHeight + threshold;
+          const atTop = scrollEl.scrollTop <= threshold;
+          const atBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - threshold;
+          topIndicator.hidden = !canScroll || atTop;
+          bottomIndicator.hidden = !canScroll || atBottom;
+        };
+
+        const scheduleUpdate = () => {
+          if (rafId) return;
+          rafId = window.requestAnimationFrame(update);
+        };
+
+        scrollEl.addEventListener("scroll", scheduleUpdate, { passive: true });
+        window.addEventListener("resize", scheduleUpdate);
+
+        const resizeObserver = "ResizeObserver" in window
+          ? new ResizeObserver(scheduleUpdate)
+          : null;
+        resizeObserver?.observe(scrollEl);
+        if (scrollEl.firstElementChild) resizeObserver?.observe(scrollEl.firstElementChild);
+
+        const mutationObserver = "MutationObserver" in window
+          ? new MutationObserver(scheduleUpdate)
+          : null;
+        mutationObserver?.observe(scrollEl, { childList: true, subtree: true, attributes: true });
+
+        scheduleUpdate();
+
+        return {
+          update: scheduleUpdate,
+          destroy() {
+            if (rafId) window.cancelAnimationFrame(rafId);
+            scrollEl.removeEventListener("scroll", scheduleUpdate);
+            window.removeEventListener("resize", scheduleUpdate);
+            resizeObserver?.disconnect();
+            mutationObserver?.disconnect();
+            topIndicator.remove();
+            bottomIndicator.remove();
+          },
+        };
+      };
+    </script>
+    <script>
       const PROJECT_REF_PLACEHOLDER = "__SUPABASE_PROJECT_REF__";
       const ANON_KEY_PLACEHOLDER = "__SB_PUBLISHABLE_DEFAULT_KEY__";
       const params = new URLSearchParams(window.location.search);
@@ -5756,14 +5838,12 @@
       const inlinePanelCount = document.getElementById("sensor-panel-count");
       const inlinePanelHexIcon = document.getElementById("sensor-panel-hex-icon");
       const inlinePanelBody = document.getElementById("sensor-panel-body");
-      const inlinePanelScrollHint = document.getElementById("sensor-scroll-hint");
-      const inlinePanelScrollbarRail = document.getElementById("sensor-scrollbar-rail");
       const SENSOR_PANEL_EMPTY_HEIGHT = 104;
       const SENSOR_PANEL_HEADER_HEIGHT = 50;
-      const SENSOR_PANEL_SCROLL_HINT_HEIGHT = 28;
       const SENSOR_TABLE_HEADER_HEIGHT = 44;
       const SENSOR_PANEL_ROW_HEIGHT = 46;
       const SENSOR_PANEL_MAX_VISIBLE_ROWS = 8;
+      const detailScrollIndicators = window.attachScrollIndicators?.(detailsTableWrap);
       if (inlinePanelClose) {
         inlinePanelClose.addEventListener("click", () => setSelectedCell(null));
       }
@@ -5790,7 +5870,7 @@
         }
       });
       if (detailsTableWrap) {
-        detailsTableWrap.addEventListener("scroll", syncSensorScrollbarIndicator);
+        detailsTableWrap.addEventListener("scroll", () => detailScrollIndicators?.update?.());
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
         detailsTableWrap.addEventListener("click", (event) => {
           const button = event.target instanceof Element
@@ -8157,18 +8237,24 @@
           pm25: { asc: "PM2.5, sorted low to high. Click to sort high to low.", desc: "PM2.5, sorted high to low. Click to sort low to high." },
           updated: { asc: "Updated, sorted oldest first. Click to sort newest first.", desc: "Updated, sorted newest first. Click to sort oldest first." },
         };
+        const sortingHidden = detailsTableWrap?.classList.contains("sensor-list-sort-hidden") === true;
         sortHeaderButtons.forEach((button) => {
           const key = button.dataset.sortKey;
           const isActive = key === sortKey;
           const direction = getSortDirection(key, sortKey, sortDir);
           const th = button.closest("th");
-          button.classList.toggle("is-active", isActive);
-          if (th) th.setAttribute("aria-sort", isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none");
+          button.classList.toggle("is-active", isActive && !sortingHidden);
+          button.disabled = sortingHidden;
+          button.tabIndex = sortingHidden ? -1 : 0;
+          if (th) th.setAttribute("aria-sort", !sortingHidden && isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none");
           const icon = button.querySelector(".sort-icon,.sort-arrow");
           if (icon) {
-            icon.textContent = renderSortIcon(key, sortKey, sortDir);
+            icon.textContent = sortingHidden ? "" : renderSortIcon(key, sortKey, sortDir);
           }
-          if (isActive) {
+          if (sortingHidden) {
+            button.setAttribute("aria-label", "");
+            button.title = "";
+          } else if (isActive) {
             button.setAttribute("aria-label", ACTIVE_ARIA[key]?.[sortDir] || "");
             button.title = "";
           } else {
@@ -8187,7 +8273,6 @@
         const visibleRows = Math.min(count, SENSOR_PANEL_MAX_VISIBLE_ROWS);
         const panelHeight = count
           ? SENSOR_PANEL_HEADER_HEIGHT
-            + (hasOverflow ? SENSOR_PANEL_SCROLL_HINT_HEIGHT : 0)
             + SENSOR_TABLE_HEADER_HEIGHT
             + (visibleRows * SENSOR_PANEL_ROW_HEIGHT)
           : SENSOR_PANEL_EMPTY_HEIGHT;
@@ -8198,36 +8283,11 @@
         if (detailsTableWrap) {
           detailsTableWrap.classList.toggle("is-scroll-forced", hasOverflow);
         }
-        if (inlinePanelScrollHint) {
-          inlinePanelScrollHint.hidden = !hasOverflow;
-        }
-        if (inlinePanelScrollbarRail) {
-          inlinePanelScrollbarRail.hidden = !hasOverflow;
-        }
-        syncSensorScrollbarIndicator();
+        detailScrollIndicators?.update?.();
       }
 
       function syncSensorScrollbarIndicator() {
-        if (!inlinePanelScrollbarRail || inlinePanelScrollbarRail.hidden || !detailsTableWrap) {
-          return;
-        }
-        window.requestAnimationFrame(() => {
-          if (!inlinePanelScrollbarRail || inlinePanelScrollbarRail.hidden || !detailsTableWrap) {
-            return;
-          }
-          const thumb = inlinePanelScrollbarRail.querySelector(".sensor-scrollbar-thumb");
-          const trackHeight = inlinePanelScrollbarRail.clientHeight || 0;
-          const scrollable = detailsTableWrap.scrollHeight - detailsTableWrap.clientHeight;
-          if (!thumb || trackHeight <= 0 || scrollable <= 0) {
-            return;
-          }
-          const visibleRatio = Math.max(0.18, Math.min(1, detailsTableWrap.clientHeight / detailsTableWrap.scrollHeight));
-          const thumbHeight = Math.max(42, trackHeight * visibleRatio);
-          const maxTop = Math.max(0, trackHeight - thumbHeight);
-          const top = maxTop * (detailsTableWrap.scrollTop / scrollable);
-          inlinePanelScrollbarRail.style.setProperty("--sensor-scroll-thumb-height", `${thumbHeight.toFixed(1)}px`);
-          inlinePanelScrollbarRail.style.setProperty("--sensor-scroll-thumb-top", `${top.toFixed(1)}px`);
-        });
+        detailScrollIndicators?.update?.();
       }
 
       function handleSensorTableWheel(event) {
@@ -8262,6 +8322,8 @@
           if (inlinePanelCount) inlinePanelCount.textContent = "";
           detailsEmpty.hidden = true;
           detailsTableWrap.hidden = true;
+          detailsTableWrap.classList.add("sensor-list-sort-hidden");
+          syncSortHeaders();
           updateInlinePanelHeight(0);
           networkSummary.hidden = false;
           updateNetworkSummary();
@@ -8301,6 +8363,8 @@
           detailsEmpty.textContent = "No sensors found for this constituency.";
           detailsEmpty.hidden = false;
           detailsTableWrap.hidden = true;
+          detailsTableWrap.classList.add("sensor-list-sort-hidden");
+          syncSortHeaders();
           detailsTableBody.innerHTML = "";
           updateInlinePanelHeight(0);
           updateSelectedHexViewportShift();
@@ -8324,6 +8388,8 @@
         }
         detailsEmpty.hidden = true;
         detailsTableWrap.hidden = false;
+        detailsTableWrap.classList.toggle("sensor-list-sort-hidden", entries.length <= 1);
+        syncSortHeaders();
         networkSummary.hidden = true;
         detailsTableBody.innerHTML = entries.map((entry) => {
           const stationName = resolveStationName(entry.row);
@@ -10281,14 +10347,12 @@
       const inlinePanelCount = byId("sensor-panel-count");
       const inlinePanelHexIcon = byId("sensor-panel-hex-icon");
       const inlinePanelBody = byId("sensor-panel-body");
-      const inlinePanelScrollHint = byId("sensor-scroll-hint");
-      const inlinePanelScrollbarRail = byId("sensor-scrollbar-rail");
       const SENSOR_PANEL_EMPTY_HEIGHT = 104;
       const SENSOR_PANEL_HEADER_HEIGHT = 50;
-      const SENSOR_PANEL_SCROLL_HINT_HEIGHT = 28;
       const SENSOR_TABLE_HEADER_HEIGHT = 44;
       const SENSOR_PANEL_ROW_HEIGHT = 46;
       const SENSOR_PANEL_MAX_VISIBLE_ROWS = 8;
+      const detailScrollIndicators = window.attachScrollIndicators?.(detailsTableWrap);
       if (inlinePanelClose) {
         inlinePanelClose.addEventListener("click", () => setSelectedCell(null));
       }
@@ -10315,7 +10379,7 @@
         }
       });
       if (detailsTableWrap) {
-        detailsTableWrap.addEventListener("scroll", syncSensorScrollbarIndicator);
+        detailsTableWrap.addEventListener("scroll", () => detailScrollIndicators?.update?.());
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
         detailsTableWrap.addEventListener("click", (event) => {
           const button = event.target instanceof Element
@@ -12369,18 +12433,24 @@
           pm25: { asc: "PM2.5, sorted low to high. Click to sort high to low.", desc: "PM2.5, sorted high to low. Click to sort low to high." },
           updated: { asc: "Updated, sorted oldest first. Click to sort newest first.", desc: "Updated, sorted newest first. Click to sort oldest first." },
         };
+        const sortingHidden = detailsTableWrap?.classList.contains("sensor-list-sort-hidden") === true;
         sortHeaderButtons.forEach((button) => {
           const key = button.dataset.sortKey;
           const isActive = key === sortKey;
           const direction = getSortDirection(key, sortKey, sortDir);
           const th = button.closest("th");
-          button.classList.toggle("is-active", isActive);
-          if (th) th.setAttribute("aria-sort", isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none");
+          button.classList.toggle("is-active", isActive && !sortingHidden);
+          button.disabled = sortingHidden;
+          button.tabIndex = sortingHidden ? -1 : 0;
+          if (th) th.setAttribute("aria-sort", !sortingHidden && isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none");
           const icon = button.querySelector(".sort-icon,.sort-arrow");
           if (icon) {
-            icon.textContent = renderSortIcon(key, sortKey, sortDir);
+            icon.textContent = sortingHidden ? "" : renderSortIcon(key, sortKey, sortDir);
           }
-          if (isActive) {
+          if (sortingHidden) {
+            button.setAttribute("aria-label", "");
+            button.title = "";
+          } else if (isActive) {
             button.setAttribute("aria-label", ACTIVE_ARIA[key]?.[sortDir] || "");
             button.title = "";
           } else {
@@ -12399,7 +12469,6 @@
         const visibleRows = Math.min(count, SENSOR_PANEL_MAX_VISIBLE_ROWS);
         const panelHeight = count
           ? SENSOR_PANEL_HEADER_HEIGHT
-            + (hasOverflow ? SENSOR_PANEL_SCROLL_HINT_HEIGHT : 0)
             + SENSOR_TABLE_HEADER_HEIGHT
             + (visibleRows * SENSOR_PANEL_ROW_HEIGHT)
           : SENSOR_PANEL_EMPTY_HEIGHT;
@@ -12410,36 +12479,11 @@
         if (detailsTableWrap) {
           detailsTableWrap.classList.toggle("is-scroll-forced", hasOverflow);
         }
-        if (inlinePanelScrollHint) {
-          inlinePanelScrollHint.hidden = !hasOverflow;
-        }
-        if (inlinePanelScrollbarRail) {
-          inlinePanelScrollbarRail.hidden = !hasOverflow;
-        }
-        syncSensorScrollbarIndicator();
+        detailScrollIndicators?.update?.();
       }
 
       function syncSensorScrollbarIndicator() {
-        if (!inlinePanelScrollbarRail || inlinePanelScrollbarRail.hidden || !detailsTableWrap) {
-          return;
-        }
-        window.requestAnimationFrame(() => {
-          if (!inlinePanelScrollbarRail || inlinePanelScrollbarRail.hidden || !detailsTableWrap) {
-            return;
-          }
-          const thumb = inlinePanelScrollbarRail.querySelector(".sensor-scrollbar-thumb");
-          const trackHeight = inlinePanelScrollbarRail.clientHeight || 0;
-          const scrollable = detailsTableWrap.scrollHeight - detailsTableWrap.clientHeight;
-          if (!thumb || trackHeight <= 0 || scrollable <= 0) {
-            return;
-          }
-          const visibleRatio = Math.max(0.18, Math.min(1, detailsTableWrap.clientHeight / detailsTableWrap.scrollHeight));
-          const thumbHeight = Math.max(42, trackHeight * visibleRatio);
-          const maxTop = Math.max(0, trackHeight - thumbHeight);
-          const top = maxTop * (detailsTableWrap.scrollTop / scrollable);
-          inlinePanelScrollbarRail.style.setProperty("--sensor-scroll-thumb-height", `${thumbHeight.toFixed(1)}px`);
-          inlinePanelScrollbarRail.style.setProperty("--sensor-scroll-thumb-top", `${top.toFixed(1)}px`);
-        });
+        detailScrollIndicators?.update?.();
       }
 
       function handleSensorTableWheel(event) {
@@ -12474,6 +12518,8 @@
           if (inlinePanelCount) inlinePanelCount.textContent = "";
           detailsEmpty.hidden = true;
           detailsTableWrap.hidden = true;
+          detailsTableWrap.classList.add("sensor-list-sort-hidden");
+          syncSortHeaders();
           updateInlinePanelHeight(0);
           networkSummary.hidden = false;
           updateNetworkSummary();
@@ -12513,6 +12559,8 @@
           detailsEmpty.textContent = "No sensors found for this local authority.";
           detailsEmpty.hidden = false;
           detailsTableWrap.hidden = true;
+          detailsTableWrap.classList.add("sensor-list-sort-hidden");
+          syncSortHeaders();
           networkSummary.hidden = true;
           detailsTableBody.innerHTML = "";
           updateInlinePanelHeight(0);
@@ -12537,6 +12585,8 @@
         }
         detailsEmpty.hidden = true;
         detailsTableWrap.hidden = false;
+        detailsTableWrap.classList.toggle("sensor-list-sort-hidden", entries.length <= 1);
+        syncSortHeaders();
         networkSummary.hidden = true;
         detailsTableBody.innerHTML = entries.map((entry) => {
           const stationName = resolveStationName(entry.row);
@@ -14634,6 +14684,7 @@
 
   function collectChartDom(prefix) {
     const panel = document.getElementById(`${prefix}-hex-chart-mode`);
+    const sensorWrap = document.getElementById(`${prefix}-hex-chart-sensor-wrap`);
     return {
       panel,
       canvasWrap: panel?.closest(".map-canvas-wrap") || null,
@@ -14642,6 +14693,8 @@
       reading: document.getElementById(`${prefix}-hex-chart-reading`),
       windowSelect: document.getElementById(`${prefix}-hex-chart-window`),
       sensorBody: document.getElementById(`${prefix}-hex-chart-sensor-body`),
+      sensorWrap,
+      scrollIndicators: window.attachScrollIndicators?.(sensorWrap),
       valueLabel: document.getElementById(`${prefix}-hex-chart-value-label`),
       message: document.getElementById(`${prefix}-hex-chart-message`),
       chartWrap: document.getElementById(`${prefix}-hex-chart-wrap`),
@@ -14855,20 +14908,25 @@
     if (dom.valueLabel) {
       dom.valueLabel.textContent = context?.pollutantLabel || "Pollutant";
     }
+    const sortingHidden = state.visibleEntries.length <= 1;
     dom.sortButtons?.forEach((button) => {
       const key = button.dataset.chartSortKey;
       const isActive = key === state.chartSortKey;
       const direction = isActive ? state.chartSortDir : getDefaultChartSortDir(key);
-      button.classList.toggle("is-active", isActive);
+      button.classList.toggle("is-active", isActive && !sortingHidden);
+      button.disabled = sortingHidden;
+      button.tabIndex = sortingHidden ? -1 : 0;
       const th = button.closest("th");
       if (th) {
-        th.setAttribute("aria-sort", isActive ? (state.chartSortDir === "asc" ? "ascending" : "descending") : "none");
+        th.setAttribute("aria-sort", !sortingHidden && isActive ? (state.chartSortDir === "asc" ? "ascending" : "descending") : "none");
       }
       const icon = button.querySelector(".sort-icon,.sort-arrow");
       if (icon) {
-        icon.textContent = direction === "asc" ? "↑" : "↓";
+        icon.textContent = sortingHidden ? "" : (direction === "asc" ? "↑" : "↓");
       }
-      if (isActive) {
+      if (sortingHidden) {
+        button.title = "";
+      } else if (isActive) {
         const nextDir = state.chartSortDir === "asc" ? "desc" : "asc";
         button.title = `Sort ${nextDir === "asc" ? "A→Z / low→high / oldest→newest" : "Z→A / high→low / newest→oldest"}`;
       } else {
@@ -15048,15 +15106,18 @@
       dom.reading.innerHTML = `<span class="sensor-panel-value">${escapeHtml(valueLabel)}</span> <span class="sensor-panel-method">${escapeHtml(methodLabel)}</span>`;
     }
     syncChartSortHeaders(context);
+    const visibleEntriesForRender = getVisibleEntriesForRender();
+    dom.sensorWrap?.classList.toggle("sensor-list-sort-hidden", visibleEntriesForRender.length <= 1);
     if (!state.visibleEntries.length) {
       dom.sensorBody.innerHTML = `<tr><td colspan="6" class="hex-chart-sensor-muted">No sensors are visible for the selected filters.</td></tr>`;
+      dom.scrollIndicators?.update?.();
       setMessage("Select a sensor to view its history.");
       renderEmptyChart("Select a sensor to view its history.");
       return;
     }
     const adapter = getAdapter();
     const selectedSensorIds = Array.from(state.chartModeSelectedSensors);
-    dom.sensorBody.innerHTML = getVisibleEntriesForRender().map((entry) => {
+    dom.sensorBody.innerHTML = visibleEntriesForRender.map((entry) => {
       const selected = state.chartModeSelectedSensors.has(entry.stationId);
       const symbolIndex = selected ? selectedSensorIds.indexOf(entry.stationId) : -1;
       const glyph = symbolIndex >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[symbolIndex] || "") : "";
@@ -15073,6 +15134,7 @@
         </tr>
       `;
     }).join("");
+    dom.scrollIndicators?.update?.();
     setMessage(state.chartModeSelectedSensors.size ? "" : "Select a sensor to view its history.");
   }
 
@@ -15781,6 +15843,7 @@
     });
     dom.sortButtons?.forEach((button) => {
       button.addEventListener("click", () => {
+        if (state.visibleEntries.length <= 1) return;
         const key = button.dataset.chartSortKey;
         if (!key) return;
         if (state.chartSortKey === key) {
