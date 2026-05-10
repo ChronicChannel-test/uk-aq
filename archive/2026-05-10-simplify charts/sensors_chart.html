@@ -555,7 +555,6 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
-    <script src="chart-core.js"></script>
     <script>
       const PROJECT_REF_PLACEHOLDER = "__SUPABASE_PROJECT_REF__";
       const ANON_KEY_PLACEHOLDER = "__SB_PUBLISHABLE_DEFAULT_KEY__";
@@ -2705,9 +2704,6 @@
             .style("opacity", 0);
           chartState.linePath = chartSvg.append("path")
             .attr("class", "chart-line");
-          chartState.symbolsGroup = chartSvg.append("g")
-            .attr("class", "chart-symbols")
-            .attr("clip-path", `url(#${clipPathId})`);
           chartState.dot = chartSvg.append("circle")
             .attr("class", "chart-dot")
             .attr("r", 5)
@@ -3098,7 +3094,6 @@
             .style("display", chartState.emptyMessage ? null : "none")
             .text(chartState.emptyMessage || "");
           chartState.linePath.attr("d", null);
-          chartState.symbolsGroup?.selectAll("*").remove();
           hideChartTooltip();
           if (Array.isArray(chartState.aqiPoints) && chartState.aqiPoints.length) {
             renderAqiBands();
@@ -3110,25 +3105,12 @@
 
         chartState.emptyText.style("display", "none").text("");
         const line = d3.line()
+          .defined((d) => Number.isFinite(d.value))
           .x((d) => chartState.xScale(d.date))
           .y((d) => chartState.yScale(d.value));
-        const segments = ChartCore.buildSegments(chartState.points);
-        chartState.segments = segments;
-        const pathD = segments.map((seg) => line(seg)).join(" ");
-        chartState.linePath.attr("d", pathD || null);
-        chartState.symbolsGroup.selectAll("*").remove();
-        if (chartState.points.length && segments.length) {
-          const intervalMs = ChartCore.getSymbolIntervalMs(chartState.windowLabel || "24h");
-          const symbolSet = ChartCore.getSymbolPositions(chartState.points, segments, intervalMs);
-          ChartCore.renderSeriesSymbols(
-            chartState.symbolsGroup,
-            chartState.points,
-            symbolSet,
-            chartState.xScale,
-            chartState.yScale,
-            0
-          );
-        }
+        chartState.linePath
+          .datum(chartState.points)
+          .attr("d", line);
         renderAqiBands();
       }
 

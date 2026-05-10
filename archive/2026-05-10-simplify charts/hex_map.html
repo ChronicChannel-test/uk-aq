@@ -3722,29 +3722,21 @@
 
       .hex-chart-sensor-table th:nth-child(2),
       .hex-chart-sensor-table td:nth-child(2) {
-        width: 24px;
-        text-align: center;
-        padding-left: 2px;
-        padding-right: 2px;
+        width: 42%;
       }
 
       .hex-chart-sensor-table th:nth-child(3),
       .hex-chart-sensor-table td:nth-child(3) {
-        width: 36%;
+        width: 18%;
       }
 
       .hex-chart-sensor-table th:nth-child(4),
       .hex-chart-sensor-table td:nth-child(4) {
-        width: 18%;
+        width: 15%;
       }
 
       .hex-chart-sensor-table th:nth-child(5),
       .hex-chart-sensor-table td:nth-child(5) {
-        width: 15%;
-      }
-
-      .hex-chart-sensor-table th:nth-child(6),
-      .hex-chart-sensor-table td:nth-child(6) {
         width: 20%;
       }
 
@@ -3765,15 +3757,6 @@
 
       .hex-chart-sensor-muted {
         color: var(--ink-soft);
-      }
-
-      .hex-chart-symbol-glyph {
-        color: #3C78AC;
-        font-size: 1rem;
-        line-height: 1;
-        text-align: center;
-        width: 20px;
-        display: inline-block;
       }
 
       .hex-chart-selector {
@@ -3845,7 +3828,7 @@
 
       .chart-line {
         fill: none;
-        stroke: #3C78AC;
+        stroke: var(--series-color, #3C78AC);
         stroke-width: 2.5px;
       }
 
@@ -4091,7 +4074,6 @@
                       <thead>
                         <tr>
                           <th scope="col" aria-label="Selection"></th>
-                          <th scope="col" aria-label="Symbol"></th>
                           <th scope="col" data-sort-key="sensor" aria-sort="none">
                             <button type="button" class="sort-header" data-chart-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
                               <span class="sort-label">Sensor</span>
@@ -4761,7 +4743,6 @@
                         <thead>
                           <tr>
                             <th scope="col" aria-label="Selection"></th>
-                            <th scope="col" aria-label="Symbol"></th>
                             <th scope="col" data-sort-key="sensor" aria-sort="none">
                               <button type="button" class="sort-header" data-chart-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
                                 <span class="sort-label">Sensor</span>
@@ -5293,7 +5274,6 @@
     <div class="tooltip" id="cr-tooltip"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
-    <script src="chart-core.js"></script>
     <script>
       // ── Top summary boxes — shared updater ───────────────────────────────────
       window.updateTopSummary = function(data, idPrefix) {
@@ -8950,7 +8930,7 @@
         updateSummary();
         renderMap();
         updateDetailsPanel();
-        window.hexChartMode?.syncFromMap?.("uk", { preserveChartMode: true, updateChart: false });
+        window.hexChartMode?.syncFromMap?.("uk");
         refreshPinnedTooltip();
         persistNetworkSelection();
       }
@@ -13537,7 +13517,7 @@
         updateSummary();
         renderMap();
         updateDetailsPanel();
-        window.hexChartMode?.syncFromMap?.("cr", { preserveChartMode: true, updateChart: false });
+        window.hexChartMode?.syncFromMap?.("cr");
         persistNetworkSelection();
       }
 
@@ -14599,6 +14579,7 @@
   const DAY_MS = 24 * 60 * 60 * 1000;
   const HOUR_MS = 60 * 60 * 1000;
   const AQI_HISTORY_ROW_LIMIT = 20000;
+  const SERIES_COLORS = ["#3C78AC", "#8b1e3f", "#35b56a", "#a65f2d", "#672C7F"];
   const params = new URLSearchParams(window.location.search);
   const cacheBaseUrl = resolveCacheBaseUrl(params.get("cache_base"));
   const seriesUrl = cacheBaseUrl ? `${cacheBaseUrl}/timeseries` : "";
@@ -14626,11 +14607,7 @@
     chartSortDir: "desc",
     loadToken: 0,
     selectedPrimaryId: null,
-    loadAbortController: null,
   };
-
-  const seriesDataCache = new Map(); // key: `${timeseriesId}|${windowValue}`
-  const aqiBandCache    = new Map(); // key: `${timeseriesId}|${pollutantKey}|${windowValue}`
 
   function collectChartDom(prefix) {
     const panel = document.getElementById(`${prefix}-hex-chart-mode`);
@@ -14919,7 +14896,7 @@
     syncPanels();
     syncWindowControl();
     renderSensorList(context);
-    loadChartData("area-change");
+    loadChartData();
   }
 
   function exit() {
@@ -14955,81 +14932,13 @@
     if (!state.chartModeSelectedSensors.size && entries.length) state.chartModeSelectedSensors.add(entries[0].stationId);
     if (!state.chartModeSelectedSensors.has(state.selectedPrimaryId)) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
     renderSensorList(context);
-    // updateChart: false lets the caller handle the chart refresh (e.g. delta-only refresh).
-    if (options.updateChart !== false) {
-      loadChartData("sensor-change");
-    }
-  }
-
-  // refreshChartData — fetches only the slice of time since the chart's current right edge.
-  // If new points arrive they are merged into the cache and the chart animates to the new range.
-  // If nothing is new the chart is left untouched.
-  async function refreshChartData() {
-    if (!state.isChartMode) return;
-    const dom = domByMap[state.mapKey];
-    const cf = dom?.chartFrame;
-    if (!cf?.currentSeriesData?.entries?.length) return;
-
-    const windowValue = state.chartModeTimeRange || "24h";
-    const newRange    = resolveRange(windowValue);
-    const token       = state.loadToken; // snapshot — do NOT increment
-
-    const usableEntries = cf.currentSeriesData.entries;
-    const units         = cf.currentSeriesData.units || "";
-
-    // Only fetch the delta since the chart's current right-edge timestamp.
-    const prevEnd  = cf.xScale.domain()[1];
-    const deltaMs  = newRange.endDate.getTime() - prevEnd.getTime();
-    if (deltaMs < 30 * 1000) return; // < 30 s elapsed — nothing meaningful to fetch
-
-    const deltaChunk = { startIso: prevEnd.toISOString(), endIso: newRange.endIso };
-    let anyNewData     = false;
-    let primaryGuideline = cf.currentGuideline;
-    const primaryId      = state.selectedPrimaryId || usableEntries[0]?.stationId;
-
-    for (const entry of usableEntries) {
-      if (state.loadToken !== token) return; // superseded by a user action
-      try {
-        const result = await fetchObservationSeriesChunk(entry, deltaChunk, null);
-        if (result.points.length > 0) {
-          const cacheKey = `${entry.timeseriesId}|${windowValue}`;
-          const cached   = seriesDataCache.get(cacheKey);
-          const merged   = mergeSeriesPoints(cached?.points || [], result.points);
-          seriesDataCache.set(cacheKey, { points: merged, guideline: result.guideline || cached?.guideline || null });
-          if (!primaryGuideline && entry.stationId === primaryId && result.guideline) {
-            primaryGuideline = result.guideline;
-          }
-          anyNewData = true;
-        }
-      } catch (_err) {}
-    }
-
-    if (state.loadToken !== token || !anyNewData) return; // nothing changed
-
-    // Build updated pointsMap from merged cache.
-    const seriesPointsMap = new Map();
-    usableEntries.forEach((entry) => {
-      const cached = seriesDataCache.get(`${entry.timeseriesId}|${windowValue}`);
-      seriesPointsMap.set(entry.stationId, cached?.points || cf.currentSeriesData.pointsMap.get(entry.stationId) || []);
-    });
-
-    const newYDomain = computeYDomainNiced(seriesPointsMap, usableEntries, primaryGuideline);
-
-    // Animate to the new time range, then redraw fully once animation completes.
-    animateChartDomains(cf, newRange, newYDomain, token, () => {
-      if (state.loadToken !== token) return;
-      updateChart(dom, seriesPointsMap, usableEntries, newRange, primaryGuideline, units);
-    });
+    loadChartData();
   }
 
   async function refresh() {
     if (!state.isChartMode) return;
-    // Refresh map data (updates sensor readings in the table) — cache is NOT cleared
-    // so the chart can delta-fetch rather than fully re-render.
     await getAdapter()?.refreshForChartMode?.();
-    // applyNetworkFilters inside loadMapData already called syncFromMap (sensor list only).
-    // Now fetch any new chart data since the current range end.
-    await refreshChartData();
+    syncFromMap(state.mapKey, { preserveChartMode: true });
   }
 
   function renderSensorList(context) {
@@ -15049,23 +14958,19 @@
     }
     syncChartSortHeaders(context);
     if (!state.visibleEntries.length) {
-      dom.sensorBody.innerHTML = `<tr><td colspan="6" class="hex-chart-sensor-muted">No sensors are visible for the selected filters.</td></tr>`;
+      dom.sensorBody.innerHTML = `<tr><td colspan="5" class="hex-chart-sensor-muted">No sensors are visible for the selected filters.</td></tr>`;
       setMessage("Select a sensor to view its history.");
       renderEmptyChart("Select a sensor to view its history.");
       return;
     }
     const adapter = getAdapter();
-    const selectedSensorIds = Array.from(state.chartModeSelectedSensors);
     dom.sensorBody.innerHTML = getVisibleEntriesForRender().map((entry) => {
       const selected = state.chartModeSelectedSensors.has(entry.stationId);
-      const symbolIndex = selected ? selectedSensorIds.indexOf(entry.stationId) : -1;
-      const glyph = symbolIndex >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[symbolIndex] || "") : "";
       const valueLabel = Number.isFinite(Number(entry.value)) ? `${formatChartValue(entry.value)} ${entry.units || context.units || ""}`.trim() : "-";
       const readingColor = adapter?.getSensorCurrentColor?.(entry.stationId) || "var(--no-data)";
       return `
         <tr class="${selected ? "is-selected" : ""}">
           <td><button type="button" class="hex-chart-selector" data-station-id="${escapeHtml(entry.stationId)}" aria-label="${selected ? "Remove" : "Add"} ${escapeHtml(entry.stationName)} from chart" aria-pressed="${selected ? "true" : "false"}"></button></td>
-          <td>${glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtml(glyph)}</span>` : ""}</td>
           <td class="hex-chart-sensor-name">${escapeHtml(entry.stationName)}</td>
           <td>${escapeHtml(entry.networkLabel || "Unknown network")}</td>
           <td><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${escapeHtml(readingColor)}"></span><span class="sensor-reading-text">${escapeHtml(valueLabel)}</span></span></td>
@@ -15090,7 +14995,7 @@
       state.selectedPrimaryId = state.selectedPrimaryId || stationId;
     }
     renderSensorList(getCurrentContext() || {});
-    loadChartData("sensor-change");
+    loadChartData();
   }
 
   function getCacheFetch() {
@@ -15105,58 +15010,15 @@
     return response.json();
   }
 
-  async function fetchObservationSeriesChunk(entry, chunk, signal) {
+  async function fetchObservationSeries(entry, range) {
     if (!seriesUrl || !entry?.timeseriesId) return { entry, points: [], guideline: null };
     const url = new URL(seriesUrl);
     url.searchParams.set("timeseries_id", entry.timeseriesId);
-    url.searchParams.set("start", chunk.startIso);
-    url.searchParams.set("end", chunk.endIso);
+    url.searchParams.set("start", range.startIso);
+    url.searchParams.set("end", range.endIso);
     url.searchParams.set("format", "compact");
-    const init = { credentials: "include", headers: { Accept: "application/json" }, signal };
-    const cacheFetch = getCacheFetch();
-    const response = cacheFetch ? await cacheFetch(url.toString(), init) : await fetch(url.toString(), init);
-    if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
-    const payload = await response.json();
+    const payload = await fetchChartJson(url.toString());
     return { entry, points: parseSeriesPayloadPoints(payload), guideline: payload?.guideline || null };
-  }
-
-  function mergeSeriesPoints(existingPoints, newPoints) {
-    const byTime = new Map();
-    [...existingPoints, ...newPoints].forEach((p) => byTime.set(p.date.getTime(), p));
-    return Array.from(byTime.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
-  }
-
-  function buildChunkWorkQueue(usableEntries, range, windowValue) {
-    const chunkSpanMs = windowValue === "24h" ? 6 * HOUR_MS
-      : windowValue === "7d"  ? DAY_MS
-      : windowValue === "31d" ? 3 * DAY_MS
-      : windowValue === "90d" ? 7 * DAY_MS
-      : DAY_MS;
-    const allEntryChunks = usableEntries.map((entry) => {
-      const chunks = [];
-      let end = range.endMs;
-      while (end > range.startMs) {
-        const start = Math.max(range.startMs, end - chunkSpanMs);
-        chunks.push({
-          entry,
-          chunk: {
-            startMs: start, endMs: end,
-            startIso: new Date(start).toISOString(),
-            endIso: new Date(end).toISOString(),
-          },
-        });
-        end = start;
-      }
-      return chunks;
-    });
-    const maxLen = Math.max(0, ...allEntryChunks.map((c) => c.length));
-    const workQueue = [];
-    for (let i = 0; i < maxLen; i++) {
-      allEntryChunks.forEach((entryChunks) => {
-        if (i < entryChunks.length) workQueue.push(entryChunks[i]);
-      });
-    }
-    return workQueue;
   }
 
   function buildAqiHistoryRequestCandidates(entry, pollutantKey, range) {
@@ -15190,94 +15052,10 @@
     return [];
   }
 
-  function clearCacheForCurrentSensors() {
-    const tidSet = new Set();
-    Array.from(state.chartModeSelectedSensors).forEach((id) => {
-      const entry = state.visibleEntries.find((e) => e.stationId === id);
-      if (entry?.timeseriesId) tidSet.add(entry.timeseriesId);
-    });
-    seriesDataCache.forEach((_v, key) => { if (tidSet.has(key.split("|")[0])) seriesDataCache.delete(key); });
-    aqiBandCache.forEach((_v, key)    => { if (tidSet.has(key.split("|")[0])) aqiBandCache.delete(key); });
-  }
-
-  function computeYDomainNiced(seriesPointsMap, usableEntries, guideline) {
-    const allPoints = [];
-    usableEntries.forEach((e) => allPoints.push(...(seriesPointsMap.get(e.stationId) || [])));
-    const yExtent = d3.extent(allPoints, (p) => p.value);
-    const guidelineValue = Number(guideline?.limit_value);
-    const hasGuideline = Number.isFinite(guidelineValue);
-    const yMin    = Math.min(0, Number.isFinite(yExtent[0]) ? yExtent[0] : 0, hasGuideline ? guidelineValue : 0);
-    const yMaxRaw = Math.max(Number.isFinite(yExtent[1]) ? yExtent[1] : 1, hasGuideline ? guidelineValue : 1);
-    return d3.scaleLinear().domain([yMin, yMaxRaw === yMin ? yMin + 1 : yMaxRaw]).nice(5).domain();
-  }
-
-  function animateChartDomains(cf, newRange, newYDomain, token, onComplete) {
-    if (cf.animFrameId != null) cancelAnimationFrame(cf.animFrameId);
-    cf.animFrameId = null;
-    // Hide symbols for the duration of the animation; updateChart redraws them on completion.
-    cf.seriesSymbolGroups?.forEach((g) => g.style("opacity", 0));
-    const startX = cf.xScale.domain().map((d) => d.getTime());
-    const startY = cf.yScale.domain().slice();
-    const endX   = [newRange.startDate.getTime(), newRange.endDate.getTime()];
-    const endY   = newYDomain;
-    const t0 = performance.now();
-    const DURATION = 240;
-    const rangeMs = newRange.endMs - newRange.startMs;
-    const lineFn  = d3.line().x((p) => cf.xScale(p.date)).y((p) => cf.yScale(p.value));
-
-    function frame(now) {
-      if (token !== state.loadToken) return;
-      const raw  = Math.min(1, (now - t0) / DURATION);
-      const ease = raw < 0.5 ? 2 * raw * raw : -1 + (4 - 2 * raw) * raw;
-
-      cf.xScale.domain([new Date(startX[0] + (endX[0] - startX[0]) * ease), new Date(startX[1] + (endX[1] - startX[1]) * ease)]);
-      cf.yScale.domain([startY[0] + (endY[0] - startY[0]) * ease, startY[1] + (endY[1] - startY[1]) * ease]);
-
-      cf.xAxisGroup.call(d3.axisBottom(cf.xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
-      cf.yAxisGroup.call(d3.axisLeft(cf.yScale).ticks(5).tickSizeOuter(0));
-
-      const csd = cf.currentSeriesData;
-      if (csd?.seriesSegments) {
-        csd.entries.forEach((entry, i) => {
-          const segs = csd.seriesSegments[i] || [];
-          if (cf.seriesPaths[i]) cf.seriesPaths[i].attr("d", segs.map((s) => lineFn(s)).join(" ") || null);
-        });
-      }
-      if (cf.currentGuideline && Number.isFinite(Number(cf.currentGuideline.limit_value))) {
-        const gy = cf.yScale(Number(cf.currentGuideline.limit_value));
-        cf.guidelineEl.attr("y1", gy).attr("y2", gy);
-        cf.guidelineLabelEl.attr("y", Math.max(cf.margin.top + 12, gy - 6));
-      }
-
-      if (raw < 1) {
-        cf.animFrameId = requestAnimationFrame(frame);
-      } else {
-        cf.animFrameId = null;
-        cf.xScale.domain([newRange.startDate, newRange.endDate]);
-        cf.yScale.domain(newYDomain);
-        if (typeof onComplete === "function") onComplete();
-      }
-    }
-    cf.animFrameId = requestAnimationFrame(frame);
-  }
-
-  async function loadChartData(reason = "sensor-change") {
+  async function loadChartData() {
     if (!state.isChartMode) return;
-
-    // Abort any in-flight load.
-    if (state.loadAbortController) state.loadAbortController.abort();
-    const abortController = new AbortController();
-    state.loadAbortController = abortController;
-    const signal = abortController.signal;
-
     const token = ++state.loadToken;
-    setLoading(false);
-
-    // Build ordered usableEntries by Set insertion order (consistent symbol indices).
-    const selectedIds    = Array.from(state.chartModeSelectedSensors);
-    const entryById      = new Map(state.visibleEntries.map((e) => [e.stationId, e]));
-    const selectedEntries = selectedIds.map((id) => entryById.get(id)).filter(Boolean);
-
+    const selectedEntries = state.visibleEntries.filter((entry) => state.chartModeSelectedSensors.has(entry.stationId));
     if (!selectedEntries.length) {
       renderEmptyChart("Select a sensor to view its history.");
       setMessage("Select a sensor to view its history.");
@@ -15289,168 +15067,26 @@
       setMessage("This pollutant is not available for the selected sensor.", { error: true });
       return;
     }
-
-    const windowValue = state.chartModeTimeRange || "24h";
-    const range       = resolveRange(windowValue);
-    const dom         = domByMap[state.mapKey];
-    const units       = usableEntries[0]?.units || getCurrentContext()?.units || "";
-    const svgEl       = dom?.svg?.node();
-    if (!svgEl) return;
-
-    // Check whether the existing frame can be reused.
-    const svgWidth  = svgEl.clientWidth  || 960;
-    const svgHeight = svgEl.clientHeight || 390;
-    const cf        = dom.chartFrame;
-    const frameValid = !!(cf
-      && cf.areaCode === state.chartModeAreaCode
-      && cf.mapKey   === state.mapKey
-      && cf.width    === svgWidth
-      && cf.height   === svgHeight);
-
-    // Populate seriesPointsMap from cache; collect entries that still need fetching.
-    const seriesPointsMap = new Map();
-    const needsFetch      = [];
-    let primaryGuideline  = null;
-    const primaryId       = state.selectedPrimaryId || usableEntries[0]?.stationId;
-
-    usableEntries.forEach((entry) => {
-      const cacheKey = `${entry.timeseriesId}|${windowValue}`;
-      const cached   = seriesDataCache.get(cacheKey);
-      if (cached) {
-        seriesPointsMap.set(entry.stationId, cached.points);
-        if (!primaryGuideline && entry.stationId === primaryId && cached.guideline) {
-          primaryGuideline = cached.guideline;
-        }
-      } else {
-        seriesPointsMap.set(entry.stationId, []);
-        needsFetch.push(entry);
-      }
-    });
-
-    // Build or reuse the SVG frame.
-    if (!frameValid) {
-      initChartFrame(dom, range, MAX_SELECTED_SENSORS);
-      if (token !== state.loadToken) return;
-    }
-
-    const hasCachedData = Array.from(seriesPointsMap.values()).some((pts) => pts.length > 0);
-
-    if (frameValid) {
-      if (reason === "window-change") {
-        // Animate x to the new range; keep y steady until data arrives.
-        animateChartDomains(dom.chartFrame, range, dom.chartFrame.yScale.domain(), token);
-      } else if (hasCachedData) {
-        // Show cached data immediately (snap, no animation).
-        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units);
-      }
-    } else if (hasCachedData) {
-      // New frame — render cached data before fetching anything.
-      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units);
-    }
-
-    // --- Fast path: everything is cached (no network needed). ---
-    if (!needsFetch.length) {
-      const primary      = usableEntries.find((e) => e.stationId === primaryId) || usableEntries[0];
-      const pollutantKey = normalizeAqiSupportedPollutant(primary?.pollutant || getCurrentContext()?.pollutant || "");
-      const aqiCacheKey  = `${primary?.timeseriesId}|${pollutantKey}|${windowValue}`;
-      let aqiPoints      = aqiBandCache.get(aqiCacheKey);
-      if (aqiPoints === undefined && primary && pollutantKey) {
-        try { aqiPoints = await fetchAqiBands(primary, pollutantKey, range); } catch (_err) { aqiPoints = []; }
-        if (token !== state.loadToken) return;
-        aqiBandCache.set(aqiCacheKey, aqiPoints);
-      }
-      if (token !== state.loadToken) return;
-      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints || []);
-      setMessage(Array.from(seriesPointsMap.values()).reduce((s, pts) => s + pts.length, 0) ? "" : "No history available for this sensor.");
-      return;
-    }
-
-    // --- Fetch path: some entries need network data. ---
+    setLoading(true);
     setMessage("Loading chart data…");
-
-    // Create a fresh progress bar on the existing frame, or use the one from initChartFrame.
-    if (frameValid) {
-      const pf = { margin: dom.chartFrame.margin, width: dom.chartFrame.width, height: dom.chartFrame.height };
-      dom.chartFrame.progressBar = ChartCore.renderProgressBar(svgEl, pf);
-    }
-
-    const workQueue   = buildChunkWorkQueue(needsFetch, range, windowValue);
-    const totalChunks = workQueue.length;
-    let completedChunks = 0;
-
-    // Track fetched points and guidelines per entry for caching after all chunks arrive.
-    const fetchedPoints   = new Map(needsFetch.map((e) => [e.stationId, []]));
-    const fetchedGuideline = new Map();
-
+    const range = resolveRange(state.chartModeTimeRange || "24h");
     try {
-      for (const { entry, chunk } of workQueue) {
-        if (token !== state.loadToken || signal.aborted) return;
-        let result;
-        try {
-          result = await fetchObservationSeriesChunk(entry, chunk, signal);
-        } catch (chunkErr) {
-          if (signal.aborted || token !== state.loadToken) return;
-          completedChunks++;
-          dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-          continue;
-        }
-        if (token !== state.loadToken) return;
-
-        if (result.guideline && !fetchedGuideline.has(entry.stationId)) {
-          fetchedGuideline.set(entry.stationId, result.guideline);
-        }
-        if (!primaryGuideline && entry.stationId === primaryId && result.guideline) {
-          primaryGuideline = result.guideline;
-        }
-
-        const prev = fetchedPoints.get(entry.stationId) || [];
-        fetchedPoints.set(entry.stationId, mergeSeriesPoints(prev, result.points));
-        seriesPointsMap.set(entry.stationId, mergeSeriesPoints(seriesPointsMap.get(entry.stationId) || [], result.points));
-
-        completedChunks++;
-        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units);
-        dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-        if (dom.chartFrame?.svgEl) ChartCore.applyChunkFade(dom.chartFrame.svgEl);
-      }
-
+      const seriesResults = await Promise.all(usableEntries.map((entry) => fetchObservationSeries(entry, range)));
       if (token !== state.loadToken) return;
-
-      // Cache completed data for each fetched entry.
-      needsFetch.forEach((entry) => {
-        const cacheKey = `${entry.timeseriesId}|${windowValue}`;
-        seriesDataCache.set(cacheKey, {
-          points:   seriesPointsMap.get(entry.stationId) || [],
-          guideline: fetchedGuideline.get(entry.stationId) || null,
-        });
-      });
-
-      // Fetch AQI bands (cache-first).
-      const primary      = usableEntries.find((e) => e.stationId === primaryId) || usableEntries[0];
-      const pollutantKey = normalizeAqiSupportedPollutant(primary?.pollutant || getCurrentContext()?.pollutant || "");
-      const aqiCacheKey  = `${primary?.timeseriesId}|${pollutantKey}|${windowValue}`;
-      let aqiPoints      = aqiBandCache.get(aqiCacheKey);
-      if (aqiPoints === undefined && primary && pollutantKey) {
-        try { aqiPoints = await fetchAqiBands(primary, pollutantKey, range); } catch (_err) { aqiPoints = []; }
-        if (token !== state.loadToken) return;
-        aqiBandCache.set(aqiCacheKey, aqiPoints);
-      }
+      const primary = seriesResults.find((result) => result.entry.stationId === state.selectedPrimaryId) || seriesResults[0] || null;
+      const pollutantKey = normalizeAqiSupportedPollutant(primary?.entry?.pollutant || getCurrentContext()?.pollutant || "");
+      const aqiPoints = primary ? await fetchAqiBands(primary.entry, pollutantKey, range) : [];
       if (token !== state.loadToken) return;
-
-      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints || []);
-      const totalPoints = Array.from(seriesPointsMap.values()).reduce((s, pts) => s + pts.length, 0);
+      renderChart(seriesResults, { aqiPoints, guideline: primary?.guideline || null, range, units: primary?.entry?.units || getCurrentContext()?.units || "" });
+      const totalPoints = seriesResults.reduce((sum, result) => sum + result.points.length, 0);
       setMessage(totalPoints ? "" : "No history available for this sensor.");
-
     } catch (error) {
-      if (signal.aborted || token !== state.loadToken) return;
+      if (token !== state.loadToken) return;
       console.warn("Could not load chart mode data.", error);
       renderEmptyChart("Could not load chart data. Try Refresh.");
       setMessage("Could not load chart data. Try Refresh.", { error: true });
     } finally {
-      if (token === state.loadToken) {
-        dom.chartFrame?.progressBar?.remove();
-        if (dom.chartFrame) dom.chartFrame.progressBar = null;
-        setLoading(false);
-      }
+      if (token === state.loadToken) setLoading(false);
     }
   }
 
@@ -15464,7 +15100,6 @@
   function renderEmptyChart(message) {
     const dom = domByMap[state.mapKey];
     if (!dom?.svg?.node()) return;
-    dom.chartFrame = null;
     const width = dom.svg.node().clientWidth || 960;
     const height = dom.svg.node().clientHeight || 390;
     ensureChartFrame(dom, { width, height });
@@ -15514,215 +15149,69 @@
     drawBand("EAQI", 16 + bandHeight + gap, "eaqi", eaqiColors);
   }
 
-  function initChartFrame(dom, range, numSeries) {
+  function renderChart(seriesResults, options) {
+    const dom = domByMap[state.mapKey];
     if (!dom?.svg?.node()) return;
-    const svgEl = dom.svg.node();
-    const width  = svgEl.clientWidth  || 960;
-    const height = svgEl.clientHeight || 390;
+    const width = dom.svg.node().clientWidth || 960;
+    const height = dom.svg.node().clientHeight || 390;
     const margin = { top: 78, right: 24, bottom: 44, left: 58 };
-
-    dom.svg.selectAll("*").remove();
-    dom.svg.attr("viewBox", `0 0 ${width} ${height}`);
-
-    const clipPathId = "hex-chart-clip";
-    const defs = dom.svg.append("defs");
-    defs.append("clipPath").attr("id", clipPathId)
-      .append("rect")
-      .attr("x", margin.left).attr("y", 0)
-      .attr("width",  Math.max(0, width  - margin.left - margin.right))
-      .attr("height", Math.max(0, height - margin.bottom));
-
-    // AQI bands container (rendered below everything else)
-    const aqiBandsContainer = dom.svg.append("g").attr("class", "aqi-bands");
-
-    const xScale = d3.scaleTime()
-      .domain([range.startDate, range.endDate])
-      .range([margin.left, width - margin.right]);
-    const yScale = d3.scaleLinear()
-      .domain([0, 1])
-      .range([height - margin.bottom, margin.top]);
-
-    const rangeMs = range.endMs - range.startMs;
-    const xAxisGroup = dom.svg.append("g")
-      .attr("class", "chart-axis")
-      .attr("transform", `translate(0, ${height - margin.bottom})`)
-      .call(d3.axisBottom(xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
-    const yAxisGroup = dom.svg.append("g")
-      .attr("class", "chart-axis")
-      .attr("transform", `translate(${margin.left}, 0)`);
-
-    const guidelineEl = dom.svg.append("line").attr("class", "chart-guideline").style("opacity", 0);
-    const guidelineLabelEl = dom.svg.append("text")
-      .attr("class", "chart-guideline-label").attr("text-anchor", "end").style("opacity", 0);
-
-    const seriesPaths = [];
-    const seriesSymbolGroups = [];
-    for (let i = 0; i < (numSeries || MAX_SELECTED_SENSORS); i++) {
-      seriesPaths.push(
-        dom.svg.append("path")
-          .attr("class", "chart-line")
-          .attr("clip-path", `url(#${clipPathId})`)
-      );
-      seriesSymbolGroups.push(
-        dom.svg.append("g")
-          .attr("class", `chart-symbols-${i}`)
-          .attr("clip-path", `url(#${clipPathId})`)
-      );
+    const frame = { width, height, margin, startMs: options.range.startMs, endMs: options.range.endMs };
+    const svg = ensureChartFrame(dom, frame);
+    const allPoints = seriesResults.flatMap((result) => result.points || []);
+    if (!allPoints.length) {
+      renderEmptyChart("No history available for this sensor.");
+      return;
     }
-
-    const dot = dom.svg.append("circle").attr("class", "chart-dot").attr("r", 5).style("opacity", 0);
-    const overlay = dom.svg.append("rect")
-      .attr("x", margin.left).attr("y", margin.top)
-      .attr("width",  Math.max(0, width  - margin.left - margin.right))
-      .attr("height", Math.max(0, height - margin.top  - margin.bottom))
-      .attr("fill", "transparent").style("pointer-events", "all");
-
-    // Overlay handler reads current data from chartFrame.currentSeriesData at call time.
+    const yExtent = d3.extent(allPoints, (point) => point.value);
+    const guidelineValue = Number(options.guideline?.limit_value);
+    const hasGuideline = Number.isFinite(guidelineValue);
+    const yMin = Math.min(0, Number.isFinite(yExtent[0]) ? yExtent[0] : 0, hasGuideline ? guidelineValue : 0);
+    const yMaxRaw = Math.max(Number.isFinite(yExtent[1]) ? yExtent[1] : 1, hasGuideline ? guidelineValue : 1);
+    const yScale = d3.scaleLinear().domain([yMin, yMaxRaw === yMin ? yMin + 1 : yMaxRaw]).nice().range([height - margin.bottom, margin.top]);
+    const xScale = d3.scaleTime().domain([options.range.startDate, options.range.endDate]).range([margin.left, width - margin.right]);
+    renderAqiBands(svg, options.aqiPoints, frame, xScale);
+    svg.append("g").attr("class", "chart-axis").attr("transform", `translate(0, ${height - margin.bottom})`).call(d3.axisBottom(xScale).ticks((options.range.endMs - options.range.startMs) <= DAY_MS ? 8 : 7).tickSizeOuter(0));
+    svg.append("g").attr("class", "chart-axis").attr("transform", `translate(${margin.left}, 0)`).call(d3.axisLeft(yScale).ticks(5).tickSizeOuter(0));
+    if (hasGuideline) {
+      const y = yScale(guidelineValue);
+      svg.append("line").attr("class", "chart-guideline").attr("x1", margin.left).attr("x2", width - margin.right).attr("y1", y).attr("y2", y);
+      svg.append("text").attr("class", "chart-guideline-label").attr("x", width - margin.right - 4).attr("y", Math.max(margin.top + 12, y - 6)).attr("text-anchor", "end").text(`WHO ${formatChartValue(guidelineValue)}${options.guideline?.uom ? ` ${options.guideline.uom}` : ""}`);
+    }
+    const line = d3.line().defined((point) => Number.isFinite(point.value)).x((point) => xScale(point.date)).y((point) => yScale(point.value));
+    seriesResults.forEach((result, index) => {
+      if (!result.points.length) return;
+      svg.append("path").datum(result.points).attr("class", "chart-line").attr("stroke", SERIES_COLORS[index % SERIES_COLORS.length]).attr("d", line);
+    });
+    const dot = svg.append("circle").attr("class", "chart-dot").attr("r", 5).style("opacity", 0);
+    const overlay = svg.append("rect").attr("x", margin.left).attr("y", margin.top).attr("width", Math.max(0, width - margin.left - margin.right)).attr("height", Math.max(0, height - margin.top - margin.bottom)).attr("fill", "transparent").style("pointer-events", "all");
     overlay.on("mousemove", (event) => {
-      const cf = dom.chartFrame;
-      if (!cf?.currentSeriesData) return;
-      const { entries, pointsMap, units } = cf.currentSeriesData;
       const [mx] = d3.pointer(event);
-      const targetDate = cf.xScale.invert(Math.max(margin.left, Math.min(mx, cf.width - margin.right)));
+      const targetDate = xScale.invert(Math.max(margin.left, Math.min(mx, width - margin.right)));
       let closest = null;
-      let closestSeriesIdx = -1;
-      entries.forEach((entry, si) => {
-        (pointsMap.get(entry.stationId) || []).forEach((point) => {
-          const dist = Math.abs(point.date - targetDate);
-          if (!closest || dist < closest.distance) {
-            closest = { point, entry, distance: dist };
-            closestSeriesIdx = si;
-          }
+      seriesResults.forEach((result) => {
+        result.points.forEach((point) => {
+          const distance = Math.abs(point.date - targetDate);
+          if (!closest || distance < closest.distance) closest = { point, entry: result.entry, distance };
         });
       });
       if (!closest) return;
-      const x = cf.xScale(closest.point.date);
-      const y = cf.yScale(closest.point.value);
-      cf.dot.attr("cx", x).attr("cy", y).style("opacity", 1);
+      const x = xScale(closest.point.date);
+      const y = yScale(closest.point.value);
+      dot.attr("cx", x).attr("cy", y).style("opacity", 1);
       if (dom.tooltip) {
-        const glyph = closestSeriesIdx >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[closestSeriesIdx] || "") : "";
-        const nameHtml = glyph
-          ? `${escapeHtml(glyph)} ${escapeHtml(closest.entry.stationName)}`
-          : escapeHtml(closest.entry.stationName);
-        dom.tooltip.innerHTML = `<strong>${nameHtml}</strong><br>${escapeHtml(closest.point.date.toLocaleString())}<br>${formatChartValue(closest.point.value)} ${escapeHtml(units || "")}`;
-        dom.tooltip.style.left = `${Math.max(8, Math.min(x - 90, cf.width - 180))}px`;
-        dom.tooltip.style.top  = `${Math.max(8, y - 72)}px`;
+        dom.tooltip.innerHTML = `<strong>${escapeHtml(closest.entry.stationName)}</strong><br>${escapeHtml(closest.point.date.toLocaleString())}<br>${formatChartValue(closest.point.value)} ${escapeHtml(options.units || "")}`;
+        dom.tooltip.style.left = `${Math.max(8, Math.min(x - 90, width - 180))}px`;
+        dom.tooltip.style.top = `${Math.max(8, y - 72)}px`;
         dom.tooltip.classList.add("visible");
       }
     });
     overlay.on("mouseleave", () => {
-      dom.chartFrame?.dot?.style("opacity", 0);
+      dot.style("opacity", 0);
       dom.tooltip?.classList.remove("visible");
     });
-
-    const progressBar = ChartCore.renderProgressBar(svgEl, { margin, width, height });
-
-    dom.chartFrame = {
-      svgEl, xScale, yScale,
-      xAxisGroup, yAxisGroup,
-      aqiBandsContainer,
-      guidelineEl, guidelineLabelEl,
-      seriesPaths, seriesSymbolGroups,
-      dot, overlay, progressBar,
-      margin, width, height,
-      frame: { width, height, margin, startMs: range.startMs, endMs: range.endMs },
-      areaCode: state.chartModeAreaCode,
-      mapKey: state.mapKey,
-      animFrameId: null,
-      currentGuideline: null,
-      currentSeriesData: null,
-    };
-  }
-
-  function updateChart(dom, seriesPointsMap, usableEntries, range, guideline, units, aqiPoints) {
-    const cf = dom.chartFrame;
-    if (!cf) return;
-
-    // Cancel any running domain animation — we now have real data.
-    if (cf.animFrameId != null) {
-      cancelAnimationFrame(cf.animFrameId);
-      cf.animFrameId = null;
-    }
-
-    // Update x-axis domain to match the current range.
-    cf.xScale.domain([range.startDate, range.endDate]);
-    const rangeMs = range.endMs - range.startMs;
-    cf.xAxisGroup.call(d3.axisBottom(cf.xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
-
-    // Compute y-domain from all accumulated points across all series.
-    cf.yScale.domain(computeYDomainNiced(seriesPointsMap, usableEntries, guideline));
-    cf.yAxisGroup.call(d3.axisLeft(cf.yScale).ticks(5).tickSizeOuter(0));
-
-    // Store guideline for animation redraws.
-    cf.currentGuideline = guideline || null;
-
-    // Update guideline.
-    const guidelineValue = Number(guideline?.limit_value);
-    const hasGuideline   = Number.isFinite(guidelineValue);
-    const allPoints = [];
-    usableEntries.forEach((e) => allPoints.push(...(seriesPointsMap.get(e.stationId) || [])));
-    if (hasGuideline && allPoints.length) {
-      const gy = cf.yScale(guidelineValue);
-      cf.guidelineEl.style("opacity", 0.85)
-        .attr("x1", cf.margin.left).attr("x2", cf.width - cf.margin.right)
-        .attr("y1", gy).attr("y2", gy);
-      cf.guidelineLabelEl.style("opacity", 1)
-        .attr("x", cf.width - cf.margin.right - 4)
-        .attr("y", Math.max(cf.margin.top + 12, gy - 6))
-        .text(`WHO ${formatChartValue(guidelineValue)}${guideline?.uom ? ` ${guideline.uom}` : ""}`);
-    } else {
-      cf.guidelineEl.style("opacity", 0);
-      cf.guidelineLabelEl.style("opacity", 0);
-    }
-
-    // Update each series path and symbols.
-    const lineFn = d3.line()
-      .x((p) => cf.xScale(p.date))
-      .y((p) => cf.yScale(p.value));
-    const windowValue = state.chartModeTimeRange || "24h";
-    const intervalMs  = ChartCore.getSymbolIntervalMs(windowValue);
-    const seriesSegments = [];
-
-    usableEntries.forEach((entry, i) => {
-      const points   = seriesPointsMap.get(entry.stationId) || [];
-      const segments = ChartCore.buildSegments(points);
-      seriesSegments.push(segments);
-      const pathD = segments.map((seg) => lineFn(seg)).join(" ");
-      if (cf.seriesPaths[i]) cf.seriesPaths[i].attr("d", pathD || null);
-      const symGroup = cf.seriesSymbolGroups[i];
-      if (symGroup) {
-        symGroup.selectAll("*").remove();
-        if (points.length && segments.length) {
-          const symbolSet = ChartCore.getSymbolPositions(points, segments, intervalMs);
-          ChartCore.renderSeriesSymbols(symGroup, points, symbolSet, cf.xScale, cf.yScale, i);
-        }
-      }
-    });
-
-    // Clear paths and symbols for slots beyond the active series count.
-    for (let i = usableEntries.length; i < cf.seriesPaths.length; i++) {
-      cf.seriesPaths[i]?.attr("d", null);
-      cf.seriesSymbolGroups[i]?.selectAll("*").remove();
-    }
-
-    // Update AQI bands (only when caller provides aqiPoints; undefined means "leave unchanged").
-    if (aqiPoints !== undefined) {
-      cf.aqiBandsContainer.selectAll("*").remove();
-      if (Array.isArray(aqiPoints) && aqiPoints.length) {
-        renderAqiBands(cf.aqiBandsContainer, aqiPoints, cf.frame, cf.xScale);
-      }
-    }
-
-    // Expose current data for the overlay mouse handler and future animations.
-    cf.currentSeriesData = { entries: usableEntries, pointsMap: seriesPointsMap, seriesSegments, units };
   }
 
   Object.values(domByMap).forEach((dom) => {
-    // Prevent clicks inside the chart panel from bubbling to the map's background-click
-    // handler, which would otherwise clear the selected hex (selectedPconCode) and cause
-    // the next syncFromMap call to exit chart mode unexpectedly.
-    dom.panel?.addEventListener("click", (event) => { event.stopPropagation(); });
-
     dom.sensorBody?.addEventListener("click", (event) => {
       const button = event.target instanceof Element ? event.target.closest(".hex-chart-selector") : null;
       if (button) toggleSensor(button.dataset.stationId || "");
@@ -15742,15 +15231,15 @@
     });
     dom.windowSelect?.addEventListener("change", () => {
       state.chartModeTimeRange = dom.windowSelect.value || "24h";
-      loadChartData("window-change");
+      loadChartData();
     });
   });
   backButton?.addEventListener("click", exit);
   window.addEventListener("pollutantchange", () => {
-    if (state.isChartMode) window.setTimeout(() => syncFromMap(state.mapKey, { preserveChartMode: true }), 0);
+    if (state.isChartMode) window.setTimeout(() => syncFromMap(state.mapKey), 0);
   });
   window.addEventListener("resize", () => {
-    if (state.isChartMode) loadChartData("resize");
+    if (state.isChartMode) loadChartData();
   });
 
   window.hexChartMode = {
