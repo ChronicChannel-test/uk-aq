@@ -2633,6 +2633,98 @@
         font-weight: 600;
       }
 
+      .window-stepper {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .window-stepper-label {
+        margin-right: 2px;
+      }
+      .window-stepper-control {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        height: 30px;
+        overflow: hidden;
+      }
+      .window-stepper-arrow {
+        width: 24px;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: var(--ink-2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        font: 700 16px/1 "Inter", system-ui, -apple-system, sans-serif;
+      }
+      .window-stepper-arrow:hover:not(:disabled),
+      .window-stepper-arrow:active:not(:disabled) {
+        transform: none;
+        box-shadow: none;
+      }
+      .window-stepper-arrow:disabled {
+        color: var(--ink-4);
+        background: transparent;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      .window-stepper-value-box {
+        position: relative;
+        width: 84px;
+        height: 100%;
+        border-left: 1px solid var(--line-soft);
+        border-right: 1px solid var(--line-soft);
+        background: transparent;
+        overflow: hidden;
+      }
+      .window-stepper-value {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink-1);
+        white-space: nowrap;
+        transform: translateX(0);
+        transition: transform 180ms ease, opacity 180ms ease;
+      }
+      .window-stepper-value--incoming.from-right {
+        transform: translateX(115%);
+        opacity: 0.8;
+      }
+      .window-stepper-value--incoming.from-left {
+        transform: translateX(-115%);
+        opacity: 0.8;
+      }
+      .window-stepper-value-box.is-animating.is-moving-next .window-stepper-value--outgoing {
+        transform: translateX(-115%);
+        opacity: 0;
+      }
+      .window-stepper-value-box.is-animating.is-moving-prev .window-stepper-value--outgoing {
+        transform: translateX(115%);
+        opacity: 0;
+      }
+      .window-stepper-value-box.is-animating .window-stepper-value--incoming {
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .window-stepper-value {
+          transition: none;
+        }
+      }
+
       /* Region popover */
       .popover-wrap { position: relative; }
       .popover-trigger {
@@ -3605,32 +3697,41 @@
         bottom: 8px;
         left: 50%;
         transform: translateX(-50%);
-        display: inline-flex !important;
-        flex-direction: row;
+        display: grid !important;
+        grid-template-columns: minmax(88px, 148px) auto minmax(108px, 156px);
         align-items: center;
-        gap: 12px;
+        column-gap: 10px;
         white-space: nowrap;
         background: color-mix(in srgb, var(--no-data) 78%, white 22%);
         border: 1px solid rgba(20, 34, 37, 0.12);
         border-radius: 999px;
-        padding: 10px 16px;
+        padding: 7px 10px;
         box-shadow: 0 1px 6px rgba(16, 24, 34, 0.1);
         font-size: 0.85rem;
         line-height: 1.2;
         color: var(--ink-soft);
         z-index: 15;
-        grid-template-columns: unset;
         margin: 0;
       }
 
       .legend-pill > span:first-child,
       .legend-pill > #legend-label,
       .legend-pill > #cr-legend-label {
-        display: inline-flex;
+        display: flex;
         align-items: center;
+        width: 100%;
         min-height: 18px;
-        text-align: center;
-        justify-self: auto;
+      }
+
+      .legend-pill > span:first-child {
+        text-align: right;
+        justify-content: flex-end;
+      }
+
+      .legend-pill > #legend-label,
+      .legend-pill > #cr-legend-label {
+        text-align: left;
+        justify-content: flex-start;
       }
 
       .legend-pill .legend-bar-wrap {
@@ -3651,11 +3752,10 @@
         top: 17px;
       }
 
-      /* Remove fixed 56px slot so min/max values sit flush against the bar */
       .legend-pill .legend-value {
-        width: auto;
-        min-width: 0;
-        flex: 0 0 auto;
+        width: 44px;
+        min-width: 44px;
+        flex: 0 0 44px;
       }
 
       /* Keep map controls/legend close to map frame */
@@ -4073,6 +4173,17 @@
                         <button type="button" class="pill" data-pollutant="no2" role="radio" aria-checked="false" tabindex="-1">NO₂</button>
                       </div>
                     </div>
+                    <div class="toolbar-divider" aria-hidden="true"></div>
+                    <div class="window-stepper" id="window-stepper" data-window-stepper>
+                      <span class="field-label window-stepper-label">Window</span>
+                      <div class="window-stepper-control" role="group" aria-label="Averaging window">
+                        <button type="button" class="window-stepper-arrow window-stepper-arrow--left" data-window-step="prev" aria-label="Use shorter window">‹</button>
+                        <div class="window-stepper-value-box" aria-live="polite" aria-atomic="true">
+                          <span class="window-stepper-value" data-window-value>6 Hours</span>
+                        </div>
+                        <button type="button" class="window-stepper-arrow window-stepper-arrow--right" data-window-step="next" aria-label="Use longer window">›</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="tab-slot" data-tab-slot style="display:none">
@@ -4218,31 +4329,6 @@
                     <button type="button" class="map-settings-close" id="map-settings-close" aria-label="Close colour scale">
                       <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
                     </button>
-                  </div>
-                  <div class="map-settings-section">
-                    <span class="map-settings-label">Updated within:</span>
-                    <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="3h" />
-                        <span class="window-text">3 Hours</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="6h" />
-                        <span class="window-text">6 Hours</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="1d" />
-                        <span class="window-text">1 Day</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="7d" />
-                        <span class="window-text">7 Days</span>
-                      </label>
-                      <label class="window-option">
-                        <input type="radio" name="averagingWindow" value="all" checked />
-                        <span class="window-text">No limit</span>
-                      </label>
-                    </div>
                   </div>
                   <div class="map-settings-section">
                     <span class="map-settings-label">Averaging Method</span>
@@ -4884,31 +4970,6 @@
                       <button type="button" class="map-settings-close" id="cr-map-settings-close" aria-label="Close colour scale">
                         <img src="images/Red-Square-Button-White-Cross-200x200.svg" alt="" aria-hidden="true" />
                       </button>
-                    </div>
-                    <div class="map-settings-section">
-                      <span class="map-settings-label">Updated within:</span>
-                      <div class="map-settings-options window-group" role="radiogroup" aria-label="Averaging window">
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="3h" />
-                          <span class="window-text">3 Hours</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="6h" />
-                          <span class="window-text">6 Hours</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="1d" />
-                          <span class="window-text">1 Day</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="7d" />
-                          <span class="window-text">7 Days</span>
-                        </label>
-                        <label class="window-option">
-                          <input type="radio" name="cr-averagingWindow" value="all" checked />
-                          <span class="window-text">No limit</span>
-                        </label>
-                      </div>
                     </div>
                     <div class="map-settings-section">
                       <span class="map-settings-label">Averaging Method</span>
@@ -5838,7 +5899,7 @@
         "6h": "6 Hours",
         "1d": "1 Day",
         "7d": "7 Days",
-        all: "No limit",
+        all: "No Limit",
       };
       const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
       const GOVUK_AURN_CODE = "aurn";
@@ -5911,10 +5972,8 @@
         legendLabel.style.minWidth = "";
         let maxW = 0;
         for (const mk of Object.keys(METRIC_LABELS)) {
-          for (const wk of Object.keys(WINDOW_OPTIONS)) {
-            legendLabel.textContent = `${METRIC_LABELS[mk]} · Window: ${formatWindowLabel(wk)}`;
-            maxW = Math.max(maxW, legendLabel.scrollWidth);
-          }
+          legendLabel.textContent = METRIC_LABELS[mk];
+          maxW = Math.max(maxW, legendLabel.scrollWidth);
         }
         legendLabel.textContent = saved;
         if (maxW > 0) legendLabel.style.minWidth = `${maxW}px`;
@@ -6971,10 +7030,6 @@
         latestEtagByKey.delete(latestCacheKey);
         pollutantCache.delete(latestCacheKey);
         loadMapData();
-      }
-
-      function formatWindowLabel(value) {
-        return WINDOW_LABELS[value] || WINDOW_LABELS.all;
       }
 
       function getPollutantLabel(key) {
@@ -8246,7 +8301,7 @@
       }
 
       function updateLegend(minValue, maxValue, capValue) {
-        legendLabel.textContent = `${METRIC_LABELS[currentMetric]} · Window: ${formatWindowLabel(currentWindow)}`;
+        legendLabel.textContent = METRIC_LABELS[currentMetric];
         if (minValue === null || maxValue === null || capValue === null) {
           legendMin.textContent = "-";
           legendMax.textContent = "-";
@@ -10227,7 +10282,7 @@
         sharedSettings.colorScale = (colorScaleParam === "linear" || colorScaleParam === "power") ? colorScaleParam : "power";
       }
       if (!sharedSettings.window) {
-        sharedSettings.window = "all";
+        sharedSettings.window = "6h";
       }
       const inferredProjectRef = inferProjectRefFromHost();
       const projectRef = PROJECT_REF_PLACEHOLDER.includes("__SUPABASE_PROJECT_REF__")
@@ -10342,7 +10397,7 @@
         "6h": "6 Hours",
         "1d": "1 Day",
         "7d": "7 Days",
-        all: "No limit",
+        all: "No Limit",
       };
       const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
       const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
@@ -10412,10 +10467,8 @@
         legendLabel.style.minWidth = "";
         let maxW = 0;
         for (const mk of Object.keys(METRIC_LABELS)) {
-          for (const wk of Object.keys(WINDOW_OPTIONS)) {
-            legendLabel.textContent = `${METRIC_LABELS[mk]} · Window: ${formatWindowLabel(wk)}`;
-            maxW = Math.max(maxW, legendLabel.scrollWidth);
-          }
+          legendLabel.textContent = METRIC_LABELS[mk];
+          maxW = Math.max(maxW, legendLabel.scrollWidth);
         }
         legendLabel.textContent = saved;
         if (maxW > 0) legendLabel.style.minWidth = `${maxW}px`;
@@ -11217,10 +11270,6 @@
         latestEtagByKey.delete(latestCacheKey);
         pollutantCache.delete(latestCacheKey);
         loadMapData();
-      }
-
-      function formatWindowLabel(value) {
-        return WINDOW_LABELS[value] || WINDOW_LABELS.all;
       }
 
       function getPollutantLabel(key) {
@@ -12411,7 +12460,7 @@
       }
 
       function updateLegend(minValue, maxValue, capValue) {
-        legendLabel.textContent = `${METRIC_LABELS[currentMetric]} · Window: ${formatWindowLabel(currentWindow)}`;
+        legendLabel.textContent = METRIC_LABELS[currentMetric];
         if (minValue === null || maxValue === null || capValue === null) {
           legendMin.textContent = "-";
           legendMax.textContent = "-";
@@ -16290,6 +16339,10 @@
 (() => {
   const toolbarTabUk = document.getElementById("toolbar-tab-uk");
   const toolbarTabCr = document.getElementById("toolbar-tab-cr");
+  const windowStepper = document.getElementById("window-stepper");
+  const windowStepperPrev = windowStepper?.querySelector("[data-window-step='prev']");
+  const windowStepperNext = windowStepper?.querySelector("[data-window-step='next']");
+  const windowStepperValueBox = windowStepper?.querySelector(".window-stepper-value-box");
   const regionSection = document.getElementById("toolbar-region-section");
   const regionTrigger = document.getElementById("toolbar-region-trigger");
   const regionLabel = document.getElementById("toolbar-region-label");
@@ -16297,10 +16350,145 @@
   const popoverWrap = document.getElementById("toolbar-popover-wrap");
   const tabUk = document.getElementById("tab-uk");
   const tabCr = document.getElementById("tab-cr");
+  const WINDOW_ORDER = ["3h", "6h", "1d", "7d", "all"];
+  const WINDOW_LABELS_FALLBACK = {
+    "3h": "3 Hours",
+    "6h": "6 Hours",
+    "1d": "1 Day",
+    "7d": "7 Days",
+    all: "No Limit",
+  };
+  const reduceMotionQuery = typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+  let prefersReducedMotion = !!reduceMotionQuery?.matches;
+  let windowStepperKey = null;
+  let windowStepperTimer = null;
+
+  function normalizeWindowKey(value) {
+    return WINDOW_ORDER.includes(value) ? value : "6h";
+  }
+
+  function getWindowLabel(key) {
+    if (typeof WINDOW_LABELS === "object" && WINDOW_LABELS && WINDOW_LABELS[key]) {
+      return WINDOW_LABELS[key];
+    }
+    return WINDOW_LABELS_FALLBACK[key] || WINDOW_LABELS_FALLBACK["6h"];
+  }
+
+  function readSharedWindowKey() {
+    return normalizeWindowKey(window.mapSettingsState?.window);
+  }
+
+  function setStepperButtons(windowKey) {
+    if (!windowStepperPrev || !windowStepperNext || !windowStepper) {
+      return;
+    }
+    const index = WINDOW_ORDER.indexOf(windowKey);
+    windowStepperPrev.disabled = index <= 0;
+    windowStepperNext.disabled = index >= WINDOW_ORDER.length - 1;
+    windowStepper.dataset.window = windowKey;
+  }
+
+  function resetWindowStepperValue(label) {
+    if (!windowStepperValueBox) {
+      return;
+    }
+    if (windowStepperTimer) {
+      window.clearTimeout(windowStepperTimer);
+      windowStepperTimer = null;
+    }
+    windowStepperValueBox.classList.remove("is-animating", "is-moving-prev", "is-moving-next");
+    windowStepperValueBox.innerHTML = `<span class="window-stepper-value" data-window-value>${label}</span>`;
+  }
+
+  function animateWindowStepper(label, direction) {
+    if (!windowStepperValueBox || prefersReducedMotion) {
+      resetWindowStepperValue(label);
+      return;
+    }
+    const currentNode = windowStepperValueBox.querySelector("[data-window-value]");
+    if (!currentNode) {
+      resetWindowStepperValue(label);
+      return;
+    }
+    const incomingNode = document.createElement("span");
+    incomingNode.className = `window-stepper-value window-stepper-value--incoming ${
+      direction === "next" ? "from-right" : "from-left"
+    }`;
+    incomingNode.setAttribute("data-window-value", "");
+    incomingNode.textContent = label;
+    currentNode.classList.add("window-stepper-value--outgoing");
+    windowStepperValueBox.appendChild(incomingNode);
+    windowStepperValueBox.classList.remove("is-moving-prev", "is-moving-next");
+    windowStepperValueBox.classList.add(direction === "next" ? "is-moving-next" : "is-moving-prev");
+    requestAnimationFrame(() => {
+      windowStepperValueBox.classList.add("is-animating");
+    });
+    windowStepperTimer = window.setTimeout(() => {
+      resetWindowStepperValue(label);
+    }, 210);
+  }
+
+  function renderWindowStepper(options = {}) {
+    if (!windowStepperValueBox) {
+      return;
+    }
+    const nextKey = readSharedWindowKey();
+    const nextLabel = getWindowLabel(nextKey);
+    const previousKey = windowStepperKey;
+    windowStepperKey = nextKey;
+    setStepperButtons(nextKey);
+    if (!previousKey || options.force || previousKey === nextKey) {
+      resetWindowStepperValue(nextLabel);
+      return;
+    }
+    const previousIndex = WINDOW_ORDER.indexOf(previousKey);
+    const nextIndex = WINDOW_ORDER.indexOf(nextKey);
+    const direction = nextIndex > previousIndex ? "next" : "prev";
+    animateWindowStepper(nextLabel, direction);
+  }
 
   // Segmented control → delegate to existing hidden tab buttons
   toolbarTabUk?.addEventListener("click", () => tabUk?.click());
   toolbarTabCr?.addEventListener("click", () => tabCr?.click());
+
+  windowStepper?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest("button[data-window-step]")
+      : null;
+    if (!button || button.disabled) {
+      return;
+    }
+    const direction = button.dataset.windowStep;
+    const currentKey = readSharedWindowKey();
+    const currentIndex = WINDOW_ORDER.indexOf(currentKey);
+    const offset = direction === "next" ? 1 : -1;
+    const nextIndex = Math.max(0, Math.min(WINDOW_ORDER.length - 1, currentIndex + offset));
+    const nextKey = WINDOW_ORDER[nextIndex];
+    if (nextKey === currentKey) {
+      return;
+    }
+    window.updateMapSettings?.({ window: nextKey }, "window-stepper");
+  });
+
+  window.addEventListener("mapsettingschange", (event) => {
+    if (event.detail?.window) {
+      renderWindowStepper();
+    }
+  });
+
+  if (reduceMotionQuery) {
+    const handleMotionChange = (event) => {
+      prefersReducedMotion = !!event.matches;
+      renderWindowStepper({ force: true });
+    };
+    if (typeof reduceMotionQuery.addEventListener === "function") {
+      reduceMotionQuery.addEventListener("change", handleMotionChange);
+    } else if (typeof reduceMotionQuery.addListener === "function") {
+      reduceMotionQuery.addListener(handleMotionChange);
+    }
+  }
 
   // Region popover — open/close
   regionTrigger?.addEventListener("click", () => {
@@ -16359,6 +16547,7 @@
   // Sync toolbar to the tab state that was already set before this script ran
   const initialTabKey = tabUk?.getAttribute("aria-selected") === "true" ? "uk" : "cr";
   window.syncToolbar(initialTabKey);
+  renderWindowStepper({ force: true });
 })();
     </script>
     <script>
