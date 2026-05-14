@@ -52,6 +52,20 @@
         --line-soft:   #eef0f3;
         --accent:      #3C78AC;
         --accent-deep: #285A84;
+        --ukaq-control-selected-bg: color-mix(in oklab, var(--accent) 12%, white);
+        --ukaq-control-selected-text: var(--accent-deep);
+        --ukaq-control-selected-border: rgba(60, 120, 172, 0.45);
+        --ukaq-control-selectable-bg: var(--surface-2);
+        --ukaq-control-selectable-text: var(--ink-1);
+        --ukaq-control-selectable-border: var(--line);
+        --ukaq-control-selectable-hover-bg: #DDEFF7;
+        --ukaq-control-hover-shadow: 0 8px 18px rgba(60, 120, 172, 0.22);
+        --ukaq-control-hover-border: rgba(60, 120, 172, 0.35);
+        --ukaq-control-disabled-bg: #F1F3F5;
+        --ukaq-control-disabled-text: var(--ink-4);
+        --ukaq-control-disabled-border: rgba(20, 34, 37, 0.12);
+        --ukaq-action-bg: var(--accent);
+        --ukaq-action-text: #ffffff;
         /* legacy aliases kept for JS-populated elements */
         --ink-soft:    var(--ink-2);
         --mist:        var(--surface-3);
@@ -1599,117 +1613,50 @@
       }
 
       .network-panel {
-        padding: 8px 0 12px 16px;
-        border-radius: 0;
-        background: transparent;
-        border: none;
-        border-left: 2px solid var(--line);
-        display: grid;
-        gap: 12px;
-        align-content: start;
-      }
-
-      .network-heading {
-        font-size: 0.85rem;
-        color: var(--ink-soft);
-        font-weight: 600;
-      }
-
-      .network-list-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 10px 6px 14px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: var(--ink-soft);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        border-bottom: 1px solid var(--line-soft);
-        margin-bottom: 2px;
+        display: none !important;
       }
 
       .network-count {
         margin-left: auto;
         font-variant-numeric: tabular-nums;
-        font-size: 1.1rem;
+        font-size: 0.9rem;
         font-weight: 700;
         color: var(--accent);
         flex-shrink: 0;
-        padding-left: 8px;
-      }
-
-      .network-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-      }
-
-      .network-actions button {
-        border: none;
-        background: var(--clay);
-        color: var(--ink);
-        padding: 8px 10px;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .network-actions button:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 14px rgba(20, 34, 37, 0.12);
-      }
-
-      .network-actions button:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-        box-shadow: none;
-      }
-
-      .network-panel .checkbox {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-        padding: 4px 10px;
-        font-weight: 600;
-        color: var(--ink);
-        font-size: 0.85rem;
-      }
-
-      .network-panel .checkbox span {
-        min-width: 0;
-      }
-
-      .network-panel input[type="checkbox"] {
-        width: 14px;
-        height: 14px;
-        accent-color: #3c78ac;
+        padding-left: 10px;
       }
 
       .network-list {
         display: grid;
-        gap: 8px;
-        max-height: 360px;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding-right: 4px;
+        gap: 6px;
       }
 
       .network-empty {
         color: var(--ink-soft);
         font-size: 0.85rem;
+        padding: 6px 2px;
       }
 
-      .network-panel .network-option {
-        display: grid;
-        gap: 5px;
-        padding: 5px 10px;
+      .network-option {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        font-size: 0.9rem;
         border-radius: 8px;
-        transition: opacity 0.15s ease, color 0.15s ease;
+        border: 1px solid transparent;
+        padding: 7px 10px;
+        color: var(--ink-1);
+        cursor: pointer;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+      }
+
+      .network-option:hover {
+        background: color-mix(in oklab, var(--accent) 8%, white);
+      }
+
+      .network-option:focus-within {
+        background: color-mix(in oklab, var(--accent) 9%, white);
+        border-color: color-mix(in oklab, var(--accent) 30%, #d8dde3);
       }
 
       .network-option-main {
@@ -1723,7 +1670,7 @@
       .network-option-left {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         min-width: 0;
       }
 
@@ -1732,12 +1679,20 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        font-weight: 600;
+      }
+
+      .network-option input[type="checkbox"] {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--accent);
       }
 
       .network-share-bar {
         display: block;
         width: 100%;
         height: 4px;
+        margin-top: 6px;
         border-radius: 999px;
         background: #d0d4da;
         overflow: hidden;
@@ -1753,12 +1708,16 @@
       }
 
       .network-option.is-unselected {
-        color: var(--ink-4);
+        color: var(--ink-3);
       }
 
       .network-option.is-unselected .network-name,
       .network-option.is-unselected .network-count {
-        color: var(--ink-4);
+        color: var(--ink-3);
+      }
+
+      .network-option.is-unselected .network-count {
+        color: var(--accent);
       }
 
       .network-option.is-unselected .network-share-fill {
@@ -1893,23 +1852,13 @@
 
         .map-wrap #uk-toolbar-slot,
         .map-wrap #cr-toolbar-slot {
-          grid-column: 1;
+          grid-column: 1 / -1;
           grid-row: 2;
         }
 
         .map-wrap .map-canvas {
-          grid-column: 1;
+          grid-column: 1 / -1;
           grid-row: 3;
-        }
-
-        .map-wrap .network-panel {
-          grid-column: 2;
-          grid-row: 2 / span 3;
-          align-self: stretch;
-          margin-top: -8px;
-          margin-bottom: -8px;
-          padding-top: 16px;
-          padding-bottom: 20px;
         }
 
         .map-wrap .map-legend {
@@ -2572,7 +2521,7 @@
         flex-shrink: 0;
       }
       .field-label {
-        font-size: 12px;
+        font-size: 13px;
         letter-spacing: 0.05em;
         text-transform: uppercase;
         font-weight: 600;
@@ -2583,7 +2532,7 @@
       /* Segmented control */
       .segmented {
         display: inline-flex;
-        background: var(--surface-2);
+        background: var(--ukaq-control-selectable-bg);
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 3px;
@@ -2591,21 +2540,32 @@
       }
       .segmented button {
         border: 0;
-        background: transparent;
+        background: var(--ukaq-control-selectable-bg);
         padding: 6px 14px;
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 500;
-        color: var(--ink-2);
+        color: var(--ukaq-control-selectable-text);
         border-radius: 6px;
         cursor: pointer;
         font-family: inherit;
-        transition: background 0.12s, color 0.12s;
+        transition: background 0.12s, color 0.12s, border-color 0.12s;
       }
       .segmented button.active {
-        background: var(--surface);
-        color: var(--accent-deep);
-        box-shadow: 0 1px 3px rgba(16, 24, 34, 0.10);
+        background: var(--ukaq-control-selected-bg);
+        color: var(--ukaq-control-selected-text);
+        border: 1px solid var(--ukaq-control-selected-border);
+        box-shadow: none;
         font-weight: 600;
+        cursor: default;
+      }
+      .segmented button:not(.active):hover {
+        background: var(--ukaq-control-selectable-bg);
+      }
+      .segmented button.active:hover,
+      .segmented button.active:active {
+        transform: none;
+        box-shadow: none;
+        border-color: var(--ukaq-control-selected-border);
       }
 
       /* Pollutant pills (toolbar) */
@@ -2614,10 +2574,10 @@
         gap: 3px;
       }
       .pill {
-        border: 1px solid var(--line);
-        background: var(--surface-2);
-        color: var(--ink-2);
-        font-size: 15px;
+        border: 1px solid var(--ukaq-control-selectable-border);
+        background: var(--ukaq-control-selectable-bg);
+        color: var(--ukaq-control-selectable-text);
+        font-size: 16px;
         font-weight: 500;
         padding: 5px 12px;
         border-radius: 999px;
@@ -2627,10 +2587,22 @@
       }
       .pill[aria-checked="true"],
       .pill.active {
-        background: color-mix(in oklab, var(--accent) 12%, white);
-        color: var(--accent-deep);
-        border-color: color-mix(in oklab, var(--accent) 35%, white);
+        background: var(--ukaq-control-selected-bg);
+        color: var(--ukaq-control-selected-text);
+        border-color: var(--ukaq-control-selected-border);
         font-weight: 600;
+        cursor: default;
+      }
+      .pill[aria-checked="false"]:hover {
+        background: var(--ukaq-control-selectable-bg);
+      }
+      .pill[aria-checked="true"]:hover,
+      .pill[aria-checked="true"]:active,
+      .pill.active:hover,
+      .pill.active:active {
+        transform: none;
+        box-shadow: none;
+        border-color: var(--ukaq-control-selected-border);
       }
 
       .window-stepper {
@@ -2645,44 +2617,96 @@
       .window-stepper-control {
         display: inline-flex;
         align-items: center;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: var(--surface);
-        height: 30px;
-        overflow: hidden;
-      }
-      .window-stepper-arrow {
-        width: 24px;
-        height: 100%;
+        gap: 4px;
         border: 0;
         border-radius: 0;
         background: transparent;
-        color: var(--ink-2);
+        height: auto;
+        overflow: visible;
+      }
+      .window-stepper-arrow {
+        width: 24px;
+        height: 24px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: transparent;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 0;
         cursor: pointer;
-        font: 700 16px/1 "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 0;
+        line-height: 1;
       }
-      .window-stepper-arrow:hover:not(:disabled),
+      .window-stepper-arrow::before {
+        content: "";
+        display: block;
+        width: 0;
+        height: 0;
+        border-top: 9px solid transparent;
+        border-bottom: 9px solid transparent;
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
+      .window-stepper-arrow--left::before {
+        border-right: 14px solid var(--ukaq-control-selectable-text);
+      }
+      .window-stepper-arrow--right::before {
+        border-left: 14px solid var(--ukaq-control-selectable-text);
+      }
+      .window-stepper-arrow:hover:not(:disabled) {
+        background: transparent;
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+      }
+      .window-stepper-arrow:hover:not(:disabled)::before {
+        transform: translateY(-1px);
+        filter:
+          drop-shadow(0 0 6px rgba(60, 120, 172, 0.28))
+          drop-shadow(0 8px 18px rgba(60, 120, 172, 0.22));
+      }
       .window-stepper-arrow:active:not(:disabled) {
+        background: transparent;
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+      }
+      .window-stepper-arrow:active:not(:disabled)::before {
+        transform: translateY(0);
+        filter: none;
+      }
+      .window-stepper-arrow:focus-visible {
+        outline: none;
+      }
+      .window-stepper-arrow:focus-visible:not(:disabled)::before {
+        transform: translateY(-1px);
+        filter:
+          drop-shadow(0 0 6px rgba(60, 120, 172, 0.28))
+          drop-shadow(0 8px 18px rgba(60, 120, 172, 0.22));
+      }
+      .window-stepper-arrow:disabled {
+        color: transparent;
+        background: transparent;
+        border-color: transparent;
+        cursor: not-allowed;
+        pointer-events: none;
         transform: none;
         box-shadow: none;
       }
-      .window-stepper-arrow:disabled {
-        color: var(--ink-4);
-        background: transparent;
-        cursor: not-allowed;
-        pointer-events: none;
+      .window-stepper-arrow--left:disabled::before {
+        border-right-color: var(--ukaq-control-disabled-text);
+      }
+      .window-stepper-arrow--right:disabled::before {
+        border-left-color: var(--ukaq-control-disabled-text);
       }
       .window-stepper-value-box {
         position: relative;
-        width: 84px;
-        height: 100%;
-        border-left: 1px solid var(--line-soft);
-        border-right: 1px solid var(--line-soft);
-        background: transparent;
+        width: 112px;
+        height: 30px;
+        border: 1px solid var(--ukaq-control-selected-border);
+        border-radius: 6px;
+        background: var(--ukaq-control-selected-bg);
         overflow: hidden;
       }
       .window-stepper-value {
@@ -2691,9 +2715,9 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 600;
-        color: var(--ink-1);
+        color: var(--ukaq-control-selected-text);
         white-space: nowrap;
         transform: translateX(0);
         transition: transform 180ms ease, opacity 180ms ease;
@@ -2725,6 +2749,220 @@
         }
       }
 
+      .network-dropdown-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .network-dropdown-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        color: var(--accent-deep);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        width: 15ch;
+        min-width: 15ch;
+        max-width: 15ch;
+        justify-content: space-between;
+      }
+
+      .network-dropdown-trigger-value {
+        color: var(--accent-deep);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 15ch;
+      }
+
+      .network-dropdown-trigger.is-open {
+        background: #ffffff;
+        color: var(--ink-1);
+        border-color: var(--ukaq-control-selected-border);
+      }
+
+      .network-dropdown-trigger.is-open .network-dropdown-trigger-value {
+        color: var(--accent-deep);
+      }
+
+      .network-dropdown-trigger-chevron {
+        transition: transform 0.15s ease;
+        color: currentColor;
+      }
+
+      .network-dropdown-trigger.is-open .network-dropdown-trigger-chevron {
+        transform: rotate(180deg);
+      }
+
+      .network-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: min(350px, calc(100vw - 28px));
+        min-width: 270px;
+        max-height: min(68vh, 520px);
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 12px 30px rgba(16, 24, 34, 0.18);
+        padding: 10px;
+        z-index: 340;
+      }
+
+      .network-dropdown-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--line-soft);
+        padding: 2px 2px 8px;
+      }
+
+      .network-dropdown-count {
+        font-variant-numeric: tabular-nums;
+        font-size: 0.88rem;
+        color: var(--accent-deep);
+      }
+
+      .network-dropdown-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 0 2px 2px;
+      }
+
+      .network-dropdown-action {
+        border: none;
+        background: transparent;
+        color: var(--accent);
+        border-radius: 0;
+        font-family: inherit;
+        font-size: 0;
+        font-weight: 600;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .network-dropdown-action:disabled {
+        background: transparent;
+        color: var(--ukaq-control-disabled-text);
+        cursor: not-allowed;
+      }
+
+      .network-dropdown-actions-divider {
+        color: var(--accent);
+        font-size: 1.25rem;
+        line-height: 1;
+        font-weight: 700;
+        user-select: none;
+      }
+
+      .network-dropdown-action-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 2px;
+        flex-shrink: 0;
+        position: relative;
+        display: block;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .network-dropdown-action-icon--select-all {
+        background: var(--accent);
+        border: 1px solid var(--accent);
+      }
+
+      .network-dropdown-action-icon--select-all::before {
+        content: "✓";
+        position: absolute;
+        inset: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+        transform: translateY(-0.5px);
+      }
+
+      .network-dropdown-action-icon--clear-all {
+        border: 1px solid var(--accent);
+        background: transparent;
+      }
+
+      .network-dropdown-action:disabled .network-dropdown-action-icon--select-all {
+        background: var(--ink-4);
+        border-color: var(--ink-4);
+      }
+
+      .network-dropdown-action:disabled .network-dropdown-action-icon--clear-all {
+        border-color: var(--ink-4);
+      }
+
+      .network-dropdown-action:hover:not(:disabled),
+      .network-dropdown-action:focus-visible:not(:disabled) {
+        outline: none;
+      }
+
+      .network-dropdown-action:hover:not(:disabled) .network-dropdown-action-icon,
+      .network-dropdown-action:focus-visible:not(:disabled) .network-dropdown-action-icon {
+        transform: translateY(-1px);
+        box-shadow: var(--ukaq-control-hover-shadow);
+      }
+
+      .network-dropdown-action:disabled .network-dropdown-action-icon {
+        box-shadow: none;
+        transform: none;
+      }
+
+      .network-dropdown-list {
+        min-height: 0;
+        max-height: min(44vh, 360px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 4px;
+      }
+
+      .network-dropdown-list .network-option {
+        margin: 0;
+      }
+
+      .network-dropdown-list .network-option:hover,
+      .network-dropdown-list .network-option:focus-within {
+        transform: none;
+        box-shadow: none;
+      }
+
+      @media (max-width: 720px) {
+        .network-dropdown-menu {
+          right: auto;
+          left: 0;
+          min-width: min(300px, calc(100vw - 28px));
+        }
+      }
+
       /* Region popover */
       .popover-wrap { position: relative; }
       .popover-trigger {
@@ -2735,18 +2973,35 @@
         background: var(--surface);
         padding: 6px 11px;
         border-radius: 6px;
-        font-size: 15px;
-        color: var(--ink-1);
+        font-size: 16px;
+        color: var(--accent-deep);
         font-family: inherit;
         cursor: pointer;
         font-weight: 500;
         transition: border-color 0.12s;
+        width: 16.5ch;
+        min-width: 16.5ch;
+        max-width: 16.5ch;
+        justify-content: flex-start;
+      }
+      #toolbar-region-label {
+        display: inline-block;
+        min-width: 0;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
       }
       .popover-trigger.open {
         border-color: var(--accent);
         color: var(--accent-deep);
       }
-      .popover-trigger .chevron { transition: transform 0.15s; }
+      .popover-trigger .chevron {
+        margin-left: auto;
+        flex-shrink: 0;
+        transition: transform 0.15s;
+      }
       .popover-trigger.open .chevron { transform: rotate(180deg); }
       .popover-menu {
         position: absolute;
@@ -2771,7 +3026,7 @@
       .popover-item {
         padding: 6px 10px;
         border-radius: 6px;
-        font-size: 12.5px;
+        font-size: 0.9rem;
         color: var(--ink-2);
         cursor: pointer;
         display: flex;
@@ -2786,8 +3041,9 @@
       .popover-item.active::after {
         content: '✓';
         margin-left: auto;
-        font-size: 11px;
-        opacity: 0.8;
+        font-size: 15px;
+        font-weight: 700;
+        opacity: 1;
       }
       .popover-divider {
         height: 1px;
@@ -3109,9 +3365,9 @@
         box-shadow: 0 1px 4px rgba(16, 24, 34, 0.08);
       }
       .btn-refresh {
-        background: var(--accent);
-        border: 1px solid var(--accent);
-        color: #fff;
+        background: var(--ukaq-action-bg);
+        border: 1px solid var(--ukaq-action-bg);
+        color: var(--ukaq-action-text);
         padding: 5px 12px;
         border-radius: 6px;
         font-weight: 600;
@@ -3122,8 +3378,8 @@
         transition: transform 0.15s, box-shadow 0.15s;
       }
       .btn-refresh:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(16, 24, 34, 0.16);
+        background: var(--accent-deep);
+        border-color: var(--accent-deep);
       }
       /* Hide old tab bar (kept in DOM for JS) */
       .tab-bar { display: none; }
@@ -3151,7 +3407,7 @@
         padding: 18px;
         margin-top: 10px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto auto auto auto auto;
         column-gap: 0;
         row-gap: 0;
@@ -3264,7 +3520,7 @@
       }
 
       .map-controls-row {
-        grid-column: 1;
+        grid-column: 1 / -1;
         grid-row: 3;
         min-height: 0;
         display: flex;
@@ -3278,7 +3534,7 @@
 
       .map-dashboard-card #uk-toolbar-slot,
       .map-dashboard-card #cr-toolbar-slot {
-        grid-column: 1;
+        grid-column: 1 / -1;
         grid-row: 3;
       }
 
@@ -3296,13 +3552,13 @@
       }
 
       .map-dashboard-card .map-canvas-wrap {
-        grid-column: 1;
+        grid-column: 1 / -1;
         grid-row: 4;
         --map-footer-safe: 64px;
         --sensor-panel-height: 240px;
         border: 1px solid var(--line-soft);
         border-bottom: none;
-        border-radius: 0 0 0 18px;
+        border-radius: 0 0 18px 18px;
         background: var(--map-wrap);
         margin-left: -18px;
         margin-bottom: -18px;
@@ -3495,10 +3751,8 @@
       .map-floating-tools,
       .map-zoom-controls button,
       .btn-refresh,
-      .network-actions button,
       .toolbar button,
       .tab-button,
-      .pill,
       .popover-trigger {
         box-shadow: none;
         transition:
@@ -3511,14 +3765,12 @@
 
       .map-floating-tools:hover,
       .btn-refresh:hover,
-      .network-actions button:hover:not(:disabled),
-      .toolbar button:hover,
+      .toolbar button:hover:not(:disabled):not(.active):not([aria-checked="true"]),
       .tab-button:hover,
-      .pill:hover,
       .popover-trigger:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 18px rgba(60, 120, 172, 0.22);
-        border-color: rgba(60, 120, 172, 0.35);
+        box-shadow: var(--ukaq-control-hover-shadow);
+        border-color: var(--ukaq-control-hover-border);
       }
 
       .map-search-clear:hover {
@@ -3531,6 +3783,46 @@
         background: rgba(255, 255, 255, 0.98);
       }
 
+      .toolbar .pill[aria-checked="false"]:hover {
+        border-color: var(--ukaq-control-selectable-border);
+      }
+      .toolbar .network-dropdown-trigger.is-open:hover,
+      .toolbar .network-dropdown-trigger.is-open:active {
+        transform: none;
+        box-shadow: none;
+        border-color: var(--ukaq-control-selected-border);
+      }
+      .toolbar .network-dropdown-action:hover:not(:disabled):not(.active):not([aria-checked="true"]),
+      .toolbar .network-dropdown-action:active:not(:disabled):not(.active):not([aria-checked="true"]),
+      .toolbar .network-dropdown-action:focus-visible:not(:disabled) {
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+        background: transparent;
+        outline: none;
+      }
+      .toolbar .window-stepper-arrow:hover:not(:disabled),
+      .toolbar .window-stepper-arrow:active:not(:disabled),
+      .toolbar .window-stepper-arrow:disabled:hover,
+      .toolbar .window-stepper-arrow:disabled:active {
+        background: transparent;
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+      }
+      .toolbar .window-stepper-arrow:focus-visible {
+        outline: none;
+        box-shadow: none;
+        border-color: transparent;
+      }
+      .toolbar button.window-stepper-arrow:hover:not(:disabled):not(.active):not([aria-checked="true"]),
+      .toolbar button.window-stepper-arrow:active:not(:disabled):not(.active):not([aria-checked="true"]) {
+        background: transparent;
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+      }
+
       .map-zoom-controls button:hover {
         background: rgba(255, 255, 255, 0.98);
       }
@@ -3538,10 +3830,8 @@
       .map-floating-tools:active,
       .map-zoom-controls button:active,
       .btn-refresh:active,
-      .network-actions button:active:not(:disabled),
-      .toolbar button:active,
+      .toolbar button:active:not(:disabled):not(.active):not([aria-checked="true"]),
       .tab-button:active,
-      .pill:active,
       .popover-trigger:active {
         transform: translateY(0);
         box-shadow: none;
@@ -3562,10 +3852,8 @@
       .map-floating-tools:focus-visible,
       .map-zoom-controls button:focus-visible,
       .btn-refresh:focus-visible,
-      .network-actions button:focus-visible,
-      .toolbar button:focus-visible,
+      .toolbar button:focus-visible:not(:disabled),
       .tab-button:focus-visible,
-      .pill:focus-visible,
       .popover-trigger:focus-visible {
         outline: 2px solid rgba(60, 120, 172, 0.45);
         outline-offset: 2px;
@@ -3573,28 +3861,6 @@
 
       .map-search-clear:focus-visible {
         outline: none;
-      }
-
-      .map-dashboard-card .network-panel {
-        grid-column: 2;
-        grid-row: 3 / span 3;
-        border-left: 2px solid var(--line);
-        border-top: 1px solid var(--line-soft);
-        border-radius: 0;
-        background: var(--map-wrap);
-        padding: 6px 12px 18px 12px;
-        margin-top: 0;
-        margin-right: 0;
-        margin-bottom: -18px;
-        display: grid;
-        gap: 12px;
-        align-content: start;
-        align-self: stretch;
-      }
-
-      .map-dashboard-card .network-list-header {
-        margin: 0;
-        padding: 6px 10px 8px 14px;
       }
 
       .map-dashboard-card .map-legend {
@@ -3605,9 +3871,6 @@
       }
 
       @media (max-width: 1200px) {
-        .map-dashboard-card {
-          grid-template-columns: minmax(0, 1fr) 300px;
-        }
         .map-summary-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -3629,7 +3892,7 @@
           padding: 0;
         }
         .map-dashboard-card .map-canvas-wrap {
-          grid-column: 1;
+          grid-column: 1 / -1;
           grid-row: 4;
           border: none;
           border-radius: 0;
@@ -3637,22 +3900,12 @@
           margin-left: 0;
           margin-bottom: 0;
         }
-        .map-dashboard-card .network-panel {
-          grid-column: 1;
-          grid-row: 5;
-          border-left: none;
-          border-top: 1px solid var(--line);
-          padding: 10px 0 0;
-          margin-right: 0;
-          margin-bottom: 0;
-          min-height: 0;
-        }
         .map-zoom-controls {
           bottom: 60px;
         }
         .map-dashboard-card .map-legend {
           grid-column: 1;
-          grid-row: 6;
+          grid-row: 5;
         }
       }
 
@@ -4184,6 +4437,41 @@
                         <button type="button" class="window-stepper-arrow window-stepper-arrow--right" data-window-step="next" aria-label="Use longer window">›</button>
                       </div>
                     </div>
+                    <div class="toolbar-divider" aria-hidden="true"></div>
+                    <div class="network-dropdown-wrap" id="network-dropdown-wrap">
+                      <span class="field-label">Networks</span>
+                      <button
+                        type="button"
+                        class="network-dropdown-trigger"
+                        id="network-dropdown-trigger"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-controls="network-dropdown-menu"
+                      >
+                        <span class="network-dropdown-trigger-value" id="network-dropdown-trigger-value">All</span>
+                        <svg class="network-dropdown-trigger-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                      </button>
+                      <div class="network-dropdown-menu" id="network-dropdown-menu" hidden>
+                        <div class="network-dropdown-header">
+                          <span>Networks</span>
+                          <span class="network-dropdown-count" id="network-dropdown-count">0 / 0</span>
+                        </div>
+                        <div class="network-dropdown-actions" role="group" aria-label="Network selection actions">
+                          <button type="button" class="network-dropdown-action" id="network-select-all" aria-label="Select all networks" title="Select all networks">
+                            <span class="network-dropdown-action-icon network-dropdown-action-icon--select-all" aria-hidden="true"></span>
+                          </button>
+                          <span class="network-dropdown-actions-divider" aria-hidden="true">/</span>
+                          <button type="button" class="network-dropdown-action" id="network-deselect-all" aria-label="Clear all networks" title="Clear all networks">
+                            <span class="network-dropdown-action-icon network-dropdown-action-icon--clear-all" aria-hidden="true"></span>
+                          </button>
+                        </div>
+                        <div class="network-dropdown-list network-list" id="network-list">
+                          <span class="network-empty">Loading networks...</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="tab-slot" data-tab-slot style="display:none">
@@ -4466,19 +4754,6 @@
             </div>
           </div>
               </div>
-              <aside class="network-panel">
-                <div class="network-list-header">
-                  <span>Network</span>
-                  <span>Active sensors</span>
-                </div>
-                <div class="network-list" id="network-list">
-                  <span class="network-empty">Loading networks...</span>
-                </div>
-                <div class="network-actions" role="group" aria-label="Network selection actions">
-                  <button type="button" id="network-select-all">Select All</button>
-                  <button type="button" id="network-deselect-all">Deselect All</button>
-                </div>
-              </aside>
             </div>
           </div>
         </div>
@@ -4858,19 +5133,6 @@
                     <div class="map-summary-update-line">Oldest: <span id="cr-top-oldest-update">—</span></div>
                   </article>
                 </section>
-                <aside class="network-panel">
-                  <div class="network-list-header">
-                    <span>Network</span>
-                    <span>Active sensors</span>
-                  </div>
-                  <div class="network-list" id="cr-network-list">
-                    <span class="network-empty">Loading networks...</span>
-                  </div>
-                  <div class="network-actions" role="group" aria-label="Network selection actions">
-                    <button type="button" id="cr-network-select-all">Select All</button>
-                    <button type="button" id="cr-network-deselect-all">Deselect All</button>
-                  </div>
-                </aside>
                 <div class="map-canvas map-canvas-wrap">
                   <div class="map-search map-floating-search" data-map-search data-map-kind="cr">
                     <span class="map-search-icon" aria-hidden="true">
@@ -5909,6 +6171,12 @@
       const BREATHE_LONDON_MATCHERS = ["breathe london", "breathe-london", "breathe_london"];
       const LAQN_NETWORK_MATCHERS = ["laqn", "london air"];
       const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity", "sensor community", "sensor.community"];
+      const NETWORK_FILTER_BASE_DEFS = [
+        { code: GOVUK_AURN_CODE, label: GOVUK_AURN_LABEL },
+        { code: "openaq", label: "OpenAQ" },
+        { code: "breathe_london", label: "Breathe London" },
+        { code: "sensorcommunity", label: "Sensor.Community" },
+      ];
       const TOTAL_PCON_COUNT = 650;
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
@@ -7439,12 +7707,14 @@
       }
 
       function syncSettingsPanelWidth() {
-        if (!mapSettingsPanel || !networkPanel) {
+        if (!mapSettingsPanel) {
           return;
         }
-        const panelWidth = networkPanel.getBoundingClientRect().width;
+        const panelWidth = networkPanel?.getBoundingClientRect().width || 0;
         if (panelWidth > 0) {
           mapSettingsPanel.style.width = `${panelWidth}px`;
+        } else {
+          mapSettingsPanel.style.removeProperty("width");
         }
       }
 
@@ -7586,11 +7856,16 @@
             label: row?.connector_label || row?.connector?.label || null,
           }];
         }
-        return remapGovUkNetworksForPm25(row, entries);
+        return canonicalizeNetworkEntries(entries);
       }
 
       function buildNetworkDefs(rows) {
-        const byCode = new Map();
+        const byCode = new Map(
+          NETWORK_FILTER_BASE_DEFS.map((def) => [
+            def.code,
+            { code: def.code, label: def.label, count: 0 },
+          ])
+        );
         rows.forEach((row) => {
           const seen = new Set();
           collectNetworkEntries(row).forEach((entry) => {
@@ -7599,7 +7874,11 @@
             if (!byCode.has(entry.code)) {
               byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
             }
-            byCode.get(entry.code).count++;
+            const def = byCode.get(entry.code);
+            if (entry.label && (!def.label || def.label === def.code)) {
+              def.label = entry.label;
+            }
+            def.count++;
           });
         });
         return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
@@ -7739,11 +8018,11 @@
           count.className = "network-count";
           if (def.count > 0) count.textContent = def.count.toLocaleString();
           mainRow.append(leftGroup, count);
-          const shareBar = document.createElement("span");
-          shareBar.className = "network-share-bar";
           const tooltipCount = Number(def.count) || 0;
           const tooltipPct = Math.round(sharePercent);
           label.title = `${def.label}\n${tooltipCount.toLocaleString()} active sensors\n${tooltipPct}% of sensors across all available networks`;
+          const shareBar = document.createElement("span");
+          shareBar.className = "network-share-bar";
           const shareFill = document.createElement("span");
           shareFill.className = "network-share-fill";
           shareFill.style.width = `${sharePercent.toFixed(1)}%`;
@@ -7766,12 +8045,14 @@
         networkSelectAll.disabled = !hasNetworks;
         networkDeselectAll.disabled = !hasNetworks;
         if (!hasNetworks) {
+          window.dispatchEvent(new CustomEvent("networkselectionchange"));
           return;
         }
         const allChecked = networkInputs.every((input) => input.checked);
         const noneChecked = networkInputs.every((input) => !input.checked);
         networkSelectAll.disabled = allChecked;
         networkDeselectAll.disabled = noneChecked;
+        window.dispatchEvent(new CustomEvent("networkselectionchange"));
       }
 
       function syncNetworkRowMutedState() {
@@ -7958,37 +8239,52 @@
         return rows.filter((row) => rowMatchesPollutant(row, activePollutant));
       }
 
-      function remapGovUkNetworksForPm25(row, entries) {
+      function canonicalizeNetworkEntries(entries) {
         if (!entries.length) {
-          return entries;
-        }
-        const hasPm25Context = activePollutant === "pm25" || getPollutantKeyFromRow(row) === "pm25";
-        if (!hasPm25Context) {
           return entries;
         }
         const remapped = entries.map((entry) => {
           const code = String(entry.code || "").toLowerCase();
           const label = String(entry.label || "").toLowerCase();
           const combined = `${code} ${label}`;
-          if (combined.includes("aurn")) {
+          if (combined.includes("aurn") || GOVUK_REMAP_MATCHERS.some((token) => combined.includes(token))) {
             return {
               ...entry,
               code: GOVUK_AURN_CODE,
               label: GOVUK_AURN_LABEL,
             };
           }
-          const shouldRemap = GOVUK_REMAP_MATCHERS.some((token) => combined.includes(token));
-          if (!shouldRemap) {
-            return entry;
+          if (OPENAQ_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: "openaq",
+              label: "OpenAQ",
+            };
           }
-          return {
-            ...entry,
-            code: GOVUK_AURN_CODE,
-            label: GOVUK_AURN_LABEL,
-          };
+          if (BREATHE_LONDON_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: "breathe_london",
+              label: "Breathe London",
+            };
+          }
+          if (SENSOR_COMMUNITY_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: "sensorcommunity",
+              label: "Sensor.Community",
+            };
+          }
+          if (LAQN_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
+            return null;
+          }
+          return null;
         });
         const seen = new Set();
         return remapped.filter((entry) => {
+          if (!entry?.code) {
+            return false;
+          }
           const key = String(entry.code || "").toLowerCase();
           if (seen.has(key)) {
             return false;
@@ -9391,12 +9687,15 @@
         if (!networkInputs.length) {
           return;
         }
+        const actionButton = event.currentTarget instanceof HTMLButtonElement
+          ? event.currentTarget
+          : (event.target instanceof Element ? event.target.closest("button") : null);
         networkSelectionMismatch = false;
-        if (event.target === networkSelectAll) {
+        if (actionButton === networkSelectAll) {
           networkInputs.forEach((input) => {
             input.checked = true;
           });
-        } else if (event.target === networkDeselectAll) {
+        } else if (actionButton === networkDeselectAll) {
           networkInputs.forEach((input) => {
             input.checked = false;
           });
@@ -10400,10 +10699,19 @@
         all: "No Limit",
       };
       const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
+      const GOVUK_AURN_CODE = "aurn";
+      const GOVUK_AURN_LABEL = "GOV.UK AURN";
+      const GOVUK_REMAP_MATCHERS = ["uk air sos", "uk-air-sos", "uk_air_sos", "gov.uk", "govuk"];
       const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
       const BREATHE_LONDON_MATCHERS = ["breathe london", "breathe-london", "breathe_london"];
       const LAQN_NETWORK_MATCHERS = ["laqn", "london air"];
       const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity", "sensor community", "sensor.community"];
+      const NETWORK_FILTER_BASE_DEFS = [
+        { code: GOVUK_AURN_CODE, label: GOVUK_AURN_LABEL },
+        { code: "openaq", label: "OpenAQ" },
+        { code: "breathe_london", label: "Breathe London" },
+        { code: "sensorcommunity", label: "Sensor.Community" },
+      ];
       const AREA_LABEL_PLURAL = "local authorities";
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
@@ -10611,9 +10919,10 @@
       const colorScaleGroup = query(".colour-scale-group");
       const colorScaleToggle = colorScaleGroup ? colorScaleGroup.querySelector(".colour-scale-toggle") : null;
       const networkPanel = query(".network-panel");
-      const networkList = byId("network-list");
-      const networkSelectAll = byId("network-select-all");
-      const networkDeselectAll = byId("network-deselect-all");
+      // Shared toolbar dropdown controls (single DOM instance moved between UK/CR tabs).
+      const networkList = document.getElementById("network-list");
+      const networkSelectAll = document.getElementById("network-select-all");
+      const networkDeselectAll = document.getElementById("network-deselect-all");
       const sortHeaders = detailsTableWrap
         ? Array.from(detailsTableWrap.querySelectorAll("th[data-sort-key]"))
         : [];
@@ -11622,12 +11931,14 @@
       }
 
       function syncSettingsPanelWidth() {
-        if (!mapSettingsPanel || !networkPanel) {
+        if (!mapSettingsPanel) {
           return;
         }
-        const panelWidth = networkPanel.getBoundingClientRect().width;
+        const panelWidth = networkPanel?.getBoundingClientRect().width || 0;
         if (panelWidth > 0) {
           mapSettingsPanel.style.width = `${panelWidth}px`;
+        } else {
+          mapSettingsPanel.style.removeProperty("width");
         }
       }
 
@@ -11759,20 +12070,25 @@
       function collectNetworkEntries(row) {
         const memberships = resolveNetworkMemberships(row);
         if (memberships.length) {
-          return memberships;
+          return canonicalizeNetworkEntries(memberships);
         }
         const fallbackCode = resolveConnectorCode(row);
         if (!fallbackCode) {
           return [];
         }
-        return [{
+        return canonicalizeNetworkEntries([{
           code: fallbackCode,
           label: row?.connector_label || row?.connector?.label || null,
-        }];
+        }]);
       }
 
       function buildNetworkDefs(rows) {
-        const byCode = new Map();
+        const byCode = new Map(
+          NETWORK_FILTER_BASE_DEFS.map((def) => [
+            def.code,
+            { code: def.code, label: def.label, count: 0 },
+          ])
+        );
         rows.forEach((row) => {
           const seen = new Set();
           collectNetworkEntries(row).forEach((entry) => {
@@ -11781,7 +12097,11 @@
             if (!byCode.has(entry.code)) {
               byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
             }
-            byCode.get(entry.code).count++;
+            const def = byCode.get(entry.code);
+            if (entry.label && (!def.label || def.label === def.code)) {
+              def.label = entry.label;
+            }
+            def.count++;
           });
         });
         return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
@@ -11922,11 +12242,11 @@
           count.className = "network-count";
           if (def.count > 0) count.textContent = def.count.toLocaleString();
           mainRow.append(leftGroup, count);
-          const shareBar = document.createElement("span");
-          shareBar.className = "network-share-bar";
           const tooltipCount = Number(def.count) || 0;
           const tooltipPct = Math.round(sharePercent);
           label.title = `${def.label}\n${tooltipCount.toLocaleString()} active sensors\n${tooltipPct}% of sensors across all available networks`;
+          const shareBar = document.createElement("span");
+          shareBar.className = "network-share-bar";
           const shareFill = document.createElement("span");
           shareFill.className = "network-share-fill";
           shareFill.style.width = `${sharePercent.toFixed(1)}%`;
@@ -11949,12 +12269,14 @@
         networkSelectAll.disabled = !hasNetworks;
         networkDeselectAll.disabled = !hasNetworks;
         if (!hasNetworks) {
+          window.dispatchEvent(new CustomEvent("networkselectionchange"));
           return;
         }
         const allChecked = networkInputs.every((input) => input.checked);
         const noneChecked = networkInputs.every((input) => !input.checked);
         networkSelectAll.disabled = allChecked;
         networkDeselectAll.disabled = noneChecked;
+        window.dispatchEvent(new CustomEvent("networkselectionchange"));
       }
 
       function syncNetworkRowMutedState() {
@@ -12172,6 +12494,61 @@
           return rows;
         }
         return rows.filter((row) => rowMatchesPollutant(row, activePollutant));
+      }
+
+      function canonicalizeNetworkEntries(entries) {
+        if (!entries.length) {
+          return entries;
+        }
+        const remapped = entries.map((entry) => {
+          const code = String(entry.code || "").toLowerCase();
+          const label = String(entry.label || "").toLowerCase();
+          const combined = `${code} ${label}`;
+          if (combined.includes("aurn") || GOVUK_REMAP_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: GOVUK_AURN_CODE,
+              label: GOVUK_AURN_LABEL,
+            };
+          }
+          if (OPENAQ_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: "openaq",
+              label: "OpenAQ",
+            };
+          }
+          if (BREATHE_LONDON_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: "breathe_london",
+              label: "Breathe London",
+            };
+          }
+          if (SENSOR_COMMUNITY_MATCHERS.some((token) => combined.includes(token))) {
+            return {
+              ...entry,
+              code: "sensorcommunity",
+              label: "Sensor.Community",
+            };
+          }
+          if (LAQN_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
+            return null;
+          }
+          return null;
+        });
+        const seen = new Set();
+        return remapped.filter((entry) => {
+          if (!entry?.code) {
+            return false;
+          }
+          const key = String(entry.code || "").toLowerCase();
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+          return true;
+        });
       }
 
       function collectStationEntries(rows, pconCode) {
@@ -13852,6 +14229,14 @@
         renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
         updateNetworkSummaryCardVisibility();
         if (!basePconRows.length && !baseLatestRows.length) {
+          scopedLatestRows = [];
+          latestRows = [];
+          pconRows = [];
+          pconLookup = new Map();
+          updateRowCountText();
+          updateSummary();
+          renderMap();
+          updateDetailsPanel();
           persistNetworkSelection();
           return;
         }
@@ -13896,12 +14281,15 @@
         if (!networkInputs.length) {
           return;
         }
+        const actionButton = event.currentTarget instanceof HTMLButtonElement
+          ? event.currentTarget
+          : (event.target instanceof Element ? event.target.closest("button") : null);
         networkSelectionMismatch = false;
-        if (event.target === networkSelectAll) {
+        if (actionButton === networkSelectAll) {
           networkInputs.forEach((input) => {
             input.checked = true;
           });
-        } else if (event.target === networkDeselectAll) {
+        } else if (actionButton === networkDeselectAll) {
           networkInputs.forEach((input) => {
             input.checked = false;
           });
@@ -16348,6 +16736,14 @@
   const regionLabel = document.getElementById("toolbar-region-label");
   const regionMenu = document.getElementById("toolbar-region-menu");
   const popoverWrap = document.getElementById("toolbar-popover-wrap");
+  const networkDropdownWrap = document.getElementById("network-dropdown-wrap");
+  const networkDropdownTrigger = document.getElementById("network-dropdown-trigger");
+  const networkDropdownMenu = document.getElementById("network-dropdown-menu");
+  const networkDropdownTriggerValue = document.getElementById("network-dropdown-trigger-value");
+  const networkDropdownCount = document.getElementById("network-dropdown-count");
+  const networkList = document.getElementById("network-list");
+  const networkSelectAll = document.getElementById("network-select-all");
+  const networkDeselectAll = document.getElementById("network-deselect-all");
   const tabUk = document.getElementById("tab-uk");
   const tabCr = document.getElementById("tab-cr");
   const WINDOW_ORDER = ["3h", "6h", "1d", "7d", "all"];
@@ -16364,6 +16760,44 @@
   let prefersReducedMotion = !!reduceMotionQuery?.matches;
   let windowStepperKey = null;
   let windowStepperTimer = null;
+
+  function getNetworkInputs() {
+    if (!networkList) {
+      return [];
+    }
+    return Array.from(networkList.querySelectorAll("input[data-network]"));
+  }
+
+  function setNetworkDropdownOpen(isOpen) {
+    if (!networkDropdownMenu || !networkDropdownTrigger) {
+      return;
+    }
+    networkDropdownMenu.hidden = !isOpen;
+    networkDropdownTrigger.classList.toggle("is-open", isOpen);
+    networkDropdownTrigger.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  function updateNetworkDropdownState() {
+    if (!networkDropdownTriggerValue || !networkDropdownCount) {
+      return;
+    }
+    const inputs = getNetworkInputs();
+    const total = inputs.length;
+    const selected = inputs.filter((input) => input.checked).length;
+    if (total === 0) {
+      networkDropdownTriggerValue.textContent = "None";
+      networkDropdownCount.textContent = "0 / 0";
+      return;
+    }
+    networkDropdownCount.textContent = `${selected} / ${total}`;
+    if (selected === total) {
+      networkDropdownTriggerValue.textContent = "All";
+    } else if (selected === 0) {
+      networkDropdownTriggerValue.textContent = "None";
+    } else {
+      networkDropdownTriggerValue.textContent = `${selected} of ${total} selected`;
+    }
+  }
 
   function normalizeWindowKey(value) {
     return WINDOW_ORDER.includes(value) ? value : "6h";
@@ -16493,10 +16927,20 @@
   // Region popover — open/close
   regionTrigger?.addEventListener("click", () => {
     const isOpen = !regionMenu.hidden;
+    setNetworkDropdownOpen(false);
     regionMenu.hidden = isOpen;
     regionTrigger.classList.toggle("open", !isOpen);
     regionTrigger.setAttribute("aria-expanded", String(!isOpen));
     if (!isOpen) syncRegionActive();
+  });
+
+  networkDropdownTrigger?.addEventListener("click", () => {
+    const isOpen = !(networkDropdownMenu?.hidden ?? true);
+    regionMenu.hidden = true;
+    regionTrigger?.classList.remove("open");
+    regionTrigger?.setAttribute("aria-expanded", "false");
+    setNetworkDropdownOpen(!isOpen);
+    updateNetworkDropdownState();
   });
 
   // Close on outside click
@@ -16506,6 +16950,19 @@
       regionTrigger?.classList.remove("open");
       regionTrigger?.setAttribute("aria-expanded", "false");
     }
+    if (networkDropdownWrap && !networkDropdownWrap.contains(e.target)) {
+      setNetworkDropdownOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+    regionMenu.hidden = true;
+    regionTrigger?.classList.remove("open");
+    regionTrigger?.setAttribute("aria-expanded", "false");
+    setNetworkDropdownOpen(false);
   });
 
   // Region item clicks
@@ -16519,6 +16976,32 @@
       syncRegionActive(region);
       window.crMap?.setRegion(region, { updateUrl: true });
     });
+  });
+
+  networkList?.addEventListener("change", () => {
+    updateNetworkDropdownState();
+  });
+
+  networkSelectAll?.addEventListener("click", () => {
+    window.requestAnimationFrame(updateNetworkDropdownState);
+  });
+
+  networkDeselectAll?.addEventListener("click", () => {
+    window.requestAnimationFrame(updateNetworkDropdownState);
+  });
+
+  if (networkList && typeof MutationObserver !== "undefined") {
+    const observer = new MutationObserver(() => {
+      updateNetworkDropdownState();
+    });
+    observer.observe(networkList, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  window.addEventListener("networkselectionchange", () => {
+    updateNetworkDropdownState();
   });
 
   function syncRegionActive(active) {
@@ -16535,6 +17018,7 @@
     toolbarTabUk?.classList.toggle("active", isUk);
     toolbarTabCr?.classList.toggle("active", !isUk);
     if (regionSection) regionSection.classList.toggle("visible", !isUk);
+    setNetworkDropdownOpen(false);
     if (!isUk && regionLabel) {
       const region = window.crMap?.getRegion?.();
       if (region) {
@@ -16542,11 +17026,13 @@
         syncRegionActive(region);
       }
     }
+    updateNetworkDropdownState();
   };
 
   // Sync toolbar to the tab state that was already set before this script ran
   const initialTabKey = tabUk?.getAttribute("aria-selected") === "true" ? "uk" : "cr";
   window.syncToolbar(initialTabKey);
+  updateNetworkDropdownState();
   renderWindowStepper({ force: true });
 })();
     </script>
