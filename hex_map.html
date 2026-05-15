@@ -5689,6 +5689,7 @@
     <div class="tooltip" id="cr-tooltip"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+    <script src="timeseries-client.js"></script>
     <script src="chart-core.js"></script>
     <script>
       // ── Top summary boxes — shared updater ───────────────────────────────────
@@ -15326,6 +15327,12 @@
   const params = new URLSearchParams(window.location.search);
   const cacheBaseUrl = resolveCacheBaseUrl(params.get("cache_base"));
   const seriesUrl = cacheBaseUrl ? `${cacheBaseUrl}/timeseries` : "";
+  // chart-core.js is rendering-only; timeseries-client.js owns URL/payload normalization.
+  const sharedTimeseriesClient = window.UkAqTimeseriesClient || null;
+  const UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED = parseBooleanFlag(
+    params.get("timeseries_v2"),
+    true
+  );
   const aqiHistoryBaseUrl = resolveAqiHistoryBaseUrl(params.get("aqi_history_base"));
   const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
   const aqiHistoryBaseCandidates = dedupeStrings([
@@ -15408,6 +15415,16 @@
     return result;
   }
 
+  function parseBooleanFlag(rawValue, fallbackValue) {
+    if (rawValue === null || rawValue === undefined || rawValue === "") {
+      return Boolean(fallbackValue);
+    }
+    const normalized = String(rawValue).trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return Boolean(fallbackValue);
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -15458,6 +15475,9 @@
   }
 
   function parseSeriesPayloadPoints(payload) {
+    if (sharedTimeseriesClient?.parseTimeseriesPayloadPoints) {
+      return sharedTimeseriesClient.parseTimeseriesPayloadPoints(payload);
+    }
     const raw = Array.isArray(payload?.data) ? payload.data : [];
     const dataFormat = String(payload?.data_format || "").toLowerCase();
     const columns = Array.isArray(payload?.columns) ? payload.columns : [];
@@ -15472,6 +15492,65 @@
       }
       return { date: new Date(row?.observed_at), value: parseObservationNumericValue(row?.value) };
     }).filter((row) => Number.isFinite(row.date?.getTime()) && Number.isFinite(row.value) && row.value >= 0);
+  }
+
+  function normalizeTimeseriesDebugMeta(payload) {
+    if (sharedTimeseriesClient?.normalizeTimeseriesMeta) {
+      return sharedTimeseriesClient.normalizeTimeseriesMeta(payload);
+    }
+    const meta = payload?.meta || {};
+    return {
+      source_mode: meta?.source_mode || payload?.source_mode || null,
+      r2_coverage_end: meta?.r2_coverage_end || null,
+      ingest_tail_start: meta?.ingest_tail_start || null,
+      has_gap: Object.prototype.hasOwnProperty.call(meta, "has_gap") ? meta.has_gap : null,
+      cache_status: meta?.cache_status || null,
+    };
+  }
+
+  function logTimeseriesDebugMeta(contextLabel, payload, entry, chunk) {
+    const meta = normalizeTimeseriesDebugMeta(payload);
+    if (!meta) return;
+    if (
+      meta.source_mode === null &&
+      meta.r2_coverage_end === null &&
+      meta.ingest_tail_start === null &&
+      meta.has_gap === null &&
+      meta.cache_status === null
+    ) {
+      return;
+    }
+    console.debug("[uk-aq timeseries]", contextLabel, {
+      timeseries_id: entry?.timeseriesId || null,
+      chunk_start: chunk?.startIso || null,
+      chunk_end: chunk?.endIso || null,
+      source_mode: meta.source_mode,
+      r2_coverage_end: meta.r2_coverage_end,
+      ingest_tail_start: meta.ingest_tail_start,
+      has_gap: meta.has_gap,
+      cache_status: meta.cache_status,
+    });
+  }
+
+  function buildObservationSeriesRequestUrl(timeseriesId, chunk) {
+    if (!seriesUrl || !timeseriesId) return null;
+    if (sharedTimeseriesClient?.buildCanonicalTimeseriesUrl) {
+      return sharedTimeseriesClient.buildCanonicalTimeseriesUrl({
+        baseUrl: seriesUrl,
+        timeseriesId,
+        windowLabel: state.chartModeTimeRange || "24h",
+        startIso: chunk?.startIso || null,
+        endIso: chunk?.endIso || null,
+        proxyV2Enabled: UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED,
+        format: "compact",
+      });
+    }
+    const url = new URL(seriesUrl);
+    url.searchParams.set("timeseries_id", String(timeseriesId));
+    url.searchParams.set("start", chunk.startIso);
+    url.searchParams.set("end", chunk.endIso);
+    url.searchParams.set("format", "compact");
+    return url;
   }
 
   function parseAqiBandPayload(payload, pollutantKey) {
@@ -15851,16 +15930,14 @@
 
   async function fetchObservationSeriesChunk(entry, chunk, signal) {
     if (!seriesUrl || !entry?.timeseriesId) return { entry, points: [], guideline: null };
-    const url = new URL(seriesUrl);
-    url.searchParams.set("timeseries_id", entry.timeseriesId);
-    url.searchParams.set("start", chunk.startIso);
-    url.searchParams.set("end", chunk.endIso);
-    url.searchParams.set("format", "compact");
+    const url = buildObservationSeriesRequestUrl(entry.timeseriesId, chunk);
+    if (!url) return { entry, points: [], guideline: null };
     const init = { credentials: "include", headers: { Accept: "application/json" }, signal };
     const cacheFetch = getCacheFetch();
     const response = cacheFetch ? await cacheFetch(url.toString(), init) : await fetch(url.toString(), init);
     if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
     const payload = await response.json();
+    logTimeseriesDebugMeta("hex_map", payload, entry, chunk);
     return { entry, points: parseSeriesPayloadPoints(payload), guideline: payload?.guideline || null };
   }
 

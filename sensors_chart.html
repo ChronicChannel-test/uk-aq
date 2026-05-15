@@ -555,6 +555,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+    <script src="timeseries-client.js"></script>
     <script src="chart-core.js"></script>
     <script>
       const PROJECT_REF_PLACEHOLDER = "__SUPABASE_PROJECT_REF__";
@@ -618,6 +619,12 @@
       const SERIES_EDGE_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/timeseries`
         : "";
+      // chart-core.js is rendering-only; timeseries-client.js owns request/response normalization.
+      const sharedTimeseriesClient = window.UkAqTimeseriesClient || null;
+      const UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED = parseBooleanFlag(
+        params.get("timeseries_v2"),
+        true
+      );
       const stationSelect = document.getElementById("station-select");
 
       const windowSelect = document.getElementById("window-select");
@@ -753,6 +760,20 @@
           out.push(normalized);
         });
         return out;
+      }
+
+      function parseBooleanFlag(rawValue, fallbackValue) {
+        if (rawValue === null || rawValue === undefined || rawValue === "") {
+          return Boolean(fallbackValue);
+        }
+        const normalized = String(rawValue).trim().toLowerCase();
+        if (["1", "true", "yes", "on"].includes(normalized)) {
+          return true;
+        }
+        if (["0", "false", "no", "off"].includes(normalized)) {
+          return false;
+        }
+        return Boolean(fallbackValue);
       }
 
       const CHART_METRICS_ENDPOINT = cacheBaseUrl ? `${cacheBaseUrl}/chart-metrics` : "";
@@ -2350,6 +2371,9 @@
       }
 
       function parseObservationNumericValue(rawValue) {
+        if (sharedTimeseriesClient?.parseObservationNumericValue) {
+          return sharedTimeseriesClient.parseObservationNumericValue(rawValue);
+        }
         if (rawValue === null || rawValue === undefined) {
           return Number.NaN;
         }
@@ -2364,6 +2388,9 @@
       }
 
       function parseSeriesPayloadPoints(payload) {
+        if (sharedTimeseriesClient?.parseTimeseriesPayloadPoints) {
+          return sharedTimeseriesClient.parseTimeseriesPayloadPoints(payload);
+        }
         const raw = Array.isArray(payload?.data) ? payload.data : [];
         const dataFormat = String(payload?.data_format || "").toLowerCase();
         const columns = Array.isArray(payload?.columns) ? payload.columns : [];
@@ -2389,6 +2416,47 @@
             Number.isFinite(row.value) &&
             row.value >= 0
         );
+      }
+
+      function normalizeTimeseriesDebugMeta(payload) {
+        if (sharedTimeseriesClient?.normalizeTimeseriesMeta) {
+          return sharedTimeseriesClient.normalizeTimeseriesMeta(payload);
+        }
+        const meta = payload?.meta || {};
+        return {
+          source_mode: meta?.source_mode || payload?.source_mode || null,
+          r2_coverage_end: meta?.r2_coverage_end || null,
+          ingest_tail_start: meta?.ingest_tail_start || null,
+          has_gap: Object.prototype.hasOwnProperty.call(meta, "has_gap") ? meta.has_gap : null,
+          cache_status: meta?.cache_status || null,
+        };
+      }
+
+      function logTimeseriesDebugMeta(contextLabel, payload, details = {}) {
+        const meta = normalizeTimeseriesDebugMeta(payload);
+        if (!meta) {
+          return;
+        }
+        if (
+          meta.source_mode === null &&
+          meta.r2_coverage_end === null &&
+          meta.ingest_tail_start === null &&
+          meta.has_gap === null &&
+          meta.cache_status === null
+        ) {
+          return;
+        }
+        console.debug("[uk-aq timeseries]", contextLabel, {
+          timeseries_id: details.seriesId || selectedSeriesId || null,
+          window: details.windowValue || null,
+          start: details.startIso || null,
+          end: details.endIso || null,
+          source_mode: meta.source_mode,
+          r2_coverage_end: meta.r2_coverage_end,
+          ingest_tail_start: meta.ingest_tail_start,
+          has_gap: meta.has_gap,
+          cache_status: meta.cache_status,
+        });
       }
 
       function parseAqiBandPayload(payload, pollutantKey) {
@@ -3541,7 +3609,19 @@
 
 
 
-      function buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, since = null }) {
+      function buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, since = null, windowValue = null }) {
+        if (sharedTimeseriesClient?.buildCanonicalTimeseriesUrl) {
+          return sharedTimeseriesClient.buildCanonicalTimeseriesUrl({
+            baseUrl: SERIES_EDGE_URL,
+            timeseriesId: seriesId,
+            startIso,
+            endIso,
+            since,
+            windowLabel: windowValue || (windowSelect?.value || "24h"),
+            proxyV2Enabled: UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED,
+            format: "compact",
+          });
+        }
         const url = new URL(SERIES_EDGE_URL);
         url.searchParams.set("timeseries_id", seriesId);
         url.searchParams.set("start", startIso);
@@ -3566,10 +3646,10 @@
         return lastPoint.date.toISOString();
       }
 
-      async function fetchObservationSeriesChunk({ seriesId, startIso, endIso, signal, loadId }) {
+      async function fetchObservationSeriesChunk({ seriesId, startIso, endIso, signal, loadId, windowValue = null }) {
         noteObservationRequest(loadId, { usedEtag: false });
         const response = await fetchCacheApi(
-          buildObservationSeriesRequestUrl({ seriesId, startIso, endIso }).toString(),
+          buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, windowValue }).toString(),
           {
             headers: { Accept: "application/json" },
             signal,
@@ -3579,7 +3659,14 @@
         if (!response.ok) {
           throw new Error(`Series request failed: ${response.status}`);
         }
-        return response.json();
+        const payload = await response.json();
+        logTimeseriesDebugMeta("sensors_chart_chunk", payload, {
+          seriesId,
+          startIso,
+          endIso,
+          windowValue,
+        });
+        return payload;
       }
 
       async function refreshObservationSeriesFromCache(seriesKey, cachedWindowPoints, range, meta, windowValue, loadId) {
@@ -3601,6 +3688,7 @@
             startIso: range.startIso,
             endIso: range.endIso,
             since,
+            windowValue,
           }).toString(),
           {
             headers: requestHeaders,
@@ -3628,6 +3716,12 @@
           seriesEtagByKey.set(seriesKey, responseEtag);
         }
         const payload = await response.json();
+        logTimeseriesDebugMeta("sensors_chart_refresh", payload, {
+          seriesId: selectedSeriesId,
+          startIso: range.startIso,
+          endIso: range.endIso,
+          windowValue,
+        });
         if (!isSeriesLoadCurrent(loadId)) {
           return true;
         }
@@ -3696,6 +3790,7 @@
             seriesId: selectedSeriesId,
             startIso: range.startIso,
             endIso: range.endIso,
+            windowValue,
           }).toString(),
           {
             headers: requestHeaders,
@@ -3728,6 +3823,12 @@
           seriesEtagByKey.set(seriesKey, responseEtag);
         }
         const payload = await response.json();
+        logTimeseriesDebugMeta("sensors_chart_full", payload, {
+          seriesId: selectedSeriesId,
+          startIso: range.startIso,
+          endIso: range.endIso,
+          windowValue,
+        });
         if (!isSeriesLoadCurrent(loadId)) {
           return;
         }
@@ -3915,6 +4016,7 @@
             endIso: chunk.endIso,
             signal: controller.signal,
             loadId,
+            windowValue,
           });
           if (!isSeriesLoadCurrent(loadId)) {
             return;
