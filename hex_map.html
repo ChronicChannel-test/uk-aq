@@ -17187,7 +17187,7 @@
         if (left + panelWidth > window.innerWidth - margin) {
           left = Math.max(margin, window.innerWidth - panelWidth - margin);
         }
-        const safeRight = Math.max(0, wrapRect.right - left + 8);
+        const safeRight = Math.max(0, wrapRect.right - left);
         targetWrap = wrap;
         targetSafeRight = `${Math.ceil(safeRight)}px`;
       }
