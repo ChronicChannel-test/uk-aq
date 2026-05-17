@@ -10713,6 +10713,12 @@
           }
           syncSettingsPanelWidth();
         },
+        renderLayout: () => {
+          requestAnimationFrame(() => {
+            renderMap();
+          });
+          syncSettingsPanelWidth();
+        },
         restoreNetworks: () => {
           applyStoredNetworkSelection();
           applyNetworkFilters();
@@ -15479,6 +15485,12 @@
           }
           syncSettingsPanelWidth();
         },
+        renderLayout: () => {
+          requestAnimationFrame(() => {
+            renderMap();
+          });
+          syncSettingsPanelWidth();
+        },
         restoreNetworks: () => {
           applyStoredNetworkSelection();
           applyNetworkFilters();
@@ -17072,6 +17084,7 @@
   let windowStepperKey = null;
   let windowStepperTimer = null;
   let cachedNetworkPanelWidth = 0;
+  const LONDON_NETWORK_MAP_GAP_PX = -72;
 
   function getNetworkInputs() {
     if (!networkList) {
@@ -17135,11 +17148,19 @@
 
   function renderMapForKey(mapKey) {
     if (mapKey === "uk") {
-      window.ukMap?.render?.();
+      if (typeof window.ukMap?.renderLayout === "function") {
+        window.ukMap.renderLayout();
+      } else {
+        window.ukMap?.render?.();
+      }
       return;
     }
     if (mapKey === "cr") {
-      window.crMap?.render?.();
+      if (typeof window.crMap?.renderLayout === "function") {
+        window.crMap.renderLayout();
+      } else {
+        window.crMap?.render?.();
+      }
     }
   }
 
@@ -17187,7 +17208,7 @@
         if (left + panelWidth > window.innerWidth - margin) {
           left = Math.max(margin, window.innerWidth - panelWidth - margin);
         }
-        const safeRight = Math.max(0, wrapRect.right - left);
+        const safeRight = Math.max(0, wrapRect.right - left + LONDON_NETWORK_MAP_GAP_PX);
         targetWrap = wrap;
         targetSafeRight = `${Math.ceil(safeRight)}px`;
       }
