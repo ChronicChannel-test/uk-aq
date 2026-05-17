@@ -2963,175 +2963,6 @@
         }
       }
 
-      /* Toolbar right-aligned status + refresh slots */
-      .toolbar-right {
-        margin-left: auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .toolbar-status-slot:empty,
-      .toolbar-refresh-slot:empty {
-        display: none;
-      }
-      .toolbar-status-slot,
-      .toolbar-refresh-slot {
-        display: inline-flex;
-        align-items: center;
-      }
-
-      /* Networks pill (lives inside each map-canvas, top-right) */
-      .networks-pill-anchor {
-        position: relative;
-        display: inline-flex;
-      }
-      .networks-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 6px 11px;
-        font-family: inherit;
-        font-size: 16px;
-        font-weight: 500;
-        line-height: 1.2;
-        color: var(--accent-deep);
-        background: var(--surface, #ffffff);
-        border: 1px solid var(--line, #e5e7eb);
-        border-radius: 6px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        cursor: pointer;
-        white-space: nowrap;
-        min-width: 17ch;
-        justify-content: flex-start;
-        transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
-      }
-      .networks-pill:hover:not([aria-expanded="true"]) {
-        background: var(--surface-hover, #f8fafc);
-        border-color: var(--line-strong, #d1d5db);
-      }
-      .networks-pill:focus-visible {
-        outline: 2px solid var(--accent, #2563eb);
-        outline-offset: 2px;
-      }
-      .networks-pill[aria-expanded="true"] {
-        background: var(--accent-soft, #eff6ff);
-        border-color: var(--accent, #2563eb);
-        color: var(--accent, #2563eb);
-      }
-      .networks-pill-text {
-        font-variant-numeric: tabular-nums;
-      }
-      .networks-pill-chevron {
-        margin-left: auto;
-        flex-shrink: 0;
-        transition: transform 0.15s ease;
-      }
-      .networks-pill[aria-expanded="true"] .networks-pill-chevron {
-        transform: rotate(180deg);
-      }
-
-      /* Floating networks panel — re-uses .network-dropdown-* internals */
-      .networks-panel-floating {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 40;
-        display: flex;
-        flex-direction: column;
-        min-width: 280px;
-        max-width: min(360px, calc(100vw - 24px));
-        max-height: min(70vh, 480px);
-        padding: 10px 12px;
-        background: var(--surface, #ffffff);
-        border: 1px solid var(--line, #e5e7eb);
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
-      }
-      .networks-panel-floating[hidden] {
-        display: none;
-      }
-      .networks-panel-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 6px;
-      }
-      .networks-panel-title {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--text-muted, #6b7280);
-      }
-      .networks-panel-spacer {
-        flex: 1 1 auto;
-      }
-      .networks-panel-pin {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        padding: 0;
-        margin-left: 6px;
-        border: 1px solid transparent;
-        border-radius: 6px;
-        background: transparent;
-        color: var(--text-muted, #6b7280);
-        cursor: pointer;
-        transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-      }
-      .networks-panel-pin:hover {
-        background: var(--surface-hover, #f3f4f6);
-        color: var(--text, #1f2937);
-      }
-      .networks-panel-pin:focus-visible {
-        outline: 2px solid var(--accent, #2563eb);
-        outline-offset: 2px;
-      }
-      .networks-panel-pin[aria-pressed="true"] {
-        background: var(--accent-soft, #eff6ff);
-        color: var(--accent, #2563eb);
-        border-color: var(--accent, #2563eb);
-      }
-      .networks-panel-pin[aria-pressed="true"] svg {
-        transform: rotate(-30deg);
-      }
-      .networks-panel-footer {
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid var(--line, #e5e7eb);
-        font-size: 11px;
-        color: var(--text-muted, #6b7280);
-      }
-
-      /* Map-topbar layout: now hosts the Networks pill on the right.
-         Status pill + Refresh button are hidden here while they live in the toolbar. */
-      .map-topbar {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-      }
-      .map-topbar > .status-indicator,
-      .map-topbar > .btn-refresh {
-        display: none;
-      }
-      .map-topbar > .networks-pill-anchor {
-        margin-left: auto;
-      }
-
-      @media (max-width: 720px) {
-        .networks-panel-floating {
-          min-width: min(280px, calc(100vw - 28px));
-        }
-      }
-
-      /* London map is narrower than the canvas; shift left ~40px so the floating
-         Networks panel (pinned, anchored top-right) doesn't overlap it. */
-      #cr-hex-map[data-region="London"] {
-        transform: translateX(-40px);
-      }
-
       /* Region popover */
       .popover-wrap { position: relative; }
       .popover-trigger {
@@ -4606,9 +4437,40 @@
                         <button type="button" class="window-stepper-arrow window-stepper-arrow--right" data-window-step="next" aria-label="Use longer window">›</button>
                       </div>
                     </div>
-                    <div class="toolbar-right">
-                      <div class="toolbar-status-slot" id="toolbar-status-slot" aria-live="polite"></div>
-                      <div class="toolbar-refresh-slot" id="toolbar-refresh-slot"></div>
+                    <div class="toolbar-divider" aria-hidden="true"></div>
+                    <div class="network-dropdown-wrap" id="network-dropdown-wrap">
+                      <span class="field-label">Networks</span>
+                      <button
+                        type="button"
+                        class="network-dropdown-trigger"
+                        id="network-dropdown-trigger"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-controls="network-dropdown-menu"
+                      >
+                        <span class="network-dropdown-trigger-value" id="network-dropdown-trigger-value">All</span>
+                        <svg class="network-dropdown-trigger-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                      </button>
+                      <div class="network-dropdown-menu" id="network-dropdown-menu" hidden>
+                        <div class="network-dropdown-header">
+                          <span>Networks</span>
+                          <span class="network-dropdown-count" id="network-dropdown-count">0 / 0</span>
+                        </div>
+                        <div class="network-dropdown-actions" role="group" aria-label="Network selection actions">
+                          <button type="button" class="network-dropdown-action" id="network-select-all" aria-label="Select all networks" title="Select all networks">
+                            <span class="network-dropdown-action-icon network-dropdown-action-icon--select-all" aria-hidden="true"></span>
+                          </button>
+                          <span class="network-dropdown-actions-divider" aria-hidden="true">/</span>
+                          <button type="button" class="network-dropdown-action" id="network-deselect-all" aria-label="Clear all networks" title="Clear all networks">
+                            <span class="network-dropdown-action-icon network-dropdown-action-icon--clear-all" aria-hidden="true"></span>
+                          </button>
+                        </div>
+                        <div class="network-dropdown-list network-list" id="network-list">
+                          <span class="network-empty">Loading networks...</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4623,7 +4485,7 @@
                   <article class="map-summary-card">
                     <div class="map-summary-label">Total Active Sensors</div>
                     <div class="map-summary-value" id="top-total-sensors">—</div>
-                    <div class="map-summary-subtext" id="top-total-sensors-subtext">from selected networks</div>
+                    <div class="map-summary-subtext">from selected networks</div>
                   </article>
                   <article class="map-summary-card">
                     <div class="map-summary-label">Coverage</div>
@@ -4678,34 +4540,12 @@
                     <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
                   </div>
                   <div class="map-topbar">
-                    <!-- Live + Refresh live in the toolbar via JS; this container holds them when UK tab is inactive -->
-                    <span
-                      class="status-indicator status-pill"
-                      id="status-pill-uk"
-                      data-state="loading"
-                      data-status-pill
-                    >
-                      <span class="pulse-dot" aria-hidden="true"></span>
-                      <span class="hint" id="status">Loading...</span>
-                    </span>
-                    <button class="btn-refresh" id="refresh" data-refresh-button>Refresh</button>
-                    <div class="networks-pill-anchor" id="uk-networks-pill-anchor">
-                      <button
-                        type="button"
-                        class="networks-pill"
-                        id="uk-networks-pill"
-                        data-networks-pill
-                        aria-haspopup="dialog"
-                        aria-expanded="false"
-                        aria-controls="networks-panel-floating"
-                      >
-                        <span class="networks-pill-text">Networks: All</span>
-                        <svg class="networks-pill-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-                          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  <span class="status-indicator status-pill" data-state="loading">
+                    <span class="pulse-dot" aria-hidden="true"></span>
+                    <span class="hint" id="status">Loading...</span>
+                  </span>
+                  <button class="btn-refresh" id="refresh">Refresh</button>
+                </div>
                 <section class="hex-chart-mode-panel" id="uk-hex-chart-mode" aria-label="Selected constituency sensors chart" hidden>
                   <div class="hex-chart-mode-header">
                     <div class="sensor-panel-title-line hex-chart-mode-title-line">
@@ -5260,7 +5100,7 @@
                   <article class="map-summary-card">
                     <div class="map-summary-label">Total Active Sensors</div>
                     <div class="map-summary-value" id="cr-top-total-sensors">—</div>
-                    <div class="map-summary-subtext" id="cr-top-total-sensors-subtext">from selected networks</div>
+                    <div class="map-summary-subtext">from selected networks</div>
                   </article>
                   <article class="map-summary-card">
                     <div class="map-summary-label">Coverage</div>
@@ -5315,33 +5155,11 @@
                     <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
                   </div>
                   <div class="map-topbar">
-                    <!-- Live + Refresh live in the toolbar via JS; this container holds them when CR tab is inactive -->
-                    <span
-                      class="status-indicator status-pill"
-                      id="status-pill-cr"
-                      data-state="loading"
-                      data-status-pill
-                    >
+                    <span class="status-indicator status-pill" data-state="loading">
                       <span class="pulse-dot" aria-hidden="true"></span>
                       <span class="hint" id="cr-status">Loading...</span>
                     </span>
-                    <button class="btn-refresh" id="cr-refresh" data-refresh-button>Refresh</button>
-                    <div class="networks-pill-anchor" id="cr-networks-pill-anchor">
-                      <button
-                        type="button"
-                        class="networks-pill"
-                        id="cr-networks-pill"
-                        data-networks-pill
-                        aria-haspopup="dialog"
-                        aria-expanded="false"
-                        aria-controls="networks-panel-floating"
-                      >
-                        <span class="networks-pill-text">Networks: All</span>
-                        <svg class="networks-pill-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-                          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                      </button>
-                    </div>
+                    <button class="btn-refresh" id="cr-refresh">Refresh</button>
                   </div>
                   <section class="hex-chart-mode-panel" id="cr-hex-chart-mode" aria-label="Selected local authority sensors chart" hidden>
                     <div class="hex-chart-mode-header">
@@ -5406,7 +5224,7 @@
                     </div>
                   </section>
                   <div class="map-svg-viewport">
-                    <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority" data-region="London"></svg>
+                    <svg id="cr-hex-map" role="img" aria-label="Hex cartogram of PM2.5 by local authority"></svg>
                   </div>
                   <div class="map-settings-panel" id="cr-map-settings-panel" role="dialog" aria-label="Sensor data settings">
                     <div class="map-settings-header">
@@ -5869,47 +5687,6 @@
 
     <div class="tooltip" id="tooltip"></div>
     <div class="tooltip" id="cr-tooltip"></div>
-
-    <!-- Shared floating networks panel — positioned near the active Networks pill on open -->
-    <div
-      class="networks-panel-floating"
-      id="networks-panel-floating"
-      role="dialog"
-      aria-label="Networks"
-      aria-modal="false"
-      hidden
-    >
-      <div class="network-dropdown-header networks-panel-header">
-        <span class="networks-panel-title">NETWORKS</span>
-        <span class="networks-panel-spacer" aria-hidden="true"></span>
-        <span class="network-dropdown-count" id="network-dropdown-count">0 / 0</span>
-        <button
-          type="button"
-          class="networks-panel-pin"
-          id="networks-panel-pin"
-          aria-pressed="false"
-          title="Pin networks panel"
-          aria-label="Pin networks panel"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M14 4l6 6-3 1-3 6-2-2-5 5-1-1 5-5-2-2 6-3 -1-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <div class="network-dropdown-actions" role="group" aria-label="Network selection actions">
-        <button type="button" class="network-dropdown-action" id="network-select-all" aria-label="Select all networks" title="Select all networks">
-          <span class="network-dropdown-action-icon network-dropdown-action-icon--select-all" aria-hidden="true"></span>
-        </button>
-        <span class="network-dropdown-actions-divider" aria-hidden="true">/</span>
-        <button type="button" class="network-dropdown-action" id="network-deselect-all" aria-label="Clear all networks" title="Clear all networks">
-          <span class="network-dropdown-action-icon network-dropdown-action-icon--clear-all" aria-hidden="true"></span>
-        </button>
-      </div>
-      <div class="network-dropdown-list network-list" id="network-list">
-        <span class="network-empty">Loading networks...</span>
-      </div>
-      <div class="networks-panel-footer">Counts are active sensors in the current window.</div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
     <script src="timeseries-client.js"></script>
@@ -14708,10 +14485,6 @@
         }
         activeRegion = normalized;
         mapState.lastCrMap = normalized;
-        const crSvgNode = svg.node();
-        if (crSvgNode) {
-          crSvgNode.dataset.region = normalized;
-        }
         if (mapSelect) {
           mapSelect.value = normalized;
         }
@@ -17040,17 +16813,16 @@
   const regionLabel = document.getElementById("toolbar-region-label");
   const regionMenu = document.getElementById("toolbar-region-menu");
   const popoverWrap = document.getElementById("toolbar-popover-wrap");
-  const networkDropdownMenu = document.getElementById("networks-panel-floating");
+  const networkDropdownWrap = document.getElementById("network-dropdown-wrap");
+  const networkDropdownTrigger = document.getElementById("network-dropdown-trigger");
+  const networkDropdownMenu = document.getElementById("network-dropdown-menu");
+  const networkDropdownTriggerValue = document.getElementById("network-dropdown-trigger-value");
   const networkDropdownCount = document.getElementById("network-dropdown-count");
   const networkList = document.getElementById("network-list");
   const networkSelectAll = document.getElementById("network-select-all");
   const networkDeselectAll = document.getElementById("network-deselect-all");
-  const networkPanelPin = document.getElementById("networks-panel-pin");
-  const networkPills = Array.from(document.querySelectorAll("[data-networks-pill]"));
   const tabUk = document.getElementById("tab-uk");
   const tabCr = document.getElementById("tab-cr");
-  let networkPanelPinned = false;
-  let networkPanelAnchorPill = null;
   const WINDOW_ORDER = ["3h", "6h", "1d", "7d", "all"];
   const WINDOW_LABELS_FALLBACK = {
     "3h": "3 Hours",
@@ -17073,110 +16845,34 @@
     return Array.from(networkList.querySelectorAll("input[data-network]"));
   }
 
-  function getActivePill() {
-    if (networkPanelAnchorPill && document.body.contains(networkPanelAnchorPill)) {
-      return networkPanelAnchorPill;
-    }
-    const visible = networkPills.find((pill) => {
-      const panel = pill.closest(".tab-panel");
-      return panel ? !panel.hidden : true;
-    });
-    return visible || networkPills[0] || null;
-  }
-
-  function positionNetworkPanel(pill) {
-    if (!networkDropdownMenu || !pill) return;
-    const rect = pill.getBoundingClientRect();
-    const panelRect = networkDropdownMenu.getBoundingClientRect();
-    const margin = 8;
-    // Anchor below the pill, right-aligned. Keep on-screen.
-    let top = rect.bottom + margin;
-    let left = rect.right - panelRect.width;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    if (left < margin) left = margin;
-    if (left + panelRect.width > viewportWidth - margin) {
-      left = Math.max(margin, viewportWidth - panelRect.width - margin);
-    }
-    if (top + panelRect.height > viewportHeight - margin) {
-      // Flip above the pill if it would overflow vertically.
-      const flippedTop = rect.top - panelRect.height - margin;
-      if (flippedTop >= margin) top = flippedTop;
-    }
-    networkDropdownMenu.style.top = `${Math.max(margin, top)}px`;
-    networkDropdownMenu.style.left = `${left}px`;
-  }
-
-  function setNetworkDropdownOpen(isOpen, anchorPill) {
-    if (!networkDropdownMenu) {
+  function setNetworkDropdownOpen(isOpen) {
+    if (!networkDropdownMenu || !networkDropdownTrigger) {
       return;
     }
     networkDropdownMenu.hidden = !isOpen;
-    if (isOpen) {
-      networkPanelAnchorPill = anchorPill || getActivePill();
-      // Position after layout so getBoundingClientRect on the panel is accurate.
-      window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
-    } else if (!networkPanelPinned) {
-      networkPanelAnchorPill = null;
-    }
-    networkPills.forEach((pill) => {
-      pill.setAttribute("aria-expanded", String(isOpen && pill === networkPanelAnchorPill));
-    });
-  }
-
-  function setNetworkPanelPinned(isPinned) {
-    networkPanelPinned = !!isPinned;
-    if (networkPanelPin) {
-      networkPanelPin.setAttribute("aria-pressed", String(networkPanelPinned));
-      networkPanelPin.setAttribute(
-        "aria-label",
-        networkPanelPinned ? "Unpin networks panel" : "Pin networks panel",
-      );
-      networkPanelPin.setAttribute(
-        "title",
-        networkPanelPinned ? "Unpin networks panel" : "Pin networks panel",
-      );
-    }
-  }
-
-  function updateTotalSensorsSubtext(selected, total) {
-    const ids = ["top-total-sensors-subtext", "cr-top-total-sensors-subtext"];
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (total === 0) {
-        el.textContent = "from selected networks";
-      } else if (selected === total) {
-        el.textContent = `from all ${total} networks`;
-      } else {
-        el.textContent = `from ${selected} of ${total} networks`;
-      }
-    });
+    networkDropdownTrigger.classList.toggle("is-open", isOpen);
+    networkDropdownTrigger.setAttribute("aria-expanded", String(isOpen));
   }
 
   function updateNetworkDropdownState() {
-    if (!networkDropdownCount) {
+    if (!networkDropdownTriggerValue || !networkDropdownCount) {
       return;
     }
     const inputs = getNetworkInputs();
     const total = inputs.length;
     const selected = inputs.filter((input) => input.checked).length;
-    let pillText;
     if (total === 0) {
-      pillText = "Networks: —";
+      networkDropdownTriggerValue.textContent = "None";
       networkDropdownCount.textContent = "0 / 0";
-    } else {
-      networkDropdownCount.textContent = `${selected} / ${total}`;
-      pillText = selected === total ? "Networks: All" : `Networks: ${selected} / ${total}`;
+      return;
     }
-    networkPills.forEach((pill) => {
-      const textEl = pill.querySelector(".networks-pill-text");
-      if (textEl) textEl.textContent = pillText;
-    });
-    updateTotalSensorsSubtext(selected, total);
-    // Re-position panel if it's currently open (count text width can shift layout).
-    if (networkDropdownMenu && !networkDropdownMenu.hidden) {
-      window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
+    networkDropdownCount.textContent = `${selected} / ${total}`;
+    if (selected === total) {
+      networkDropdownTriggerValue.textContent = "All";
+    } else if (selected === 0) {
+      networkDropdownTriggerValue.textContent = "None";
+    } else {
+      networkDropdownTriggerValue.textContent = `${selected} of ${total} selected`;
     }
   }
 
@@ -17315,39 +17011,25 @@
     if (!isOpen) syncRegionActive();
   });
 
-  networkPills.forEach((pill) => {
-    pill.addEventListener("click", () => {
-      const isOpen = !(networkDropdownMenu?.hidden ?? true);
-      const sameAnchor = isOpen && networkPanelAnchorPill === pill;
-      regionMenu.hidden = true;
-      regionTrigger?.classList.remove("open");
-      regionTrigger?.setAttribute("aria-expanded", "false");
-      if (sameAnchor) {
-        setNetworkDropdownOpen(false);
-      } else {
-        setNetworkDropdownOpen(true, pill);
-      }
-      updateNetworkDropdownState();
-    });
+  networkDropdownTrigger?.addEventListener("click", () => {
+    const isOpen = !(networkDropdownMenu?.hidden ?? true);
+    regionMenu.hidden = true;
+    regionTrigger?.classList.remove("open");
+    regionTrigger?.setAttribute("aria-expanded", "false");
+    setNetworkDropdownOpen(!isOpen);
+    updateNetworkDropdownState();
   });
 
-  networkPanelPin?.addEventListener("click", () => {
-    setNetworkPanelPinned(!networkPanelPinned);
-  });
-
-  // Close on outside click (pin-aware for networks panel)
+  // Close on outside click
   document.addEventListener("mousedown", (e) => {
     if (popoverWrap && !popoverWrap.contains(e.target)) {
       regionMenu.hidden = true;
       regionTrigger?.classList.remove("open");
       regionTrigger?.setAttribute("aria-expanded", "false");
     }
-    if (networkPanelPinned) return;
-    if (!networkDropdownMenu || networkDropdownMenu.hidden) return;
-    const clickedPill = networkPills.some((pill) => pill.contains(e.target));
-    if (clickedPill) return;
-    if (networkDropdownMenu.contains(e.target)) return;
-    setNetworkDropdownOpen(false);
+    if (networkDropdownWrap && !networkDropdownWrap.contains(e.target)) {
+      setNetworkDropdownOpen(false);
+    }
   });
 
   document.addEventListener("keydown", (event) => {
@@ -17357,18 +17039,8 @@
     regionMenu.hidden = true;
     regionTrigger?.classList.remove("open");
     regionTrigger?.setAttribute("aria-expanded", "false");
-    if (!networkPanelPinned) {
-      setNetworkDropdownOpen(false);
-    }
+    setNetworkDropdownOpen(false);
   });
-
-  // Re-position the floating panel on viewport resize/scroll while open
-  function repositionIfOpen() {
-    if (!networkDropdownMenu || networkDropdownMenu.hidden) return;
-    positionNetworkPanel(networkPanelAnchorPill);
-  }
-  window.addEventListener("resize", repositionIfOpen);
-  window.addEventListener("scroll", repositionIfOpen, { passive: true });
 
   // Region item clicks
   regionMenu?.querySelectorAll("[data-region]").forEach((item) => {
@@ -17417,54 +17089,13 @@
     });
   }
 
-  function relocateStatusRefreshForTab(tabKey) {
-    const isUk = tabKey === "uk";
-    const statusSlot = document.getElementById("toolbar-status-slot");
-    const refreshSlot = document.getElementById("toolbar-refresh-slot");
-    const activeStatusEl = document.getElementById(isUk ? "status-pill-uk" : "status-pill-cr");
-    const activeRefreshEl = document.getElementById(isUk ? "refresh" : "cr-refresh");
-    const inactiveStatusEl = document.getElementById(isUk ? "status-pill-cr" : "status-pill-uk");
-    const inactiveRefreshEl = document.getElementById(isUk ? "cr-refresh" : "refresh");
-    const inactiveTopbar = document.querySelector(
-      isUk ? "#tab-panel-cr .map-topbar" : "#tab-panel-uk .map-topbar",
-    );
-    // Return inactive tab's elements to their original map-topbar
-    if (inactiveTopbar) {
-      if (inactiveStatusEl && inactiveStatusEl.parentElement !== inactiveTopbar) {
-        inactiveTopbar.insertBefore(inactiveStatusEl, inactiveTopbar.firstChild);
-      }
-      if (inactiveRefreshEl && inactiveRefreshEl.parentElement !== inactiveTopbar) {
-        inactiveTopbar.insertBefore(inactiveRefreshEl, inactiveTopbar.firstChild?.nextSibling || null);
-      }
-    }
-    // Move active tab's elements into the toolbar slots
-    if (statusSlot && activeStatusEl && activeStatusEl.parentElement !== statusSlot) {
-      statusSlot.appendChild(activeStatusEl);
-    }
-    if (refreshSlot && activeRefreshEl && activeRefreshEl.parentElement !== refreshSlot) {
-      refreshSlot.appendChild(activeRefreshEl);
-    }
-  }
-
   // Called by setActiveTab whenever the active tab changes
   window.syncToolbar = function (tabKey) {
     const isUk = tabKey === "uk";
     toolbarTabUk?.classList.toggle("active", isUk);
     toolbarTabCr?.classList.toggle("active", !isUk);
     if (regionSection) regionSection.classList.toggle("visible", !isUk);
-    // Pinned panel persists across tab swaps; re-anchor it to the now-visible pill.
-    // Unpinned panel closes (existing behaviour).
-    if (networkPanelPinned && networkDropdownMenu && !networkDropdownMenu.hidden) {
-      const nextPill = getActivePill();
-      networkPanelAnchorPill = nextPill;
-      networkPills.forEach((pill) => {
-        pill.setAttribute("aria-expanded", String(pill === nextPill));
-      });
-      window.requestAnimationFrame(() => positionNetworkPanel(nextPill));
-    } else {
-      setNetworkDropdownOpen(false);
-    }
-    relocateStatusRefreshForTab(tabKey);
+    setNetworkDropdownOpen(false);
     if (!isUk && regionLabel) {
       const region = window.crMap?.getRegion?.();
       if (region) {
