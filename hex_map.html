@@ -3126,12 +3126,6 @@
         }
       }
 
-      /* London map is narrower than the canvas; shift left ~40px so the floating
-         Networks panel (pinned, anchored top-right) doesn't overlap it. */
-      #cr-hex-map[data-region="London"] {
-        transform: translateX(-40px);
-      }
-
       /* Region popover */
       .popover-wrap { position: relative; }
       .popover-trigger {
@@ -3725,6 +3719,7 @@
         grid-row: 4;
         --map-footer-safe: 64px;
         --sensor-panel-height: 240px;
+        --networks-panel-safe-right: 0px;
         border: 1px solid var(--line-soft);
         border-bottom: none;
         border-radius: 0 0 18px 18px;
@@ -3746,6 +3741,9 @@
         cursor: default;
         touch-action: none;
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .map-canvas-wrap.has-networks-panel-safe-area .map-svg-viewport {
+        right: var(--networks-panel-safe-right, 0px);
       }
 
       /* is-pannable is set by JS when scale > 1; cursor stays default — no grab hint while idle */
@@ -4183,6 +4181,11 @@
       /* Keep map controls/legend close to map frame */
       .map-canvas-wrap {
         padding-bottom: 0;
+      }
+      @media (max-width: 900px) {
+        .map-canvas-wrap.has-networks-panel-safe-area .map-svg-viewport {
+          right: 0;
+        }
       }
 
       .hex-chart-mode-panel {
@@ -14719,6 +14722,9 @@
         if (updateUrl) {
           updateMapParam(normalized, true);
         }
+        window.dispatchEvent(new CustomEvent("crregionchange", {
+          detail: { region: activeRegion },
+        }));
         loadMapData();
       }
 
@@ -17065,6 +17071,7 @@
   let prefersReducedMotion = !!reduceMotionQuery?.matches;
   let windowStepperKey = null;
   let windowStepperTimer = null;
+  let cachedNetworkPanelWidth = 0;
 
   function getNetworkInputs() {
     if (!networkList) {
@@ -17073,19 +17080,147 @@
     return Array.from(networkList.querySelectorAll("input[data-network]"));
   }
 
+  function isPillVisible(pill) {
+    if (!pill || !document.body.contains(pill)) return false;
+    const panel = pill.closest(".tab-panel");
+    return panel ? !panel.hidden : true;
+  }
+
   function getActivePill() {
-    if (networkPanelAnchorPill && document.body.contains(networkPanelAnchorPill)) {
+    // Only reuse the existing anchor if its tab is still active.
+    if (isPillVisible(networkPanelAnchorPill)) {
       return networkPanelAnchorPill;
     }
-    const visible = networkPills.find((pill) => {
-      const panel = pill.closest(".tab-panel");
-      return panel ? !panel.hidden : true;
-    });
+    const visible = networkPills.find(isPillVisible);
     return visible || networkPills[0] || null;
   }
 
+  function getMapKeyForWrap(wrap) {
+    const panel = wrap?.closest(".tab-panel");
+    if (panel?.id === "tab-panel-uk") return "uk";
+    if (panel?.id === "tab-panel-cr") return "cr";
+    return null;
+  }
+
+  function isLondonRegionActive() {
+    return String(window.crMap?.getRegion?.() || "").toLowerCase() === "london";
+  }
+
+  function isCrTabActive() {
+    return window.mapTabController?.getActiveTab?.() === "cr";
+  }
+
+  function getNetworkPanelWidth() {
+    if (!networkDropdownMenu) return 0;
+    if (cachedNetworkPanelWidth > 0) return cachedNetworkPanelWidth;
+    const previousHidden = networkDropdownMenu.hidden;
+    const previousDisplay = networkDropdownMenu.style.display;
+    const previousVisibility = networkDropdownMenu.style.visibility;
+    const previousLeft = networkDropdownMenu.style.left;
+    const previousTop = networkDropdownMenu.style.top;
+    networkDropdownMenu.hidden = false;
+    networkDropdownMenu.style.display = "flex";
+    networkDropdownMenu.style.visibility = "hidden";
+    networkDropdownMenu.style.left = "-99999px";
+    networkDropdownMenu.style.top = "-99999px";
+    const measuredWidth = networkDropdownMenu.getBoundingClientRect().width;
+    networkDropdownMenu.style.display = previousDisplay;
+    networkDropdownMenu.style.visibility = previousVisibility;
+    networkDropdownMenu.style.left = previousLeft;
+    networkDropdownMenu.style.top = previousTop;
+    networkDropdownMenu.hidden = previousHidden;
+    cachedNetworkPanelWidth = Number.isFinite(measuredWidth) ? measuredWidth : 0;
+    return cachedNetworkPanelWidth;
+  }
+
+  function renderMapForKey(mapKey) {
+    if (mapKey === "uk") {
+      window.ukMap?.render?.();
+      return;
+    }
+    if (mapKey === "cr") {
+      window.crMap?.render?.();
+    }
+  }
+
+  function renderActiveMap() {
+    const activeMap = window.mapTabController?.getActiveTab?.();
+    if (activeMap === "uk" || activeMap === "cr") {
+      renderMapForKey(activeMap);
+      return;
+    }
+    window.ukMap?.render?.();
+    window.crMap?.render?.();
+  }
+
+  function rerenderChangedMapSafeAreas(changedMapKeys) {
+    if (!(changedMapKeys instanceof Set) || changedMapKeys.size === 0) {
+      return;
+    }
+    const rendered = new Set();
+    changedMapKeys.forEach((mapKey) => {
+      if (mapKey === "uk" || mapKey === "cr") {
+        renderMapForKey(mapKey);
+        rendered.add(mapKey);
+      }
+    });
+    if (rendered.size !== changedMapKeys.size) {
+      renderActiveMap();
+    }
+  }
+
+  function updateNetworkPanelSafeArea() {
+    const safeAreaEnabled = window.innerWidth > 900;
+    let targetWrap = null;
+    let targetSafeRight = null;
+
+    if (safeAreaEnabled && isCrTabActive() && isLondonRegionActive()) {
+      const pill = getActivePill();
+      const wrap = pill?.closest(".map-canvas-wrap");
+      const pillRect = pill?.getBoundingClientRect?.();
+      const panelWidth = getNetworkPanelWidth();
+      if (wrap && pillRect && panelWidth > 0) {
+        const wrapRect = wrap.getBoundingClientRect();
+        const margin = 8;
+        let left = pillRect.right - panelWidth;
+        if (left < margin) left = margin;
+        if (left + panelWidth > window.innerWidth - margin) {
+          left = Math.max(margin, window.innerWidth - panelWidth - margin);
+        }
+        const safeRight = Math.max(0, wrapRect.right - left + 8);
+        targetWrap = wrap;
+        targetSafeRight = `${Math.ceil(safeRight)}px`;
+      }
+    }
+
+    const changedMapKeys = new Set();
+    document.querySelectorAll(".map-canvas-wrap").forEach((wrap) => {
+      const shouldApply = Boolean(targetWrap && wrap === targetWrap && targetSafeRight);
+      const hadClass = wrap.classList.contains("has-networks-panel-safe-area");
+      const previousSafeRight = wrap.style.getPropertyValue("--networks-panel-safe-right");
+      if (shouldApply) {
+        wrap.classList.add("has-networks-panel-safe-area");
+        wrap.style.setProperty("--networks-panel-safe-right", targetSafeRight);
+      } else {
+        wrap.classList.remove("has-networks-panel-safe-area");
+        wrap.style.removeProperty("--networks-panel-safe-right");
+      }
+      const hasClass = wrap.classList.contains("has-networks-panel-safe-area");
+      const nextSafeRight = wrap.style.getPropertyValue("--networks-panel-safe-right");
+      if (hadClass !== hasClass || previousSafeRight !== nextSafeRight) {
+        changedMapKeys.add(getMapKeyForWrap(wrap));
+      }
+    });
+
+    rerenderChangedMapSafeAreas(changedMapKeys);
+  }
+
   function positionNetworkPanel(pill) {
-    if (!networkDropdownMenu || !pill) return;
+    if (!networkDropdownMenu) return;
+    if (!pill) {
+      updateNetworkPanelSafeArea();
+      return;
+    }
     const rect = pill.getBoundingClientRect();
     const panelRect = networkDropdownMenu.getBoundingClientRect();
     const margin = 8;
@@ -17105,6 +17240,7 @@
     }
     networkDropdownMenu.style.top = `${Math.max(margin, top)}px`;
     networkDropdownMenu.style.left = `${left}px`;
+    updateNetworkPanelSafeArea();
   }
 
   function setNetworkDropdownOpen(isOpen, anchorPill) {
@@ -17136,6 +17272,11 @@
         "title",
         networkPanelPinned ? "Unpin networks panel" : "Pin networks panel",
       );
+    }
+    if (networkDropdownMenu && !networkDropdownMenu.hidden) {
+      window.requestAnimationFrame(() => {
+        positionNetworkPanel(networkPanelAnchorPill || getActivePill());
+      });
     }
   }
 
@@ -17365,9 +17506,13 @@
   // Re-position the floating panel on viewport resize/scroll while open
   function repositionIfOpen() {
     if (!networkDropdownMenu || networkDropdownMenu.hidden) return;
-    positionNetworkPanel(networkPanelAnchorPill);
+    positionNetworkPanel(networkPanelAnchorPill || getActivePill());
   }
-  window.addEventListener("resize", repositionIfOpen);
+  window.addEventListener("resize", () => {
+    cachedNetworkPanelWidth = 0;
+    repositionIfOpen();
+    updateNetworkPanelSafeArea();
+  });
   window.addEventListener("scroll", repositionIfOpen, { passive: true });
 
   // Region item clicks
@@ -17380,7 +17525,12 @@
       if (regionLabel) regionLabel.textContent = region;
       syncRegionActive(region);
       window.crMap?.setRegion(region, { updateUrl: true });
+      window.requestAnimationFrame(updateNetworkPanelSafeArea);
     });
+  });
+
+  window.addEventListener("crregionchange", () => {
+    window.requestAnimationFrame(updateNetworkPanelSafeArea);
   });
 
   networkList?.addEventListener("change", () => {
@@ -17473,12 +17623,14 @@
       }
     }
     updateNetworkDropdownState();
+    window.requestAnimationFrame(updateNetworkPanelSafeArea);
   };
 
   // Sync toolbar to the tab state that was already set before this script ran
   const initialTabKey = tabUk?.getAttribute("aria-selected") === "true" ? "uk" : "cr";
   window.syncToolbar(initialTabKey);
   updateNetworkDropdownState();
+  window.requestAnimationFrame(updateNetworkPanelSafeArea);
   renderWindowStepper({ force: true });
 })();
     </script>
