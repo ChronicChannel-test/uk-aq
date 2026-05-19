@@ -640,6 +640,7 @@
           url.searchParams.set("scope", "all");
           url.searchParams.set("window", "all");
           url.searchParams.set("limit", String(readingLimit));
+          url.searchParams.set("caller", "sensors_map");
           if (pollutantKey) {
             url.searchParams.set("pollutant", pollutantKey);
           }

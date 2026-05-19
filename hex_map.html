@@ -6324,7 +6324,7 @@
       const LATEST_LEGACY_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/latest`
         : "";
-      const SNAPSHOT_WINDOWS = new Set(["3h", "6h", "1d"]);
+      const SNAPSHOT_WINDOWS = new Set(["3h", "6h", "1d", "7d", "all"]);
       function resolveLatestUrl(windowLabel) {
         const normalizedWindow = String(windowLabel || "").trim().toLowerCase();
         if (LATEST_SNAPSHOT_URL && SNAPSHOT_WINDOWS.has(normalizedWindow)) {
@@ -10125,6 +10125,7 @@
           latestUrl.searchParams.set("window", currentWindow);
           latestUrl.searchParams.set("scope", "all");
           latestUrl.searchParams.set("limit", "10000");
+          latestUrl.searchParams.set("caller", "hex_map");
           if (latestCursorEnabled && latestSince) {
             latestUrl.searchParams.set("since", latestSince);
             if (latestSinceId !== null) {
@@ -10839,7 +10840,7 @@
       const LATEST_LEGACY_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/latest`
         : "";
-      const SNAPSHOT_WINDOWS = new Set(["3h", "6h", "1d"]);
+      const SNAPSHOT_WINDOWS = new Set(["3h", "6h", "1d", "7d", "all"]);
       function resolveLatestUrl(windowLabel) {
         const normalizedWindow = String(windowLabel || "").trim().toLowerCase();
         if (LATEST_SNAPSHOT_URL && SNAPSHOT_WINDOWS.has(normalizedWindow)) {
@@ -14813,6 +14814,7 @@
             // scope to the selected LA hex codes immediately after fetch.
             latestUrl.searchParams.set("scope", "all");
             latestUrl.searchParams.set("limit", "10000");
+            latestUrl.searchParams.set("caller", "hex_map");
             if (latestCursorEnabled && latestSince) {
               latestUrl.searchParams.set("since", latestSince);
               if (latestSinceId !== null) {
