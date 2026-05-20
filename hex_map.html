@@ -17386,10 +17386,18 @@
       resetWindowStepperValue(label);
       return;
     }
-    const currentNode = windowStepperValueBox.querySelector("[data-window-value]");
+    if (windowStepperTimer) {
+      window.clearTimeout(windowStepperTimer);
+      windowStepperTimer = null;
+    }
+    const valueNodes = Array.from(windowStepperValueBox.querySelectorAll("[data-window-value]"));
+    const currentNode = valueNodes[valueNodes.length - 1];
     if (!currentNode) {
       resetWindowStepperValue(label);
       return;
+    }
+    if (valueNodes.length > 1) {
+      valueNodes.slice(0, -1).forEach((node) => node.remove());
     }
     const incomingNode = document.createElement("span");
     incomingNode.className = `window-stepper-value window-stepper-value--incoming ${
