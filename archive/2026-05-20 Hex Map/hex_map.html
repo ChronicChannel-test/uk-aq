@@ -921,28 +921,28 @@
         box-shadow: 0 1px 0 rgba(20, 34, 37, 0.12);
       }
 
-      .sensor-table th.sensor-col-sensor,
-      .sensor-table td.sensor-col-sensor {
+      .sensor-table th:nth-child(1),
+      .sensor-table td:nth-child(1) {
         width: 42%;
       }
 
-      .sensor-table th.sensor-col-network,
-      .sensor-table td.sensor-col-network {
+      .sensor-table th:nth-child(2),
+      .sensor-table td:nth-child(2) {
         width: 18%;
       }
 
-      .sensor-table th.sensor-col-value,
-      .sensor-table td.sensor-col-value {
+      .sensor-table th:nth-child(3),
+      .sensor-table td:nth-child(3) {
         width: 12%;
       }
 
-      .sensor-table th.sensor-col-updated,
-      .sensor-table td.sensor-col-updated {
+      .sensor-table th:nth-child(4),
+      .sensor-table td:nth-child(4) {
         width: 17%;
       }
 
-      .sensor-table th.sensor-window-col,
-      .sensor-table td.sensor-window-col {
+      .sensor-table th:nth-child(5),
+      .sensor-table td:nth-child(5) {
         width: 11%;
       }
 
@@ -1206,7 +1206,7 @@
       }
 
       .sensor-table-wrap.is-scroll-forced {
-        max-height: calc(44px + (46px * 4));
+        max-height: calc(44px + (46px * 8));
         overflow-y: scroll;
         overscroll-behavior-y: contain;
         scrollbar-gutter: auto;
@@ -1447,55 +1447,6 @@
 
       .sensor-row--excluded {
         background: #fdecec;
-      }
-
-      .sensor-table tbody tr.sensor-row--chart-selected {
-        background: rgba(60, 120, 172, 0.1);
-        box-shadow: inset 4px 0 0 #3c78ac;
-      }
-
-      .sensor-table .sensor-chart-select-col,
-      .sensor-table .sensor-chart-symbol-col {
-        display: none;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-select-col,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-symbol-col {
-        display: table-cell;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-window-col {
-        display: none;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-select-col {
-        width: 42px;
-        text-align: center;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-symbol-col {
-        width: 24px;
-        text-align: center;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-sensor,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-sensor {
-        width: 36%;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-network,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-network {
-        width: 18%;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-value,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-value {
-        width: 15%;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-updated,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-updated {
-        width: 20%;
       }
 
       .sensor-name-button {
@@ -3096,15 +3047,6 @@
         border-radius: 12px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
       }
-      .networks-panel-floating.is-pinned {
-        position: absolute;
-        top: 12px;
-        left: auto;
-        right: 16px;
-        z-index: 58;
-        max-width: min(360px, calc(100% - 20px));
-        max-height: min(480px, calc(100% - 24px));
-      }
       .networks-panel-floating[hidden] {
         display: none;
       }
@@ -3775,7 +3717,6 @@
       .map-dashboard-card .map-canvas-wrap {
         grid-column: 1 / -1;
         grid-row: 4;
-        --map-canvas-min-height: 700px;
         --map-footer-safe: 64px;
         --sensor-panel-height: 240px;
         --networks-panel-safe-right: 0px;
@@ -3786,7 +3727,7 @@
         margin-left: -18px;
         margin-bottom: -18px;
         min-width: 0;
-        min-height: var(--map-canvas-min-height);
+        min-height: 700px;
         overflow: hidden;
       }
 
@@ -4248,40 +4189,31 @@
       }
 
       .hex-chart-mode-panel {
-        position: absolute;
-        inset: 0 0 var(--sensor-panel-height, 240px) 0;
+        position: relative;
         z-index: 12;
         display: none;
-        min-height: 0;
-        padding: 56px 18px 14px;
+        min-height: 640px;
+        padding: 72px 18px 18px;
         background: var(--map-wrap);
         color: var(--ink);
-        overflow: hidden;
       }
 
       .map-canvas-wrap.chart-mode {
-        min-height: var(--map-canvas-min-height, 700px);
+        min-height: 760px;
       }
 
       .map-canvas-wrap.chart-mode .hex-chart-mode-panel {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 16px;
       }
 
       .map-canvas-wrap.chart-mode .map-svg-viewport,
       .map-canvas-wrap.chart-mode .legend-pill,
+      .map-canvas-wrap.chart-mode .map-inline-sensor-panel,
       .map-canvas-wrap.chart-mode .map-settings-panel,
       .map-canvas-wrap.chart-mode .map-floating-tools,
       .map-canvas-wrap.chart-mode .map-zoom-controls {
-        display: none !important;
-      }
-
-      .map-canvas-wrap.chart-mode .map-inline-sensor-panel {
-        transform: translateY(0);
-      }
-
-      .map-canvas-wrap.chart-mode .hex-chart-sensor-wrap {
         display: none !important;
       }
 
@@ -4495,20 +4427,15 @@
       .hex-chart-wrap {
         position: relative;
         flex: 1 1 auto;
-        min-height: 0;
-        display: flex;
-        align-items: stretch;
-        overflow: hidden;
+        min-height: 390px;
         background: var(--map-wrap);
         border: 0;
         border-radius: 0;
       }
 
       .hex-chart-svg {
-        flex: 1 1 auto;
         width: 100%;
-        height: 100%;
-        min-height: 0;
+        height: 390px;
         display: block;
       }
 
@@ -4957,33 +4884,31 @@
                 <table class="sensor-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sensor-chart-select-col" aria-label="Selection"></th>
-                      <th scope="col" class="sensor-chart-symbol-col" aria-label="Symbol"></th>
-                      <th scope="col" class="sensor-col-sensor" data-sort-key="sensor" aria-sort="none">
+                      <th scope="col" data-sort-key="sensor" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
                           <span class="sort-label">Sensor</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th scope="col" class="sensor-col-network" data-sort-key="network" aria-sort="none">
+                      <th scope="col" data-sort-key="network" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
                           <span class="sort-label">Network</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th scope="col" class="sensor-col-value" data-sort-key="pm25" aria-sort="none">
+                      <th scope="col" data-sort-key="pm25" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
                           <span class="sort-label" id="sensor-value-label">PM2.5</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th scope="col" class="sensor-col-updated" data-sort-key="updated" aria-sort="none">
+                      <th scope="col" data-sort-key="updated" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
                           <span class="sort-label">Updated</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th class="sensor-window-col">Window</th>
+                      <th>Window</th>
                     </tr>
                   </thead>
                   <tbody id="sensor-table-body"></tbody>
@@ -5596,33 +5521,31 @@
                 <table class="sensor-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sensor-chart-select-col" aria-label="Selection"></th>
-                      <th scope="col" class="sensor-chart-symbol-col" aria-label="Symbol"></th>
-                      <th scope="col" class="sensor-col-sensor" data-sort-key="sensor" aria-sort="none">
+                      <th scope="col" data-sort-key="sensor" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
                           <span class="sort-label">Sensor</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th scope="col" class="sensor-col-network" data-sort-key="network" aria-sort="none">
+                      <th scope="col" data-sort-key="network" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="network" data-sort-type="alpha" title="Sort A→Z">
                           <span class="sort-label">Network</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th scope="col" class="sensor-col-value" data-sort-key="pm25" aria-sort="none">
+                      <th scope="col" data-sort-key="pm25" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="pm25" data-sort-type="number" title="Sort high→low">
                           <span class="sort-label" id="cr-sensor-value-label">PM2.5</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th scope="col" class="sensor-col-updated" data-sort-key="updated" aria-sort="none">
+                      <th scope="col" data-sort-key="updated" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="updated" data-sort-type="date" title="Sort newest→oldest">
                           <span class="sort-label">Updated</span>
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th class="sensor-window-col">Window</th>
+                      <th>Window</th>
                     </tr>
                   </thead>
                   <tbody id="cr-sensor-table-body"></tbody>
@@ -6696,7 +6619,7 @@
       const SENSOR_PANEL_HEADER_HEIGHT = 50;
       const SENSOR_TABLE_HEADER_HEIGHT = 44;
       const SENSOR_PANEL_ROW_HEIGHT = 46;
-      const SENSOR_PANEL_MAX_VISIBLE_ROWS = 4;
+      const SENSOR_PANEL_MAX_VISIBLE_ROWS = 8;
       const detailScrollIndicators = window.attachScrollIndicators?.(detailsTableWrap);
       const detailPersistentScrollbar = window.attachPersistentScrollbar?.(detailsTableWrap, {
         isHidden: () => !detailsTableWrap?.classList.contains("is-scroll-forced"),
@@ -6731,21 +6654,6 @@
         detailsTableWrap.addEventListener("scroll", () => detailScrollIndicators?.update?.());
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
         detailsTableWrap.addEventListener("click", (event) => {
-          const selectorButton = event.target instanceof Element
-            ? event.target.closest(".hex-chart-selector[data-station-id]")
-            : null;
-          if (selectorButton && detailsTableWrap.contains(selectorButton)) {
-            event.stopPropagation();
-            const stationId = String(selectorButton.dataset.stationId || "").trim();
-            if (!stationId) {
-              return;
-            }
-            if (window.hexChartMode?.isActive?.("uk")) {
-              window.hexChartMode?.selectSensor?.(stationId, { mapKey: "uk", mode: "toggle" });
-              updateDetailsPanel();
-            }
-            return;
-          }
           const button = event.target instanceof Element
             ? event.target.closest(".sensor-name-button[data-station-id]")
             : null;
@@ -6753,18 +6661,9 @@
             return;
           }
           event.stopPropagation();
-          const stationId = String(button.dataset.stationId || "").trim();
-          if (!stationId) {
-            return;
-          }
-          if (window.hexChartMode?.isActive?.("uk")) {
-            window.hexChartMode?.selectSensor?.(stationId, { mapKey: "uk", mode: "single" });
-            updateDetailsPanel();
-            return;
-          }
           window.hexChartMode?.enter?.({
             mapKey: "uk",
-            initialStationId: stationId,
+            initialStationId: button.dataset.stationId || null,
           });
         });
       }
@@ -9231,7 +9130,6 @@
           detailsEmpty.hidden = true;
           detailsTableWrap.hidden = true;
           detailsTableWrap.classList.add("sensor-list-sort-hidden");
-          detailsTableWrap.classList.remove("is-chart-select-mode");
           syncSortHeaders();
           updateInlinePanelHeight(0);
           networkSummary.hidden = false;
@@ -9273,7 +9171,6 @@
           detailsEmpty.hidden = false;
           detailsTableWrap.hidden = true;
           detailsTableWrap.classList.add("sensor-list-sort-hidden");
-          detailsTableWrap.classList.remove("is-chart-select-mode");
           syncSortHeaders();
           detailsTableBody.innerHTML = "";
           updateInlinePanelHeight(0);
@@ -9296,11 +9193,9 @@
         if (inlinePanelHexIcon) {
           inlinePanelHexIcon.classList.remove("sensor-panel-hex-icon--outlined");
         }
-        const chartModeActive = window.hexChartMode?.isActive?.("uk") === true;
         detailsEmpty.hidden = true;
         detailsTableWrap.hidden = false;
         detailsTableWrap.classList.toggle("sensor-list-sort-hidden", entries.length <= 1);
-        detailsTableWrap.classList.toggle("is-chart-select-mode", chartModeActive);
         syncSortHeaders();
         networkSummary.hidden = true;
         detailsTableBody.innerHTML = entries.map((entry) => {
@@ -9309,32 +9204,18 @@
           const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const windowLabel = entry.inWindow ? "Included" : "Outside window";
-          const chartSelected = window.hexChartMode?.isSensorSelected?.("uk", stationId) === true;
-          const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("uk", stationId) ?? -1;
-          const glyph = symbolIndex >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[symbolIndex] || "") : "";
-          const rowClass = [
-            entry.inWindow ? "" : "sensor-row--excluded",
-            chartSelected ? "sensor-row--chart-selected" : "",
-          ].filter(Boolean).join(" ");
+          const rowClass = entry.inWindow ? "" : "sensor-row--excluded";
           const statusClass = entry.inWindow
             ? "sensor-status"
             : "sensor-status sensor-status--excluded";
           const readingColor = colorScale && Number.isFinite(entry.value) ? colorScale(entry.value) : "var(--no-data)";
           return `
             <tr class="${rowClass}">
-              <td class="sensor-chart-select-col">${
-                chartModeActive
-                  ? `<button type="button" class="hex-chart-selector" data-station-id="${escapeHtmlLocal(stationId)}" aria-label="${chartSelected ? "Remove" : "Add"} ${escapeHtmlLocal(stationName)} from chart" aria-pressed="${chartSelected ? "true" : "false"}"></button>`
-                  : ""
-              }</td>
-              <td class="sensor-chart-symbol-col">${
-                glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtmlLocal(glyph)}</span>` : ""
-              }</td>
-              <td class="sensor-col-sensor"><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
-              <td class="sensor-col-network">${escapeHtmlLocal(networkLabel)}</td>
-              <td class="sensor-col-value"><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
-              <td class="sensor-col-updated">${updatedText}</td>
-              <td class="sensor-window-col ${statusClass}">${windowLabel}</td>
+              <td><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
+              <td>${escapeHtmlLocal(networkLabel)}</td>
+              <td><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
+              <td>${updatedText}</td>
+              <td class="${statusClass}">${windowLabel}</td>
             </tr>
           `;
         }).join("");
@@ -10590,14 +10471,6 @@
         }
       });
 
-      window.addEventListener("hexchartselectionchange", (event) => {
-        const detail = event.detail || {};
-        if (detail.mapKey && detail.mapKey !== "uk") {
-          return;
-        }
-        updateDetailsPanel();
-      });
-
       document.addEventListener("click", (event) => {
         if (!selectedPconCode) {
           return;
@@ -11303,7 +11176,7 @@
       const SENSOR_PANEL_HEADER_HEIGHT = 50;
       const SENSOR_TABLE_HEADER_HEIGHT = 44;
       const SENSOR_PANEL_ROW_HEIGHT = 46;
-      const SENSOR_PANEL_MAX_VISIBLE_ROWS = 4;
+      const SENSOR_PANEL_MAX_VISIBLE_ROWS = 8;
       const detailScrollIndicators = window.attachScrollIndicators?.(detailsTableWrap);
       const detailPersistentScrollbar = window.attachPersistentScrollbar?.(detailsTableWrap, {
         isHidden: () => !detailsTableWrap?.classList.contains("is-scroll-forced"),
@@ -11338,21 +11211,6 @@
         detailsTableWrap.addEventListener("scroll", () => detailScrollIndicators?.update?.());
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
         detailsTableWrap.addEventListener("click", (event) => {
-          const selectorButton = event.target instanceof Element
-            ? event.target.closest(".hex-chart-selector[data-station-id]")
-            : null;
-          if (selectorButton && detailsTableWrap.contains(selectorButton)) {
-            event.stopPropagation();
-            const stationId = String(selectorButton.dataset.stationId || "").trim();
-            if (!stationId) {
-              return;
-            }
-            if (window.hexChartMode?.isActive?.("cr")) {
-              window.hexChartMode?.selectSensor?.(stationId, { mapKey: "cr", mode: "toggle" });
-              updateDetailsPanel();
-            }
-            return;
-          }
           const button = event.target instanceof Element
             ? event.target.closest(".sensor-name-button[data-station-id]")
             : null;
@@ -11360,18 +11218,9 @@
             return;
           }
           event.stopPropagation();
-          const stationId = String(button.dataset.stationId || "").trim();
-          if (!stationId) {
-            return;
-          }
-          if (window.hexChartMode?.isActive?.("cr")) {
-            window.hexChartMode?.selectSensor?.(stationId, { mapKey: "cr", mode: "single" });
-            updateDetailsPanel();
-            return;
-          }
           window.hexChartMode?.enter?.({
             mapKey: "cr",
-            initialStationId: stationId,
+            initialStationId: button.dataset.stationId || null,
           });
         });
       }
@@ -13565,7 +13414,6 @@
           detailsEmpty.hidden = true;
           detailsTableWrap.hidden = true;
           detailsTableWrap.classList.add("sensor-list-sort-hidden");
-          detailsTableWrap.classList.remove("is-chart-select-mode");
           syncSortHeaders();
           updateInlinePanelHeight(0);
           networkSummary.hidden = false;
@@ -13607,7 +13455,6 @@
           detailsEmpty.hidden = false;
           detailsTableWrap.hidden = true;
           detailsTableWrap.classList.add("sensor-list-sort-hidden");
-          detailsTableWrap.classList.remove("is-chart-select-mode");
           syncSortHeaders();
           networkSummary.hidden = true;
           detailsTableBody.innerHTML = "";
@@ -13631,11 +13478,9 @@
         if (inlinePanelHexIcon) {
           inlinePanelHexIcon.classList.remove("sensor-panel-hex-icon--outlined");
         }
-        const chartModeActive = window.hexChartMode?.isActive?.("cr") === true;
         detailsEmpty.hidden = true;
         detailsTableWrap.hidden = false;
         detailsTableWrap.classList.toggle("sensor-list-sort-hidden", entries.length <= 1);
-        detailsTableWrap.classList.toggle("is-chart-select-mode", chartModeActive);
         syncSortHeaders();
         networkSummary.hidden = true;
         detailsTableBody.innerHTML = entries.map((entry) => {
@@ -13644,32 +13489,18 @@
           const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const windowLabel = entry.inWindow ? "Included" : "Outside window";
-          const chartSelected = window.hexChartMode?.isSensorSelected?.("cr", stationId) === true;
-          const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("cr", stationId) ?? -1;
-          const glyph = symbolIndex >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[symbolIndex] || "") : "";
-          const rowClass = [
-            entry.inWindow ? "" : "sensor-row--excluded",
-            chartSelected ? "sensor-row--chart-selected" : "",
-          ].filter(Boolean).join(" ");
+          const rowClass = entry.inWindow ? "" : "sensor-row--excluded";
           const statusClass = entry.inWindow
             ? "sensor-status"
             : "sensor-status sensor-status--excluded";
           const readingColor = colorScale && Number.isFinite(entry.value) ? colorScale(entry.value) : "var(--no-data)";
           return `
             <tr class="${rowClass}">
-              <td class="sensor-chart-select-col">${
-                chartModeActive
-                  ? `<button type="button" class="hex-chart-selector" data-station-id="${escapeHtmlLocal(stationId)}" aria-label="${chartSelected ? "Remove" : "Add"} ${escapeHtmlLocal(stationName)} from chart" aria-pressed="${chartSelected ? "true" : "false"}"></button>`
-                  : ""
-              }</td>
-              <td class="sensor-chart-symbol-col">${
-                glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtmlLocal(glyph)}</span>` : ""
-              }</td>
-              <td class="sensor-col-sensor"><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
-              <td class="sensor-col-network">${escapeHtmlLocal(networkLabel)}</td>
-              <td class="sensor-col-value"><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
-              <td class="sensor-col-updated">${updatedText}</td>
-              <td class="sensor-window-col ${statusClass}">${windowLabel}</td>
+              <td><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
+              <td>${escapeHtmlLocal(networkLabel)}</td>
+              <td><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
+              <td>${updatedText}</td>
+              <td class="${statusClass}">${windowLabel}</td>
             </tr>
           `;
         }).join("");
@@ -15406,14 +15237,6 @@
         }
       });
 
-      window.addEventListener("hexchartselectionchange", (event) => {
-        const detail = event.detail || {};
-        if (detail.mapKey && detail.mapKey !== "cr") {
-          return;
-        }
-        updateDetailsPanel();
-      });
-
       if (networkSelectAll) {
         networkSelectAll.addEventListener("click", handleNetworkAction);
       }
@@ -16130,17 +15953,6 @@
     if (backButton) backButton.hidden = !state.isChartMode;
   }
 
-  function notifySelectionChange() {
-    window.dispatchEvent(new CustomEvent("hexchartselectionchange", {
-      detail: {
-        isChartMode: state.isChartMode,
-        mapKey: state.mapKey,
-        selectedPrimaryId: state.selectedPrimaryId,
-        selectedSensorIds: Array.from(state.chartModeSelectedSensors),
-      },
-    }));
-  }
-
   function setMessage(text, options = {}) {
     const dom = domByMap[state.mapKey];
     if (!dom?.message) return;
@@ -16169,7 +15981,6 @@
     syncPanels();
     syncWindowControl();
     renderSensorList(context);
-    notifySelectionChange();
     loadChartData("area-change");
   }
 
@@ -16181,7 +15992,6 @@
     state.visibleEntries = [];
     state.loadToken += 1;
     syncPanels();
-    notifySelectionChange();
   }
 
   function syncWindowControl() {
@@ -16207,7 +16017,6 @@
     if (!state.chartModeSelectedSensors.size && entries.length) state.chartModeSelectedSensors.add(entries[0].stationId);
     if (!state.chartModeSelectedSensors.has(state.selectedPrimaryId)) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
     renderSensorList(context);
-    notifySelectionChange();
     // updateChart: false lets the caller handle the chart refresh (e.g. delta-only refresh).
     if (options.updateChart !== false) {
       loadChartData("sensor-change");
@@ -16351,27 +16160,7 @@
       state.selectedPrimaryId = state.selectedPrimaryId || stationId;
     }
     renderSensorList(getCurrentContext() || {});
-    notifySelectionChange();
     loadChartData("sensor-change");
-  }
-
-  function selectSensor(stationId, options = {}) {
-    const normalizedId = String(stationId || "").trim();
-    if (!state.isChartMode || !normalizedId) return false;
-    const mapKey = options.mapKey || null;
-    if (mapKey && state.mapKey !== mapKey) return false;
-    const exists = state.visibleEntries.some((entry) => entry.stationId === normalizedId);
-    if (!exists) return false;
-    if (options.mode === "toggle") {
-      toggleSensor(normalizedId);
-      return true;
-    }
-    state.chartModeSelectedSensors = new Set([normalizedId]);
-    state.selectedPrimaryId = normalizedId;
-    renderSensorList(getCurrentContext() || {});
-    notifySelectionChange();
-    loadChartData("sensor-change");
-    return true;
   }
 
   function getCacheFetch() {
@@ -16789,18 +16578,16 @@
         if (width > 0) group.append("rect").attr("x", x).attr("y", 0).attr("width", width).attr("height", bandHeight).attr("fill", color);
       }
     };
-    const bandTop = 8;
-    drawBand("DAQI", bandTop, "daqi", daqiColors);
-    drawBand("EAQI", bandTop + bandHeight + gap, "eaqi", eaqiColors);
+    drawBand("DAQI", 16, "daqi", daqiColors);
+    drawBand("EAQI", 16 + bandHeight + gap, "eaqi", eaqiColors);
   }
 
   function initChartFrame(dom, range, numSeries) {
     if (!dom?.svg?.node()) return;
     const svgEl = dom.svg.node();
     const width  = svgEl.clientWidth  || 960;
-    const height = Math.max(svgEl.clientHeight || 0, 300);
-    const marginTop = Math.max(52, Math.round(height * 0.12));
-    const margin = { top: marginTop, right: 24, bottom: 44, left: 58 };
+    const height = svgEl.clientHeight || 390;
+    const margin = { top: 78, right: 24, bottom: 44, left: 58 };
 
     dom.svg.selectAll("*").remove();
     dom.svg.attr("viewBox", `0 0 ${width} ${height}`);
@@ -17093,23 +16880,6 @@
     refresh,
     syncFromMap,
     isActive: (mapKey = null) => Boolean(state.isChartMode && (!mapKey || state.mapKey === mapKey)),
-    selectSensor,
-    isSensorSelected: (mapKey = null, stationId = "") => {
-      if (!state.isChartMode) return false;
-      if (mapKey && state.mapKey !== mapKey) return false;
-      return state.chartModeSelectedSensors.has(String(stationId || ""));
-    },
-    getSelectedSensorIds: (mapKey = null) => {
-      if (!state.isChartMode) return [];
-      if (mapKey && state.mapKey !== mapKey) return [];
-      return Array.from(state.chartModeSelectedSensors);
-    },
-    getSelectedSensorIndex: (mapKey = null, stationId = "") => {
-      if (!state.isChartMode) return -1;
-      if (mapKey && state.mapKey !== mapKey) return -1;
-      const selectedIds = Array.from(state.chartModeSelectedSensors);
-      return selectedIds.indexOf(String(stationId || ""));
-    },
   };
 })();
     </script>
@@ -17317,7 +17087,6 @@
   let windowStepperTimer = null;
   let cachedNetworkPanelWidth = 0;
   const LONDON_NETWORK_MAP_GAP_PX = -72;
-  const NETWORK_PANEL_MARGIN_PX = 8;
 
   function getNetworkInputs() {
     if (!networkList) {
@@ -17356,57 +17125,24 @@
     return window.mapTabController?.getActiveTab?.() === "cr";
   }
 
-  function getMapWrapForPill(pill) {
-    return pill?.closest(".map-canvas-wrap") || null;
-  }
-
-  function setNetworkPanelFloatingHost() {
-    if (!networkDropdownMenu) return;
-    if (networkDropdownMenu.parentElement !== document.body) {
-      document.body.appendChild(networkDropdownMenu);
-    }
-    networkDropdownMenu.classList.remove("is-pinned");
-  }
-
-  function setNetworkPanelPinnedHost(pill) {
-    if (!networkDropdownMenu) return null;
-    const wrap = getMapWrapForPill(pill || getActivePill());
-    if (!wrap) return null;
-    if (networkDropdownMenu.parentElement !== wrap) {
-      wrap.appendChild(networkDropdownMenu);
-    }
-    networkDropdownMenu.classList.add("is-pinned");
-    return wrap;
-  }
-
   function getNetworkPanelWidth() {
     if (!networkDropdownMenu) return 0;
     if (cachedNetworkPanelWidth > 0) return cachedNetworkPanelWidth;
-    const previousParent = networkDropdownMenu.parentElement;
-    const previousPinnedClass = networkDropdownMenu.classList.contains("is-pinned");
     const previousHidden = networkDropdownMenu.hidden;
     const previousDisplay = networkDropdownMenu.style.display;
     const previousVisibility = networkDropdownMenu.style.visibility;
     const previousLeft = networkDropdownMenu.style.left;
     const previousTop = networkDropdownMenu.style.top;
-    const previousRight = networkDropdownMenu.style.right;
-    setNetworkPanelFloatingHost();
     networkDropdownMenu.hidden = false;
     networkDropdownMenu.style.display = "flex";
     networkDropdownMenu.style.visibility = "hidden";
     networkDropdownMenu.style.left = "-99999px";
     networkDropdownMenu.style.top = "-99999px";
-    networkDropdownMenu.style.right = "auto";
     const measuredWidth = networkDropdownMenu.getBoundingClientRect().width;
-    if (previousParent && previousParent !== document.body) {
-      previousParent.appendChild(networkDropdownMenu);
-    }
-    networkDropdownMenu.classList.toggle("is-pinned", previousPinnedClass);
     networkDropdownMenu.style.display = previousDisplay;
     networkDropdownMenu.style.visibility = previousVisibility;
     networkDropdownMenu.style.left = previousLeft;
     networkDropdownMenu.style.top = previousTop;
-    networkDropdownMenu.style.right = previousRight;
     networkDropdownMenu.hidden = previousHidden;
     cachedNetworkPanelWidth = Number.isFinite(measuredWidth) ? measuredWidth : 0;
     return cachedNetworkPanelWidth;
@@ -17462,31 +17198,21 @@
     let targetSafeRight = null;
 
     if (safeAreaEnabled && isCrTabActive() && isLondonRegionActive()) {
-      const pill = networkPanelAnchorPill || getActivePill();
-      if (networkPanelPinned && networkDropdownMenu && !networkDropdownMenu.hidden && networkDropdownMenu.classList.contains("is-pinned")) {
-        const wrap = networkDropdownMenu.closest(".map-canvas-wrap");
-        if (wrap) {
-          const wrapRect = wrap.getBoundingClientRect();
-          const panelRect = networkDropdownMenu.getBoundingClientRect();
-          const safeRight = Math.max(0, wrapRect.right - panelRect.left + LONDON_NETWORK_MAP_GAP_PX);
-          targetWrap = wrap;
-          targetSafeRight = `${Math.ceil(safeRight)}px`;
+      const pill = getActivePill();
+      const wrap = pill?.closest(".map-canvas-wrap");
+      const pillRect = pill?.getBoundingClientRect?.();
+      const panelWidth = getNetworkPanelWidth();
+      if (wrap && pillRect && panelWidth > 0) {
+        const wrapRect = wrap.getBoundingClientRect();
+        const margin = 8;
+        let left = pillRect.right - panelWidth;
+        if (left < margin) left = margin;
+        if (left + panelWidth > window.innerWidth - margin) {
+          left = Math.max(margin, window.innerWidth - panelWidth - margin);
         }
-      } else {
-        const wrap = getMapWrapForPill(pill);
-        const pillRect = pill?.getBoundingClientRect?.();
-        const panelWidth = getNetworkPanelWidth();
-        if (wrap && pillRect && panelWidth > 0) {
-          const wrapRect = wrap.getBoundingClientRect();
-          let left = pillRect.right - panelWidth;
-          if (left < NETWORK_PANEL_MARGIN_PX) left = NETWORK_PANEL_MARGIN_PX;
-          if (left + panelWidth > window.innerWidth - NETWORK_PANEL_MARGIN_PX) {
-            left = Math.max(NETWORK_PANEL_MARGIN_PX, window.innerWidth - panelWidth - NETWORK_PANEL_MARGIN_PX);
-          }
-          const safeRight = Math.max(0, wrapRect.right - left + LONDON_NETWORK_MAP_GAP_PX);
-          targetWrap = wrap;
-          targetSafeRight = `${Math.ceil(safeRight)}px`;
-        }
+        const safeRight = Math.max(0, wrapRect.right - left + LONDON_NETWORK_MAP_GAP_PX);
+        targetWrap = wrap;
+        targetSafeRight = `${Math.ceil(safeRight)}px`;
       }
     }
 
@@ -17518,47 +17244,25 @@
       updateNetworkPanelSafeArea();
       return;
     }
-    if (networkPanelPinned) {
-      const wrap = setNetworkPanelPinnedHost(pill);
-      if (!wrap) {
-        updateNetworkPanelSafeArea();
-        return;
-      }
-      const pillRect = pill.getBoundingClientRect();
-      const wrapRect = wrap.getBoundingClientRect();
-      const panelRect = networkDropdownMenu.getBoundingClientRect();
-      let top = pillRect.bottom - wrapRect.top + NETWORK_PANEL_MARGIN_PX;
-      let left = pillRect.right - wrapRect.left - panelRect.width;
-      const maxLeft = Math.max(NETWORK_PANEL_MARGIN_PX, wrapRect.width - panelRect.width - NETWORK_PANEL_MARGIN_PX);
-      const maxTop = Math.max(NETWORK_PANEL_MARGIN_PX, wrapRect.height - panelRect.height - NETWORK_PANEL_MARGIN_PX);
-      left = Math.min(Math.max(NETWORK_PANEL_MARGIN_PX, left), maxLeft);
-      top = Math.min(Math.max(NETWORK_PANEL_MARGIN_PX, top), maxTop);
-      networkDropdownMenu.style.top = `${top}px`;
-      networkDropdownMenu.style.left = `${left}px`;
-      networkDropdownMenu.style.right = "auto";
-      updateNetworkPanelSafeArea();
-      return;
-    }
-    setNetworkPanelFloatingHost();
     const rect = pill.getBoundingClientRect();
     const panelRect = networkDropdownMenu.getBoundingClientRect();
+    const margin = 8;
     // Anchor below the pill, right-aligned. Keep on-screen.
-    let top = rect.bottom + NETWORK_PANEL_MARGIN_PX;
+    let top = rect.bottom + margin;
     let left = rect.right - panelRect.width;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    if (left < NETWORK_PANEL_MARGIN_PX) left = NETWORK_PANEL_MARGIN_PX;
-    if (left + panelRect.width > viewportWidth - NETWORK_PANEL_MARGIN_PX) {
-      left = Math.max(NETWORK_PANEL_MARGIN_PX, viewportWidth - panelRect.width - NETWORK_PANEL_MARGIN_PX);
+    if (left < margin) left = margin;
+    if (left + panelRect.width > viewportWidth - margin) {
+      left = Math.max(margin, viewportWidth - panelRect.width - margin);
     }
-    if (top + panelRect.height > viewportHeight - NETWORK_PANEL_MARGIN_PX) {
+    if (top + panelRect.height > viewportHeight - margin) {
       // Flip above the pill if it would overflow vertically.
-      const flippedTop = rect.top - panelRect.height - NETWORK_PANEL_MARGIN_PX;
-      if (flippedTop >= NETWORK_PANEL_MARGIN_PX) top = flippedTop;
+      const flippedTop = rect.top - panelRect.height - margin;
+      if (flippedTop >= margin) top = flippedTop;
     }
-    networkDropdownMenu.style.top = `${Math.max(NETWORK_PANEL_MARGIN_PX, top)}px`;
+    networkDropdownMenu.style.top = `${Math.max(margin, top)}px`;
     networkDropdownMenu.style.left = `${left}px`;
-    networkDropdownMenu.style.right = "auto";
     updateNetworkPanelSafeArea();
   }
 
@@ -17569,14 +17273,10 @@
     networkDropdownMenu.hidden = !isOpen;
     if (isOpen) {
       networkPanelAnchorPill = anchorPill || getActivePill();
-      if (!networkPanelPinned) {
-        setNetworkPanelFloatingHost();
-      }
       // Position after layout so getBoundingClientRect on the panel is accurate.
       window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
     } else if (!networkPanelPinned) {
       networkPanelAnchorPill = null;
-      setNetworkPanelFloatingHost();
     }
     networkPills.forEach((pill) => {
       pill.setAttribute("aria-expanded", String(isOpen && pill === networkPanelAnchorPill));
@@ -17600,13 +17300,7 @@
       window.requestAnimationFrame(() => {
         positionNetworkPanel(networkPanelAnchorPill || getActivePill());
       });
-    } else if (!networkPanelPinned) {
-      setNetworkPanelFloatingHost();
     }
-    if (!networkPanelPinned && networkDropdownMenu) {
-      networkDropdownMenu.style.right = "auto";
-    }
-    updateNetworkPanelSafeArea();
   }
 
   function updateTotalSensorsSubtext(selected, total) {
@@ -17843,10 +17537,6 @@
   // Re-position the floating panel on viewport resize/scroll while open
   function repositionIfOpen() {
     if (!networkDropdownMenu || networkDropdownMenu.hidden) return;
-    if (networkPanelPinned) {
-      updateNetworkPanelSafeArea();
-      return;
-    }
     positionNetworkPanel(networkPanelAnchorPill || getActivePill());
   }
   window.addEventListener("resize", () => {
