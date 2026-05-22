@@ -4535,10 +4535,14 @@
       }
 
       .hex-chart-message {
-        min-height: 1.2em;
+        min-height: 0;
         color: var(--accent-deep);
         font-size: 0.84rem;
         font-weight: 700;
+      }
+
+      .hex-chart-message:empty {
+        display: none;
       }
 
       .hex-chart-message.is-error {
@@ -4573,6 +4577,18 @@
       .chart-axis text {
         fill: var(--ink-soft);
         font-size: 0.75rem;
+      }
+
+      .chart-y-axis-label {
+        fill: var(--ink-soft);
+        font-size: 0.74rem;
+        font-weight: 700;
+      }
+
+      .aqi-band-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        fill: var(--ink-soft);
       }
 
       .chart-line {
@@ -4635,7 +4651,7 @@
       }
 
       .hex-chart-wrap.is-loading .hex-chart-loading {
-        display: flex;
+        display: none;
       }
     </style>
   </head>
@@ -15803,6 +15819,7 @@
   const DAY_MS = 24 * 60 * 60 * 1000;
   const HOUR_MS = 60 * 60 * 1000;
   const AQI_HISTORY_ROW_LIMIT = 20000;
+  const AQI_BAND_TOP_OFFSET_PX = 1;
   const params = new URLSearchParams(window.location.search);
   const cacheBaseUrl = resolveCacheBaseUrl(params.get("cache_base"));
   const seriesUrl = cacheBaseUrl ? `${cacheBaseUrl}/timeseries` : "";
@@ -15916,6 +15933,13 @@
   function formatChartValue(value) {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric.toFixed(1) : "-";
+  }
+
+  function buildYAxisLabel(units) {
+    const context = getCurrentContext() || {};
+    const pollutantLabel = String(context.pollutantLabel || "Pollutant").trim();
+    const unitText = String(units || context.units || "").trim();
+    return unitText ? `${pollutantLabel} ${unitText}` : pollutantLabel;
   }
 
   function normalizeAqiSupportedPollutant(label) {
@@ -16630,6 +16654,7 @@
     const units       = usableEntries[0]?.units || getCurrentContext()?.units || "";
     const svgEl       = dom?.svg?.node();
     if (!svgEl) return;
+    setMessage("");
 
     // Check whether the existing frame can be reused.
     const svgWidth  = svgEl.clientWidth  || 960;
@@ -16646,6 +16671,26 @@
     const needsFetch      = [];
     let primaryGuideline  = null;
     const primaryId       = state.selectedPrimaryId || usableEntries[0]?.stationId;
+    const primary         = usableEntries.find((e) => e.stationId === primaryId) || usableEntries[0];
+    const pollutantKey    = normalizeAqiSupportedPollutant(primary?.pollutant || getCurrentContext()?.pollutant || "");
+    const aqiCacheKey     = `${primary?.timeseriesId}|${pollutantKey}|${windowValue}`;
+    let aqiPoints         = aqiBandCache.get(aqiCacheKey);
+    let aqiFetchPromise   = null;
+    if (aqiPoints === undefined && primary && pollutantKey) {
+      aqiFetchPromise = fetchAqiBands(primary, pollutantKey, range)
+        .then((points) => {
+          const normalized = Array.isArray(points) ? points : [];
+          aqiBandCache.set(aqiCacheKey, normalized);
+          return normalized;
+        })
+        .catch((_err) => {
+          aqiBandCache.set(aqiCacheKey, []);
+          return [];
+        });
+      aqiPoints = [];
+    } else {
+      aqiPoints = Array.isArray(aqiPoints) ? aqiPoints : [];
+    }
 
     usableEntries.forEach((entry) => {
       const cacheKey = `${entry.timeseriesId}|${windowValue}`;
@@ -16668,6 +16713,10 @@
     }
 
     const hasCachedData = Array.from(seriesPointsMap.values()).some((pts) => pts.length > 0);
+    const hasObservationFetch = needsFetch.length > 0;
+    const hasAqiFetch = Boolean(aqiFetchPromise);
+    let aqiLoadingActive = hasAqiFetch;
+    const observsLoadingActive = hasObservationFetch;
 
     if (frameValid) {
       if (reason === "window-change") {
@@ -16675,32 +16724,59 @@
         animateChartDomains(dom.chartFrame, range, dom.chartFrame.yScale.domain(), token);
       } else if (hasCachedData) {
         // Show cached data immediately (snap, no animation).
-        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units);
+        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+          aqiLoading: aqiLoadingActive,
+          yAxisLoading: observsLoadingActive,
+        });
       }
     } else if (hasCachedData) {
       // New frame — render cached data before fetching anything.
-      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units);
+      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+        aqiLoading: aqiLoadingActive,
+        yAxisLoading: observsLoadingActive,
+      });
+    }
+    if (!hasCachedData) {
+      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+        aqiLoading: aqiLoadingActive,
+        yAxisLoading: observsLoadingActive,
+      });
     }
 
     // --- Fast path: everything is cached (no network needed). ---
     if (!needsFetch.length) {
-      const primary      = usableEntries.find((e) => e.stationId === primaryId) || usableEntries[0];
-      const pollutantKey = normalizeAqiSupportedPollutant(primary?.pollutant || getCurrentContext()?.pollutant || "");
-      const aqiCacheKey  = `${primary?.timeseriesId}|${pollutantKey}|${windowValue}`;
-      let aqiPoints      = aqiBandCache.get(aqiCacheKey);
-      if (aqiPoints === undefined && primary && pollutantKey) {
-        try { aqiPoints = await fetchAqiBands(primary, pollutantKey, range); } catch (_err) { aqiPoints = []; }
-        if (token !== state.loadToken) return;
-        aqiBandCache.set(aqiCacheKey, aqiPoints);
+      if (hasAqiFetch) {
+        setLoading(true);
+        try {
+          aqiPoints = await aqiFetchPromise;
+        } catch (_err) {
+          aqiPoints = [];
+        }
+        aqiLoadingActive = false;
       }
       if (token !== state.loadToken) return;
-      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints || []);
+      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints || [], {
+        aqiLoading: aqiLoadingActive,
+        yAxisLoading: false,
+      });
+      setLoading(false);
       setMessage(Array.from(seriesPointsMap.values()).reduce((s, pts) => s + pts.length, 0) ? "" : "No history available for this sensor.");
       return;
     }
 
     // --- Fetch path: some entries need network data. ---
-    setMessage("Loading chart data…");
+    setLoading(true);
+    const aqiProgressPromise = hasAqiFetch
+      ? aqiFetchPromise.then((resolvedPoints) => {
+          if (token !== state.loadToken || signal.aborted) return;
+          aqiPoints = Array.isArray(resolvedPoints) ? resolvedPoints : [];
+          aqiLoadingActive = false;
+          updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+            aqiLoading: false,
+            yAxisLoading: true,
+          });
+        })
+      : Promise.resolve();
 
     // Create a fresh progress bar on the existing frame, or use the one from initChartFrame.
     if (frameValid) {
@@ -16742,9 +16818,11 @@
         seriesPointsMap.set(entry.stationId, mergeSeriesPoints(seriesPointsMap.get(entry.stationId) || [], result.points));
 
         completedChunks++;
-        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units);
+        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+          aqiLoading: aqiLoadingActive,
+          yAxisLoading: true,
+        });
         dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-        if (dom.chartFrame?.svgEl) ChartCore.applyChunkFade(dom.chartFrame.svgEl);
       }
 
       if (token !== state.loadToken) return;
@@ -16758,19 +16836,13 @@
         });
       });
 
-      // Fetch AQI bands (cache-first).
-      const primary      = usableEntries.find((e) => e.stationId === primaryId) || usableEntries[0];
-      const pollutantKey = normalizeAqiSupportedPollutant(primary?.pollutant || getCurrentContext()?.pollutant || "");
-      const aqiCacheKey  = `${primary?.timeseriesId}|${pollutantKey}|${windowValue}`;
-      let aqiPoints      = aqiBandCache.get(aqiCacheKey);
-      if (aqiPoints === undefined && primary && pollutantKey) {
-        try { aqiPoints = await fetchAqiBands(primary, pollutantKey, range); } catch (_err) { aqiPoints = []; }
-        if (token !== state.loadToken) return;
-        aqiBandCache.set(aqiCacheKey, aqiPoints);
-      }
+      await aqiProgressPromise;
       if (token !== state.loadToken) return;
 
-      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints || []);
+      updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints || [], {
+        aqiLoading: false,
+        yAxisLoading: false,
+      });
       const totalPoints = Array.from(seriesPointsMap.values()).reduce((s, pts) => s + pts.length, 0);
       setMessage(totalPoints ? "" : "No history available for this sensor.");
 
@@ -16812,29 +16884,32 @@
       .text(message || "");
   }
 
-  function renderAqiBands(svg, aqiPoints, frame, xScale) {
-    if (!Array.isArray(aqiPoints) || !aqiPoints.length) return;
+  function renderAqiBands(svg, aqiPoints, frame, xScale, options = {}) {
     const daqiColors = { 1: "#1DB100", 2: "#61D836", 3: "#34FF00", 4: "#FFFB00", 5: "#FFCE04", 6: "#FF9300", 7: "#FF6464", 8: "#FF2600", 9: "#A50026", 10: "#672C7F" };
     const eaqiColors = { "Good": "#34FF00", "Fair": "#FFFB00", "Moderate": "#FF9300", "Poor": "#FF2600", "Very poor": "#A50026", "Extremely poor": "#672C7F", 1: "#34FF00", 2: "#FFFB00", 3: "#FF9300", 4: "#FF2600", 5: "#A50026", 6: "#672C7F" };
+    const hasAqiPoints = Array.isArray(aqiPoints) && aqiPoints.length > 0;
     const pointByHour = new Map();
-    aqiPoints.forEach((point) => {
-      const hourMs = new Date(point.date).setMinutes(0, 0, 0);
-      if (Number.isFinite(hourMs)) pointByHour.set(hourMs, point);
-    });
+    if (hasAqiPoints) {
+      aqiPoints.forEach((point) => {
+        const hourMs = new Date(point.date).setMinutes(0, 0, 0);
+        if (Number.isFinite(hourMs)) pointByHour.set(hourMs, point);
+      });
+    }
     const bandHeight = 22;
     const gap = 4;
     const slotWidth = Math.max(1, (frame.width - frame.margin.left - frame.margin.right) / Math.max(1, (frame.endMs - frame.startMs) / HOUR_MS));
     const drawBand = (label, y, key, colors) => {
       const group = svg.append("g").attr("transform", `translate(0, ${y})`);
       group.append("text")
+        .attr("class", "aqi-band-label")
         .attr("x", frame.margin.left - 8)
         .attr("y", bandHeight / 2)
         .attr("dy", "0.32em")
         .attr("text-anchor", "end")
-        .style("font-size", "0.75rem")
-        .style("font-weight", "600")
-        .style("fill", "var(--ink-soft)")
         .text(label);
+      if (!hasAqiPoints) {
+        return;
+      }
       for (let t = new Date(frame.startMs).setMinutes(0, 0, 0); t < frame.endMs; t += HOUR_MS) {
         const point = pointByHour.get(t);
         const color = point ? colors[point[key]] : null;
@@ -16844,7 +16919,7 @@
         if (width > 0) group.append("rect").attr("x", x).attr("y", 0).attr("width", width).attr("height", bandHeight).attr("fill", color);
       }
     };
-    const bandTop = 8;
+    const bandTop = AQI_BAND_TOP_OFFSET_PX;
     drawBand("DAQI", bandTop, "daqi", daqiColors);
     drawBand("EAQI", bandTop + bandHeight + gap, "eaqi", eaqiColors);
   }
@@ -16886,6 +16961,13 @@
     const yAxisGroup = dom.svg.append("g")
       .attr("class", "chart-axis")
       .attr("transform", `translate(${margin.left}, 0)`);
+    const yAxisLabelEl = dom.svg.append("text")
+      .attr("class", "chart-y-axis-label")
+      .attr("text-anchor", "middle")
+      .attr("x", Math.max(12, margin.left - 44))
+      .attr("y", (margin.top + (height - margin.bottom)) / 2)
+      .attr("transform", `rotate(-90, ${Math.max(12, margin.left - 44)}, ${(margin.top + (height - margin.bottom)) / 2})`)
+      .text("");
 
     const guidelineEl = dom.svg.append("line").attr("class", "chart-guideline").style("opacity", 0);
     const guidelineLabelEl = dom.svg.append("text")
@@ -16956,6 +17038,7 @@
     dom.chartFrame = {
       svgEl, xScale, yScale,
       xAxisGroup, yAxisGroup,
+      yAxisLabelEl,
       aqiBandsContainer,
       guidelineEl, guidelineLabelEl,
       seriesPaths, seriesSymbolGroups,
@@ -16970,7 +17053,7 @@
     };
   }
 
-  function updateChart(dom, seriesPointsMap, usableEntries, range, guideline, units, aqiPoints) {
+  function updateChart(dom, seriesPointsMap, usableEntries, range, guideline, units, aqiPoints, renderOptions = {}) {
     const cf = dom.chartFrame;
     if (!cf) return;
 
@@ -16997,9 +17080,13 @@
     // Update AQI bands synchronously (positioned by x-scale / frame height, not y-scale).
     if (aqiPoints !== undefined) {
       cf.aqiBandsContainer.selectAll("*").remove();
-      if (Array.isArray(aqiPoints) && aqiPoints.length) {
-        renderAqiBands(cf.aqiBandsContainer, aqiPoints, cf.frame, cf.xScale);
-      }
+      renderAqiBands(cf.aqiBandsContainer, aqiPoints, cf.frame, cf.xScale, {
+        loading: Boolean(renderOptions.aqiLoading),
+      });
+    }
+    if (cf.yAxisLabelEl) {
+      const axisLabel = buildYAxisLabel(units);
+      cf.yAxisLabelEl.text(axisLabel);
     }
 
     // Build line generator and segments (used every animation frame and at finalize).
