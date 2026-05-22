@@ -341,8 +341,7 @@
       }
 
       .network-summary {
-        display: grid;
-        gap: 12px;
+        display: none !important;
       }
 
       .network-card {
@@ -1777,6 +1776,18 @@
         background: var(--line-soft);
       }
 
+      .network-option-coverage {
+        display: none;
+      }
+
+      .network-option-logo-link {
+        display: none;
+      }
+
+      .network-option-tag {
+        display: none;
+      }
+
       .map-wrap {
         border-radius: 12px;
         background: var(--map-wrap);
@@ -3160,8 +3171,155 @@
         margin-top: 8px;
         padding-top: 8px;
         border-top: 1px solid var(--line, #e5e7eb);
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+      }
+
+      .networks-panel-footer-note {
         font-size: 11px;
         color: var(--text-muted, #6b7280);
+        min-width: 0;
+      }
+
+      .networks-panel-expand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border-radius: 7px;
+        border: 1px solid color-mix(in oklab, var(--accent, #2f6fab) 28%, #c9d1dd);
+        background: var(--surface-2, #f5f7fb);
+        color: var(--accent, #2f6fab);
+        cursor: pointer;
+        flex: 0 0 auto;
+      }
+
+      .networks-panel-expand:hover {
+        background: color-mix(in oklab, var(--surface-2, #f5f7fb) 72%, var(--accent, #2f6fab) 12%);
+      }
+
+      .networks-panel-expand:focus-visible {
+        outline: 2px solid var(--accent, #2f6fab);
+        outline-offset: 2px;
+      }
+
+      .networks-panel-expand-icon {
+        width: 13px;
+        height: 13px;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        fill: none;
+      }
+
+      .networks-panel-floating.is-maxi {
+        max-width: min(560px, calc(100vw - 24px));
+        max-height: min(84vh, 700px);
+      }
+
+      .networks-panel-floating.is-maxi .network-dropdown-list {
+        gap: 8px;
+      }
+
+      .networks-panel-floating.is-maxi .network-option {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "main logo"
+          "bar logo"
+          "coverage logo";
+        column-gap: 10px;
+        row-gap: 6px;
+        align-items: center;
+        padding: 9px 10px;
+      }
+
+      .networks-panel-floating.is-maxi .network-option-main {
+        grid-area: main;
+      }
+
+      .networks-panel-floating.is-maxi .network-share-bar {
+        grid-area: bar;
+        margin-top: 0;
+      }
+
+      .networks-panel-floating.is-maxi .network-option-coverage {
+        grid-area: coverage;
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--ink-2);
+        line-height: 1.25;
+      }
+
+      .networks-panel-floating.is-maxi .network-option-logo-link {
+        grid-area: logo;
+        display: inline-flex;
+        align-self: stretch;
+        min-height: 78px;
+      }
+
+      .networks-panel-floating.is-maxi .network-name-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .networks-panel-floating.is-maxi .network-option-tag {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--accent, #2f6fab);
+        border-radius: 4px;
+        padding: 1px 5px;
+        background: var(--map-wrap, #ece8df);
+        color: var(--accent-deep, #1f4d80);
+        font-size: 0.61rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1.15;
+        white-space: nowrap;
+      }
+
+      .networks-panel-floating.is-maxi .network-card-logo-box {
+        min-height: 100%;
+      }
+
+      .networks-panel-floating.is-maxi .network-card-logo {
+        height: 3.15rem;
+      }
+
+      .networks-panel-floating.is-maxi .network-card-logo--breathe {
+        height: 2.75rem;
+      }
+
+      .networks-panel-floating.is-maxi .network-card-logo-box--text {
+        font-size: 0.82rem;
+      }
+
+      .networks-panel-floating.is-maxi .network-card-link-icon {
+        width: 13px;
+        height: 13px;
+      }
+
+      @media (max-width: 720px) {
+        .networks-panel-floating.is-maxi .network-option {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-areas:
+            "main"
+            "bar"
+            "coverage"
+            "logo";
+        }
+
+        .networks-panel-floating.is-maxi .network-option-logo-link {
+          justify-self: start;
+          min-height: 56px;
+        }
       }
 
       /* Map-topbar layout: now hosts the Networks pill on the right.
@@ -3780,6 +3938,7 @@
         --map-canvas-min-height: 700px;
         --map-footer-safe: 64px;
         --sensor-panel-height: 240px;
+        --networks-panel-safe-right: 0px;
         border: 1px solid var(--line-soft);
         border-bottom: none;
         border-radius: 0 0 18px 18px;
@@ -3818,6 +3977,10 @@
         cursor: default;
         touch-action: none;
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .map-canvas-wrap.has-networks-panel-safe-area .map-svg-viewport {
+        right: var(--networks-panel-safe-right, 0px);
       }
 
       /* is-pannable is set by JS when scale > 1; cursor stays default — no grab hint while idle */
@@ -4189,6 +4352,12 @@
         .map-dashboard-card.has-docked-networks .map-legend {
           grid-column: 1;
           grid-row: 6;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .map-canvas-wrap.has-networks-panel-safe-area .map-svg-viewport {
+          right: 0;
         }
       }
 
@@ -6062,7 +6231,21 @@
       <div class="network-dropdown-list network-list" id="network-list">
         <span class="network-empty">Loading networks...</span>
       </div>
-      <div class="networks-panel-footer">Counts are active sensors in the current window.</div>
+      <div class="networks-panel-footer">
+        <button
+          type="button"
+          class="networks-panel-expand"
+          id="networks-panel-expand"
+          aria-expanded="false"
+          aria-label="Expand networks panel"
+          title="Expand networks panel"
+        >
+          <svg class="networks-panel-expand-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M5 1.5H1.5V5M11 1.5h3.5V5M1.5 11V14.5H5M11 14.5h3.5V11" />
+          </svg>
+        </button>
+        <span class="networks-panel-footer-note">Counts are active sensors in the current window.</span>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
@@ -6555,6 +6738,44 @@
         { code: "breathe_london", label: "Breathe London" },
         { code: "sensorcommunity", label: "Sensor.Community" },
       ];
+      const NETWORK_LOGO_META = Object.freeze({
+        aurn: {
+          href: "https://www.ukairquality.net/",
+          ariaLabel: "Open GOV.UK AURN website (external link)",
+          boxClass: "network-card-logo-box--light network-card-logo-box--text",
+          text: "GOV.UK AURN",
+        },
+        openaq: {
+          href: "https://openaq.org/",
+          ariaLabel: "Open OpenAQ website (external link)",
+          boxClass: "network-card-logo-box--light",
+          imgSrc: "images/openaq_logo.svg",
+          imgAlt: "OpenAQ logo",
+          imgClass: "network-card-logo",
+        },
+        breathe_london: {
+          href: "https://www.breathelondon.org/",
+          ariaLabel: "Open Breathe London website (external link)",
+          boxClass: "network-card-logo-box--light",
+          imgSrc: "images/breathelondon_logo_v2.svg",
+          imgAlt: "Breathe London logo",
+          imgClass: "network-card-logo network-card-logo--breathe",
+        },
+        laqn: {
+          href: "https://www.londonair.org.uk/",
+          ariaLabel: "Open London Air LAQN website (external link)",
+          boxClass: "network-card-logo-box--light network-card-logo-box--text",
+          text: "London Air LAQN",
+        },
+        sensorcommunity: {
+          href: "https://sensor.community/en/",
+          ariaLabel: "Open Sensor.Community website (external link)",
+          boxClass: "network-card-logo-box--dark",
+          imgSrc: "images/scomm_logo-sw.svg",
+          imgAlt: "Sensor.Community logo",
+          imgClass: "network-card-logo",
+        },
+      });
       const TOTAL_PCON_COUNT = 650;
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
@@ -7904,10 +8125,16 @@
           : storedSelection.defaultAll;
         baseLatestRows = cached.latestRows;
         latestPollutant = cached.latestPollutant || activePollutant;
+        const networkRowsForWindow = getNetworkRowsForWindow();
+        const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
+        const coverageByCode = buildNetworkCoverageByCode(networkRowsForWindow);
         renderNetworkFiltersIfNeeded(
-          buildNetworkDefs(getNetworkRowsForWindow()),
+          windowNetworkDefs,
           previousSelection,
-          hadAllSelected
+          hadAllSelected,
+          coverageByCode,
+          TOTAL_PCON_COUNT,
+          "constituencies",
         );
         applyNetworkFilters();
         requestAnimationFrame(() => {
@@ -8300,17 +8527,79 @@
         return defs.map((def) => `${def.code}:${def.label}:${def.count}`).join("|");
       }
 
-      function renderNetworkFiltersIfNeeded(defs, selectedCodes, defaultAll) {
-        const key = getNetworkDefsKey(defs);
+      function resolveNetworkLogoMeta(def) {
+        const code = String(def?.code || "").toLowerCase();
+        if (NETWORK_LOGO_META[code]) {
+          return NETWORK_LOGO_META[code];
+        }
+        const label = String(def?.label || "").toLowerCase();
+        if (LAQN_NETWORK_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.laqn;
+        }
+        if (GOVUK_NETWORK_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.aurn;
+        }
+        if (OPENAQ_NETWORK_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.openaq;
+        }
+        if (BREATHE_LONDON_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.breathe_london;
+        }
+        if (SENSOR_COMMUNITY_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.sensorcommunity;
+        }
+        return null;
+      }
+
+      function buildNetworkCoverageByCode(rows) {
+        const coverageByCode = new Map();
+        rows.forEach((row) => {
+          const areaCode = resolvePconCode(row);
+          if (!areaCode) {
+            return;
+          }
+          const seenCodes = new Set();
+          collectNetworkEntries(row).forEach((entry) => {
+            const code = String(entry?.code || "").toLowerCase();
+            if (!code || seenCodes.has(code)) {
+              return;
+            }
+            seenCodes.add(code);
+            if (!coverageByCode.has(code)) {
+              coverageByCode.set(code, new Set());
+            }
+            coverageByCode.get(code).add(areaCode);
+          });
+        });
+        return coverageByCode;
+      }
+
+      function getNetworkDefsRenderKey(defs, coverageByCode, coverageTotal) {
+        if (!defs.length) {
+          return "empty";
+        }
+        return defs.map((def) => {
+          const code = String(def.code || "").toLowerCase();
+          const covered = coverageByCode.get(code)?.size || 0;
+          const pct = coverageTotal > 0 ? Math.round((covered / coverageTotal) * 100) : 0;
+          return `${def.code}:${def.label}:${def.count}:${covered}:${pct}`;
+        }).join("|");
+      }
+
+      function renderNetworkFiltersIfNeeded(defs, selectedCodes, defaultAll, coverageByCode, coverageTotal, coverageAreaLabel) {
+        const key = `${getNetworkDefsKey(defs)}|${getNetworkDefsRenderKey(defs, coverageByCode, coverageTotal)}`;
         if (key === networkDefsKey) {
           return false;
         }
         networkDefsKey = key;
-        renderNetworkFilters(defs, selectedCodes, defaultAll);
+        renderNetworkFilters(defs, selectedCodes, defaultAll, coverageByCode, coverageTotal, coverageAreaLabel);
         return true;
       }
 
       function getCurrentNetworkSelection() {
+        networkInputs = networkList
+          ? Array.from(networkList.querySelectorAll("input[data-network]"))
+          : [];
         if (!networkInputs.length) {
           return null;
         }
@@ -8384,7 +8673,7 @@
         syncNetworkRowMutedState();
       }
 
-      function renderNetworkFilters(defs, selectedCodes, defaultAll) {
+      function renderNetworkFilters(defs, selectedCodes, defaultAll, coverageByCode, coverageTotal, coverageAreaLabel) {
         if (!networkList) {
           return;
         }
@@ -8412,10 +8701,19 @@
           mainRow.className = "network-option-main";
           const leftGroup = document.createElement("span");
           leftGroup.className = "network-option-left";
+          const nameWrap = document.createElement("span");
+          nameWrap.className = "network-name-wrap";
           const text = document.createElement("span");
           text.className = "network-name";
           text.textContent = def.label;
-          leftGroup.append(input, text);
+          nameWrap.appendChild(text);
+          if (String(def.code || "").toLowerCase() === "openaq") {
+            const openaqTag = document.createElement("span");
+            openaqTag.className = "network-option-tag";
+            openaqTag.textContent = "AGGREGATOR";
+            nameWrap.appendChild(openaqTag);
+          }
+          leftGroup.append(input, nameWrap);
           const count = document.createElement("span");
           count.className = "network-count";
           if (def.count > 0) count.textContent = def.count.toLocaleString();
@@ -8425,11 +8723,54 @@
           label.title = `${def.label}\n${tooltipCount.toLocaleString()} active sensors\n${tooltipPct}% of sensors across all available networks`;
           const shareBar = document.createElement("span");
           shareBar.className = "network-share-bar";
+          shareBar.setAttribute("role", "progressbar");
+          shareBar.setAttribute("aria-label", `${def.label} share of active sensors`);
+          shareBar.setAttribute("aria-valuemin", "0");
+          shareBar.setAttribute("aria-valuemax", "100");
+          shareBar.setAttribute("aria-valuenow", String(tooltipPct));
+          shareBar.setAttribute("aria-valuetext", `${tooltipPct}% of active sensors`);
           const shareFill = document.createElement("span");
           shareFill.className = "network-share-fill";
           shareFill.style.width = `${sharePercent.toFixed(1)}%`;
           shareBar.appendChild(shareFill);
-          label.append(mainRow, shareBar);
+          const code = String(def.code || "").toLowerCase();
+          const coverageCount = coverageByCode?.get(code)?.size || 0;
+          const coveragePercent = coverageTotal > 0 ? Math.round((coverageCount / coverageTotal) * 100) : 0;
+          const coverageText = document.createElement("span");
+          coverageText.className = "network-option-coverage";
+          coverageText.textContent = `${coveragePercent}% coverage`;
+          coverageText.setAttribute(
+            "aria-label",
+            `${def.label} coverage ${coveragePercent}% (${coverageCount} of ${coverageTotal} ${coverageAreaLabel})`,
+          );
+          label.append(mainRow, shareBar, coverageText);
+          const logoMeta = resolveNetworkLogoMeta(def);
+          if (logoMeta?.href) {
+            const logoLink = document.createElement("a");
+            logoLink.className = `network-option-logo-link network-card-logo-link network-card-logo-box ${logoMeta.boxClass || ""}`.trim();
+            logoLink.href = logoMeta.href;
+            logoLink.target = "_blank";
+            logoLink.rel = "noopener noreferrer";
+            logoLink.setAttribute("aria-label", logoMeta.ariaLabel || `Open ${def.label} website (external link)`);
+            logoLink.addEventListener("mousedown", (event) => event.stopPropagation());
+            logoLink.addEventListener("click", (event) => event.stopPropagation());
+            if (logoMeta.text) {
+              logoLink.appendChild(document.createTextNode(logoMeta.text));
+            } else if (logoMeta.imgSrc) {
+              const logoImg = document.createElement("img");
+              logoImg.className = logoMeta.imgClass || "network-card-logo";
+              logoImg.src = logoMeta.imgSrc;
+              logoImg.alt = logoMeta.imgAlt || `${def.label} logo`;
+              logoLink.appendChild(logoImg);
+            }
+            const linkIcon = document.createElement("img");
+            linkIcon.className = "network-card-link-icon";
+            linkIcon.src = "images/Link Icon.svg";
+            linkIcon.alt = "";
+            linkIcon.setAttribute("aria-hidden", "true");
+            logoLink.appendChild(linkIcon);
+            label.appendChild(logoLink);
+          }
           fragment.appendChild(label);
         });
         networkList.appendChild(fragment);
@@ -8957,6 +9298,10 @@
           const pollutantLabel = getPollutantLabel(activePollutant);
           const pollutantUnits = getPollutantUnits(activePollutant);
           const capValue = getLegendCapValue();
+          const totalSensorsForTopSummary = pconRows.reduce((total, row) => {
+            const count = normalizeNumber(row.station_count);
+            return total + (count ?? 0);
+          }, 0);
           const baseRows = filterRowsByWindow(scopedLatestRows);
           const pollutantRows = getRowsForActivePollutant(baseRows);
           const candidates = pollutantRows
@@ -8973,7 +9318,7 @@
             highestNetwork = resolveConnectorLabel(h.row);
           }
           window.updateTopSummary({
-            totalSensors: summary.totalSensors,
+            totalSensors: totalSensorsForTopSummary,
             pconCovered: summary.pconCovered,
             pconTotal: summary.pconTotal,
             areaLabel: 'constituencies',
@@ -9980,13 +10325,25 @@
       }
 
       function applyNetworkFilters() {
+        networkInputs = networkList
+          ? Array.from(networkList.querySelectorAll("input[data-network]"))
+          : [];
         const storedSelection = getStoredNetworkSelection();
         const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
           ? networkInputs.every((input) => input.checked)
           : storedSelection.defaultAll;
-        const windowNetworkDefs = buildNetworkDefs(getNetworkRowsForWindow());
-        renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
+        const networkRowsForWindow = getNetworkRowsForWindow();
+        const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
+        const coverageByCode = buildNetworkCoverageByCode(networkRowsForWindow);
+        renderNetworkFiltersIfNeeded(
+          windowNetworkDefs,
+          previousSelection,
+          hadAllSelected,
+          coverageByCode,
+          TOTAL_PCON_COUNT,
+          "constituencies",
+        );
         updateNetworkSummaryCardVisibility();
         if (!basePconRows.length && !baseLatestRows.length) {
           scopedLatestRows = [];
@@ -10481,10 +10838,16 @@
           if (isStale()) {
             return;
           }
+          const networkRowsForWindow = getNetworkRowsForWindow();
+          const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
+          const coverageByCode = buildNetworkCoverageByCode(networkRowsForWindow);
           renderNetworkFiltersIfNeeded(
-            buildNetworkDefs(getNetworkRowsForWindow()),
+            windowNetworkDefs,
             previousSelection,
-            hadAllSelected
+            hadAllSelected,
+            coverageByCode,
+            TOTAL_PCON_COUNT,
+            "constituencies",
           );
           if (populationResponse && populationResponse.ok) {
             const populationPayload = await populationResponse.json();
@@ -10925,6 +11288,9 @@
           applyStoredNetworkSelection();
           applyNetworkFilters();
         },
+        reapplyNetworkFilters: () => {
+          applyNetworkFilters();
+        },
         selectPconByCode: (code) => selectPconByCode(code),
         getActivePconCode: () => selectedPconCode,
         getChartModeContext: () => {
@@ -11147,6 +11513,44 @@
         { code: "breathe_london", label: "Breathe London" },
         { code: "sensorcommunity", label: "Sensor.Community" },
       ];
+      const NETWORK_LOGO_META = Object.freeze({
+        aurn: {
+          href: "https://www.ukairquality.net/",
+          ariaLabel: "Open GOV.UK AURN website (external link)",
+          boxClass: "network-card-logo-box--light network-card-logo-box--text",
+          text: "GOV.UK AURN",
+        },
+        openaq: {
+          href: "https://openaq.org/",
+          ariaLabel: "Open OpenAQ website (external link)",
+          boxClass: "network-card-logo-box--light",
+          imgSrc: "images/openaq_logo.svg",
+          imgAlt: "OpenAQ logo",
+          imgClass: "network-card-logo",
+        },
+        breathe_london: {
+          href: "https://www.breathelondon.org/",
+          ariaLabel: "Open Breathe London website (external link)",
+          boxClass: "network-card-logo-box--light",
+          imgSrc: "images/breathelondon_logo_v2.svg",
+          imgAlt: "Breathe London logo",
+          imgClass: "network-card-logo network-card-logo--breathe",
+        },
+        laqn: {
+          href: "https://www.londonair.org.uk/",
+          ariaLabel: "Open London Air LAQN website (external link)",
+          boxClass: "network-card-logo-box--light network-card-logo-box--text",
+          text: "London Air LAQN",
+        },
+        sensorcommunity: {
+          href: "https://sensor.community/en/",
+          ariaLabel: "Open Sensor.Community website (external link)",
+          boxClass: "network-card-logo-box--dark",
+          imgSrc: "images/scomm_logo-sw.svg",
+          imgAlt: "Sensor.Community logo",
+          imgClass: "network-card-logo",
+        },
+      });
       const AREA_LABEL_PLURAL = "local authorities";
       const CONNECTOR_DEFS = [
         { code: "uk_air_sos", label: "UK AIR SOS" },
@@ -12246,10 +12650,16 @@
           : storedSelection.defaultAll;
         baseLatestRows = cached.latestRows;
         latestPollutant = cached.latestPollutant || activePollutant;
+        const networkRowsForWindow = getNetworkRowsForWindow();
+        const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
+        const coverageByCode = buildNetworkCoverageByCode(networkRowsForWindow);
         renderNetworkFiltersIfNeeded(
-          buildNetworkDefs(getNetworkRowsForWindow()),
+          windowNetworkDefs,
           previousSelection,
-          hadAllSelected
+          hadAllSelected,
+          coverageByCode,
+          pconCodes.size || 0,
+          AREA_LABEL_PLURAL,
         );
         applyNetworkFilters();
         requestAnimationFrame(() => {
@@ -12580,17 +12990,79 @@
         return defs.map((def) => `${def.code}:${def.label}:${def.count}`).join("|");
       }
 
-      function renderNetworkFiltersIfNeeded(defs, selectedCodes, defaultAll) {
-        const key = getNetworkDefsKey(defs);
+      function resolveNetworkLogoMeta(def) {
+        const code = String(def?.code || "").toLowerCase();
+        if (NETWORK_LOGO_META[code]) {
+          return NETWORK_LOGO_META[code];
+        }
+        const label = String(def?.label || "").toLowerCase();
+        if (LAQN_NETWORK_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.laqn;
+        }
+        if (GOVUK_NETWORK_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.aurn;
+        }
+        if (OPENAQ_NETWORK_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.openaq;
+        }
+        if (BREATHE_LONDON_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.breathe_london;
+        }
+        if (SENSOR_COMMUNITY_MATCHERS.some((token) => label.includes(token))) {
+          return NETWORK_LOGO_META.sensorcommunity;
+        }
+        return null;
+      }
+
+      function buildNetworkCoverageByCode(rows) {
+        const coverageByCode = new Map();
+        rows.forEach((row) => {
+          const areaCode = resolveAreaCode(row);
+          if (!areaCode) {
+            return;
+          }
+          const seenCodes = new Set();
+          collectNetworkEntries(row).forEach((entry) => {
+            const code = String(entry?.code || "").toLowerCase();
+            if (!code || seenCodes.has(code)) {
+              return;
+            }
+            seenCodes.add(code);
+            if (!coverageByCode.has(code)) {
+              coverageByCode.set(code, new Set());
+            }
+            coverageByCode.get(code).add(areaCode);
+          });
+        });
+        return coverageByCode;
+      }
+
+      function getNetworkDefsRenderKey(defs, coverageByCode, coverageTotal) {
+        if (!defs.length) {
+          return "empty";
+        }
+        return defs.map((def) => {
+          const code = String(def.code || "").toLowerCase();
+          const covered = coverageByCode.get(code)?.size || 0;
+          const pct = coverageTotal > 0 ? Math.round((covered / coverageTotal) * 100) : 0;
+          return `${def.code}:${def.label}:${def.count}:${covered}:${pct}`;
+        }).join("|");
+      }
+
+      function renderNetworkFiltersIfNeeded(defs, selectedCodes, defaultAll, coverageByCode, coverageTotal, coverageAreaLabel) {
+        const key = `${getNetworkDefsKey(defs)}|${getNetworkDefsRenderKey(defs, coverageByCode, coverageTotal)}`;
         if (key === networkDefsKey) {
           return false;
         }
         networkDefsKey = key;
-        renderNetworkFilters(defs, selectedCodes, defaultAll);
+        renderNetworkFilters(defs, selectedCodes, defaultAll, coverageByCode, coverageTotal, coverageAreaLabel);
         return true;
       }
 
       function getCurrentNetworkSelection() {
+        networkInputs = networkList
+          ? Array.from(networkList.querySelectorAll("input[data-network]"))
+          : [];
         if (!networkInputs.length) {
           return null;
         }
@@ -12665,7 +13137,7 @@
         syncNetworkRowMutedState();
       }
 
-      function renderNetworkFilters(defs, selectedCodes, defaultAll) {
+      function renderNetworkFilters(defs, selectedCodes, defaultAll, coverageByCode, coverageTotal, coverageAreaLabel) {
         if (!networkList) {
           return;
         }
@@ -12693,10 +13165,19 @@
           mainRow.className = "network-option-main";
           const leftGroup = document.createElement("span");
           leftGroup.className = "network-option-left";
+          const nameWrap = document.createElement("span");
+          nameWrap.className = "network-name-wrap";
           const text = document.createElement("span");
           text.className = "network-name";
           text.textContent = def.label;
-          leftGroup.append(input, text);
+          nameWrap.appendChild(text);
+          if (String(def.code || "").toLowerCase() === "openaq") {
+            const openaqTag = document.createElement("span");
+            openaqTag.className = "network-option-tag";
+            openaqTag.textContent = "AGGREGATOR";
+            nameWrap.appendChild(openaqTag);
+          }
+          leftGroup.append(input, nameWrap);
           const count = document.createElement("span");
           count.className = "network-count";
           if (def.count > 0) count.textContent = def.count.toLocaleString();
@@ -12706,11 +13187,54 @@
           label.title = `${def.label}\n${tooltipCount.toLocaleString()} active sensors\n${tooltipPct}% of sensors across all available networks`;
           const shareBar = document.createElement("span");
           shareBar.className = "network-share-bar";
+          shareBar.setAttribute("role", "progressbar");
+          shareBar.setAttribute("aria-label", `${def.label} share of active sensors`);
+          shareBar.setAttribute("aria-valuemin", "0");
+          shareBar.setAttribute("aria-valuemax", "100");
+          shareBar.setAttribute("aria-valuenow", String(tooltipPct));
+          shareBar.setAttribute("aria-valuetext", `${tooltipPct}% of active sensors`);
           const shareFill = document.createElement("span");
           shareFill.className = "network-share-fill";
           shareFill.style.width = `${sharePercent.toFixed(1)}%`;
           shareBar.appendChild(shareFill);
-          label.append(mainRow, shareBar);
+          const code = String(def.code || "").toLowerCase();
+          const coverageCount = coverageByCode?.get(code)?.size || 0;
+          const coveragePercent = coverageTotal > 0 ? Math.round((coverageCount / coverageTotal) * 100) : 0;
+          const coverageText = document.createElement("span");
+          coverageText.className = "network-option-coverage";
+          coverageText.textContent = `${coveragePercent}% coverage`;
+          coverageText.setAttribute(
+            "aria-label",
+            `${def.label} coverage ${coveragePercent}% (${coverageCount} of ${coverageTotal} ${coverageAreaLabel})`,
+          );
+          label.append(mainRow, shareBar, coverageText);
+          const logoMeta = resolveNetworkLogoMeta(def);
+          if (logoMeta?.href) {
+            const logoLink = document.createElement("a");
+            logoLink.className = `network-option-logo-link network-card-logo-link network-card-logo-box ${logoMeta.boxClass || ""}`.trim();
+            logoLink.href = logoMeta.href;
+            logoLink.target = "_blank";
+            logoLink.rel = "noopener noreferrer";
+            logoLink.setAttribute("aria-label", logoMeta.ariaLabel || `Open ${def.label} website (external link)`);
+            logoLink.addEventListener("mousedown", (event) => event.stopPropagation());
+            logoLink.addEventListener("click", (event) => event.stopPropagation());
+            if (logoMeta.text) {
+              logoLink.appendChild(document.createTextNode(logoMeta.text));
+            } else if (logoMeta.imgSrc) {
+              const logoImg = document.createElement("img");
+              logoImg.className = logoMeta.imgClass || "network-card-logo";
+              logoImg.src = logoMeta.imgSrc;
+              logoImg.alt = logoMeta.imgAlt || `${def.label} logo`;
+              logoLink.appendChild(logoImg);
+            }
+            const linkIcon = document.createElement("img");
+            linkIcon.className = "network-card-link-icon";
+            linkIcon.src = "images/Link Icon.svg";
+            linkIcon.alt = "";
+            linkIcon.setAttribute("aria-hidden", "true");
+            logoLink.appendChild(linkIcon);
+            label.appendChild(logoLink);
+          }
           fragment.appendChild(label);
         });
         networkList.appendChild(fragment);
@@ -14697,13 +15221,26 @@
       }
 
       function applyNetworkFilters() {
+        networkInputs = networkList
+          ? Array.from(networkList.querySelectorAll("input[data-network]"))
+          : [];
         const storedSelection = getStoredNetworkSelection();
         const previousSelection = getCurrentNetworkSelection() || storedSelection.selectedCodes;
         const hadAllSelected = networkInputs.length > 0
           ? networkInputs.every((input) => input.checked)
           : storedSelection.defaultAll;
-        const windowNetworkDefs = buildNetworkDefs(getNetworkRowsForWindow());
-        renderNetworkFiltersIfNeeded(windowNetworkDefs, previousSelection, hadAllSelected);
+        const networkRowsForWindow = getNetworkRowsForWindow();
+        const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
+        const coverageByCode = buildNetworkCoverageByCode(networkRowsForWindow);
+        const coverageTotal = pconCodes.size || 0;
+        renderNetworkFiltersIfNeeded(
+          windowNetworkDefs,
+          previousSelection,
+          hadAllSelected,
+          coverageByCode,
+          coverageTotal,
+          AREA_LABEL_PLURAL,
+        );
         updateNetworkSummaryCardVisibility();
         if (!basePconRows.length && !baseLatestRows.length) {
           scopedLatestRows = [];
@@ -15241,10 +15778,16 @@
             if (isStale()) {
               return;
             }
+            const networkRowsForWindow = getNetworkRowsForWindow();
+            const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
+            const coverageByCode = buildNetworkCoverageByCode(networkRowsForWindow);
             renderNetworkFiltersIfNeeded(
-              buildNetworkDefs(getNetworkRowsForWindow()),
+              windowNetworkDefs,
               previousSelection,
-              hadAllSelected
+              hadAllSelected,
+              coverageByCode,
+              pconCodes.size || 0,
+              AREA_LABEL_PLURAL,
             );
             if (populationResponse && populationResponse.ok) {
               const populationPayload = await populationResponse.json();
@@ -15279,7 +15822,7 @@
             latestRows = [];
             latestPollutant = null;
             populationLookup = new Map();
-            renderNetworkFiltersIfNeeded([], previousSelection, false);
+            renderNetworkFiltersIfNeeded([], previousSelection, false, new Map(), 0, AREA_LABEL_PLURAL);
             if (lastUpdated) {
               lastUpdated.textContent = "Boundary only (no sensor data yet)";
             }
@@ -15746,6 +16289,9 @@
         },
         restoreNetworks: () => {
           applyStoredNetworkSelection();
+          applyNetworkFilters();
+        },
+        reapplyNetworkFilters: () => {
           applyNetworkFilters();
         },
 	        setRegion: (region, options) => {
@@ -17442,10 +17988,13 @@
   const networkDeselectAll = document.getElementById("network-deselect-all");
   const networkPanelPin = document.getElementById("networks-panel-pin");
   const networkPanelPinIcon = document.getElementById("networks-panel-pin-icon");
+  const networkPanelExpand = document.getElementById("networks-panel-expand");
+  const networkPanelExpandPath = networkPanelExpand?.querySelector("path");
   const networkPills = Array.from(document.querySelectorAll("[data-networks-pill]"));
   const tabUk = document.getElementById("tab-uk");
   const tabCr = document.getElementById("tab-cr");
   let networkPanelPinned = false;
+  let networkPanelMaxi = false;
   let networkPanelAnchorPill = null;
   let networkPanelPinnedWidthPx = null;
   let networkPanelPinnedTopPx = null;
@@ -17464,13 +18013,48 @@
   let prefersReducedMotion = !!reduceMotionQuery?.matches;
   let windowStepperKey = null;
   let windowStepperTimer = null;
+  let cachedNetworkPanelWidth = 0;
   const NETWORK_PANEL_MARGIN_PX = 8;
+  const LONDON_NETWORK_MAP_GAP_PX = -72;
   const NETWORK_PIN_ICON_OFF_SRC = "images/UK-AQ_pin100_off.svg";
   const NETWORK_PIN_ICON_ON_SRC = "images/UK-AQ_pin100_on.svg";
+  const NETWORK_EXPAND_ICON_D = "M5 1.5H1.5V5M11 1.5h3.5V5M1.5 11V14.5H5M11 14.5h3.5V11";
+  const NETWORK_COLLAPSE_ICON_D = "M6 2.5H2.5V6M10 2.5h3.5V6M2.5 10V13.5H6M10 13.5h3.5V10M4 4l2 2M12 4l-2 2M4 12l2-2M12 12l-2-2";
 
   function syncNetworkPanelPinIcon() {
     if (!networkPanelPinIcon) return;
     networkPanelPinIcon.src = networkPanelPinned ? NETWORK_PIN_ICON_ON_SRC : NETWORK_PIN_ICON_OFF_SRC;
+  }
+
+  function syncNetworkPanelExpandState() {
+    if (networkDropdownMenu) {
+      networkDropdownMenu.classList.toggle("is-maxi", networkPanelMaxi);
+    }
+    if (!networkPanelExpand) return;
+    networkPanelExpand.setAttribute("aria-expanded", String(networkPanelMaxi));
+    networkPanelExpand.setAttribute(
+      "aria-label",
+      networkPanelMaxi ? "Collapse networks panel" : "Expand networks panel",
+    );
+    networkPanelExpand.setAttribute(
+      "title",
+      networkPanelMaxi ? "Collapse networks panel" : "Expand networks panel",
+    );
+    if (networkPanelExpandPath) {
+      networkPanelExpandPath.setAttribute("d", networkPanelMaxi ? NETWORK_COLLAPSE_ICON_D : NETWORK_EXPAND_ICON_D);
+    }
+  }
+
+  function setNetworkPanelMaxi(isMaxi) {
+    networkPanelMaxi = !!isMaxi;
+    cachedNetworkPanelWidth = 0;
+    networkPanelPinnedWidthPx = null;
+    syncNetworkPanelExpandState();
+    if (networkDropdownMenu && !networkDropdownMenu.hidden) {
+      window.requestAnimationFrame(() => {
+        positionNetworkPanel(networkPanelAnchorPill || getActivePill());
+      });
+    }
   }
 
   function getNetworkInputs() {
@@ -17493,6 +18077,52 @@
     }
     const visible = networkPills.find(isPillVisible);
     return visible || networkPills[0] || null;
+  }
+
+  function isLondonRegionActive() {
+    return String(window.crMap?.getRegion?.() || "").toLowerCase() === "london";
+  }
+
+  function isCrTabActive() {
+    return window.mapTabController?.getActiveTab?.() === "cr";
+  }
+
+  function getMapCanvasWrapForPill(pill) {
+    if (!pill) return null;
+    const mapWrap = getMapWrapForPill(pill);
+    return mapWrap?.querySelector(".map-canvas-wrap") || null;
+  }
+
+  function getNetworkPanelWidth() {
+    if (!networkDropdownMenu) return 0;
+    if (Number.isFinite(networkPanelPinnedWidthPx) && networkPanelPinnedWidthPx > 0) {
+      return networkPanelPinnedWidthPx;
+    }
+    if (cachedNetworkPanelWidth > 0) return cachedNetworkPanelWidth;
+    const previousHidden = networkDropdownMenu.hidden;
+    const previousDisplay = networkDropdownMenu.style.display;
+    const previousVisibility = networkDropdownMenu.style.visibility;
+    const previousLeft = networkDropdownMenu.style.left;
+    const previousTop = networkDropdownMenu.style.top;
+    networkDropdownMenu.hidden = false;
+    networkDropdownMenu.style.display = "flex";
+    networkDropdownMenu.style.visibility = "hidden";
+    networkDropdownMenu.style.left = "-99999px";
+    networkDropdownMenu.style.top = "-99999px";
+    const measuredWidth = networkDropdownMenu.getBoundingClientRect().width;
+    networkDropdownMenu.style.display = previousDisplay;
+    networkDropdownMenu.style.visibility = previousVisibility;
+    networkDropdownMenu.style.left = previousLeft;
+    networkDropdownMenu.style.top = previousTop;
+    networkDropdownMenu.hidden = previousHidden;
+    cachedNetworkPanelWidth = Number.isFinite(measuredWidth) ? measuredWidth : 0;
+    return cachedNetworkPanelWidth;
+  }
+
+  function refreshNetworkPanelWidthCache() {
+    if (!networkDropdownMenu) return;
+    cachedNetworkPanelWidth = 0;
+    getNetworkPanelWidth();
   }
 
   function getMapWrapForPill(pill) {
@@ -17592,9 +18222,41 @@
   function updateNetworkPanelSafeArea() {
     if (!networkPanelPinned || !networkDropdownMenu || networkDropdownMenu.hidden) {
       clearDockedNetworkPanelHosts();
-      return;
+    } else {
+      applyPinnedFloatingPlacement();
     }
-    applyPinnedFloatingPlacement();
+
+    let targetWrap = null;
+    let targetSafeRight = null;
+    const safeAreaEnabled = window.innerWidth > 900;
+    if (safeAreaEnabled && networkDropdownMenu && isCrTabActive() && isLondonRegionActive()) {
+      const anchorPill = networkPanelAnchorPill || getActivePill();
+      const wrap = getMapCanvasWrapForPill(anchorPill);
+      const pillRect = anchorPill?.getBoundingClientRect?.();
+      const panelWidth = getNetworkPanelWidth();
+      if (wrap && pillRect && panelWidth > 0) {
+        const wrapRect = wrap.getBoundingClientRect();
+        const margin = NETWORK_PANEL_MARGIN_PX;
+        let left = pillRect.right - panelWidth;
+        if (left < margin) left = margin;
+        if (left + panelWidth > window.innerWidth - margin) {
+          left = Math.max(margin, window.innerWidth - panelWidth - margin);
+        }
+        const safeRight = Math.max(0, wrapRect.right - left + LONDON_NETWORK_MAP_GAP_PX);
+        targetWrap = wrap;
+        targetSafeRight = `${Math.ceil(safeRight)}px`;
+      }
+    }
+
+    document.querySelectorAll(".map-canvas-wrap").forEach((wrap) => {
+      if (wrap === targetWrap && targetSafeRight) {
+        wrap.classList.add("has-networks-panel-safe-area");
+        wrap.style.setProperty("--networks-panel-safe-right", targetSafeRight);
+      } else {
+        wrap.classList.remove("has-networks-panel-safe-area");
+        wrap.style.removeProperty("--networks-panel-safe-right");
+      }
+    });
   }
 
   function positionNetworkPanel(pill) {
@@ -17646,6 +18308,7 @@
         networkPanelAnchorPill = null;
       }
       setNetworkPanelFloatingHost();
+      updateNetworkPanelSafeArea();
     }
     networkPills.forEach((pill) => {
       pill.setAttribute("aria-expanded", String(isOpen && pill === networkPanelAnchorPill));
@@ -17701,6 +18364,7 @@
   }
 
   syncNetworkPanelPinIcon();
+  syncNetworkPanelExpandState();
 
   function updateTotalSensorsSubtext(selected, total) {
     const ids = ["top-total-sensors-subtext", "cr-top-total-sensors-subtext"];
@@ -17737,6 +18401,10 @@
       if (textEl) textEl.textContent = pillText;
     });
     updateTotalSensorsSubtext(selected, total);
+    if (networkDropdownMenu && networkDropdownMenu.hidden) {
+      // Keep London safe-area width in sync before first open so map does not jump on first click.
+      refreshNetworkPanelWidthCache();
+    }
     // Re-position only in floating mode (count text width can shift anchor alignment).
     if (networkDropdownMenu && !networkDropdownMenu.hidden) {
       if (networkPanelPinned) {
@@ -17745,6 +18413,23 @@
         window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
       }
     }
+  }
+
+  function getActiveMapForNetworkFilters() {
+    const activeTab = window.mapTabController?.getActiveTab?.();
+    return activeTab === "cr" ? window.crMap : window.ukMap;
+  }
+
+  let activeNetworkFilterRaf = null;
+  function scheduleActiveNetworkFilterApply() {
+    if (activeNetworkFilterRaf !== null) {
+      return;
+    }
+    activeNetworkFilterRaf = window.requestAnimationFrame(() => {
+      activeNetworkFilterRaf = null;
+      const activeMap = getActiveMapForNetworkFilters();
+      activeMap?.reapplyNetworkFilters?.();
+    });
   }
 
   function normalizeWindowKey(value) {
@@ -17926,6 +18611,10 @@
     setNetworkPanelPinned(!networkPanelPinned);
   });
 
+  networkPanelExpand?.addEventListener("click", () => {
+    setNetworkPanelMaxi(!networkPanelMaxi);
+  });
+
   // Close on outside click (pin-aware for networks panel)
   document.addEventListener("mousedown", (e) => {
     if (popoverWrap && !popoverWrap.contains(e.target)) {
@@ -17960,6 +18649,7 @@
     positionNetworkPanel(networkPanelAnchorPill || getActivePill());
   }
   window.addEventListener("resize", () => {
+    cachedNetworkPanelWidth = 0;
     repositionIfOpen();
     updateNetworkPanelSafeArea();
   });
@@ -17985,14 +18675,17 @@
 
   networkList?.addEventListener("change", () => {
     updateNetworkDropdownState();
+    scheduleActiveNetworkFilterApply();
   });
 
   networkSelectAll?.addEventListener("click", () => {
     window.requestAnimationFrame(updateNetworkDropdownState);
+    scheduleActiveNetworkFilterApply();
   });
 
   networkDeselectAll?.addEventListener("click", () => {
     window.requestAnimationFrame(updateNetworkDropdownState);
+    scheduleActiveNetworkFilterApply();
   });
 
   if (networkList && typeof MutationObserver !== "undefined") {
