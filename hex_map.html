@@ -341,7 +341,6 @@
       }
 
       .network-summary {
-        display: none !important;
         display: grid;
         gap: 12px;
       }
@@ -3165,39 +3164,6 @@
         font-size: 11px;
         color: var(--text-muted, #6b7280);
       }
-
-
-      .network-info-launch {
-        margin-top: auto;
-        width: 100%;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid var(--line, #e5e7eb);
-        background: var(--surface-hover, #f8fafc);
-        color: var(--text-muted, #4b5563);
-        border-radius: 8px;
-        padding: 8px 10px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: .02em;
-        cursor: pointer;
-      }
-      .network-info-launch:hover { background: #f1f5f9; }
-      .network-info-overlay-backdrop {
-        position: fixed; inset: 0; z-index: 44; pointer-events: none;
-        background: rgba(248,250,252,.22); backdrop-filter: blur(1.5px);
-        opacity: 0; transition: opacity .16s ease;
-      }
-      .network-info-overlay-backdrop.is-open { opacity: 1; }
-      .network-info-overlay { position: fixed; z-index:45; right:24px; top:110px; width:min(620px,calc(100vw - 32px)); max-height:75vh; background:#fff; border:1px solid var(--line,#e5e7eb); border-radius:14px; box-shadow:0 16px 36px rgba(15,23,42,.16); display:flex; flex-direction:column; overflow:hidden; transform:translateY(8px); opacity:0; pointer-events:none; transition:opacity .16s ease, transform .16s ease; }
-      .network-info-overlay.is-open { opacity:1; transform:translateY(0); pointer-events:auto; }
-      .network-info-header { position:sticky; top:0; z-index:1; display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line,#e5e7eb); background:#fff; }
-      .network-info-content { overflow:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
-      .network-info-divider { display:flex; align-items:center; gap:10px; color:var(--text-muted,#6b7280); font-size:11px; font-weight:700; letter-spacing:.08em; }
-      .network-info-divider::before,.network-info-divider::after{content:'';height:1px;background:var(--line,#e5e7eb);flex:1;}
-      .network-info-item.is-unselected { opacity:.62; }
-      @media (max-width: 720px){ .network-info-overlay{ left:10px; right:10px; top:auto; bottom:10px; width:auto; max-height:80vh; border-radius:14px 14px 10px 10px; } }
 
       /* Map-topbar layout: now hosts the Networks pill on the right.
          Status pill + Refresh button are hidden here while they live in the toolbar. */
@@ -6094,13 +6060,7 @@
         <span class="network-empty">Loading networks...</span>
       </div>
       <div class="networks-panel-footer">Counts are active sensors in the current window.</div>
-      <button type="button" class="network-info-launch" id="network-info-launch" aria-expanded="false" aria-controls="network-info-overlay"><span aria-hidden="true">⤢</span><span>Network Information</span></button>
     </div>
-    <div class="network-info-overlay-backdrop" id="network-info-overlay-backdrop" hidden></div>
-    <section class="network-info-overlay" id="network-info-overlay" aria-label="Network Information" hidden>
-      <header class="network-info-header"><strong>Network Information</strong><button type="button" class="networks-panel-pin" id="network-info-close" aria-label="Collapse network information">▾</button></header>
-      <div class="network-info-content" id="network-info-content"></div>
-    </section>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
     <script src="timeseries-client.js"></script>
@@ -7704,38 +7664,7 @@
         return parsed;
       }
 
-      function renderNetworkInfoOverlay() {
-    if (!networkInfoContent || !networkList) return;
-    const options = Array.from(networkList.querySelectorAll('.network-option'));
-    const items = options.map((opt) => ({
-      selected: !!opt.querySelector('input[data-network]')?.checked,
-      name: (opt.querySelector('.network-name')?.textContent || '').trim(),
-      node: opt.cloneNode(true),
-    })).sort((a,b)=>a.name.localeCompare(b.name));
-    const selected = items.filter(i=>i.selected);
-    const unselected = items.filter(i=>!i.selected);
-    networkInfoContent.innerHTML='';
-    const appendList=(list,isUnselected=false)=>{ list.forEach((item)=>{ item.node.classList.add('network-info-item'); if(isUnselected) item.node.classList.add('is-unselected'); networkInfoContent.appendChild(item.node); }); };
-    appendList(selected,false);
-    if (unselected.length) {
-      const div = document.createElement('div');
-      div.className='network-info-divider';
-      div.textContent='UNSELECTED NETWORKS';
-      networkInfoContent.appendChild(div);
-      appendList(unselected,true);
-    }
-  }
-  function setNetworkInfoOpen(isOpen){
-    if (!networkInfoOverlay || !networkInfoBackdrop) return;
-    renderNetworkInfoOverlay();
-    networkInfoOverlay.hidden = !isOpen;
-    networkInfoBackdrop.hidden = !isOpen;
-    networkInfoOverlay.classList.toggle('is-open', isOpen);
-    networkInfoBackdrop.classList.toggle('is-open', isOpen);
-    if (networkInfoLaunch) networkInfoLaunch.setAttribute('aria-expanded', String(isOpen));
-  }
-
-  function normalizeWindowKey(value) {
+      function normalizeWindowKey(value) {
         if (!value || !(value in WINDOW_OPTIONS)) {
           return "all";
         }
@@ -12073,38 +12002,7 @@
         return parsed;
       }
 
-      function renderNetworkInfoOverlay() {
-    if (!networkInfoContent || !networkList) return;
-    const options = Array.from(networkList.querySelectorAll('.network-option'));
-    const items = options.map((opt) => ({
-      selected: !!opt.querySelector('input[data-network]')?.checked,
-      name: (opt.querySelector('.network-name')?.textContent || '').trim(),
-      node: opt.cloneNode(true),
-    })).sort((a,b)=>a.name.localeCompare(b.name));
-    const selected = items.filter(i=>i.selected);
-    const unselected = items.filter(i=>!i.selected);
-    networkInfoContent.innerHTML='';
-    const appendList=(list,isUnselected=false)=>{ list.forEach((item)=>{ item.node.classList.add('network-info-item'); if(isUnselected) item.node.classList.add('is-unselected'); networkInfoContent.appendChild(item.node); }); };
-    appendList(selected,false);
-    if (unselected.length) {
-      const div = document.createElement('div');
-      div.className='network-info-divider';
-      div.textContent='UNSELECTED NETWORKS';
-      networkInfoContent.appendChild(div);
-      appendList(unselected,true);
-    }
-  }
-  function setNetworkInfoOpen(isOpen){
-    if (!networkInfoOverlay || !networkInfoBackdrop) return;
-    renderNetworkInfoOverlay();
-    networkInfoOverlay.hidden = !isOpen;
-    networkInfoBackdrop.hidden = !isOpen;
-    networkInfoOverlay.classList.toggle('is-open', isOpen);
-    networkInfoBackdrop.classList.toggle('is-open', isOpen);
-    if (networkInfoLaunch) networkInfoLaunch.setAttribute('aria-expanded', String(isOpen));
-  }
-
-  function normalizeWindowKey(value) {
+      function normalizeWindowKey(value) {
         if (!value || !(value in WINDOW_OPTIONS)) {
           return "all";
         }
@@ -17540,17 +17438,8 @@
   const networkSelectAll = document.getElementById("network-select-all");
   const networkDeselectAll = document.getElementById("network-deselect-all");
   const networkPanelPin = document.getElementById("networks-panel-pin");
-  const networkInfoLaunch = document.getElementById("network-info-launch");
-  const networkInfoOverlay = document.getElementById("network-info-overlay");
-  const networkInfoBackdrop = document.getElementById("network-info-overlay-backdrop");
-  const networkInfoContent = document.getElementById("network-info-content");
-  const networkInfoClose = document.getElementById("network-info-close");
   const networkPills = Array.from(document.querySelectorAll("[data-networks-pill]"));
   const tabUk = document.getElementById("tab-uk");
-  networkInfoLaunch?.addEventListener('click', () => setNetworkInfoOpen(networkInfoOverlay?.hidden));
-  networkInfoClose?.addEventListener('click', () => setNetworkInfoOpen(false));
-  networkInfoBackdrop?.addEventListener('click', () => setNetworkInfoOpen(false));
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setNetworkInfoOpen(false); });
   const tabCr = document.getElementById("tab-cr");
   let networkPanelPinned = false;
   let networkPanelAnchorPill = null;
@@ -17821,37 +17710,6 @@
         window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
       }
     }
-  }
-
-  function renderNetworkInfoOverlay() {
-    if (!networkInfoContent || !networkList) return;
-    const options = Array.from(networkList.querySelectorAll('.network-option'));
-    const items = options.map((opt) => ({
-      selected: !!opt.querySelector('input[data-network]')?.checked,
-      name: (opt.querySelector('.network-name')?.textContent || '').trim(),
-      node: opt.cloneNode(true),
-    })).sort((a,b)=>a.name.localeCompare(b.name));
-    const selected = items.filter(i=>i.selected);
-    const unselected = items.filter(i=>!i.selected);
-    networkInfoContent.innerHTML='';
-    const appendList=(list,isUnselected=false)=>{ list.forEach((item)=>{ item.node.classList.add('network-info-item'); if(isUnselected) item.node.classList.add('is-unselected'); networkInfoContent.appendChild(item.node); }); };
-    appendList(selected,false);
-    if (unselected.length) {
-      const div = document.createElement('div');
-      div.className='network-info-divider';
-      div.textContent='UNSELECTED NETWORKS';
-      networkInfoContent.appendChild(div);
-      appendList(unselected,true);
-    }
-  }
-  function setNetworkInfoOpen(isOpen){
-    if (!networkInfoOverlay || !networkInfoBackdrop) return;
-    renderNetworkInfoOverlay();
-    networkInfoOverlay.hidden = !isOpen;
-    networkInfoBackdrop.hidden = !isOpen;
-    networkInfoOverlay.classList.toggle('is-open', isOpen);
-    networkInfoBackdrop.classList.toggle('is-open', isOpen);
-    if (networkInfoLaunch) networkInfoLaunch.setAttribute('aria-expanded', String(isOpen));
   }
 
   function normalizeWindowKey(value) {
@@ -18347,10 +18205,6 @@
       return window.mapTabController.getActiveTab();
     }
     const tabUk = document.getElementById("tab-uk");
-  networkInfoLaunch?.addEventListener('click', () => setNetworkInfoOpen(networkInfoOverlay?.hidden));
-  networkInfoClose?.addEventListener('click', () => setNetworkInfoOpen(false));
-  networkInfoBackdrop?.addEventListener('click', () => setNetworkInfoOpen(false));
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setNetworkInfoOpen(false); });
     return tabUk?.getAttribute("aria-selected") === "true" ? "uk" : "cr";
   }
 
