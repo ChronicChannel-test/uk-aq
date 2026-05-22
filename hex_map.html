@@ -3101,9 +3101,9 @@
       .networks-panel-floating.is-docked {
         position: static;
         z-index: 1;
-        width: 100%;
-        min-width: 0;
-        max-width: none;
+        display: inline-flex;
+        width: auto;
+        max-width: min(360px, calc(100vw - 24px));
         max-height: none;
         box-shadow: 0 6px 16px rgba(16, 24, 34, 0.08);
       }
@@ -3802,7 +3802,8 @@
       }
 
       .map-dashboard-card.has-docked-networks .map-networks-dock {
-        display: block;
+        display: flex;
+        justify-content: flex-end;
         grid-column: 1 / -1;
         grid-row: 5;
         align-self: start;
@@ -4113,7 +4114,7 @@
 
       @media (min-width: 981px) {
         .map-dashboard-card.has-docked-networks {
-          grid-template-columns: minmax(0, 1fr) minmax(280px, var(--networks-dock-width));
+          grid-template-columns: minmax(0, 1fr) fit-content(var(--networks-dock-width));
         }
 
         .map-dashboard-card.has-docked-networks .map-title-strip,
@@ -4132,7 +4133,8 @@
         .map-dashboard-card.has-docked-networks .map-networks-dock {
           grid-column: 2;
           grid-row: 4;
-          align-self: stretch;
+          align-self: start;
+          justify-self: end;
         }
 
         .map-dashboard-card.has-docked-networks .map-legend {
@@ -5042,8 +5044,8 @@
               </div>
             </div>
           </div>
-          <aside class="map-networks-dock" data-networks-dock hidden aria-hidden="true"></aside>
               </div>
+          <aside class="map-networks-dock" data-networks-dock hidden aria-hidden="true"></aside>
             </div>
           </div>
         </div>
@@ -5682,8 +5684,8 @@
               </div>
             </div>
           </div>
-          <aside class="map-networks-dock" data-networks-dock hidden aria-hidden="true"></aside>
                 </div>
+          <aside class="map-networks-dock" data-networks-dock hidden aria-hidden="true"></aside>
               </div>
             </div>
           </div>
@@ -17354,6 +17356,9 @@
   const tabCr = document.getElementById("tab-cr");
   let networkPanelPinned = false;
   let networkPanelAnchorPill = null;
+  let networkPanelPinnedWidthPx = null;
+  let networkPanelPinnedTopPx = null;
+  let networkPanelPinnedLeftPx = null;
   const WINDOW_ORDER = ["3h", "6h", "1d", "7d", "all"];
   const WINDOW_LABELS_FALLBACK = {
     "3h": "3 Hours",
@@ -17421,6 +17426,27 @@
     }
     networkDropdownMenu.classList.remove("is-docked");
     networkDropdownMenu.classList.add("is-floating");
+    if (!networkPanelPinned) {
+      networkDropdownMenu.style.width = "";
+      networkDropdownMenu.style.top = "";
+      networkDropdownMenu.style.left = "";
+      networkDropdownMenu.style.right = "";
+    }
+  }
+
+  function applyPinnedFloatingPlacement() {
+    if (!networkDropdownMenu) return;
+    setNetworkPanelFloatingHost();
+    if (Number.isFinite(networkPanelPinnedWidthPx) && networkPanelPinnedWidthPx >= 0) {
+      networkDropdownMenu.style.width = `${networkPanelPinnedWidthPx}px`;
+    }
+    if (Number.isFinite(networkPanelPinnedTopPx)) {
+      networkDropdownMenu.style.top = `${networkPanelPinnedTopPx}px`;
+    }
+    if (Number.isFinite(networkPanelPinnedLeftPx)) {
+      networkDropdownMenu.style.left = `${networkPanelPinnedLeftPx}px`;
+    }
+    networkDropdownMenu.style.right = "auto";
   }
 
   function setNetworkPanelDockedHost(pill) {
@@ -17448,6 +17474,11 @@
     }
     networkDropdownMenu.classList.remove("is-floating");
     networkDropdownMenu.classList.add("is-docked");
+    if (Number.isFinite(networkPanelPinnedWidthPx) && networkPanelPinnedWidthPx > 0) {
+      networkDropdownMenu.style.width = `${networkPanelPinnedWidthPx}px`;
+    } else {
+      networkDropdownMenu.style.width = "";
+    }
     networkDropdownMenu.style.top = "";
     networkDropdownMenu.style.left = "";
     networkDropdownMenu.style.right = "";
@@ -17459,7 +17490,7 @@
       clearDockedNetworkPanelHosts();
       return;
     }
-    setNetworkPanelDockedHost(networkPanelAnchorPill || getActivePill());
+    applyPinnedFloatingPlacement();
   }
 
   function positionNetworkPanel(pill) {
@@ -17469,11 +17500,7 @@
       return;
     }
     if (networkPanelPinned) {
-      const dockSlot = setNetworkPanelDockedHost(pill);
-      if (!dockSlot) {
-        updateNetworkPanelSafeArea();
-        return;
-      }
+      applyPinnedFloatingPlacement();
       return;
     }
     setNetworkPanelFloatingHost();
@@ -17521,6 +17548,17 @@
 
   function setNetworkPanelPinned(isPinned) {
     networkPanelPinned = !!isPinned;
+    if (!networkPanelPinned) {
+      networkPanelPinnedWidthPx = null;
+      networkPanelPinnedTopPx = null;
+      networkPanelPinnedLeftPx = null;
+    } else if (networkDropdownMenu && !networkDropdownMenu.hidden) {
+      const rect = networkDropdownMenu.getBoundingClientRect();
+      const measuredWidth = rect.width;
+      if (Number.isFinite(measuredWidth) && measuredWidth > 0) networkPanelPinnedWidthPx = measuredWidth;
+      if (Number.isFinite(rect.top)) networkPanelPinnedTopPx = rect.top;
+      if (Number.isFinite(rect.left)) networkPanelPinnedLeftPx = rect.left;
+    }
     if (networkPanelPin) {
       networkPanelPin.setAttribute("aria-pressed", String(networkPanelPinned));
       networkPanelPin.setAttribute(
@@ -17747,6 +17785,13 @@
   });
 
   networkPanelPin?.addEventListener("click", () => {
+    if (!networkPanelPinned && networkDropdownMenu && !networkDropdownMenu.hidden) {
+      const rect = networkDropdownMenu.getBoundingClientRect();
+      const measuredWidth = rect.width;
+      if (Number.isFinite(measuredWidth) && measuredWidth > 0) networkPanelPinnedWidthPx = measuredWidth;
+      if (Number.isFinite(rect.top)) networkPanelPinnedTopPx = rect.top;
+      if (Number.isFinite(rect.left)) networkPanelPinnedLeftPx = rect.left;
+    }
     setNetworkPanelPinned(!networkPanelPinned);
   });
 
