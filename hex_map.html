@@ -3091,7 +3091,7 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
       }
       .networks-panel-floating.is-floating {
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         z-index: 40;
@@ -3134,28 +3134,27 @@
         height: 24px;
         padding: 0;
         margin-left: 6px;
-        border: 1px solid transparent;
-        border-radius: 6px;
+        border: 0;
+        border-radius: 0;
         background: transparent;
-        color: var(--text-muted, #6b7280);
         cursor: pointer;
-        transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-      }
-      .networks-panel-pin:hover {
-        background: var(--surface-hover, #f3f4f6);
-        color: var(--text, #1f2937);
+        transition: filter 0.12s ease;
       }
       .networks-panel-pin:focus-visible {
         outline: 2px solid var(--accent, #2563eb);
         outline-offset: 2px;
       }
-      .networks-panel-pin[aria-pressed="true"] {
-        background: var(--accent-soft, #eff6ff);
-        color: var(--accent, #2563eb);
-        border-color: var(--accent, #2563eb);
+      .networks-panel-pin:hover {
+        filter: brightness(0.95);
       }
-      .networks-panel-pin[aria-pressed="true"] svg {
-        transform: rotate(-30deg);
+      .networks-panel-pin-icon {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        pointer-events: none;
+        transform: scale(1.08);
+        transform-origin: center;
       }
       .networks-panel-footer {
         margin-top: 8px;
@@ -6042,9 +6041,13 @@
           title="Pin networks panel"
           aria-label="Pin networks panel"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M14 4l6 6-3 1-3 6-2-2-5 5-1-1 5-5-2-2 6-3 -1-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-          </svg>
+          <img
+            class="networks-panel-pin-icon"
+            id="networks-panel-pin-icon"
+            src="images/UK-AQ_pin100_off.svg"
+            alt=""
+            aria-hidden="true"
+          />
         </button>
       </div>
       <div class="network-dropdown-actions" role="group" aria-label="Network selection actions">
@@ -17438,6 +17441,7 @@
   const networkSelectAll = document.getElementById("network-select-all");
   const networkDeselectAll = document.getElementById("network-deselect-all");
   const networkPanelPin = document.getElementById("networks-panel-pin");
+  const networkPanelPinIcon = document.getElementById("networks-panel-pin-icon");
   const networkPills = Array.from(document.querySelectorAll("[data-networks-pill]"));
   const tabUk = document.getElementById("tab-uk");
   const tabCr = document.getElementById("tab-cr");
@@ -17461,6 +17465,13 @@
   let windowStepperKey = null;
   let windowStepperTimer = null;
   const NETWORK_PANEL_MARGIN_PX = 8;
+  const NETWORK_PIN_ICON_OFF_SRC = "images/UK-AQ_pin100_off.svg";
+  const NETWORK_PIN_ICON_ON_SRC = "images/UK-AQ_pin100_on.svg";
+
+  function syncNetworkPanelPinIcon() {
+    if (!networkPanelPinIcon) return;
+    networkPanelPinIcon.src = networkPanelPinned ? NETWORK_PIN_ICON_ON_SRC : NETWORK_PIN_ICON_OFF_SRC;
+  }
 
   function getNetworkInputs() {
     if (!networkList) {
@@ -17488,6 +17499,10 @@
     return pill?.closest(".map-wrap") || null;
   }
 
+  function getFloatingHostForPill(pill) {
+    return getMapWrapForPill(pill || getActivePill()) || document.body;
+  }
+
   function getDockSlotForPill(pill) {
     const mapWrap = getMapWrapForPill(pill || getActivePill());
     if (!mapWrap) return null;
@@ -17505,11 +17520,12 @@
     });
   }
 
-  function setNetworkPanelFloatingHost() {
+  function setNetworkPanelFloatingHost(pill = null) {
     if (!networkDropdownMenu) return;
     clearDockedNetworkPanelHosts();
-    if (networkDropdownMenu.parentElement !== document.body) {
-      document.body.appendChild(networkDropdownMenu);
+    const floatingHost = getFloatingHostForPill(pill);
+    if (networkDropdownMenu.parentElement !== floatingHost) {
+      floatingHost.appendChild(networkDropdownMenu);
     }
     networkDropdownMenu.classList.remove("is-docked");
     networkDropdownMenu.classList.add("is-floating");
@@ -17523,7 +17539,8 @@
 
   function applyPinnedFloatingPlacement() {
     if (!networkDropdownMenu) return;
-    setNetworkPanelFloatingHost();
+    const anchorPill = networkPanelAnchorPill || getActivePill();
+    setNetworkPanelFloatingHost(anchorPill);
     if (Number.isFinite(networkPanelPinnedWidthPx) && networkPanelPinnedWidthPx >= 0) {
       networkDropdownMenu.style.width = `${networkPanelPinnedWidthPx}px`;
     }
@@ -17590,21 +17607,23 @@
       applyPinnedFloatingPlacement();
       return;
     }
-    setNetworkPanelFloatingHost();
+    setNetworkPanelFloatingHost(pill);
+    const floatingHost = getFloatingHostForPill(pill);
     const rect = pill.getBoundingClientRect();
     const panelRect = networkDropdownMenu.getBoundingClientRect();
     // Anchor below the pill, right-aligned. Keep on-screen.
-    let top = rect.bottom + NETWORK_PANEL_MARGIN_PX;
-    let left = rect.right - panelRect.width;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const hostRect = floatingHost.getBoundingClientRect();
+    let top = (rect.bottom - hostRect.top) + NETWORK_PANEL_MARGIN_PX;
+    let left = (rect.right - hostRect.left) - panelRect.width;
+    const hostWidth = floatingHost === document.body ? window.innerWidth : hostRect.width;
+    const hostHeight = floatingHost === document.body ? window.innerHeight : hostRect.height;
     if (left < NETWORK_PANEL_MARGIN_PX) left = NETWORK_PANEL_MARGIN_PX;
-    if (left + panelRect.width > viewportWidth - NETWORK_PANEL_MARGIN_PX) {
-      left = Math.max(NETWORK_PANEL_MARGIN_PX, viewportWidth - panelRect.width - NETWORK_PANEL_MARGIN_PX);
+    if (left + panelRect.width > hostWidth - NETWORK_PANEL_MARGIN_PX) {
+      left = Math.max(NETWORK_PANEL_MARGIN_PX, hostWidth - panelRect.width - NETWORK_PANEL_MARGIN_PX);
     }
-    if (top + panelRect.height > viewportHeight - NETWORK_PANEL_MARGIN_PX) {
+    if (top + panelRect.height > hostHeight - NETWORK_PANEL_MARGIN_PX) {
       // Flip above the pill if it would overflow vertically.
-      const flippedTop = rect.top - panelRect.height - NETWORK_PANEL_MARGIN_PX;
+      const flippedTop = (rect.top - hostRect.top) - panelRect.height - NETWORK_PANEL_MARGIN_PX;
       if (flippedTop >= NETWORK_PANEL_MARGIN_PX) top = flippedTop;
     }
     networkDropdownMenu.style.top = `${Math.max(NETWORK_PANEL_MARGIN_PX, top)}px`;
@@ -17640,11 +17659,24 @@
       networkPanelPinnedTopPx = null;
       networkPanelPinnedLeftPx = null;
     } else if (networkDropdownMenu && !networkDropdownMenu.hidden) {
-      const rect = networkDropdownMenu.getBoundingClientRect();
-      const measuredWidth = rect.width;
-      if (Number.isFinite(measuredWidth) && measuredWidth > 0) networkPanelPinnedWidthPx = measuredWidth;
-      if (Number.isFinite(rect.top)) networkPanelPinnedTopPx = rect.top;
-      if (Number.isFinite(rect.left)) networkPanelPinnedLeftPx = rect.left;
+      const needSnapshot =
+        !Number.isFinite(networkPanelPinnedWidthPx)
+        || !Number.isFinite(networkPanelPinnedTopPx)
+        || !Number.isFinite(networkPanelPinnedLeftPx);
+      if (needSnapshot) {
+        const rect = networkDropdownMenu.getBoundingClientRect();
+        const anchorPill = networkPanelAnchorPill || getActivePill();
+        const host = getFloatingHostForPill(anchorPill);
+        const hostRect = host.getBoundingClientRect();
+        const measuredWidth = rect.width;
+        if (Number.isFinite(measuredWidth) && measuredWidth > 0) networkPanelPinnedWidthPx = measuredWidth;
+        if (Number.isFinite(rect.top) && Number.isFinite(hostRect.top)) {
+          networkPanelPinnedTopPx = rect.top - hostRect.top;
+        }
+        if (Number.isFinite(rect.left) && Number.isFinite(hostRect.left)) {
+          networkPanelPinnedLeftPx = rect.left - hostRect.left;
+        }
+      }
     }
     if (networkPanelPin) {
       networkPanelPin.setAttribute("aria-pressed", String(networkPanelPinned));
@@ -17657,6 +17689,7 @@
         networkPanelPinned ? "Unpin networks panel" : "Pin networks panel",
       );
     }
+    syncNetworkPanelPinIcon();
     if (networkDropdownMenu && !networkDropdownMenu.hidden) {
       window.requestAnimationFrame(() => {
         positionNetworkPanel(networkPanelAnchorPill || getActivePill());
@@ -17666,6 +17699,8 @@
     }
     updateNetworkPanelSafeArea();
   }
+
+  syncNetworkPanelPinIcon();
 
   function updateTotalSensorsSubtext(selected, total) {
     const ids = ["top-total-sensors-subtext", "cr-top-total-sensors-subtext"];
@@ -17874,10 +17909,19 @@
   networkPanelPin?.addEventListener("click", () => {
     if (!networkPanelPinned && networkDropdownMenu && !networkDropdownMenu.hidden) {
       const rect = networkDropdownMenu.getBoundingClientRect();
+      const anchorPill = networkPanelAnchorPill || getActivePill();
+      const host = getFloatingHostForPill(anchorPill);
+      const hostRect = host.getBoundingClientRect();
       const measuredWidth = rect.width;
       if (Number.isFinite(measuredWidth) && measuredWidth > 0) networkPanelPinnedWidthPx = measuredWidth;
-      if (Number.isFinite(rect.top)) networkPanelPinnedTopPx = rect.top;
-      if (Number.isFinite(rect.left)) networkPanelPinnedLeftPx = rect.left;
+      const inlineTop = Number.parseFloat(networkDropdownMenu.style.top || "");
+      const inlineLeft = Number.parseFloat(networkDropdownMenu.style.left || "");
+      networkPanelPinnedTopPx = Number.isFinite(inlineTop) && inlineTop >= 0
+        ? inlineTop
+        : (Number.isFinite(rect.top) && Number.isFinite(hostRect.top) ? rect.top - hostRect.top : null);
+      networkPanelPinnedLeftPx = Number.isFinite(inlineLeft) && inlineLeft >= 0
+        ? inlineLeft
+        : (Number.isFinite(rect.left) && Number.isFinite(hostRect.left) ? rect.left - hostRect.left : null);
     }
     setNetworkPanelPinned(!networkPanelPinned);
   });
