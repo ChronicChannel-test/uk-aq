@@ -3079,31 +3079,33 @@
         transform: rotate(180deg);
       }
 
-      /* Floating networks panel — re-uses .network-dropdown-* internals */
+      /* Networks panel modes — floating popover vs docked sidebar */
       .networks-panel-floating {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 40;
         display: flex;
         flex-direction: column;
         min-width: 280px;
-        max-width: min(360px, calc(100vw - 24px));
-        max-height: min(70vh, 480px);
         padding: 10px 12px;
         background: var(--surface, #ffffff);
         border: 1px solid var(--line, #e5e7eb);
         border-radius: 12px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
       }
-      .networks-panel-floating.is-pinned {
-        position: absolute;
-        top: 12px;
-        left: auto;
-        right: 16px;
-        z-index: 58;
-        max-width: min(360px, calc(100% - 20px));
-        max-height: min(480px, calc(100% - 24px));
+      .networks-panel-floating.is-floating {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 40;
+        max-width: min(360px, calc(100vw - 24px));
+        max-height: min(70vh, 480px);
+      }
+      .networks-panel-floating.is-docked {
+        position: static;
+        z-index: 1;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        max-height: none;
+        box-shadow: 0 6px 16px rgba(16, 24, 34, 0.08);
       }
       .networks-panel-floating[hidden] {
         display: none;
@@ -3179,7 +3181,7 @@
       }
 
       @media (max-width: 720px) {
-        .networks-panel-floating {
+        .networks-panel-floating.is-floating {
           min-width: min(280px, calc(100vw - 28px));
         }
       }
@@ -3621,6 +3623,7 @@
       }
 
       .map-dashboard-card {
+        --networks-dock-width: 340px;
         background: var(--map-wrap);
         border: 1px solid var(--line);
         border-radius: 18px;
@@ -3778,7 +3781,6 @@
         --map-canvas-min-height: 700px;
         --map-footer-safe: 64px;
         --sensor-panel-height: 240px;
-        --networks-panel-safe-right: 0px;
         border: 1px solid var(--line-soft);
         border-bottom: none;
         border-radius: 0 0 18px 18px;
@@ -3788,6 +3790,22 @@
         min-width: 0;
         min-height: var(--map-canvas-min-height);
         overflow: hidden;
+      }
+
+      .map-dashboard-card .map-networks-dock {
+        display: none;
+        min-width: 0;
+      }
+
+      .map-dashboard-card.has-docked-networks .map-canvas-wrap {
+        border-radius: 0 0 0 18px;
+      }
+
+      .map-dashboard-card.has-docked-networks .map-networks-dock {
+        display: block;
+        grid-column: 1 / -1;
+        grid-row: 5;
+        align-self: start;
       }
 
       .map-svg-viewport {
@@ -3800,9 +3818,6 @@
         cursor: default;
         touch-action: none;
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .map-canvas-wrap.has-networks-panel-safe-area .map-svg-viewport {
-        right: var(--networks-panel-safe-right, 0px);
       }
 
       /* is-pannable is set by JS when scale > 1; cursor stays default — no grab hint while idle */
@@ -4096,6 +4111,36 @@
         margin-bottom: 2px;
       }
 
+      @media (min-width: 981px) {
+        .map-dashboard-card.has-docked-networks {
+          grid-template-columns: minmax(0, 1fr) minmax(280px, var(--networks-dock-width));
+        }
+
+        .map-dashboard-card.has-docked-networks .map-title-strip,
+        .map-dashboard-card.has-docked-networks .map-summary-grid,
+        .map-dashboard-card.has-docked-networks #uk-toolbar-slot,
+        .map-dashboard-card.has-docked-networks #cr-toolbar-slot,
+        .map-dashboard-card.has-docked-networks .map-controls-row {
+          grid-column: 1 / -1;
+        }
+
+        .map-dashboard-card.has-docked-networks .map-canvas-wrap {
+          grid-column: 1;
+          grid-row: 4;
+        }
+
+        .map-dashboard-card.has-docked-networks .map-networks-dock {
+          grid-column: 2;
+          grid-row: 4;
+          align-self: stretch;
+        }
+
+        .map-dashboard-card.has-docked-networks .map-legend {
+          grid-column: 1;
+          grid-row: 5;
+        }
+      }
+
       @media (max-width: 1200px) {
         .map-summary-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4132,6 +4177,17 @@
         .map-dashboard-card .map-legend {
           grid-column: 1;
           grid-row: 5;
+        }
+
+        .map-dashboard-card.has-docked-networks .map-networks-dock {
+          grid-column: 1;
+          grid-row: 5;
+          margin-top: 12px;
+        }
+
+        .map-dashboard-card.has-docked-networks .map-legend {
+          grid-column: 1;
+          grid-row: 6;
         }
       }
 
@@ -4240,11 +4296,6 @@
       /* Keep map controls/legend close to map frame */
       .map-canvas-wrap {
         padding-bottom: 0;
-      }
-      @media (max-width: 900px) {
-        .map-canvas-wrap.has-networks-panel-safe-area .map-svg-viewport {
-          right: 0;
-        }
       }
 
       .hex-chart-mode-panel {
@@ -4991,6 +5042,7 @@
               </div>
             </div>
           </div>
+          <aside class="map-networks-dock" data-networks-dock hidden aria-hidden="true"></aside>
               </div>
             </div>
           </div>
@@ -5630,6 +5682,7 @@
               </div>
             </div>
           </div>
+          <aside class="map-networks-dock" data-networks-dock hidden aria-hidden="true"></aside>
                 </div>
               </div>
             </div>
@@ -5950,9 +6003,9 @@
     <div class="tooltip" id="tooltip"></div>
     <div class="tooltip" id="cr-tooltip"></div>
 
-    <!-- Shared floating networks panel — positioned near the active Networks pill on open -->
+    <!-- Shared networks panel — floating popover when unpinned, docked sidebar when pinned -->
     <div
-      class="networks-panel-floating"
+      class="networks-panel-floating is-floating"
       id="networks-panel-floating"
       role="dialog"
       aria-label="Networks"
@@ -17315,8 +17368,6 @@
   let prefersReducedMotion = !!reduceMotionQuery?.matches;
   let windowStepperKey = null;
   let windowStepperTimer = null;
-  let cachedNetworkPanelWidth = 0;
-  const LONDON_NETWORK_MAP_GAP_PX = -72;
   const NETWORK_PANEL_MARGIN_PX = 8;
 
   function getNetworkInputs() {
@@ -17341,175 +17392,74 @@
     return visible || networkPills[0] || null;
   }
 
-  function getMapKeyForWrap(wrap) {
-    const panel = wrap?.closest(".tab-panel");
-    if (panel?.id === "tab-panel-uk") return "uk";
-    if (panel?.id === "tab-panel-cr") return "cr";
-    return null;
-  }
-
-  function isLondonRegionActive() {
-    return String(window.crMap?.getRegion?.() || "").toLowerCase() === "london";
-  }
-
-  function isCrTabActive() {
-    return window.mapTabController?.getActiveTab?.() === "cr";
-  }
-
   function getMapWrapForPill(pill) {
-    return pill?.closest(".map-canvas-wrap") || null;
+    return pill?.closest(".map-wrap") || null;
+  }
+
+  function getDockSlotForPill(pill) {
+    const mapWrap = getMapWrapForPill(pill || getActivePill());
+    if (!mapWrap) return null;
+    const dockSlot = mapWrap.querySelector("[data-networks-dock]");
+    return dockSlot || null;
+  }
+
+  function clearDockedNetworkPanelHosts() {
+    document.querySelectorAll(".map-wrap.has-docked-networks").forEach((wrap) => {
+      wrap.classList.remove("has-docked-networks");
+    });
+    document.querySelectorAll("[data-networks-dock]").forEach((slot) => {
+      slot.hidden = true;
+      slot.setAttribute("aria-hidden", "true");
+    });
   }
 
   function setNetworkPanelFloatingHost() {
     if (!networkDropdownMenu) return;
+    clearDockedNetworkPanelHosts();
     if (networkDropdownMenu.parentElement !== document.body) {
       document.body.appendChild(networkDropdownMenu);
     }
-    networkDropdownMenu.classList.remove("is-pinned");
+    networkDropdownMenu.classList.remove("is-docked");
+    networkDropdownMenu.classList.add("is-floating");
   }
 
-  function setNetworkPanelPinnedHost(pill) {
+  function setNetworkPanelDockedHost(pill) {
     if (!networkDropdownMenu) return null;
-    const wrap = getMapWrapForPill(pill || getActivePill());
-    if (!wrap) return null;
-    if (networkDropdownMenu.parentElement !== wrap) {
-      wrap.appendChild(networkDropdownMenu);
+    const dockSlot = getDockSlotForPill(pill);
+    if (!dockSlot) return null;
+    const mapWrap = dockSlot.closest(".map-wrap");
+    const alreadyDocked = (
+      networkDropdownMenu.parentElement === dockSlot
+      && networkDropdownMenu.classList.contains("is-docked")
+      && !dockSlot.hidden
+      && Boolean(mapWrap?.classList.contains("has-docked-networks"))
+    );
+    if (alreadyDocked) {
+      return dockSlot;
     }
-    networkDropdownMenu.classList.add("is-pinned");
-    return wrap;
-  }
-
-  function getNetworkPanelWidth() {
-    if (!networkDropdownMenu) return 0;
-    if (cachedNetworkPanelWidth > 0) return cachedNetworkPanelWidth;
-    const previousParent = networkDropdownMenu.parentElement;
-    const previousPinnedClass = networkDropdownMenu.classList.contains("is-pinned");
-    const previousHidden = networkDropdownMenu.hidden;
-    const previousDisplay = networkDropdownMenu.style.display;
-    const previousVisibility = networkDropdownMenu.style.visibility;
-    const previousLeft = networkDropdownMenu.style.left;
-    const previousTop = networkDropdownMenu.style.top;
-    const previousRight = networkDropdownMenu.style.right;
-    setNetworkPanelFloatingHost();
-    networkDropdownMenu.hidden = false;
-    networkDropdownMenu.style.display = "flex";
-    networkDropdownMenu.style.visibility = "hidden";
-    networkDropdownMenu.style.left = "-99999px";
-    networkDropdownMenu.style.top = "-99999px";
-    networkDropdownMenu.style.right = "auto";
-    const measuredWidth = networkDropdownMenu.getBoundingClientRect().width;
-    if (previousParent && previousParent !== document.body) {
-      previousParent.appendChild(networkDropdownMenu);
+    clearDockedNetworkPanelHosts();
+    if (mapWrap) {
+      mapWrap.classList.add("has-docked-networks");
     }
-    networkDropdownMenu.classList.toggle("is-pinned", previousPinnedClass);
-    networkDropdownMenu.style.display = previousDisplay;
-    networkDropdownMenu.style.visibility = previousVisibility;
-    networkDropdownMenu.style.left = previousLeft;
-    networkDropdownMenu.style.top = previousTop;
-    networkDropdownMenu.style.right = previousRight;
-    networkDropdownMenu.hidden = previousHidden;
-    cachedNetworkPanelWidth = Number.isFinite(measuredWidth) ? measuredWidth : 0;
-    return cachedNetworkPanelWidth;
-  }
-
-  function renderMapForKey(mapKey) {
-    if (mapKey === "uk") {
-      if (typeof window.ukMap?.renderLayout === "function") {
-        window.ukMap.renderLayout();
-      } else {
-        window.ukMap?.render?.();
-      }
-      return;
+    dockSlot.hidden = false;
+    dockSlot.setAttribute("aria-hidden", "false");
+    if (networkDropdownMenu.parentElement !== dockSlot) {
+      dockSlot.appendChild(networkDropdownMenu);
     }
-    if (mapKey === "cr") {
-      if (typeof window.crMap?.renderLayout === "function") {
-        window.crMap.renderLayout();
-      } else {
-        window.crMap?.render?.();
-      }
-    }
-  }
-
-  function renderActiveMap() {
-    const activeMap = window.mapTabController?.getActiveTab?.();
-    if (activeMap === "uk" || activeMap === "cr") {
-      renderMapForKey(activeMap);
-      return;
-    }
-    window.ukMap?.render?.();
-    window.crMap?.render?.();
-  }
-
-  function rerenderChangedMapSafeAreas(changedMapKeys) {
-    if (!(changedMapKeys instanceof Set) || changedMapKeys.size === 0) {
-      return;
-    }
-    const rendered = new Set();
-    changedMapKeys.forEach((mapKey) => {
-      if (mapKey === "uk" || mapKey === "cr") {
-        renderMapForKey(mapKey);
-        rendered.add(mapKey);
-      }
-    });
-    if (rendered.size !== changedMapKeys.size) {
-      renderActiveMap();
-    }
+    networkDropdownMenu.classList.remove("is-floating");
+    networkDropdownMenu.classList.add("is-docked");
+    networkDropdownMenu.style.top = "";
+    networkDropdownMenu.style.left = "";
+    networkDropdownMenu.style.right = "";
+    return dockSlot;
   }
 
   function updateNetworkPanelSafeArea() {
-    const safeAreaEnabled = window.innerWidth > 900;
-    let targetWrap = null;
-    let targetSafeRight = null;
-
-    if (safeAreaEnabled && isCrTabActive() && isLondonRegionActive()) {
-      const pill = networkPanelAnchorPill || getActivePill();
-      if (networkPanelPinned && networkDropdownMenu && !networkDropdownMenu.hidden && networkDropdownMenu.classList.contains("is-pinned")) {
-        const wrap = networkDropdownMenu.closest(".map-canvas-wrap");
-        if (wrap) {
-          const wrapRect = wrap.getBoundingClientRect();
-          const panelRect = networkDropdownMenu.getBoundingClientRect();
-          const safeRight = Math.max(0, wrapRect.right - panelRect.left + LONDON_NETWORK_MAP_GAP_PX);
-          targetWrap = wrap;
-          targetSafeRight = `${Math.ceil(safeRight)}px`;
-        }
-      } else {
-        const wrap = getMapWrapForPill(pill);
-        const pillRect = pill?.getBoundingClientRect?.();
-        const panelWidth = getNetworkPanelWidth();
-        if (wrap && pillRect && panelWidth > 0) {
-          const wrapRect = wrap.getBoundingClientRect();
-          let left = pillRect.right - panelWidth;
-          if (left < NETWORK_PANEL_MARGIN_PX) left = NETWORK_PANEL_MARGIN_PX;
-          if (left + panelWidth > window.innerWidth - NETWORK_PANEL_MARGIN_PX) {
-            left = Math.max(NETWORK_PANEL_MARGIN_PX, window.innerWidth - panelWidth - NETWORK_PANEL_MARGIN_PX);
-          }
-          const safeRight = Math.max(0, wrapRect.right - left + LONDON_NETWORK_MAP_GAP_PX);
-          targetWrap = wrap;
-          targetSafeRight = `${Math.ceil(safeRight)}px`;
-        }
-      }
+    if (!networkPanelPinned || !networkDropdownMenu || networkDropdownMenu.hidden) {
+      clearDockedNetworkPanelHosts();
+      return;
     }
-
-    const changedMapKeys = new Set();
-    document.querySelectorAll(".map-canvas-wrap").forEach((wrap) => {
-      const shouldApply = Boolean(targetWrap && wrap === targetWrap && targetSafeRight);
-      const hadClass = wrap.classList.contains("has-networks-panel-safe-area");
-      const previousSafeRight = wrap.style.getPropertyValue("--networks-panel-safe-right");
-      if (shouldApply) {
-        wrap.classList.add("has-networks-panel-safe-area");
-        wrap.style.setProperty("--networks-panel-safe-right", targetSafeRight);
-      } else {
-        wrap.classList.remove("has-networks-panel-safe-area");
-        wrap.style.removeProperty("--networks-panel-safe-right");
-      }
-      const hasClass = wrap.classList.contains("has-networks-panel-safe-area");
-      const nextSafeRight = wrap.style.getPropertyValue("--networks-panel-safe-right");
-      if (hadClass !== hasClass || previousSafeRight !== nextSafeRight) {
-        changedMapKeys.add(getMapKeyForWrap(wrap));
-      }
-    });
-
-    rerenderChangedMapSafeAreas(changedMapKeys);
+    setNetworkPanelDockedHost(networkPanelAnchorPill || getActivePill());
   }
 
   function positionNetworkPanel(pill) {
@@ -17519,24 +17469,11 @@
       return;
     }
     if (networkPanelPinned) {
-      const wrap = setNetworkPanelPinnedHost(pill);
-      if (!wrap) {
+      const dockSlot = setNetworkPanelDockedHost(pill);
+      if (!dockSlot) {
         updateNetworkPanelSafeArea();
         return;
       }
-      const pillRect = pill.getBoundingClientRect();
-      const wrapRect = wrap.getBoundingClientRect();
-      const panelRect = networkDropdownMenu.getBoundingClientRect();
-      let top = pillRect.bottom - wrapRect.top + NETWORK_PANEL_MARGIN_PX;
-      let left = pillRect.right - wrapRect.left - panelRect.width;
-      const maxLeft = Math.max(NETWORK_PANEL_MARGIN_PX, wrapRect.width - panelRect.width - NETWORK_PANEL_MARGIN_PX);
-      const maxTop = Math.max(NETWORK_PANEL_MARGIN_PX, wrapRect.height - panelRect.height - NETWORK_PANEL_MARGIN_PX);
-      left = Math.min(Math.max(NETWORK_PANEL_MARGIN_PX, left), maxLeft);
-      top = Math.min(Math.max(NETWORK_PANEL_MARGIN_PX, top), maxTop);
-      networkDropdownMenu.style.top = `${top}px`;
-      networkDropdownMenu.style.left = `${left}px`;
-      networkDropdownMenu.style.right = "auto";
-      updateNetworkPanelSafeArea();
       return;
     }
     setNetworkPanelFloatingHost();
@@ -17569,13 +17506,12 @@
     networkDropdownMenu.hidden = !isOpen;
     if (isOpen) {
       networkPanelAnchorPill = anchorPill || getActivePill();
-      if (!networkPanelPinned) {
-        setNetworkPanelFloatingHost();
-      }
       // Position after layout so getBoundingClientRect on the panel is accurate.
       window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
-    } else if (!networkPanelPinned) {
-      networkPanelAnchorPill = null;
+    } else {
+      if (!networkPanelPinned) {
+        networkPanelAnchorPill = null;
+      }
       setNetworkPanelFloatingHost();
     }
     networkPills.forEach((pill) => {
@@ -17602,9 +17538,6 @@
       });
     } else if (!networkPanelPinned) {
       setNetworkPanelFloatingHost();
-    }
-    if (!networkPanelPinned && networkDropdownMenu) {
-      networkDropdownMenu.style.right = "auto";
     }
     updateNetworkPanelSafeArea();
   }
@@ -17644,9 +17577,13 @@
       if (textEl) textEl.textContent = pillText;
     });
     updateTotalSensorsSubtext(selected, total);
-    // Re-position panel if it's currently open (count text width can shift layout).
+    // Re-position only in floating mode (count text width can shift anchor alignment).
     if (networkDropdownMenu && !networkDropdownMenu.hidden) {
-      window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
+      if (networkPanelPinned) {
+        updateNetworkPanelSafeArea();
+      } else {
+        window.requestAnimationFrame(() => positionNetworkPanel(networkPanelAnchorPill));
+      }
     }
   }
 
@@ -17843,14 +17780,10 @@
   // Re-position the floating panel on viewport resize/scroll while open
   function repositionIfOpen() {
     if (!networkDropdownMenu || networkDropdownMenu.hidden) return;
-    if (networkPanelPinned) {
-      updateNetworkPanelSafeArea();
-      return;
-    }
+    if (networkPanelPinned) return;
     positionNetworkPanel(networkPanelAnchorPill || getActivePill());
   }
   window.addEventListener("resize", () => {
-    cachedNetworkPanelWidth = 0;
     repositionIfOpen();
     updateNetworkPanelSafeArea();
   });
