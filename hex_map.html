@@ -5235,7 +5235,7 @@
         </div>
       </section>
 
-      <section class="card details-card" id="sensor-details">
+      <section class="card details-card" id="sensor-details" hidden>
         <div class="card-header">
           <h2 class="card-title" id="details-title">Constituency sensors</h2>
           <span class="details-meta" id="details-meta">Click a hex to view sensors.</span>
@@ -5875,7 +5875,7 @@
           </div>
         </section>
 
-        <section class="card details-card" id="cr-sensor-details">
+        <section class="card details-card" id="cr-sensor-details" hidden>
           <div class="card-header">
             <h2 class="card-title" id="cr-details-title">Local authority sensors</h2>
             <span class="details-meta" id="cr-details-meta">Click a hex to view sensors.</span>
@@ -9634,14 +9634,14 @@
       }
 
       function updateDetailsPanel() {
-        if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
+        if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody) {
           return;
         }
         const pollutantUnits = getPollutantUnits(activePollutant);
         if (!selectedPconCode) {
-          if (sensorDetailsSection) sensorDetailsSection.hidden = false;
-          detailsTitle.textContent = "Selected Networks";
-          detailsMeta.textContent = "Network summary for the current window.";
+          if (sensorDetailsSection) sensorDetailsSection.hidden = true;
+          detailsTitle.textContent = "Constituency sensors";
+          detailsMeta.textContent = "Click a hex to view sensors.";
           if (inlinePanelWindowLabel) inlinePanelWindowLabel.textContent = "Select a hex";
           if (inlinePanelTitle) inlinePanelTitle.textContent = "";
           if (inlinePanelReading) inlinePanelReading.textContent = "";
@@ -9653,13 +9653,12 @@
           detailsTableWrap.classList.remove("is-chart-select-mode");
           syncSortHeaders();
           updateInlinePanelHeight(0);
-          networkSummary.hidden = false;
-          updateNetworkSummary();
+          if (networkSummary) networkSummary.hidden = true;
           detailsTableBody.innerHTML = "";
           return;
         }
-        if (sensorDetailsSection) sensorDetailsSection.hidden = true;
-        networkSummary.hidden = true;
+        if (sensorDetailsSection) sensorDetailsSection.hidden = false;
+        if (networkSummary) networkSummary.hidden = true;
         const row = pconLookup.get(selectedPconCode);
         const areaName = selectedCell?.pcon_name || row?.pcon_name || selectedPconCode;
         detailsTitle.textContent = areaName;
@@ -14147,14 +14146,14 @@
       }
 
       function updateDetailsPanel() {
-        if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody || !networkSummary) {
+        if (!detailsTitle || !detailsMeta || !detailsEmpty || !detailsTableWrap || !detailsTableBody) {
           return;
         }
         const pollutantUnits = getPollutantUnits(activePollutant);
         if (!selectedAreaCode) {
-          if (sensorDetailsSection) sensorDetailsSection.hidden = false;
-          detailsTitle.textContent = "Selected Networks";
-          detailsMeta.textContent = "Network summary for the current window.";
+          if (sensorDetailsSection) sensorDetailsSection.hidden = true;
+          detailsTitle.textContent = "Local authority sensors";
+          detailsMeta.textContent = "Click a hex to view sensors.";
           if (inlinePanelWindowLabel) inlinePanelWindowLabel.textContent = "Select a hex";
           if (inlinePanelTitle) inlinePanelTitle.textContent = "";
           if (inlinePanelReading) inlinePanelReading.textContent = "";
@@ -14166,13 +14165,12 @@
           detailsTableWrap.classList.remove("is-chart-select-mode");
           syncSortHeaders();
           updateInlinePanelHeight(0);
-          networkSummary.hidden = false;
-          updateNetworkSummary();
+          if (networkSummary) networkSummary.hidden = true;
           detailsTableBody.innerHTML = "";
           return;
         }
-        if (sensorDetailsSection) sensorDetailsSection.hidden = true;
-        networkSummary.hidden = true;
+        if (sensorDetailsSection) sensorDetailsSection.hidden = false;
+        if (networkSummary) networkSummary.hidden = true;
         const row = pconLookup.get(selectedAreaCode);
         const areaName = resolveCellAreaName(selectedCell) || resolveAreaName(row) || selectedAreaCode;
         detailsTitle.textContent = areaName;
