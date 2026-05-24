@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UK AQ Development Blog</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f8fb;
+        --text: #162235;
+        --muted: #4a5c79;
+        --card: #ffffff;
+        --border: #d7e2ef;
+        --accent: #0f6cbf;
+        --planned: #355c7d;
+        --in-progress: #b97900;
+        --completed: #18794e;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .wrap {
+        width: min(100%, 980px);
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+      }
+
+      .intro {
+        margin-top: 0.9rem;
+        max-width: 70ch;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .status-group { margin-top: 2rem; }
+
+      .status-heading {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0 0 0.8rem;
+        font-size: 1.2rem;
+      }
+
+      .dot {
+        width: 0.7rem;
+        height: 0.7rem;
+        border-radius: 99px;
+        display: inline-block;
+      }
+
+      .status-planned .dot { background: var(--planned); }
+      .status-in-progress .dot { background: var(--in-progress); }
+      .status-completed .dot { background: var(--completed); }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+        gap: 0.9rem;
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 12px;
+        padding: 0.95rem;
+      }
+
+      .card h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.06rem;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+      }
+
+      .chip {
+        font-size: 0.82rem;
+        line-height: 1;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.3rem 0.55rem;
+        color: #23324c;
+        background: #f7fbff;
+      }
+
+      .chip.status-planned { border-color: #b9cce0; }
+      .chip.status-in-progress { border-color: #f0cb8d; background: #fff9ef; }
+      .chip.status-completed { border-color: #9dd5b7; background: #f0fff7; }
+
+      .summary {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .updated {
+        margin-top: 0.75rem;
+        font-size: 0.82rem;
+        color: #5f6f89;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>UK AQ Development Blog</h1>
+      <p class="intro">
+        This beta page is a small roadmap showing planned, active, and completed improvements for the UK AQ website.
+      </p>
+
+      <section class="status-group status-in-progress" aria-labelledby="in-progress-heading">
+        <h2 id="in-progress-heading" class="status-heading"><span class="dot"></span>In progress</h2>
+        <div class="cards" data-status="In progress"></div>
+      </section>
+
+      <section class="status-group status-planned" aria-labelledby="planned-heading">
+        <h2 id="planned-heading" class="status-heading"><span class="dot"></span>Planned</h2>
+        <div class="cards" data-status="Planned"></div>
+      </section>
+
+      <section class="status-group status-completed" aria-labelledby="completed-heading">
+        <h2 id="completed-heading" class="status-heading"><span class="dot"></span>Completed</h2>
+        <div class="cards" data-status="Completed"></div>
+      </section>
+    </main>
+
+    <script>
+      const postFiles = [
+        'posts/sensor-chart-mode.md',
+        'posts/network-box-expansion.md',
+        'posts/aqi-integrity-checks.md'
+      ];
+
+      const allowedStatuses = new Set(['Planned', 'In progress', 'Completed']);
+
+      function statusClass(status) {
+        return status.toLowerCase().replace(/\s+/g, '-');
+      }
+
+      function extractSummary(body) {
+        const lines = body
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line && !line.startsWith('-'));
+
+        return lines[0] || 'Update details coming soon.';
+      }
+
+      function parsePost(mdText) {
+        const match = mdText.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+        if (!match) return null;
+
+        const [, rawFrontMatter, body] = match;
+        const frontMatter = {};
+
+        rawFrontMatter.split('\n').forEach((line) => {
+          const idx = line.indexOf(':');
+          if (idx === -1) return;
+          const key = line.slice(0, idx).trim();
+          const value = line.slice(idx + 1).trim();
+          frontMatter[key] = value;
+        });
+
+        if (!allowedStatuses.has(frontMatter.status)) return null;
+
+        return {
+          title: frontMatter.title || 'Untitled',
+          status: frontMatter.status,
+          area: frontMatter.area || 'General',
+          updated: frontMatter.updated || 'Unknown',
+          summary: extractSummary(body)
+        };
+      }
+
+      function renderCard(post) {
+        const card = document.createElement('article');
+        card.className = 'card';
+
+        const statusToken = statusClass(post.status);
+
+        card.innerHTML = `
+          <h3>${post.title}</h3>
+          <div class="meta">
+            <span class="chip status-${statusToken}">${post.status}</span>
+            <span class="chip">${post.area}</span>
+          </div>
+          <p class="summary">${post.summary}</p>
+          <div class="updated">Updated: ${post.updated}</div>
+        `;
+
+        return card;
+      }
+
+      async function loadPosts() {
+        const results = await Promise.all(
+          postFiles.map(async (file) => {
+            const res = await fetch(file);
+            if (!res.ok) return null;
+            const text = await res.text();
+            return parsePost(text);
+          })
+        );
+
+        results
+          .filter(Boolean)
+          .forEach((post) => {
+            const group = document.querySelector(`.cards[data-status="${post.status}"]`);
+            if (group) {
+              group.appendChild(renderCard(post));
+            }
+          });
+      }
+
+      loadPosts();
+    </script>
+  </body>
+</html>
