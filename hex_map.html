@@ -9657,7 +9657,7 @@
           detailsTableBody.innerHTML = "";
           return;
         }
-        if (sensorDetailsSection) sensorDetailsSection.hidden = false;
+        if (sensorDetailsSection) sensorDetailsSection.hidden = true;
         if (networkSummary) networkSummary.hidden = true;
         const row = pconLookup.get(selectedPconCode);
         const areaName = selectedCell?.pcon_name || row?.pcon_name || selectedPconCode;
@@ -14169,7 +14169,7 @@
           detailsTableBody.innerHTML = "";
           return;
         }
-        if (sensorDetailsSection) sensorDetailsSection.hidden = false;
+        if (sensorDetailsSection) sensorDetailsSection.hidden = true;
         if (networkSummary) networkSummary.hidden = true;
         const row = pconLookup.get(selectedAreaCode);
         const areaName = resolveCellAreaName(selectedCell) || resolveAreaName(row) || selectedAreaCode;
@@ -16401,6 +16401,8 @@
     loadToken: 0,
     selectedPrimaryId: null,
     loadAbortController: null,
+    loadInFlight: false,
+    pendingLoadReason: null,
   };
 
   const seriesDataCache = new Map(); // key: `${timeseriesId}|${windowValue}`
@@ -17169,8 +17171,12 @@
   async function loadChartData(reason = "sensor-change") {
     if (!state.isChartMode) return;
 
-    // Abort any in-flight load.
-    if (state.loadAbortController) state.loadAbortController.abort();
+    // Do not abort long-running loads; queue a single follow-up refresh instead.
+    if (state.loadInFlight) {
+      state.pendingLoadReason = reason;
+      return;
+    }
+    state.loadInFlight = true;
     const abortController = new AbortController();
     state.loadAbortController = abortController;
     const signal = abortController.signal;
@@ -17399,10 +17405,19 @@
       renderEmptyChart("Could not load chart data. Try Refresh.");
       setMessage("Could not load chart data. Try Refresh.", { error: true });
     } finally {
+      if (state.loadAbortController === abortController) {
+        state.loadAbortController = null;
+      }
+      state.loadInFlight = false;
       if (token === state.loadToken) {
         dom.chartFrame?.progressBar?.remove();
         if (dom.chartFrame) dom.chartFrame.progressBar = null;
         setLoading(false);
+      }
+      const pendingReason = state.pendingLoadReason;
+      state.pendingLoadReason = null;
+      if (pendingReason && state.isChartMode) {
+        queueMicrotask(() => loadChartData(pendingReason));
       }
     }
   }
