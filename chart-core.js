@@ -10,21 +10,51 @@
     "90d": 7 * 24 * 60 * 60 * 1000,   // every 7 d  → ~13 symbols
   };
 
-  var SYMBOL_GLYPHS = ["●", "■", "▲", "◆", "✚"];
+  var SYMBOL_GLYPHS = ["■", "▲", "◆", "★"];
+  var CHART_SYMBOL_AREA = 72;
 
   // SYMBOL_TYPES resolved lazily so D3 need not be present when this IIFE runs.
   var _symbolTypes = null;
   function resolveSymbolTypes() {
     if (!_symbolTypes) {
       _symbolTypes = [
-        d3.symbolCircle,
         d3.symbolSquare,
         d3.symbolTriangle,
         d3.symbolDiamond,
-        d3.symbolCross,
+        d3.symbolStar,
       ];
     }
     return _symbolTypes;
+  }
+
+  function getSymbolPathData(symbolTypeIndex, area) {
+    var symbolTypes = resolveSymbolTypes();
+    var resolvedArea = Number.isFinite(area) && area > 0 ? area : CHART_SYMBOL_AREA;
+    var symType = symbolTypes[Math.max(0, symbolTypeIndex) % symbolTypes.length];
+    return d3.symbol().type(symType).size(resolvedArea)();
+  }
+
+  function getSymbolSvgMarkup(symbolTypeIndex, options) {
+    options = options || {};
+    var pathData = getSymbolPathData(symbolTypeIndex, options.area);
+    if (!pathData) return "";
+
+    var className = typeof options.className === "string" && options.className.trim()
+      ? options.className.trim()
+      : "chart-symbol-svg";
+    var sizePx = Number.isFinite(options.sizePx) && options.sizePx > 0 ? options.sizePx : 14;
+    var viewBox = typeof options.viewBox === "string" && options.viewBox.trim()
+      ? options.viewBox.trim()
+      : "-8 -8 16 16";
+    var fill = typeof options.fill === "string" && options.fill ? options.fill : "#3C78AC";
+    var stroke = typeof options.stroke === "string" && options.stroke ? options.stroke : "#fff";
+    var strokeWidth = Number.isFinite(options.strokeWidth) && options.strokeWidth >= 0 ? options.strokeWidth : 1.2;
+
+    return (
+      '<svg class="' + className + '" width="' + sizePx + '" height="' + sizePx + '" viewBox="' + viewBox + '" aria-hidden="true" focusable="false">' +
+        '<path d="' + pathData + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" stroke-linejoin="round"></path>' +
+      "</svg>"
+    );
   }
 
   // buildSegments(points)
@@ -110,16 +140,15 @@
   // renderSeriesSymbols(svg, points, symbolPositionSet, xScale, yScale, symbolTypeIndex)
   // Appends D3 symbol <path> elements to the given SVG selection.
   function renderSeriesSymbols(svg, points, symbolPositionSet, xScale, yScale, symbolTypeIndex) {
-    var symbolTypes = resolveSymbolTypes();
-    var symType = symbolTypes[symbolTypeIndex % symbolTypes.length];
-    var symGen = d3.symbol().type(symType).size(48);
+    var pathData = getSymbolPathData(symbolTypeIndex, CHART_SYMBOL_AREA);
+    if (!pathData) return;
     symbolPositionSet.forEach(function (idx) {
       var point = points[idx];
       if (!point || !Number.isFinite(point.value)) return;
       var x = xScale(point.date);
       var y = yScale(point.value);
       svg.append("path")
-        .attr("d", symGen())
+        .attr("d", pathData)
         .attr("transform", "translate(" + x + "," + y + ")")
         .attr("fill", "#3C78AC")
         .attr("stroke", "#fff")
@@ -200,6 +229,8 @@
     getSegments:         buildSegments,        // convenience alias
     getSymbolPositions:  getSymbolPositions,
     getSymbolIntervalMs: getSymbolIntervalMs,
+    getSymbolPathData:   getSymbolPathData,
+    getSymbolSvgMarkup:  getSymbolSvgMarkup,
     renderSeriesSymbols: renderSeriesSymbols,
     renderProgressBar:   renderProgressBar,
     applyChunkFade:      applyChunkFade,
