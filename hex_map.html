@@ -920,9 +920,26 @@
         box-shadow: 0 1px 0 rgba(20, 34, 37, 0.12);
       }
 
+      .sensor-table th.sensor-chart-select-col,
+      .sensor-table td.sensor-chart-select-col {
+        width: 18px;
+        text-align: center;
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+
+      .sensor-table th.sensor-chart-symbol-col,
+      .sensor-table td.sensor-chart-symbol-col {
+        width: 34px;
+        text-align: center;
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+
       .sensor-table th.sensor-col-sensor,
       .sensor-table td.sensor-col-sensor {
-        width: 42%;
+        width: 38%;
+        padding-left: 8px;
       }
 
       .sensor-table th.sensor-col-network,
@@ -932,17 +949,12 @@
 
       .sensor-table th.sensor-col-value,
       .sensor-table td.sensor-col-value {
-        width: 12%;
+        width: 15%;
       }
 
       .sensor-table th.sensor-col-updated,
       .sensor-table td.sensor-col-updated {
-        width: 17%;
-      }
-
-      .sensor-table th.sensor-window-col,
-      .sensor-table td.sensor-window-col {
-        width: 11%;
+        width: 20%;
       }
 
       /* ── [hidden] override ──────────────────────────────── */
@@ -1445,7 +1457,23 @@
       }
 
       .sensor-row--excluded {
-        background: #fdecec;
+        background: #f1f4f7;
+      }
+
+      .sensor-row-divider td {
+        background: #e2e7ed;
+        color: #596a7f;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-align: center;
+        padding: 6px 12px;
+        line-height: 1.2;
+      }
+
+      .sensor-table tbody tr.sensor-row-divider {
+        height: 24px;
       }
 
       .sensor-table tbody tr.sensor-row--chart-selected {
@@ -1453,49 +1481,6 @@
         box-shadow: inset 4px 0 0 #3c78ac;
       }
 
-      .sensor-table .sensor-chart-select-col,
-      .sensor-table .sensor-chart-symbol-col {
-        display: none;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-select-col,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-symbol-col {
-        display: table-cell;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-window-col {
-        display: none;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-select-col {
-        width: 42px;
-        text-align: center;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table .sensor-chart-symbol-col {
-        width: 24px;
-        text-align: center;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-sensor,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-sensor {
-        width: 36%;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-network,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-network {
-        width: 18%;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-value,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-value {
-        width: 15%;
-      }
-
-      .sensor-table-wrap.is-chart-select-mode .sensor-table th.sensor-col-updated,
-      .sensor-table-wrap.is-chart-select-mode .sensor-table td.sensor-col-updated {
-        width: 20%;
-      }
 
       .sensor-name-button {
         appearance: none;
@@ -1512,8 +1497,7 @@
 
       .sensor-name-button:hover {
         color: var(--accent-deep);
-        text-decoration: underline;
-        text-underline-offset: 3px;
+        text-decoration: none;
       }
 
       .sensor-name-button:focus-visible {
@@ -1522,13 +1506,56 @@
         border-radius: 4px;
       }
 
-      .sensor-status {
-        font-weight: 600;
-        color: var(--ink-soft);
+      .sensor-name-text {
+        color: var(--ink);
       }
 
-      .sensor-status--excluded {
-        color: #8b1e3f;
+      .sensor-chart-launch {
+        appearance: none;
+        width: 2.7em;
+        height: 2.7em;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: inherit;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.14s ease;
+      }
+
+      .sensor-table tbody tr:hover .sensor-chart-launch,
+      .sensor-table tbody tr:focus-within .sensor-chart-launch,
+      .sensor-chart-launch:focus-visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .sensor-chart-launch:hover {
+        background: rgba(60, 120, 172, 0.1);
+        box-shadow: 0 4px 10px rgba(20, 34, 37, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .sensor-chart-launch:focus-visible {
+        outline: 2px solid rgba(60, 120, 172, 0.45);
+        outline-offset: 2px;
+      }
+
+      .sensor-chart-launch img {
+        width: 2em;
+        height: 2em;
+        display: block;
+      }
+
+      @media (hover: none) {
+        .sensor-chart-launch {
+          opacity: 1;
+          pointer-events: auto;
+        }
       }
 
       .card-header {
@@ -4498,6 +4525,17 @@
         display: none !important;
       }
 
+      .map-canvas-wrap.chart-mode .map-floating-search,
+      .map-canvas-wrap.chart-mode .networks-pill-anchor,
+      body.hex-chart-mode .networks-panel-floating {
+        display: none !important;
+      }
+
+      body.hex-chart-mode .sensor-title-icon-button {
+        visibility: hidden;
+        pointer-events: none;
+      }
+
       .map-canvas-wrap.chart-mode .map-inline-sensor-panel {
         transform: translateY(0);
       }
@@ -5029,7 +5067,7 @@
                       <div class="sensor-panel-reading" id="uk-hex-chart-reading"></div>
                     </div>
                     <label class="hex-chart-mode-controls" for="uk-hex-chart-window">
-                      <span>Time Range</span>
+                      <span>Chart range</span>
                       <select id="uk-hex-chart-window">
                         <option value="12h">Last 12 hours</option>
                         <option value="24h" selected>Last 24 hours</option>
@@ -5220,7 +5258,6 @@
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th class="sensor-window-col">Window</th>
                     </tr>
                   </thead>
                   <tbody id="sensor-table-body"></tbody>
@@ -5669,7 +5706,7 @@
                         <div class="sensor-panel-reading" id="cr-hex-chart-reading"></div>
                       </div>
                       <label class="hex-chart-mode-controls" for="cr-hex-chart-window">
-                        <span>Time Range</span>
+                        <span>Chart range</span>
                         <select id="cr-hex-chart-window">
                           <option value="12h">Last 12 hours</option>
                           <option value="24h" selected>Last 24 hours</option>
@@ -5860,7 +5897,6 @@
                           <span class="sort-icon" aria-hidden="true"></span>
                         </button>
                       </th>
-                      <th class="sensor-window-col">Window</th>
                     </tr>
                   </thead>
                   <tbody id="cr-sensor-table-body"></tbody>
@@ -6997,11 +7033,30 @@
         isHidden: () => !detailsTableWrap?.classList.contains("is-scroll-forced"),
         trackOffsetTop: SENSOR_TABLE_HEADER_HEIGHT,
       });
+      const syncInlinePanelTitleInteractivity = () => {
+        if (!inlinePanelTitle) {
+          return;
+        }
+        const isChartModeActive = Boolean(window.hexChartMode?.isActive?.("uk"));
+        inlinePanelTitle.setAttribute("aria-disabled", isChartModeActive ? "true" : "false");
+        if (isChartModeActive) {
+          inlinePanelTitle.removeAttribute("role");
+          inlinePanelTitle.removeAttribute("tabindex");
+          return;
+        }
+        inlinePanelTitle.setAttribute("role", "button");
+        inlinePanelTitle.setAttribute("tabindex", "0");
+      };
       if (inlinePanelClose) {
-        inlinePanelClose.addEventListener("click", () => setSelectedCell(null));
+        inlinePanelClose.addEventListener("click", () => {
+          if (window.hexChartMode?.isActive?.("uk")) {
+            window.hexChartMode?.exit?.();
+          }
+          setSelectedCell(null);
+        });
       }
       const openSelectedAreaChartMode = () => {
-        if (!selectedPconCode) {
+        if (!selectedPconCode || window.hexChartMode?.isActive?.("uk")) {
           return;
         }
         window.hexChartMode?.enter?.({ mapKey: "uk" });
@@ -7011,21 +7066,41 @@
         openSelectedAreaChartMode();
       });
       inlinePanelTitle?.addEventListener("click", (event) => {
+        if (window.hexChartMode?.isActive?.("uk")) {
+          return;
+        }
         event.stopPropagation();
         openSelectedAreaChartMode();
       });
-      inlinePanelTitle?.setAttribute("role", "button");
-      inlinePanelTitle?.setAttribute("tabindex", "0");
       inlinePanelTitle?.addEventListener("keydown", (event) => {
+        if (window.hexChartMode?.isActive?.("uk")) {
+          return;
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openSelectedAreaChartMode();
         }
       });
+      syncInlinePanelTitleInteractivity();
       if (detailsTableWrap) {
         detailsTableWrap.addEventListener("scroll", () => detailScrollIndicators?.update?.());
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
         detailsTableWrap.addEventListener("click", (event) => {
+          const launchButton = event.target instanceof Element
+            ? event.target.closest(".sensor-chart-launch[data-station-id]")
+            : null;
+          if (launchButton && detailsTableWrap.contains(launchButton)) {
+            event.stopPropagation();
+            const stationId = String(launchButton.dataset.stationId || "").trim();
+            if (!stationId || window.hexChartMode?.isActive?.("uk")) {
+              return;
+            }
+            window.hexChartMode?.enter?.({
+              mapKey: "uk",
+              initialStationId: stationId,
+            });
+            return;
+          }
           const selectorButton = event.target instanceof Element
             ? event.target.closest(".hex-chart-selector[data-station-id]")
             : null;
@@ -7084,7 +7159,9 @@
       let pconCodes = new Set();
       let boundaryPaths = [];
       let baseLatestRows = [];
+      let baseLatestRowsAllWindow = [];
       let scopedLatestRows = [];
+      let scopedLatestRowsAllWindow = [];
       let latestRows = [];
       let latestPollutant = null;
       let ukRefreshTimer = null;
@@ -8124,6 +8201,8 @@
           ? networkInputs.every((input) => input.checked)
           : storedSelection.defaultAll;
         baseLatestRows = cached.latestRows;
+        const cachedAllRows = getPollutantCache(getLatestCacheKey(activePollutant, "all"));
+        baseLatestRowsAllWindow = cachedAllRows?.latestRows || cached.latestRows || [];
         latestPollutant = cached.latestPollutant || activePollutant;
         const networkRowsForWindow = getNetworkRowsForWindow();
         const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
@@ -9043,15 +9122,21 @@
           if (resolvePconCode(item) !== pconCode) {
             return;
           }
-          const value = resolveLatestValue(item);
-          if (!Number.isFinite(value)) {
-            return;
-          }
           const stationKey = resolveStationKey(item) || `${pconCode}-${index}`;
           const timestamp = resolveLatestTimestamp(item);
+          const value = resolveLatestValue(item);
+          const normalizedValue = Number.isFinite(value) ? value : null;
           const existing = stationMap.get(stationKey);
-          if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
-            stationMap.set(stationKey, { row: item, value, timestamp });
+          if (!existing) {
+            stationMap.set(stationKey, { row: item, value: normalizedValue, timestamp });
+            return;
+          }
+          if (timestamp && (!existing.timestamp || timestamp > existing.timestamp)) {
+            stationMap.set(stationKey, { row: item, value: normalizedValue, timestamp });
+            return;
+          }
+          if (!existing.timestamp && !timestamp && existing.value === null && normalizedValue !== null) {
+            stationMap.set(stationKey, { row: item, value: normalizedValue, timestamp });
           }
         });
         return Array.from(stationMap.values());
@@ -9596,10 +9681,19 @@
         const count = Math.max(0, Number(sensorCount) || 0);
         const hasOverflow = count > SENSOR_PANEL_MAX_VISIBLE_ROWS;
         const visibleRows = Math.min(count, SENSOR_PANEL_MAX_VISIBLE_ROWS);
+        const measuredRowHeight = (() => {
+          const row = detailsTableBody?.querySelector("tr:not(.sensor-row-divider)");
+          if (!(row instanceof HTMLElement)) {
+            return SENSOR_PANEL_ROW_HEIGHT;
+          }
+          const height = Math.ceil(row.getBoundingClientRect().height);
+          return Number.isFinite(height) && height > 0 ? height : SENSOR_PANEL_ROW_HEIGHT;
+        })();
+        const effectiveRowHeight = Math.max(SENSOR_PANEL_ROW_HEIGHT, measuredRowHeight);
         const panelHeight = count
           ? SENSOR_PANEL_HEADER_HEIGHT
             + SENSOR_TABLE_HEADER_HEIGHT
-            + (visibleRows * SENSOR_PANEL_ROW_HEIGHT)
+            + (visibleRows * effectiveRowHeight)
           : SENSOR_PANEL_EMPTY_HEIGHT;
         mapCanvasWrap.style.setProperty("--sensor-panel-height", `${panelHeight}px`);
         if (inlinePanelBody) {
@@ -9677,7 +9771,8 @@
           const iconColor = (colorScale && Number.isFinite(metricVal)) ? colorScale(metricVal) : "var(--ink-soft)";
           inlinePanelHexIcon.style.color = iconColor;
         }
-        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
+        const detailSourceRows = scopedLatestRowsAllWindow.length ? scopedLatestRowsAllWindow : scopedLatestRows;
+        const scopedRows = getRowsForActivePollutant(detailSourceRows);
         const stationEntries = collectStationEntries(scopedRows, selectedPconCode);
         if (!stationEntries.length) {
           detailsMeta.textContent = formatSensorCount(0);
@@ -9721,12 +9816,11 @@
         detailsTableWrap.classList.toggle("is-chart-select-mode", chartModeActive);
         syncSortHeaders();
         networkSummary.hidden = true;
-        detailsTableBody.innerHTML = entries.map((entry) => {
+        const renderSensorRow = (entry) => {
           const stationName = resolveStationName(entry.row);
           const stationId = String(resolveStationKey(entry.row) || stationName || "");
           const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
           const updatedText = formatSummaryTimestamp(entry.timestamp);
-          const windowLabel = entry.inWindow ? "Included" : "Outside window";
           const chartSelected = window.hexChartMode?.isSensorSelected?.("uk", stationId) === true;
           const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("uk", stationId) ?? -1;
           const glyph = symbolIndex >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[symbolIndex] || "") : "";
@@ -9734,9 +9828,6 @@
             entry.inWindow ? "" : "sensor-row--excluded",
             chartSelected ? "sensor-row--chart-selected" : "",
           ].filter(Boolean).join(" ");
-          const statusClass = entry.inWindow
-            ? "sensor-status"
-            : "sensor-status sensor-status--excluded";
           const readingColor = colorScale && Number.isFinite(entry.value) ? colorScale(entry.value) : "var(--no-data)";
           return `
             <tr class="${rowClass}">
@@ -9746,16 +9837,29 @@
                   : ""
               }</td>
               <td class="sensor-chart-symbol-col">${
-                glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtmlLocal(glyph)}</span>` : ""
+                chartModeActive
+                  ? (glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtmlLocal(glyph)}</span>` : "")
+                  : `<button type="button" class="sensor-chart-launch" data-station-id="${escapeHtmlLocal(stationId)}" aria-label="Open chart for ${escapeHtmlLocal(stationName)}" title="Open chart">
+                      <img src="images/UK-AQ-Sensor-Buttons-chart.svg" alt="" aria-hidden="true" />
+                    </button>`
               }</td>
               <td class="sensor-col-sensor"><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
               <td class="sensor-col-network">${escapeHtmlLocal(networkLabel)}</td>
-              <td class="sensor-col-value"><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
+              <td class="sensor-col-value"><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${Number.isFinite(entry.value) ? `${formatValue(entry.value)} ${pollutantUnits}` : "-"}</span></span></td>
               <td class="sensor-col-updated">${updatedText}</td>
-              <td class="sensor-window-col ${statusClass}">${windowLabel}</td>
             </tr>
           `;
-        }).join("");
+        };
+        const inWindowEntries = entries.filter((entry) => entry.inWindow);
+        const outsideWindowEntries = entries.filter((entry) => !entry.inWindow);
+        const dividerRow = inWindowEntries.length && outsideWindowEntries.length
+          ? `<tr class="sensor-row-divider" aria-hidden="true"><td colspan="6">↓ OUTSIDE WINDOW ↓</td></tr>`
+          : "";
+        detailsTableBody.innerHTML = [
+          inWindowEntries.map(renderSensorRow).join(""),
+          dividerRow,
+          outsideWindowEntries.map(renderSensorRow).join(""),
+        ].join("");
         updateInlinePanelHeight(entries.length);
         updateSelectedHexViewportShift();
       }
@@ -10344,8 +10448,9 @@
           "constituencies",
         );
         updateNetworkSummaryCardVisibility();
-        if (!basePconRows.length && !baseLatestRows.length) {
+        if (!basePconRows.length && !baseLatestRows.length && !baseLatestRowsAllWindow.length) {
           scopedLatestRows = [];
+          scopedLatestRowsAllWindow = [];
           latestRows = [];
           pconRows = [];
           pconLookup = new Map();
@@ -10363,7 +10468,14 @@
         } else if (networkIds.size > 0) {
           filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkIds);
         }
+        let filteredLatestAllWindow = [];
+        if (networkIds === null) {
+          filteredLatestAllWindow = baseLatestRowsAllWindow;
+        } else if (networkIds.size > 0) {
+          filteredLatestAllWindow = filterLatestRowsByNetwork(baseLatestRowsAllWindow, networkIds);
+        }
         scopedLatestRows = filteredLatest;
+        scopedLatestRowsAllWindow = filteredLatestAllWindow;
         latestRows = filterRowsByWindow(filteredLatest);
         const derived = latestRows.length ? buildPconRowsFromLatest(latestRows) : [];
         pconRows = derived;
@@ -10700,6 +10812,24 @@
           const latestRequest = fetchCacheApi(latestUrl.toString(), {
             headers: latestHeaders,
           }).catch(() => null);
+          const latestAllCacheKey = getLatestCacheKey(requestPollutant, "all");
+          let latestAllRequest = Promise.resolve(null);
+          if (requestWindow !== "all") {
+            const latestAllUrl = new URL(resolveLatestUrl("all"));
+            latestAllUrl.searchParams.set("pollutant", activePollutant);
+            latestAllUrl.searchParams.set("window", "all");
+            latestAllUrl.searchParams.set("scope", "all");
+            latestAllUrl.searchParams.set("limit", "10000");
+            latestAllUrl.searchParams.set("caller", "hex_map");
+            const latestAllEtag = latestEtagByKey.get(latestAllCacheKey) || null;
+            const latestAllHeaders = {};
+            if (latestAllEtag) {
+              latestAllHeaders["If-None-Match"] = latestAllEtag;
+            }
+            latestAllRequest = fetchCacheApi(latestAllUrl.toString(), {
+              headers: latestAllHeaders,
+            }).catch(() => null);
+          }
           // const populationRequest = populationUrl
           //   ? fetch(populationUrl.toString(), {
           //     headers: {
@@ -10727,9 +10857,10 @@
               renderMapIfReady();
             }
           });
-          const [pconResponse, latestResponse, populationResponse] = await Promise.all([
+          const [pconResponse, latestResponse, latestAllResponse, populationResponse] = await Promise.all([
             pconRequest,
             latestRequest,
+            latestAllRequest,
             populationRequest,
           ]);
           if (isStale()) {
@@ -10774,6 +10905,12 @@
             const responseEtag = latestResponse.headers.get("ETag");
             if (responseEtag) {
               latestEtagByKey.set(latestCacheKey, responseEtag);
+            }
+          }
+          if (latestAllResponse) {
+            const responseEtag = latestAllResponse.headers.get("ETag");
+            if (responseEtag) {
+              latestEtagByKey.set(latestAllCacheKey, responseEtag);
             }
           }
             if (latestResponse && latestResponse.status === 304) {
@@ -10833,6 +10970,30 @@
           } else if (!isStale()) {
             baseLatestRows = [];
             latestPollutant = null;
+          }
+          if (latestAllResponse && latestAllResponse.status === 304) {
+            const cachedLatestAll = pollutantCache.get(latestAllCacheKey);
+            if (cachedLatestAll) {
+              baseLatestRowsAllWindow = cachedLatestAll.latestRows || [];
+            } else {
+              baseLatestRowsAllWindow = baseLatestRows;
+            }
+          } else if (latestAllResponse && latestAllResponse.ok) {
+            const latestAllPayload = await latestAllResponse.json();
+            const latestAllRaw = latestAllPayload?.data || [];
+            const cleanedLatestAll = latestAllRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
+            baseLatestRowsAllWindow = cleanedLatestAll;
+            pollutantCache.set(latestAllCacheKey, {
+              timestamp: Date.now(),
+              latestRows: cleanedLatestAll,
+              latestPollutant: normalizePollutantKey(latestAllPayload?.pollutant) || requestPollutant,
+              nextSince: null,
+              nextSinceId: 0,
+            });
+            latestSinceByKey.delete(latestAllCacheKey);
+            latestSinceIdByKey.delete(latestAllCacheKey);
+          } else {
+            baseLatestRowsAllWindow = baseLatestRows;
           }
           if (isStale()) {
             return;
@@ -11031,6 +11192,7 @@
         if (detail.mapKey && detail.mapKey !== "uk") {
           return;
         }
+        syncInlinePanelTitleInteractivity();
         updateDetailsPanel();
       });
 
@@ -11158,7 +11320,9 @@
       }
 
       function buildSensorSearchRecords() {
-        const rowsForSearch = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
+        const rowsForSearch = scopedLatestRowsAllWindow.length
+          ? scopedLatestRowsAllWindow
+          : (scopedLatestRows.length ? scopedLatestRows : baseLatestRowsAllWindow.length ? baseLatestRowsAllWindow : baseLatestRows);
         const recordsByKey = new Map();
         rowsForSearch.forEach((row, index) => {
           const stationId = String(resolveStationKey(row) || `uk:${index}`);
@@ -11242,7 +11406,8 @@
         if (!selectedPconCode) {
           return [];
         }
-        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
+        const detailSourceRows = scopedLatestRowsAllWindow.length ? scopedLatestRowsAllWindow : scopedLatestRows;
+        const scopedRows = getRowsForActivePollutant(detailSourceRows);
         const cutoff = getWindowCutoff();
         const entries = collectStationEntries(scopedRows, selectedPconCode).map((entry) => ({
           ...entry,
@@ -11786,11 +11951,30 @@
         isHidden: () => !detailsTableWrap?.classList.contains("is-scroll-forced"),
         trackOffsetTop: SENSOR_TABLE_HEADER_HEIGHT,
       });
+      const syncInlinePanelTitleInteractivity = () => {
+        if (!inlinePanelTitle) {
+          return;
+        }
+        const isChartModeActive = Boolean(window.hexChartMode?.isActive?.("cr"));
+        inlinePanelTitle.setAttribute("aria-disabled", isChartModeActive ? "true" : "false");
+        if (isChartModeActive) {
+          inlinePanelTitle.removeAttribute("role");
+          inlinePanelTitle.removeAttribute("tabindex");
+          return;
+        }
+        inlinePanelTitle.setAttribute("role", "button");
+        inlinePanelTitle.setAttribute("tabindex", "0");
+      };
       if (inlinePanelClose) {
-        inlinePanelClose.addEventListener("click", () => setSelectedCell(null));
+        inlinePanelClose.addEventListener("click", () => {
+          if (window.hexChartMode?.isActive?.("cr")) {
+            window.hexChartMode?.exit?.();
+          }
+          setSelectedCell(null);
+        });
       }
       const openSelectedAreaChartMode = () => {
-        if (!selectedAreaCode) {
+        if (!selectedAreaCode || window.hexChartMode?.isActive?.("cr")) {
           return;
         }
         window.hexChartMode?.enter?.({ mapKey: "cr" });
@@ -11800,21 +11984,41 @@
         openSelectedAreaChartMode();
       });
       inlinePanelTitle?.addEventListener("click", (event) => {
+        if (window.hexChartMode?.isActive?.("cr")) {
+          return;
+        }
         event.stopPropagation();
         openSelectedAreaChartMode();
       });
-      inlinePanelTitle?.setAttribute("role", "button");
-      inlinePanelTitle?.setAttribute("tabindex", "0");
       inlinePanelTitle?.addEventListener("keydown", (event) => {
+        if (window.hexChartMode?.isActive?.("cr")) {
+          return;
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openSelectedAreaChartMode();
         }
       });
+      syncInlinePanelTitleInteractivity();
       if (detailsTableWrap) {
         detailsTableWrap.addEventListener("scroll", () => detailScrollIndicators?.update?.());
         detailsTableWrap.addEventListener("wheel", handleSensorTableWheel, { passive: false });
         detailsTableWrap.addEventListener("click", (event) => {
+          const launchButton = event.target instanceof Element
+            ? event.target.closest(".sensor-chart-launch[data-station-id]")
+            : null;
+          if (launchButton && detailsTableWrap.contains(launchButton)) {
+            event.stopPropagation();
+            const stationId = String(launchButton.dataset.stationId || "").trim();
+            if (!stationId || window.hexChartMode?.isActive?.("cr")) {
+              return;
+            }
+            window.hexChartMode?.enter?.({
+              mapKey: "cr",
+              initialStationId: stationId,
+            });
+            return;
+          }
           const selectorButton = event.target instanceof Element
             ? event.target.closest(".hex-chart-selector[data-station-id]")
             : null;
@@ -11873,7 +12077,9 @@
       let pconCodes = new Set();
       let boundaryPaths = [];
       let baseLatestRows = [];
+      let baseLatestRowsAllWindow = [];
       let scopedLatestRows = [];
+      let scopedLatestRowsAllWindow = [];
       let latestRows = [];
       let latestPollutant = null;
       let allRegionsMetricLookup = new Map();
@@ -12648,6 +12854,8 @@
           ? networkInputs.every((input) => input.checked)
           : storedSelection.defaultAll;
         baseLatestRows = cached.latestRows;
+        const cachedAllRows = getPollutantCache(getLatestCacheKey(activePollutant, "all", activeRegion));
+        baseLatestRowsAllWindow = cachedAllRows?.latestRows || cached.latestRows || [];
         latestPollutant = cached.latestPollutant || activePollutant;
         const networkRowsForWindow = getNetworkRowsForWindow();
         const windowNetworkDefs = buildNetworkDefs(networkRowsForWindow);
@@ -13539,15 +13747,21 @@
           if (resolvePconCode(item) !== pconCode) {
             return;
           }
-          const value = resolveLatestValue(item);
-          if (!Number.isFinite(value)) {
-            return;
-          }
           const stationKey = resolveStationKey(item) || `${pconCode}-${index}`;
           const timestamp = resolveLatestTimestamp(item);
+          const value = resolveLatestValue(item);
+          const normalizedValue = Number.isFinite(value) ? value : null;
           const existing = stationMap.get(stationKey);
-          if (!existing || (timestamp && (!existing.timestamp || timestamp > existing.timestamp))) {
-            stationMap.set(stationKey, { row: item, value, timestamp });
+          if (!existing) {
+            stationMap.set(stationKey, { row: item, value: normalizedValue, timestamp });
+            return;
+          }
+          if (timestamp && (!existing.timestamp || timestamp > existing.timestamp)) {
+            stationMap.set(stationKey, { row: item, value: normalizedValue, timestamp });
+            return;
+          }
+          if (!existing.timestamp && !timestamp && existing.value === null && normalizedValue !== null) {
+            stationMap.set(stationKey, { row: item, value: normalizedValue, timestamp });
           }
         });
         return Array.from(stationMap.values());
@@ -14108,10 +14322,19 @@
         const count = Math.max(0, Number(sensorCount) || 0);
         const hasOverflow = count > SENSOR_PANEL_MAX_VISIBLE_ROWS;
         const visibleRows = Math.min(count, SENSOR_PANEL_MAX_VISIBLE_ROWS);
+        const measuredRowHeight = (() => {
+          const row = detailsTableBody?.querySelector("tr:not(.sensor-row-divider)");
+          if (!(row instanceof HTMLElement)) {
+            return SENSOR_PANEL_ROW_HEIGHT;
+          }
+          const height = Math.ceil(row.getBoundingClientRect().height);
+          return Number.isFinite(height) && height > 0 ? height : SENSOR_PANEL_ROW_HEIGHT;
+        })();
+        const effectiveRowHeight = Math.max(SENSOR_PANEL_ROW_HEIGHT, measuredRowHeight);
         const panelHeight = count
           ? SENSOR_PANEL_HEADER_HEIGHT
             + SENSOR_TABLE_HEADER_HEIGHT
-            + (visibleRows * SENSOR_PANEL_ROW_HEIGHT)
+            + (visibleRows * effectiveRowHeight)
           : SENSOR_PANEL_EMPTY_HEIGHT;
         mapCanvasWrap.style.setProperty("--sensor-panel-height", `${panelHeight}px`);
         if (inlinePanelBody) {
@@ -14189,7 +14412,8 @@
           const iconColor = (colorScale && Number.isFinite(metricVal)) ? colorScale(metricVal) : "var(--ink-soft)";
           inlinePanelHexIcon.style.color = iconColor;
         }
-        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
+        const detailSourceRows = scopedLatestRowsAllWindow.length ? scopedLatestRowsAllWindow : scopedLatestRows;
+        const scopedRows = getRowsForActivePollutant(detailSourceRows);
         const stationEntries = collectStationEntries(scopedRows, selectedAreaCode);
         if (!stationEntries.length) {
           detailsMeta.textContent = formatSensorCount(0);
@@ -14234,12 +14458,11 @@
         detailsTableWrap.classList.toggle("is-chart-select-mode", chartModeActive);
         syncSortHeaders();
         networkSummary.hidden = true;
-        detailsTableBody.innerHTML = entries.map((entry) => {
+        const renderSensorRow = (entry) => {
           const stationName = resolveStationName(entry.row);
           const stationId = String(resolveStationKey(entry.row) || stationName || "");
           const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
           const updatedText = formatSummaryTimestamp(entry.timestamp);
-          const windowLabel = entry.inWindow ? "Included" : "Outside window";
           const chartSelected = window.hexChartMode?.isSensorSelected?.("cr", stationId) === true;
           const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("cr", stationId) ?? -1;
           const glyph = symbolIndex >= 0 ? (window.ChartCore?.SYMBOL_GLYPHS?.[symbolIndex] || "") : "";
@@ -14247,9 +14470,6 @@
             entry.inWindow ? "" : "sensor-row--excluded",
             chartSelected ? "sensor-row--chart-selected" : "",
           ].filter(Boolean).join(" ");
-          const statusClass = entry.inWindow
-            ? "sensor-status"
-            : "sensor-status sensor-status--excluded";
           const readingColor = colorScale && Number.isFinite(entry.value) ? colorScale(entry.value) : "var(--no-data)";
           return `
             <tr class="${rowClass}">
@@ -14259,16 +14479,29 @@
                   : ""
               }</td>
               <td class="sensor-chart-symbol-col">${
-                glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtmlLocal(glyph)}</span>` : ""
+                chartModeActive
+                  ? (glyph ? `<span class="hex-chart-symbol-glyph" aria-hidden="true">${escapeHtmlLocal(glyph)}</span>` : "")
+                  : `<button type="button" class="sensor-chart-launch" data-station-id="${escapeHtmlLocal(stationId)}" aria-label="Open chart for ${escapeHtmlLocal(stationName)}" title="Open chart">
+                      <img src="images/UK-AQ-Sensor-Buttons-chart.svg" alt="" aria-hidden="true" />
+                    </button>`
               }</td>
               <td class="sensor-col-sensor"><button type="button" class="sensor-name-button" data-station-id="${escapeHtmlLocal(stationId)}">${escapeHtmlLocal(stationName)}</button></td>
               <td class="sensor-col-network">${escapeHtmlLocal(networkLabel)}</td>
-              <td class="sensor-col-value"><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${formatValue(entry.value)} ${pollutantUnits}</span></span></td>
+              <td class="sensor-col-value"><span class="sensor-reading-cell"><span class="sensor-reading-dot" style="--sensor-reading-color:${readingColor}"></span><span class="sensor-reading-text">${Number.isFinite(entry.value) ? `${formatValue(entry.value)} ${pollutantUnits}` : "-"}</span></span></td>
               <td class="sensor-col-updated">${updatedText}</td>
-              <td class="sensor-window-col ${statusClass}">${windowLabel}</td>
             </tr>
           `;
-        }).join("");
+        };
+        const inWindowEntries = entries.filter((entry) => entry.inWindow);
+        const outsideWindowEntries = entries.filter((entry) => !entry.inWindow);
+        const dividerRow = inWindowEntries.length && outsideWindowEntries.length
+          ? `<tr class="sensor-row-divider" aria-hidden="true"><td colspan="6">↓ OUTSIDE WINDOW ↓</td></tr>`
+          : "";
+        detailsTableBody.innerHTML = [
+          inWindowEntries.map(renderSensorRow).join(""),
+          dividerRow,
+          outsideWindowEntries.map(renderSensorRow).join(""),
+        ].join("");
         updateInlinePanelHeight(entries.length);
         updateSelectedHexViewportShift();
       }
@@ -15240,8 +15473,9 @@
           AREA_LABEL_PLURAL,
         );
         updateNetworkSummaryCardVisibility();
-        if (!basePconRows.length && !baseLatestRows.length) {
+        if (!basePconRows.length && !baseLatestRows.length && !baseLatestRowsAllWindow.length) {
           scopedLatestRows = [];
+          scopedLatestRowsAllWindow = [];
           latestRows = [];
           pconRows = [];
           pconLookup = new Map();
@@ -15259,7 +15493,14 @@
         } else if (networkIds.size > 0) {
           filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkIds);
         }
+        let filteredLatestAllWindow = [];
+        if (networkIds === null) {
+          filteredLatestAllWindow = baseLatestRowsAllWindow;
+        } else if (networkIds.size > 0) {
+          filteredLatestAllWindow = filterLatestRowsByNetwork(baseLatestRowsAllWindow, networkIds);
+        }
         scopedLatestRows = filteredLatest;
+        scopedLatestRowsAllWindow = filteredLatestAllWindow;
         latestRows = filterRowsByWindow(filteredLatest);
         const derived = latestRows.length ? buildPconRowsFromLatest(latestRows) : [];
         pconRows = derived;
@@ -15614,9 +15855,28 @@
 	            laPromise = fetchCacheApi(laUrl.toString(), {
 	              headers: laHeaders,
 	            }).catch(() => null);
-	            latestPromise = fetchCacheApi(latestUrl.toString(), {
-	              headers: latestHeaders,
-	            }).catch(() => null);
+            latestPromise = fetchCacheApi(latestUrl.toString(), {
+              headers: latestHeaders,
+            }).catch(() => null);
+            const latestAllCacheKey = getLatestCacheKey(requestPollutant, "all", requestRegion);
+            let latestAllPromise = Promise.resolve(null);
+            if (requestWindow !== "all") {
+              const latestAllUrl = new URL(resolveLatestUrl("all"));
+              latestAllUrl.searchParams.set("pollutant", activePollutant);
+              latestAllUrl.searchParams.set("window", "all");
+              latestAllUrl.searchParams.set("scope", "all");
+              latestAllUrl.searchParams.set("limit", "10000");
+              latestAllUrl.searchParams.set("caller", "hex_map");
+              const latestAllEtag = latestEtagByKey.get(latestAllCacheKey) || null;
+              const latestAllHeaders = {};
+              if (latestAllEtag) {
+                latestAllHeaders["If-None-Match"] = latestAllEtag;
+              }
+              latestAllPromise = fetchCacheApi(latestAllUrl.toString(), {
+                headers: latestAllHeaders,
+              }).catch(() => null);
+            }
+            latestPromise = Promise.all([latestPromise, latestAllPromise]).then(([latest, latestAll]) => ({ latest, latestAll }));
             // populationPromise = populationUrl
             //   ? fetch(populationUrl.toString(), {
             //     headers: {
@@ -15641,11 +15901,13 @@
               renderMapIfReady();
             }
           });
-          const [laResponse, latestResponse, populationResponse] = await Promise.all([
+          const [laResponse, latestResult, populationResponse] = await Promise.all([
             laPromise,
             latestPromise,
             populationPromise,
           ]);
+          const latestResponse = latestResult?.latest || null;
+          const latestAllResponse = latestResult?.latestAll || null;
           if (isStale()) {
             return;
           }
@@ -15711,6 +15973,13 @@
                 latestEtagByKey.set(latestCacheKey, responseEtag);
               }
             }
+            const latestAllCacheKey = getLatestCacheKey(requestPollutant, "all", requestRegion);
+            if (latestAllResponse) {
+              const responseEtag = latestAllResponse.headers.get("ETag");
+              if (responseEtag) {
+                latestEtagByKey.set(latestAllCacheKey, responseEtag);
+              }
+            }
             if (latestResponse && latestResponse.status === 304) {
               const cachedLatest = pollutantCache.get(latestCacheKey);
               if (cachedLatest) {
@@ -15773,6 +16042,34 @@
               baseLatestRows = [];
               latestPollutant = null;
             }
+            if (latestAllResponse && latestAllResponse.status === 304) {
+              const cachedLatestAll = pollutantCache.get(latestAllCacheKey);
+              if (cachedLatestAll) {
+                baseLatestRowsAllWindow = cachedLatestAll.latestRows || [];
+              } else {
+                baseLatestRowsAllWindow = baseLatestRows;
+              }
+            } else if (latestAllResponse && latestAllResponse.ok) {
+              const latestAllPayload = await latestAllResponse.json();
+              const latestAllRaw = latestAllPayload?.data || [];
+              const cleanedLatestAll = latestAllRaw.filter((row) => Number.isFinite(resolveLatestValue(row)));
+              const scopedLatestAll = cleanedLatestAll.filter((row) => {
+                const code = resolvePconCode(row);
+                return !pconCodes.size || (code && pconCodes.has(code));
+              });
+              baseLatestRowsAllWindow = scopedLatestAll;
+              pollutantCache.set(latestAllCacheKey, {
+                timestamp: Date.now(),
+                latestRows: scopedLatestAll,
+                latestPollutant: normalizePollutantKey(latestAllPayload?.pollutant) || requestPollutant,
+                nextSince: null,
+                nextSinceId: 0,
+              });
+              latestSinceByKey.delete(latestAllCacheKey);
+              latestSinceIdByKey.delete(latestAllCacheKey);
+            } else {
+              baseLatestRowsAllWindow = baseLatestRows;
+            }
             if (isStale()) {
               return;
             }
@@ -15816,7 +16113,9 @@
             pconRows = [];
             pconLookup = new Map();
             baseLatestRows = [];
+            baseLatestRowsAllWindow = [];
             scopedLatestRows = [];
+            scopedLatestRowsAllWindow = [];
             latestRows = [];
             latestPollutant = null;
             populationLookup = new Map();
@@ -16026,6 +16325,7 @@
         if (detail.mapKey && detail.mapKey !== "cr") {
           return;
         }
+        syncInlinePanelTitleInteractivity();
         updateDetailsPanel();
       });
 
@@ -16128,7 +16428,9 @@
       }
 
       function buildSensorSearchRecords() {
-        const rowsForSearch = scopedLatestRows.length ? scopedLatestRows : baseLatestRows;
+        const rowsForSearch = scopedLatestRowsAllWindow.length
+          ? scopedLatestRowsAllWindow
+          : (scopedLatestRows.length ? scopedLatestRows : baseLatestRowsAllWindow.length ? baseLatestRowsAllWindow : baseLatestRows);
         const recordsByKey = new Map();
         rowsForSearch.forEach((row, index) => {
           const stationId = String(resolveStationKey(row) || `cr:${index}`);
@@ -16244,7 +16546,8 @@
         if (!selectedAreaCode) {
           return [];
         }
-        const scopedRows = getRowsForActivePollutant(scopedLatestRows);
+        const detailSourceRows = scopedLatestRowsAllWindow.length ? scopedLatestRowsAllWindow : scopedLatestRows;
+        const scopedRows = getRowsForActivePollutant(detailSourceRows);
         const cutoff = getWindowCutoff();
         const entries = collectStationEntries(scopedRows, selectedAreaCode).map((entry) => ({
           ...entry,
@@ -16360,7 +16663,7 @@
     </script>
     <script>
 (() => {
-  const MAX_SELECTED_SENSORS = 5;
+  const MAX_SELECTED_SENSORS = 4;
   const CHART_SENSOR_SCROLL_THRESHOLD = 4;
   const CHART_SENSOR_TABLE_HEADER_HEIGHT = 44;
   const DAY_MS = 24 * 60 * 60 * 1000;
@@ -16972,7 +17275,7 @@
       if (state.selectedPrimaryId === stationId) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
     } else {
       if (state.chartModeSelectedSensors.size >= MAX_SELECTED_SENSORS) {
-        setMessage("Select up to 5 sensors.");
+        setMessage("You can compare up to 4 sensors.");
         return;
       }
       state.chartModeSelectedSensors.add(stationId);
