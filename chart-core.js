@@ -148,6 +148,11 @@
       var x = xScale(point.date);
       var y = yScale(point.value);
       svg.append("path")
+        .attr("class", "chart-series-symbol")
+        .attr("data-series-index", String(symbolTypeIndex))
+        .attr("data-point-index", String(idx))
+        .attr("data-symbol-x", String(x))
+        .attr("data-symbol-y", String(y))
         .attr("d", pathData)
         .attr("transform", "translate(" + x + "," + y + ")")
         .attr("fill", "#3C78AC")

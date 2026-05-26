@@ -2,9 +2,9 @@
 title: Network box expansion
 status: Planned
 area: Networks
-updated: 2026-05-24
+updated: 2026-05-25
 ---
-Expand the network box to show richer network information without needing the existing lower network card.
+Expand the network box to show richer network information. 
 
 - Add an expand icon in the network box for quick access to more detail.
 - Move extra network information into the expanded view to reduce page clutter.

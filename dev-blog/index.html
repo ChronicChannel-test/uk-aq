@@ -235,15 +235,7 @@
 	      });
 	  }
 
-        results
-          .filter(Boolean)
-          .forEach((post) => {
-            const group = document.querySelector(`.cards[data-status="${post.status}"]`);
-            if (group) {
-              group.appendChild(renderCard(post));
-            }
-          });
-      }
+
 
       loadPosts();
     </script>
