@@ -10,3 +10,16 @@ This folder contains a simple beta-facing development blog/roadmap page for the 
 
 - `index.html` renders grouped roadmap cards from markdown posts in `posts/`.
 - `posts/` stores one markdown file per roadmap entry with minimal front matter.
+
+- `scripts/generate-posts-json.mjs` regenerates `posts/posts.json` from `.md` files.
+
+## Pre-commit hook
+
+This repo uses `.githooks/pre-commit` to automatically regenerate `posts/posts.json`
+before every commit (including commits made from GitHub Desktop).
+
+To enable the hook, run:
+
+```bash
+git config core.hooksPath .githooks
+```

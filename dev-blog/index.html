@@ -142,11 +142,16 @@
     </main>
 
     <script>
-      const postFiles = [
-        'posts/sensor-chart-mode.md',
-        'posts/network-box-expansion.md',
-        'posts/aqi-integrity-checks.md'
-      ];
+	  async function getPostFiles() {
+	  const res = await fetch('posts/posts.json');
+	  if (!res.ok) return [];
+
+	  const files = await res.json();
+
+	  return files
+	    .filter((file) => file.endsWith('.md'))
+	    .map((file) => `posts/${file}`);
+	  }
 
       const allowedStatuses = new Set(['Planned', 'In progress', 'Completed']);
 
@@ -208,15 +213,27 @@
         return card;
       }
 
-      async function loadPosts() {
-        const results = await Promise.all(
-          postFiles.map(async (file) => {
-            const res = await fetch(file);
-            if (!res.ok) return null;
-            const text = await res.text();
-            return parsePost(text);
-          })
-        );
+	  async function loadPosts() {
+	    const postFiles = await getPostFiles();
+
+	    const results = await Promise.all(
+	      postFiles.map(async (file) => {
+	        const res = await fetch(file);
+	        if (!res.ok) return null;
+	        const text = await res.text();
+	        return parsePost(text);
+	      })
+	    );
+
+	    results
+	      .filter(Boolean)
+	      .forEach((post) => {
+	        const group = document.querySelector(`.cards[data-status="${post.status}"]`);
+	        if (group) {
+	          group.appendChild(renderCard(post));
+	        }
+	      });
+	  }
 
         results
           .filter(Boolean)
