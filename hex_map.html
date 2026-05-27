@@ -4102,9 +4102,11 @@
 
       .beta-data-disclaimer--map {
         position: absolute;
-        left: calc(50% + 236px);
+        left: calc(50% + 280px);
         right: 12px;
-        bottom: 8px;
+        bottom: 52px;
+        max-width: min(720px, calc(50% - 292px));
+        z-index: 20;
       }
 
       .beta-data-disclaimer--chart {
@@ -4131,7 +4133,7 @@
         .beta-data-disclaimer--map {
           left: 12px;
           right: 12px;
-          bottom: 54px;
+          bottom: 52px;
           max-width: none;
         }
       }
