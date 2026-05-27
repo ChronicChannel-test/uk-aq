@@ -4067,6 +4067,71 @@
         z-index: 55;
       }
 
+
+      .beta-data-disclaimer {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        width: fit-content;
+        max-width: min(860px, calc(100% - 24px));
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(180, 48, 48, 0.72);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.25;
+        box-shadow: 0 1px 6px rgba(16, 24, 34, 0.12);
+        z-index: 65;
+      }
+
+      .beta-data-disclaimer a {
+        color: #fff;
+        font-weight: 800;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+      }
+
+      .beta-data-disclaimer a:hover,
+      .beta-data-disclaimer a:focus-visible {
+        color: #fff;
+        text-decoration-thickness: 2px;
+      }
+
+      .beta-data-disclaimer--map {
+        position: absolute;
+        top: 56px;
+        left: 12px;
+      }
+
+      .beta-data-disclaimer--chart {
+        display: none;
+      }
+
+      .map-canvas-wrap.chart-mode .beta-data-disclaimer--map {
+        display: none;
+      }
+
+      .map-canvas-wrap.chart-mode .beta-data-disclaimer--chart {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: calc(var(--sensor-panel-height, 240px) + 6px);
+        display: flex;
+        justify-content: center;
+        max-width: none;
+        width: auto;
+        z-index: 20;
+      }
+
+      @media (max-width: 720px) {
+        .beta-data-disclaimer--map {
+          top: 58px;
+          max-width: calc(100% - 24px);
+        }
+      }
       .map-floating-search {
         position: absolute;
         top: 12px;
@@ -5156,6 +5221,14 @@
                     <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
                     <div class="map-search-results" id="uk-map-search-results" role="listbox" hidden></div>
                   </div>
+                  
+                  <div class="beta-data-disclaimer beta-data-disclaimer--map" aria-label="Beta data notice">
+                    Beta notice: Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
+                    <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
+                    <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
+                    <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
+                    <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                  </div>
                   <div class="map-topbar">
                     <!-- Live + Refresh live in the toolbar via JS; this container holds them when UK tab is inactive -->
                     <span
@@ -5185,7 +5258,15 @@
                       </button>
                     </div>
                   </div>
-                <section class="hex-chart-mode-panel" id="uk-hex-chart-mode" aria-label="Selected constituency sensors chart" hidden>
+                
+                  <div class="beta-data-disclaimer beta-data-disclaimer--chart" aria-label="Beta data notice">
+                    Beta notice: Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
+                    <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
+                    <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
+                    <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
+                    <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                  </div>
+                  <section class="hex-chart-mode-panel" id="uk-hex-chart-mode" aria-label="Selected constituency sensors chart" hidden>
                   <div class="hex-chart-selected-sensors" id="uk-hex-chart-reading" aria-label="Selected chart sensors"></div>
                   <div class="hex-chart-message" id="uk-hex-chart-message" aria-live="polite"></div>
                   <div class="hex-chart-wrap" id="uk-hex-chart-wrap">
@@ -5744,6 +5825,13 @@
                     <button type="button" class="map-search-clear" aria-label="Clear search" hidden>&times;</button>
                     <div class="map-search-results" id="cr-map-search-results" role="listbox" hidden></div>
                   </div>
+                  <div class="beta-data-disclaimer beta-data-disclaimer--map" aria-label="Beta data notice">
+                    Beta notice: Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
+                    <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
+                    <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
+                    <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
+                    <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                  </div>
                   <div class="map-topbar">
                     <!-- Live + Refresh live in the toolbar via JS; this container holds them when CR tab is inactive -->
                     <span
@@ -5772,6 +5860,14 @@
                         </svg>
                       </button>
                     </div>
+                  </div>
+                  
+                  <div class="beta-data-disclaimer beta-data-disclaimer--chart" aria-label="Beta data notice">
+                    Beta notice: Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
+                    <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
+                    <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
+                    <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
+                    <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
                   </div>
                   <section class="hex-chart-mode-panel" id="cr-hex-chart-mode" aria-label="Selected local authority sensors chart" hidden>
                     <div class="hex-chart-selected-sensors" id="cr-hex-chart-reading" aria-label="Selected chart sensors"></div>
