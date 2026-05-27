@@ -13398,7 +13398,7 @@
       }
 
       function resolvePrimaryNetworkEntry(row) {
-        const memberships = resolveNetworkMemberships(row);
+        const memberships = collectNetworkEntries(row);
         if (!memberships.length) {
           return null;
         }
@@ -13418,7 +13418,7 @@
       }
 
       function resolveSecondaryNetworkLabels(row) {
-        const memberships = resolveNetworkMemberships(row);
+        const memberships = collectNetworkEntries(row);
         if (memberships.length <= 1) {
           return [];
         }
