@@ -4102,11 +4102,17 @@
 
       .beta-data-disclaimer--map {
         position: absolute;
-        left: calc(50% + 280px);
+        left: auto;
         right: 12px;
-        bottom: 52px;
-        max-width: min(720px, calc(50% - 292px));
+        bottom: 56px;
+        width: min(440px, calc(100% - 24px));
+        max-width: min(440px, calc(100% - 24px));
+        transition: bottom 0.28s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 20;
+      }
+
+      .map-canvas-wrap.hex-selected .beta-data-disclaimer--map {
+        bottom: calc(var(--sensor-panel-height, 240px) + 56px);
       }
 
       .beta-data-disclaimer--chart {
@@ -4133,7 +4139,8 @@
         .beta-data-disclaimer--map {
           left: 12px;
           right: 12px;
-          bottom: 52px;
+          bottom: 56px;
+          width: auto;
           max-width: none;
         }
       }
