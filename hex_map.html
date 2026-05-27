@@ -930,28 +930,30 @@
 
       .sensor-table th.sensor-chart-select-col,
       .sensor-table td.sensor-chart-select-col {
-        width: 22px;
+        width: 21px;
         text-align: center;
         padding-top: 10px;
         padding-bottom: 10px;
         padding-left: 0;
         padding-right: 0;
+        overflow: visible;
       }
 
       .sensor-table th.sensor-chart-symbol-col,
       .sensor-table td.sensor-chart-symbol-col {
-        width: 22px;
-        text-align: center;
+        width: 13px;
+        text-align: left;
         padding-top: 0;
         padding-bottom: 0;
         padding-left: 0;
         padding-right: 0;
+        overflow: visible;
       }
 
       .sensor-table th.sensor-col-sensor,
       .sensor-table td.sensor-col-sensor {
         width: 36%;
-        padding-left: 4px;
+        padding-left: 0;
       }
 
       .sensor-table th.sensor-col-network,
@@ -4646,8 +4648,8 @@
       }
 
       .hex-chart-mode .sensor-table .chart-mode-sensor-symbol-svg {
-        width: 22px;
-        height: 22px;
+        width: var(--sensor-chart-icon-glyph-size);
+        height: var(--sensor-chart-icon-glyph-size);
         display: inline-block;
         vertical-align: middle;
         margin: 0;
@@ -9843,12 +9845,11 @@
           const symbolMarkup = symbolIndex >= 0
               ? (window.ChartCore?.getSymbolSvgMarkup?.(symbolIndex, {
                 className: "hex-chart-symbol-svg chart-mode-sensor-symbol-svg",
-                sizePx: 22,
-                area: 72,
+                sizePx: 28,
+                area: 160,
                 fill: "#3C78AC",
                 stroke: "#fff",
                 strokeWidth: 1.2,
-                viewBox: "-8 -8 16 16",
               }) || "")
             : "";
           const rowClass = [
@@ -14538,12 +14539,11 @@
           const symbolMarkup = symbolIndex >= 0
               ? (window.ChartCore?.getSymbolSvgMarkup?.(symbolIndex, {
                 className: "hex-chart-symbol-svg chart-mode-sensor-symbol-svg",
-                sizePx: 22,
-                area: 72,
+                sizePx: 28,
+                area: 160,
                 fill: "#3C78AC",
                 stroke: "#fff",
                 strokeWidth: 1.2,
-                viewBox: "-8 -8 16 16",
               }) || "")
             : "";
           const rowClass = [
@@ -16922,7 +16922,7 @@
       fill: options.fill || "#3C78AC",
       stroke: options.stroke || "#fff",
       strokeWidth: Number.isFinite(options.strokeWidth) ? options.strokeWidth : 1.2,
-      viewBox: options.viewBox || "-8 -8 16 16",
+      viewBox: options.viewBox,
     }) || "";
   }
 
@@ -17294,7 +17294,8 @@
       const symbolIndex = selected ? selectedIds.indexOf(stationId) : -1;
       const symbolMarkup = getChartSymbolMarkup(symbolIndex, {
         className: "hex-chart-symbol-svg chart-mode-sensor-symbol-svg",
-        sizePx: 22,
+        sizePx: 28,
+        area: 160,
       });
       selectCell.innerHTML = stationId
         ? `<button type="button" class="hex-chart-selector" data-station-id="${escapeHtml(stationId)}" aria-label="${selected ? "Remove" : "Add"} ${escapeHtml(stationName)} from chart" aria-pressed="${selected ? "true" : "false"}"></button>`
