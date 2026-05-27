@@ -57,7 +57,7 @@
   };
   const SIDEBAR_ICON_OFF = '/sidebar-images/CIC-Sidebar-Button-off.svg';
   const SIDEBAR_ICON_ON = '/sidebar-images/CIC-Sidebar-Button-on.svg';
-  const PENDING_ICON = '/sidebar-images/Pending.svg';
+  const PENDING_ICON = '/sidebar-images/Pending75.svg';
 
   // ─── Preload default sidebar button image; lazy-warm the alternate icon ─────
   const sidebarIconOffHref = location.origin + SIDEBAR_ICON_OFF;
