@@ -4519,13 +4519,25 @@
       }
 
       .chart-range-toolbar select {
-        border: 1px solid rgba(20, 34, 37, 0.16);
-        border-radius: 10px;
-        background: #fff;
-        color: var(--ink);
-        font: inherit;
-        font-weight: 400;
-        padding: 7px 10px;
+        height: 30px;
+        border: 1px solid var(--ukaq-control-selected-border);
+        border-radius: 6px;
+        background: var(--ukaq-control-selected-bg);
+        color: var(--ukaq-control-selected-text);
+        font-family: inherit;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.2;
+        padding: 0 30px 0 10px;
+        cursor: pointer;
+      }
+
+      .chart-range-toolbar select:focus,
+      .chart-range-toolbar select:focus-visible,
+      .chart-range-toolbar select:active {
+        border-color: var(--ukaq-control-selected-border);
+        outline: none;
+        box-shadow: none;
       }
 
       .hex-chart-mode-panel {
@@ -4534,7 +4546,7 @@
         z-index: 12;
         display: none;
         min-height: 0;
-        padding: 36px 18px 14px;
+        padding: 0 18px 14px;
         background: var(--map-wrap);
         color: var(--ink);
         overflow: hidden;
@@ -4578,6 +4590,10 @@
 
       .hex-chart-selected-sensors {
         display: grid;
+        width: 100%;
+        max-width: calc(100% - var(--networks-dock-width, 340px) - 18px);
+        align-self: flex-start;
+        justify-content: start;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 6px 8px;
       }
@@ -4591,8 +4607,30 @@
         background: #fff;
         border: 0;
         border-radius: 8px;
-        padding: 5px 8px;
+        padding: 7px 10px;
+        min-height: 34px;
         box-shadow: none;
+      }
+
+      .hex-chart-selected-sensor-chip[role="button"] {
+        cursor: pointer;
+        transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
+      }
+
+      .hex-chart-selected-sensor-chip[role="button"]:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--ukaq-control-hover-shadow);
+      }
+
+      .hex-chart-selected-sensor-chip[role="button"]:focus-visible {
+        outline: 2px solid rgba(60, 120, 172, 0.45);
+        outline-offset: 2px;
+        transform: translateY(-1px);
+        box-shadow: var(--ukaq-control-hover-shadow);
+      }
+
+      .hex-chart-selected-sensor-chip.is-aqi-source {
+        background: var(--ukaq-control-selected-bg);
       }
 
       .hex-chart-chip-label {
@@ -4603,7 +4641,7 @@
       }
 
       .hex-chart-chip-name {
-        font-size: 0.84rem;
+        font-size: 0.88rem;
         font-weight: 700;
         color: var(--ink);
         min-width: 0;
@@ -4613,7 +4651,7 @@
       }
 
       .hex-chart-chip-network {
-        font-size: 0.78rem;
+        font-size: 0.82rem;
         color: var(--ink-soft);
         min-width: 0;
         overflow: hidden;
@@ -4623,10 +4661,23 @@
 
       .hex-chart-chip-value,
       .hex-chart-chip-time {
-        font-size: 0.78rem;
-        font-weight: 600;
+        font-size: 0.82rem;
+        font-weight: 400;
         color: var(--ink-1);
         white-space: nowrap;
+      }
+
+      @media (max-width: 1200px) {
+        .hex-chart-selected-sensors {
+          max-width: calc(100% - 300px);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .hex-chart-selected-sensors {
+          width: 100%;
+          max-width: 100%;
+        }
       }
 
       .hex-chart-chip-value {
@@ -11223,7 +11274,7 @@
         if (targetElement && typeof targetElement.closest === "function" && targetElement.closest("polygon.hex")) {
           return;
         }
-        if (targetElement && typeof targetElement.closest === "function" && targetElement.closest(".map-inline-sensor-panel, .map-settings-panel, .map-settings, .map-zoom-controls")) {
+        if (targetElement && typeof targetElement.closest === "function" && targetElement.closest(".map-inline-sensor-panel, .map-settings-panel, .map-settings, .map-zoom-controls, .map-topbar, .networks-pill-anchor, .networks-pill, .hex-chart-mode-panel")) {
           return;
         }
         setSelectedCell(null);
@@ -16350,7 +16401,7 @@
         if (targetElement && typeof targetElement.closest === "function" && targetElement.closest(".hex")) {
           return;
         }
-        if (targetElement && typeof targetElement.closest === "function" && targetElement.closest(".map-inline-sensor-panel, .map-settings-panel, .map-settings, .map-zoom-controls")) {
+        if (targetElement && typeof targetElement.closest === "function" && targetElement.closest(".map-inline-sensor-panel, .map-settings-panel, .map-settings, .map-zoom-controls, .map-topbar, .networks-pill-anchor, .networks-pill, .hex-chart-mode-panel")) {
           return;
         }
         setSelectedCell(null);
@@ -16768,6 +16819,7 @@
     visibleEntries: [],
     loadToken: 0,
     selectedPrimaryId: null,
+    selectedAqiSensorId: null,
     loadAbortController: null,
     loadInFlight: false,
     pendingLoadReason: null,
@@ -16881,6 +16933,30 @@
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   }
 
+  function formatChartAxisTickLabel(dateValue, rangeMs) {
+    if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) {
+      return "";
+    }
+    const day = String(dateValue.getDate()).padStart(2, "0");
+    const month = String(dateValue.getMonth() + 1).padStart(2, "0");
+    const hours = String(dateValue.getHours()).padStart(2, "0");
+    const minutes = String(dateValue.getMinutes()).padStart(2, "0");
+    if (rangeMs <= DAY_MS) {
+      if (hours === "00" && minutes === "00") {
+        return `${day}/${month}`;
+      }
+      return `${hours}:${minutes}`;
+    }
+    return `${day}/${month}`;
+  }
+
+  function buildChartXAxis(scale, rangeMs) {
+    return d3.axisBottom(scale)
+      .ticks(rangeMs <= DAY_MS ? 8 : 7)
+      .tickSizeOuter(0)
+      .tickFormat((value) => formatChartAxisTickLabel(value, rangeMs));
+  }
+
   function getChartTooltipPointColor(pointValue) {
     const context = getCurrentContext() || {};
     const numericValue = Number(pointValue);
@@ -16907,8 +16983,66 @@
     }) || "";
   }
 
+  function getChartSymbolPathAttributes(symbolIndex, options = {}) {
+    if (!Number.isInteger(symbolIndex) || symbolIndex < 0) return null;
+    const symbolMarkup = getChartSymbolMarkup(symbolIndex, {
+      className: "aqi-source-symbol-probe",
+      sizePx: Number.isFinite(options.sizePx) ? options.sizePx : 14,
+      area: Number.isFinite(options.area) ? options.area : 72,
+      fill: options.fill || "#3C78AC",
+      stroke: options.stroke || "#fff",
+      strokeWidth: Number.isFinite(options.strokeWidth) ? options.strokeWidth : 1.2,
+    });
+    if (!symbolMarkup) return null;
+    const dMatch = symbolMarkup.match(/<path[^>]*\sd="([^"]+)"/i);
+    if (!dMatch) return null;
+    const fillMatch = symbolMarkup.match(/<path[^>]*\sfill="([^"]+)"/i);
+    const strokeMatch = symbolMarkup.match(/<path[^>]*\sstroke="([^"]+)"/i);
+    const strokeWidthMatch = symbolMarkup.match(/<path[^>]*\sstroke-width="([^"]+)"/i);
+    return {
+      d: dMatch[1],
+      fill: fillMatch ? fillMatch[1] : "#3C78AC",
+      stroke: strokeMatch ? strokeMatch[1] : "#fff",
+      strokeWidth: strokeWidthMatch ? Number(strokeWidthMatch[1]) : 1.2,
+    };
+  }
+
+  function getSelectedSensorIdsOrdered() {
+    return Array.from(state.chartModeSelectedSensors);
+  }
+
+  function syncAqiSourceWithSelectedSensors() {
+    const selectedIds = getSelectedSensorIdsOrdered();
+    if (!selectedIds.length) {
+      state.selectedAqiSensorId = null;
+      return null;
+    }
+    if (!state.selectedAqiSensorId || !selectedIds.includes(state.selectedAqiSensorId)) {
+      state.selectedAqiSensorId = selectedIds[0];
+    }
+    return state.selectedAqiSensorId;
+  }
+
+  function setAqiSourceSensor(stationId, options = {}) {
+    const normalizedId = String(stationId || "").trim();
+    if (!state.isChartMode || !normalizedId) return false;
+    const mapKey = options.mapKey || null;
+    if (mapKey && state.mapKey !== mapKey) return false;
+    const selectedIds = getSelectedSensorIdsOrdered();
+    if (!selectedIds.includes(normalizedId)) return false;
+    if (state.selectedAqiSensorId === normalizedId) return true;
+    state.selectedAqiSensorId = normalizedId;
+    renderSensorList(getCurrentContext() || {});
+    notifySelectionChange();
+    if (options.reload !== false) {
+      loadChartData("aqi-source-change");
+    }
+    return true;
+  }
+
   function buildChartHeaderHtml(context) {
-    const selectedIds = Array.from(state.chartModeSelectedSensors);
+    const selectedIds = getSelectedSensorIdsOrdered();
+    const selectedAqiSensorId = syncAqiSourceWithSelectedSensors();
     const adapter = getAdapter(state.mapKey);
     const chipsHtml = selectedIds.map((stationId, index) => {
       const entry = state.visibleEntries.find((candidate) => candidate.stationId === stationId);
@@ -16924,9 +17058,12 @@
       const valueLabel = Number.isFinite(valueNumber) ? `${formatChartValue(valueNumber)} ${units}`.trim() : "No data";
       const dotColor = adapter?.getSensorCurrentColor?.(entry.stationId) || "var(--no-data)";
       const updatedText = formatChartChipTimestamp(entry.timestamp);
-      return `<div class="hex-chart-selected-sensor-chip">
+      const stationName = String(entry.stationName || "Unknown sensor");
+      const isAqiSource = stationId === selectedAqiSensorId;
+      const sourceAriaLabel = `Use ${stationName} for DAQI and EAQI bands`;
+      return `<div class="hex-chart-selected-sensor-chip${isAqiSource ? " is-aqi-source" : ""}" role="button" tabindex="0" data-aqi-source-station-id="${escapeHtml(stationId)}" aria-pressed="${isAqiSource ? "true" : "false"}" aria-label="${escapeHtml(sourceAriaLabel)}" title="${escapeHtml(sourceAriaLabel)}">
         <span class="hex-chart-chip-symbol">${symbolMarkup}</span>
-        <span class="hex-chart-chip-label"><span class="hex-chart-chip-name">${escapeHtml(entry.stationName || "Unknown sensor")}</span><span class="hex-chart-chip-network">· ${escapeHtml(networkLabel)}</span></span>
+        <span class="hex-chart-chip-label"><span class="hex-chart-chip-name">${escapeHtml(stationName)}</span><span class="hex-chart-chip-network">· ${escapeHtml(networkLabel)}</span></span>
         <span class="hex-chart-chip-value"><span class="sensor-reading-dot" style="--sensor-reading-color:${escapeHtml(dotColor)}"></span>${escapeHtml(valueLabel)}</span>
         <span class="hex-chart-chip-time">${escapeHtml(updatedText)}</span>
       </div>`;
@@ -17297,6 +17434,7 @@
         isChartMode: state.isChartMode,
         mapKey: state.mapKey,
         selectedPrimaryId: state.selectedPrimaryId,
+        selectedAqiSensorId: state.selectedAqiSensorId,
         selectedSensorIds: Array.from(state.chartModeSelectedSensors),
       },
     }));
@@ -17330,6 +17468,7 @@
       : entries[0]?.stationId || null;
     state.chartModeSelectedSensors = new Set(initialSensorId ? [initialSensorId] : []);
     state.selectedPrimaryId = initialSensorId;
+    state.selectedAqiSensorId = initialSensorId;
     syncPanels();
     syncWindowControl();
     renderSensorList(context);
@@ -17343,6 +17482,7 @@
     state.mapKey = null;
     state.chartModeAreaCode = null;
     state.chartModeSelectedSensors.clear();
+    state.selectedAqiSensorId = null;
     state.visibleEntries = [];
     state.loadToken += 1;
     syncPanels();
@@ -17374,6 +17514,7 @@
     state.chartModeSelectedSensors = new Set(Array.from(state.chartModeSelectedSensors).filter((id) => visibleIds.has(id)));
     if (!state.chartModeSelectedSensors.size && entries.length) state.chartModeSelectedSensors.add(entries[0].stationId);
     if (!state.chartModeSelectedSensors.has(state.selectedPrimaryId)) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
+    syncAqiSourceWithSelectedSensors();
     renderSensorList(context);
     notifySelectionChange();
     // updateChart: false lets the caller handle the chart refresh (e.g. delta-only refresh).
@@ -17397,6 +17538,7 @@
 
     const usableEntries = cf.currentSeriesData.entries;
     const units         = cf.currentSeriesData.units || "";
+    syncAqiSourceWithSelectedSensors();
 
     // Only fetch the delta since the chart's current right-edge timestamp.
     const prevEnd  = cf.xScale.domain()[1];
@@ -17406,7 +17548,7 @@
     const deltaChunk = { startIso: prevEnd.toISOString(), endIso: newRange.endIso };
     let anyNewData     = false;
     let primaryGuideline = cf.currentGuideline;
-    const primaryId      = state.selectedPrimaryId || usableEntries[0]?.stationId;
+    const primaryId      = state.selectedAqiSensorId || state.selectedPrimaryId || usableEntries[0]?.stationId;
 
     for (const entry of usableEntries) {
       if (state.loadToken !== token) return; // superseded by a user action
@@ -17448,11 +17590,15 @@
     });
 
     const newYDomain = computeYDomainNiced(seriesPointsMap, usableEntries, primaryGuideline);
+    const selectedIds = getSelectedSensorIdsOrdered();
+    const aqiSourceSymbolIndex = Math.max(0, selectedIds.indexOf(primaryId));
 
     // Animate to the new time range, then redraw fully once animation completes.
     animateChartDomains(cf, newRange, newYDomain, token, () => {
       if (state.loadToken !== token) return;
-      updateChart(dom, seriesPointsMap, usableEntries, newRange, primaryGuideline, units);
+      updateChart(dom, seriesPointsMap, usableEntries, newRange, primaryGuideline, units, undefined, {
+        aqiSourceSymbolIndex,
+      });
     });
   }
 
@@ -17495,6 +17641,7 @@
       state.chartModeSelectedSensors.add(stationId);
       state.selectedPrimaryId = state.selectedPrimaryId || stationId;
     }
+    syncAqiSourceWithSelectedSensors();
     renderSensorList(getCurrentContext() || {});
     notifySelectionChange();
     loadChartData("sensor-change");
@@ -17513,6 +17660,7 @@
     }
     state.chartModeSelectedSensors = new Set([normalizedId]);
     state.selectedPrimaryId = normalizedId;
+    state.selectedAqiSensorId = normalizedId;
     renderSensorList(getCurrentContext() || {});
     notifySelectionChange();
     loadChartData("sensor-change");
@@ -17676,6 +17824,48 @@
     return [];
   }
 
+  async function prefetchAqiBandsForEntries(entries, range, options = {}) {
+    const list = Array.isArray(entries) ? entries : [];
+    if (!list.length || !range) return;
+    const activeSourceStationId = String(options.activeSourceStationId || "").trim();
+    const loadToken = Number.isFinite(options.loadToken) ? Number(options.loadToken) : null;
+    const contextPollutant = normalizeAqiSupportedPollutant(getCurrentContext()?.pollutant || "");
+    const shouldContinue = () => loadToken === null || state.loadToken === loadToken;
+    for (const entry of list) {
+      if (!shouldContinue()) return;
+      const stationId = String(entry?.stationId || "").trim();
+      if (!stationId || stationId === activeSourceStationId) continue;
+      const pollutantKey = normalizeAqiSupportedPollutant(entry?.pollutant || "") || contextPollutant;
+      const aqiCacheKey = buildAqiCacheKey(entry, pollutantKey);
+      if (!aqiCacheKey || !pollutantKey) continue;
+      let cacheRecord = aqiBandCache.get(aqiCacheKey) || { points: [], coveredRanges: [] };
+      if (!Array.isArray(cacheRecord.points)) cacheRecord.points = [];
+      cacheRecord.coveredRanges = normalizeCoveredRanges(cacheRecord.coveredRanges);
+      const missingRanges = getMissingRangesForRequest(range, cacheRecord.coveredRanges);
+      if (!missingRanges.length) {
+        aqiBandCache.set(aqiCacheKey, cacheRecord);
+        continue;
+      }
+      const newlyFetched = [];
+      for (const missing of missingRanges) {
+        if (!shouldContinue()) return;
+        const missingRange = {
+          startMs: missing.startMs,
+          endMs: missing.endMs,
+          startDate: new Date(missing.startMs),
+          endDate: new Date(missing.endMs),
+          startIso: new Date(missing.startMs).toISOString(),
+          endIso: new Date(missing.endMs).toISOString(),
+        };
+        const points = await fetchAqiBands(entry, pollutantKey, missingRange);
+        newlyFetched.push(...(Array.isArray(points) ? points : []));
+        cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, missing.startMs, missing.endMs);
+      }
+      cacheRecord.points = mergeSeriesPoints(cacheRecord.points, newlyFetched);
+      aqiBandCache.set(aqiCacheKey, cacheRecord);
+    }
+  }
+
   function clearCacheForCurrentSensors() {
     const tidSet = new Set();
     Array.from(state.chartModeSelectedSensors).forEach((id) => {
@@ -17719,7 +17909,7 @@
       cf.xScale.domain([new Date(startX[0] + (endX[0] - startX[0]) * ease), new Date(startX[1] + (endX[1] - startX[1]) * ease)]);
       cf.yScale.domain([startY[0] + (endY[0] - startY[0]) * ease, startY[1] + (endY[1] - startY[1]) * ease]);
 
-      cf.xAxisGroup.call(d3.axisBottom(cf.xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
+      cf.xAxisGroup.call(buildChartXAxis(cf.xScale, rangeMs));
       cf.yAxisGroup.call(d3.axisLeft(cf.yScale).ticks(5).tickSizeOuter(0));
 
       const csd = cf.currentSeriesData;
@@ -17764,9 +17954,10 @@
 
     try {
       setLoading(false);
+      const isAqiSourceChangeOnly = reason === "aqi-source-change";
 
       // Build ordered usableEntries by Set insertion order (consistent symbol indices).
-      const selectedIds = Array.from(state.chartModeSelectedSensors);
+      const selectedIds = getSelectedSensorIdsOrdered();
       const entryById = new Map(state.visibleEntries.map((entry) => [entry.stationId, entry]));
       const selectedEntries = selectedIds.map((id) => entryById.get(id)).filter(Boolean);
 
@@ -17775,12 +17966,22 @@
         setMessage(NO_SELECTED_SENSOR_CHART_MESSAGE);
         return;
       }
+      if (!state.selectedAqiSensorId || !selectedEntries.some((entry) => entry.stationId === state.selectedAqiSensorId)) {
+        state.selectedAqiSensorId = selectedEntries[0]?.stationId || null;
+      }
       const usableEntries = selectedEntries.filter((entry) => entry.timeseriesId);
       if (!usableEntries.length) {
         renderEmptyChart("This pollutant is not available for the selected sensor.");
         setMessage("This pollutant is not available for the selected sensor.", { error: true });
         return;
       }
+      const aqiSourceEntry = usableEntries.find((entry) => entry.stationId === state.selectedAqiSensorId) || usableEntries[0];
+      const aqiSourceId = aqiSourceEntry?.stationId || null;
+      if (aqiSourceId && state.selectedAqiSensorId !== aqiSourceId) {
+        state.selectedAqiSensorId = aqiSourceId;
+        renderSensorList(getCurrentContext() || {});
+      }
+      const aqiSourceSymbolIndex = Math.max(0, selectedIds.indexOf(aqiSourceId));
 
       const windowValue = state.chartModeTimeRange || "24h";
       const range = resolveRange(windowValue);
@@ -17803,8 +18004,8 @@
       const seriesPointsMap = new Map();
       const fetchPlans = [];
       let primaryGuideline = null;
-      const primaryId = state.selectedPrimaryId || usableEntries[0]?.stationId;
-      const primary = usableEntries.find((entry) => entry.stationId === primaryId) || usableEntries[0];
+      const primaryId = aqiSourceId || state.selectedPrimaryId || usableEntries[0]?.stationId;
+      const primary = aqiSourceEntry || usableEntries.find((entry) => entry.stationId === primaryId) || usableEntries[0];
       const pollutantKey = normalizeAqiSupportedPollutant(primary?.pollutant || getCurrentContext()?.pollutant || "");
 
       usableEntries.forEach((entry) => {
@@ -17857,7 +18058,7 @@
       }
 
       const hasCachedData = Array.from(seriesPointsMap.values()).some((points) => points.length > 0);
-      const hasObservationFetch = fetchPlans.length > 0;
+      const hasObservationFetch = !isAqiSourceChangeOnly && fetchPlans.length > 0;
       const observsLoadingActive = hasObservationFetch;
 
       if (frameValid) {
@@ -17868,18 +18069,21 @@
           updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
             aqiLoading: aqiLoadingActive,
             yAxisLoading: observsLoadingActive,
+            aqiSourceSymbolIndex,
           });
         }
       } else if (hasCachedData) {
         updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
           aqiLoading: aqiLoadingActive,
           yAxisLoading: observsLoadingActive,
+          aqiSourceSymbolIndex,
         });
       }
       if (!hasCachedData) {
         updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
           aqiLoading: aqiLoadingActive,
           yAxisLoading: observsLoadingActive,
+          aqiSourceSymbolIndex,
         });
       }
 
@@ -17909,6 +18113,7 @@
         updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
           aqiLoading: false,
           yAxisLoading: hasObservationFetch,
+          aqiSourceSymbolIndex,
         });
       })().catch((_err) => {
         aqiLoadingActive = false;
@@ -17916,7 +18121,7 @@
 
       // --- Fast path: everything already cached for this requested range. ---
       if (!hasObservationFetch) {
-        if (aqiLoadingActive) {
+        if (aqiLoadingActive && !isAqiSourceChangeOnly) {
           setLoading(true);
           await aqiProgressPromise;
         }
@@ -17924,24 +18129,28 @@
         updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
           aqiLoading: aqiLoadingActive,
           yAxisLoading: false,
+          aqiSourceSymbolIndex,
         });
         setMessage(Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0)
           ? ""
           : "No history available for this sensor.");
+        void prefetchAqiBandsForEntries(usableEntries, range, {
+          activeSourceStationId: aqiSourceId,
+          loadToken: token,
+        });
         return;
       }
 
       // --- Fetch path: some entries have missing intervals. ---
       setLoading(true);
 
-      if (frameValid) {
-        const progressFrame = {
-          margin: dom.chartFrame.margin,
-          width: dom.chartFrame.width,
-          height: dom.chartFrame.height,
-        };
-        dom.chartFrame.progressBar = ChartCore.renderProgressBar(svgEl, progressFrame);
-      }
+      const progressFrame = {
+        margin: dom.chartFrame.margin,
+        width: dom.chartFrame.width,
+        height: dom.chartFrame.height,
+      };
+      if (dom.chartFrame?.progressBar?.remove) dom.chartFrame.progressBar.remove();
+      dom.chartFrame.progressBar = ChartCore.renderProgressBar(svgEl, progressFrame);
 
       const workQueue = buildChunkWorkQueue(fetchPlans, windowValue);
       const totalChunks = Math.max(1, workQueue.length);
@@ -17981,6 +18190,7 @@
         updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
           aqiLoading: aqiLoadingActive,
           yAxisLoading: true,
+          aqiSourceSymbolIndex,
         });
         dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
       }
@@ -17991,9 +18201,14 @@
       updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
         aqiLoading: false,
         yAxisLoading: false,
+        aqiSourceSymbolIndex,
       });
       const totalPoints = Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0);
       setMessage(totalPoints ? "" : "No history available for this sensor.");
+      void prefetchAqiBandsForEntries(usableEntries, range, {
+        activeSourceStationId: aqiSourceId,
+        loadToken: token,
+      });
 
     } catch (error) {
       if (signal.aborted || token !== state.loadToken) return;
@@ -18078,6 +18293,26 @@
       }
     };
     const bandTop = AQI_BAND_TOP_OFFSET_PX;
+    const symbolIndex = Number.isInteger(options?.aqiSourceSymbolIndex) ? options.aqiSourceSymbolIndex : -1;
+    const symbolAttrs = getChartSymbolPathAttributes(symbolIndex, {
+      area: 130,
+      sizePx: 20,
+      fill: "#3C78AC",
+      stroke: "#fff",
+      strokeWidth: 1.35,
+    });
+    if (symbolAttrs?.d) {
+      const symbolCenterX = frame.margin.left - 62;
+      const symbolCenterY = bandTop + bandHeight + (gap / 2);
+      svg.append("path")
+        .attr("class", "aqi-band-source-symbol")
+        .attr("d", symbolAttrs.d)
+        .attr("transform", `translate(${symbolCenterX},${symbolCenterY})`)
+        .attr("fill", symbolAttrs.fill || "#3C78AC")
+        .attr("stroke", symbolAttrs.stroke || "#fff")
+        .attr("stroke-width", Number.isFinite(symbolAttrs.strokeWidth) ? symbolAttrs.strokeWidth : 1.2)
+        .attr("stroke-linejoin", "round");
+    }
     drawBand("DAQI", bandTop, "daqi", daqiColors);
     drawBand("EAQI", bandTop + bandHeight + gap, "eaqi", eaqiColors);
   }
@@ -18088,7 +18323,7 @@
     const width  = svgEl.clientWidth  || 960;
     const height = Math.max(svgEl.clientHeight || 0, 300);
     const marginTop = Math.max(52, Math.round(height * 0.12));
-    const margin = { top: marginTop, right: 24, bottom: 44, left: 58 };
+    const margin = { top: marginTop, right: 24, bottom: 44, left: 72 };
 
     dom.svg.selectAll("*").remove();
     dom.svg.attr("viewBox", `0 0 ${width} ${height}`);
@@ -18115,7 +18350,7 @@
     const xAxisGroup = dom.svg.append("g")
       .attr("class", "chart-axis")
       .attr("transform", `translate(0, ${height - margin.bottom})`)
-      .call(d3.axisBottom(xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
+      .call(buildChartXAxis(xScale, rangeMs));
     const yAxisGroup = dom.svg.append("g")
       .attr("class", "chart-axis")
       .attr("transform", `translate(${margin.left}, 0)`);
@@ -18252,8 +18487,6 @@
       dom.tooltip?.classList.remove("visible");
     });
 
-    const progressBar = ChartCore.renderProgressBar(svgEl, { margin, width, height });
-
     dom.chartFrame = {
       svgEl, xScale, yScale,
       xAxisGroup, yAxisGroup,
@@ -18261,7 +18494,7 @@
       aqiBandsContainer,
       guidelineEl, guidelineLabelEl,
       seriesPaths, seriesSymbolGroups,
-      dot, overlay, progressBar,
+      dot, overlay, progressBar: null,
       margin, width, height,
       frame: { width, height, margin, startMs: range.startMs, endMs: range.endMs },
       areaCode: state.chartModeAreaCode,
@@ -18287,7 +18520,7 @@
     // Update x-axis domain to match the current range.
     cf.xScale.domain([range.startDate, range.endDate]);
     const rangeMs = range.endMs - range.startMs;
-    cf.xAxisGroup.call(d3.axisBottom(cf.xScale).ticks(rangeMs <= DAY_MS ? 8 : 7).tickSizeOuter(0));
+    cf.xAxisGroup.call(buildChartXAxis(cf.xScale, rangeMs));
 
     // Snapshot current y-domain before computing the new one.
     const currentYDomain = cf.yScale.domain().slice();
@@ -18303,6 +18536,9 @@
       cf.aqiBandsContainer.selectAll("*").remove();
       renderAqiBands(cf.aqiBandsContainer, aqiPoints, cf.frame, cf.xScale, {
         loading: Boolean(renderOptions.aqiLoading),
+        aqiSourceSymbolIndex: Number.isInteger(renderOptions.aqiSourceSymbolIndex)
+          ? renderOptions.aqiSourceSymbolIndex
+          : -1,
       });
       cf.currentAqiPoints = Array.isArray(aqiPoints) ? aqiPoints : [];
     }
@@ -18418,6 +18654,24 @@
   }
 
   Object.values(domByMap).forEach((dom) => {
+    dom.reading?.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+      const chip = target?.closest?.(".hex-chart-selected-sensor-chip[data-aqi-source-station-id]");
+      if (!chip) return;
+      const stationId = String(chip.getAttribute("data-aqi-source-station-id") || "").trim();
+      if (!stationId) return;
+      setAqiSourceSensor(stationId, { reload: true });
+    });
+    dom.reading?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+      const chip = target?.closest?.(".hex-chart-selected-sensor-chip[data-aqi-source-station-id]");
+      if (!chip) return;
+      const stationId = String(chip.getAttribute("data-aqi-source-station-id") || "").trim();
+      if (!stationId) return;
+      event.preventDefault();
+      setAqiSourceSensor(stationId, { reload: true });
+    });
     // Prevent clicks inside the chart panel from bubbling to the map's background-click
     // handler, which would otherwise clear the selected hex (selectedPconCode) and cause
     // the next syncFromMap call to exit chart mode unexpectedly.
