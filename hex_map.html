@@ -4076,7 +4076,7 @@
         width: fit-content;
         max-width: min(860px, calc(100% - 24px));
         padding: 6px 10px;
-        border-radius: 999px;
+        border-radius: 10px;
         background: rgba(180, 48, 48, 0.72);
         color: #fff;
         font-size: 0.72rem;
@@ -4102,8 +4102,9 @@
 
       .beta-data-disclaimer--map {
         position: absolute;
-        top: 56px;
-        left: 12px;
+        left: calc(50% + 236px);
+        right: 12px;
+        bottom: 8px;
       }
 
       .beta-data-disclaimer--chart {
@@ -4128,8 +4129,10 @@
 
       @media (max-width: 720px) {
         .beta-data-disclaimer--map {
-          top: 58px;
-          max-width: calc(100% - 24px);
+          left: 12px;
+          right: 12px;
+          bottom: 54px;
+          max-width: none;
         }
       }
       .map-floating-search {
