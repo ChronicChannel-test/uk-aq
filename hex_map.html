@@ -939,6 +939,27 @@
         overflow: visible;
       }
 
+      .chart-selector-header-actions {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-width: 62px;
+        margin-left: calc(50% - 31px);
+      }
+
+      .sensor-table-wrap.is-chart-select-mode .chart-selector-header-actions {
+        display: inline-flex;
+      }
+
+      .chart-selector-header-divider {
+        color: var(--accent);
+        font-size: 1.25rem;
+        line-height: 1;
+        font-weight: 700;
+        user-select: none;
+      }
+
       .sensor-table th.sensor-chart-symbol-col,
       .sensor-table td.sensor-chart-symbol-col {
         width: 13px;
@@ -4839,6 +4860,38 @@
         background: #3C78AC;
       }
 
+      .hex-chart-selector[data-chart-header-action="keep-top"]::after {
+        content: "1";
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background: transparent;
+        color: #3C78AC;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .hex-chart-selector:disabled {
+        border-color: var(--ink-4);
+        color: var(--ukaq-control-disabled-text);
+        cursor: not-allowed;
+      }
+
+      .hex-chart-selector:disabled[aria-pressed="true"]::after {
+        background: var(--ink-4);
+      }
+
+      .hex-chart-selector:disabled[data-chart-header-action="keep-top"]::after {
+        color: var(--ink-4);
+      }
+
+      .sensor-table-wrap.is-chart-select-mode .chart-selector-header-actions .hex-chart-selector:hover:not(:disabled),
+      .sensor-table-wrap.is-chart-select-mode .chart-selector-header-actions .hex-chart-selector:focus-visible:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: var(--ukaq-control-hover-shadow);
+      }
+
       .hex-chart-selector:focus-visible {
         outline: 2px solid rgba(60, 120, 172, 0.45);
         outline-offset: 2px;
@@ -5402,7 +5455,13 @@
                 <table class="sensor-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sensor-chart-select-col" aria-label="Selection"></th>
+                      <th scope="col" class="sensor-chart-select-col" aria-label="Chart selection actions">
+                        <div class="chart-selector-header-actions" role="group" aria-label="Chart sensor selection actions">
+                          <button type="button" class="hex-chart-selector" data-chart-header-action="select-fill" aria-label="Select up to four sensors" title="Select up to four sensors" aria-pressed="true"></button>
+                          <span class="chart-selector-header-divider" aria-hidden="true">/</span>
+                          <button type="button" class="hex-chart-selector" data-chart-header-action="keep-top" aria-label="Keep only the top sensor" title="Keep only the top sensor" aria-pressed="false"></button>
+                        </div>
+                      </th>
                       <th scope="col" class="sensor-chart-symbol-col" aria-label="Symbol"></th>
                       <th scope="col" class="sensor-col-sensor" data-sort-key="sensor" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
@@ -6005,7 +6064,13 @@
                 <table class="sensor-table">
                   <thead>
                     <tr>
-                      <th scope="col" class="sensor-chart-select-col" aria-label="Selection"></th>
+                      <th scope="col" class="sensor-chart-select-col" aria-label="Chart selection actions">
+                        <div class="chart-selector-header-actions" role="group" aria-label="Chart sensor selection actions">
+                          <button type="button" class="hex-chart-selector" data-chart-header-action="select-fill" aria-label="Select up to four sensors" title="Select up to four sensors" aria-pressed="true"></button>
+                          <span class="chart-selector-header-divider" aria-hidden="true">/</span>
+                          <button type="button" class="hex-chart-selector" data-chart-header-action="keep-top" aria-label="Keep only the top sensor" title="Keep only the top sensor" aria-pressed="false"></button>
+                        </div>
+                      </th>
                       <th scope="col" class="sensor-chart-symbol-col" aria-label="Symbol"></th>
                       <th scope="col" class="sensor-col-sensor" data-sort-key="sensor" aria-sort="none">
                         <button type="button" class="sort-header" data-sort-key="sensor" data-sort-type="alpha" title="Sort A→Z">
@@ -7257,6 +7322,20 @@
               mapKey: "uk",
               initialSensorId: stationId,
             });
+            return;
+          }
+          const selectorHeaderButton = event.target instanceof Element
+            ? event.target.closest(".hex-chart-selector[data-chart-header-action]")
+            : null;
+          if (selectorHeaderButton && detailsTableWrap.contains(selectorHeaderButton)) {
+            event.stopPropagation();
+            const action = String(selectorHeaderButton.getAttribute("data-chart-header-action") || "").trim();
+            if (!action) {
+              return;
+            }
+            if (window.hexChartMode?.isActive?.("uk")) {
+              window.hexChartMode?.applyHeaderSelectionAction?.(action, { mapKey: "uk" });
+            }
             return;
           }
           const selectorButton = event.target instanceof Element
@@ -12226,6 +12305,20 @@
               mapKey: "cr",
               initialSensorId: stationId,
             });
+            return;
+          }
+          const selectorHeaderButton = event.target instanceof Element
+            ? event.target.closest(".hex-chart-selector[data-chart-header-action]")
+            : null;
+          if (selectorHeaderButton && detailsTableWrap.contains(selectorHeaderButton)) {
+            event.stopPropagation();
+            const action = String(selectorHeaderButton.getAttribute("data-chart-header-action") || "").trim();
+            if (!action) {
+              return;
+            }
+            if (window.hexChartMode?.isActive?.("cr")) {
+              window.hexChartMode?.applyHeaderSelectionAction?.(action, { mapKey: "cr" });
+            }
             return;
           }
           const selectorButton = event.target instanceof Element
@@ -17462,6 +17555,52 @@
         };
   }
 
+  function getOrderedVisibleStationIds(mapKey = state.mapKey) {
+    const refs = getInlineTableRefs(mapKey);
+    const tableBody = refs?.tableBody || null;
+    const visibleIdSet = new Set((state.visibleEntries || []).map((entry) => String(entry?.stationId || "").trim()).filter(Boolean));
+    const ordered = [];
+    if (tableBody) {
+      Array.from(tableBody.querySelectorAll(".sensor-name-button[data-station-id]")).forEach((button) => {
+        const stationId = String(button.dataset.stationId || "").trim();
+        if (!stationId || !visibleIdSet.has(stationId) || ordered.includes(stationId)) return;
+        ordered.push(stationId);
+      });
+    }
+    if (!ordered.length) {
+      Array.from(visibleIdSet).forEach((stationId) => {
+        if (!ordered.includes(stationId)) ordered.push(stationId);
+      });
+    }
+    return ordered;
+  }
+
+  function syncInlineTableHeaderActions(mapKey = state.mapKey) {
+    const refs = getInlineTableRefs(mapKey);
+    const tableWrap = refs?.tableWrap || null;
+    if (!tableWrap) return;
+    const headerCell = tableWrap.querySelector("th.sensor-chart-select-col");
+    const actionsWrap = headerCell?.querySelector(".chart-selector-header-actions");
+    const selectFillBtn = actionsWrap?.querySelector(".hex-chart-selector[data-chart-header-action='select-fill']");
+    const keepTopBtn = actionsWrap?.querySelector(".hex-chart-selector[data-chart-header-action='keep-top']");
+    if (!actionsWrap || !selectFillBtn || !keepTopBtn) return;
+
+    const chartActiveForMap = state.isChartMode && state.mapKey === mapKey;
+    const orderedIds = chartActiveForMap ? getOrderedVisibleStationIds(mapKey) : [];
+    const selectedSet = chartActiveForMap ? state.chartModeSelectedSensors : new Set();
+    const selectedCount = chartActiveForMap
+      ? orderedIds.filter((stationId) => selectedSet.has(stationId)).length
+      : 0;
+    const unselectedAvailable = chartActiveForMap && orderedIds.some((stationId) => !selectedSet.has(stationId));
+    const canSelectFill = chartActiveForMap && selectedCount < MAX_SELECTED_SENSORS && unselectedAvailable;
+    const canKeepTop = chartActiveForMap && orderedIds.length > 0 && selectedCount > 1;
+
+    selectFillBtn.disabled = !canSelectFill;
+    keepTopBtn.disabled = !canKeepTop;
+    selectFillBtn.setAttribute("aria-disabled", selectFillBtn.disabled ? "true" : "false");
+    keepTopBtn.setAttribute("aria-disabled", keepTopBtn.disabled ? "true" : "false");
+  }
+
   function syncInlineTableModeControls(mapKey = state.mapKey) {
     const refs = getInlineTableRefs(mapKey);
     const tableWrap = refs?.tableWrap || null;
@@ -17470,6 +17609,7 @@
 
     const chartActiveForMap = state.isChartMode && state.mapKey === mapKey;
     tableWrap.classList.toggle("is-chart-select-mode", chartActiveForMap);
+    syncInlineTableHeaderActions(mapKey);
     const selectedIds = Array.from(state.chartModeSelectedSensors);
 
     Array.from(tableBody.querySelectorAll("tr")).forEach((row) => {
@@ -17507,6 +17647,48 @@
         : "";
       symbolCell.innerHTML = symbolMarkup;
     });
+  }
+
+  function applyHeaderSelectionAction(action, options = {}) {
+    if (!state.isChartMode) return false;
+    const mapKey = options.mapKey || state.mapKey || "uk";
+    if (state.mapKey !== mapKey) return false;
+    const orderedIds = getOrderedVisibleStationIds(mapKey);
+    if (!orderedIds.length) return false;
+    if (action === "select-fill") {
+      const nextSelectedSet = new Set(state.chartModeSelectedSensors);
+      for (const stationId of orderedIds) {
+        if (nextSelectedSet.size >= MAX_SELECTED_SENSORS) break;
+        if (!nextSelectedSet.has(stationId)) {
+          nextSelectedSet.add(stationId);
+        }
+      }
+      if (nextSelectedSet.size === state.chartModeSelectedSensors.size) return false;
+      const orderedSelected = orderedIds.filter((stationId) => nextSelectedSet.has(stationId));
+      state.chartModeSelectedSensors = new Set(orderedSelected);
+      if (!state.chartModeSelectedSensors.has(state.selectedPrimaryId)) {
+        state.selectedPrimaryId = orderedSelected[0] || null;
+      }
+      syncAqiSourceWithSelectedSensors();
+      renderSensorList(getCurrentContext() || {});
+      notifySelectionChange();
+      loadChartData("sensor-change");
+      return true;
+    }
+    if (action === "keep-top") {
+      const topSensorId = orderedIds[0] || null;
+      if (!topSensorId) return false;
+      const selectedOnlyTop = state.chartModeSelectedSensors.size === 1 && state.chartModeSelectedSensors.has(topSensorId);
+      if (selectedOnlyTop) return false;
+      state.chartModeSelectedSensors = new Set([topSensorId]);
+      state.selectedPrimaryId = topSensorId;
+      state.selectedAqiSensorId = topSensorId;
+      renderSensorList(getCurrentContext() || {});
+      notifySelectionChange();
+      loadChartData("sensor-change");
+      return true;
+    }
+    return false;
   }
 
   function normalizeEntry(entry) {
@@ -17739,6 +17921,10 @@
   function toggleSensor(stationId) {
     if (!stationId) return;
     if (state.chartModeSelectedSensors.has(stationId)) {
+      if (state.chartModeSelectedSensors.size <= 1) {
+        setMessage("Keep at least 1 sensor selected.");
+        return;
+      }
       state.chartModeSelectedSensors.delete(stationId);
       if (state.selectedPrimaryId === stationId) state.selectedPrimaryId = Array.from(state.chartModeSelectedSensors)[0] || null;
     } else {
@@ -18802,6 +18988,7 @@
     exit,
     refresh,
     syncFromMap,
+    applyHeaderSelectionAction,
     isActive: (mapKey = null) => Boolean(state.isChartMode && (!mapKey || state.mapKey === mapKey)),
     selectSensor,
     isSensorSelected: (mapKey = null, stationId = "") => {

@@ -470,7 +470,7 @@
         ${NAV.map(buildSection).join('')}
       </nav>
       <div id="cic-sidebar-footer">
-        cic-test.chronicillnesschannel.co.uk · v2026.04
+        UK-AQ· v0.1.0
       </div>`;
   }
 
