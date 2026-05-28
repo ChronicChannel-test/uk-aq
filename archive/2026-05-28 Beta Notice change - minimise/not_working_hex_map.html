@@ -4207,37 +4207,39 @@
         line-height: 1;
       }
 
-      .beta-data-disclaimer--map.is-minimised {
+      .beta-data-disclaimer--map.is-minimised,
+      .beta-data-disclaimer--chart.is-minimised {
         width: fit-content;
         max-width: calc(100% - 24px);
         padding: 0;
         background: transparent;
         box-shadow: none;
       }
-	  
-	  .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expand {
-	    background: rgba(180, 48, 48, 0.72);
-	    color: #fff;
-	    border-color: rgba(180, 48, 48, 0.72);
-	    box-shadow: 0 1px 6px rgba(16, 24, 34, 0.12);
-	  }
 
-	  .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expand:hover {
-	    transform: translateY(-1px);
-	    box-shadow: var(--ukaq-control-hover-shadow);
-	    border-color: rgba(180, 48, 48, 0.9);
-	  }
-
-	  .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-chevron {
-	    color: #fff;
-	  }
-
-      .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expanded {
+      .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expanded,
+      .beta-data-disclaimer--chart.is-minimised .beta-data-disclaimer-expanded {
         display: none;
       }
 
-      .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expand {
+      .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expand,
+      .beta-data-disclaimer--chart.is-minimised .beta-data-disclaimer-expand {
         display: inline-flex;
+        background: rgba(180, 48, 48, 0.72);
+        color: #fff;
+        border-color: rgba(180, 48, 48, 0.72);
+        box-shadow: 0 1px 6px rgba(16, 24, 34, 0.12);
+      }
+
+      .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-expand:hover,
+      .beta-data-disclaimer--chart.is-minimised .beta-data-disclaimer-expand:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--ukaq-control-hover-shadow);
+        border-color: rgba(180, 48, 48, 0.9);
+      }
+
+      .beta-data-disclaimer--map.is-minimised .beta-data-disclaimer-chevron,
+      .beta-data-disclaimer--chart.is-minimised .beta-data-disclaimer-chevron {
+        color: #fff;
       }
 
       .map-canvas-wrap.hex-selected .beta-data-disclaimer--map {
@@ -4257,7 +4259,7 @@
         left: 18px;
         right: 18px;
         bottom: calc(var(--sensor-panel-height, 240px) + 6px);
-        display: flex;
+        display: grid;
         justify-content: center;
         max-width: none;
         width: auto;
@@ -5443,15 +5445,26 @@
                       </button>
                     </div>
                   </div>
-<!--
-                  <div class="beta-data-disclaimer beta-data-disclaimer--chart" aria-label="Beta data notice">
-                    Beta notice: Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
-                    <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
-                    <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
-                    <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
-                    <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                
+                  <div class="beta-data-disclaimer beta-data-disclaimer--chart" data-beta-notice aria-label="Beta data notice">
+                    <div class="beta-data-disclaimer-expanded">
+                      <div class="beta-data-disclaimer-header">
+                        <span class="beta-data-disclaimer-title">Beta notice</span>
+                        <button type="button" class="beta-data-disclaimer-dismiss" data-beta-notice-dismiss aria-expanded="true" aria-label="Minimise beta notice">Dismiss</button>
+                      </div>
+                      <div class="beta-data-disclaimer-body">
+                        Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
+                        <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
+                        <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
+                        <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
+                        <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                      </div>
+                    </div>
+                    <button type="button" class="beta-data-disclaimer-expand" data-beta-notice-expand aria-expanded="false" aria-label="Expand beta notice">
+                      <span>Beta notice</span>
+                      <span class="beta-data-disclaimer-chevron" aria-hidden="true">⌃</span>
+                    </button>
                   </div>
-				  -->
                   <section class="hex-chart-mode-panel" id="uk-hex-chart-mode" aria-label="Selected constituency sensors chart" hidden>
                   <div class="hex-chart-selected-sensors" id="uk-hex-chart-reading" aria-label="Selected chart sensors"></div>
                   <div class="hex-chart-message" id="uk-hex-chart-message" aria-live="polite"></div>
@@ -6066,12 +6079,24 @@
                     </div>
                   </div>
                   
-                  <div class="beta-data-disclaimer beta-data-disclaimer--chart" aria-label="Beta data notice">
-                    Beta notice: Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
-                    <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
-                    <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
-                    <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
-                    <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                  <div class="beta-data-disclaimer beta-data-disclaimer--chart" data-beta-notice aria-label="Beta data notice">
+                    <div class="beta-data-disclaimer-expanded">
+                      <div class="beta-data-disclaimer-header">
+                        <span class="beta-data-disclaimer-title">Beta notice</span>
+                        <button type="button" class="beta-data-disclaimer-dismiss" data-beta-notice-dismiss aria-expanded="true" aria-label="Minimise beta notice">Dismiss</button>
+                      </div>
+                      <div class="beta-data-disclaimer-body">
+                        Sensor data shown here is provisional and may change. Do not cite it as official data. For authoritative readings, refer to the source networks:
+                        <a href="https://www.breathelondon.org" target="_blank" rel="noopener noreferrer">Breathe London</a>,
+                        <a href="https://explore.openaq.org" target="_blank" rel="noopener noreferrer">OpenAQ</a>,
+                        <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer">Sensor.Community</a>, and
+                        <a href="https://uk-air.defra.gov.uk/interactive-map?network=aurn" target="_blank" rel="noopener noreferrer">Gov.UK AURN</a>.
+                      </div>
+                    </div>
+                    <button type="button" class="beta-data-disclaimer-expand" data-beta-notice-expand aria-expanded="false" aria-label="Expand beta notice">
+                      <span>Beta notice</span>
+                      <span class="beta-data-disclaimer-chevron" aria-hidden="true">⌃</span>
+                    </button>
                   </div>
                   <section class="hex-chart-mode-panel" id="cr-hex-chart-mode" aria-label="Selected local authority sensors chart" hidden>
                     <div class="hex-chart-selected-sensors" id="cr-hex-chart-reading" aria-label="Selected chart sensors"></div>
@@ -21408,55 +21433,39 @@
 })();
 
 (function initBetaDataNoticeToggles() {
-
+  function getNotices() {
+    return document.querySelectorAll("[data-beta-notice]");
+  }
 
   function setNoticeState(isMinimised) {
-    document.querySelectorAll(".beta-data-disclaimer--map[data-beta-notice]").forEach((notice) => {
+    getNotices().forEach((notice) => {
       const dismissButton = notice.querySelector("[data-beta-notice-dismiss]");
       const expandButton = notice.querySelector("[data-beta-notice-expand]");
       notice.classList.toggle("is-minimised", isMinimised);
       if (dismissButton) {
         dismissButton.setAttribute("aria-expanded", String(!isMinimised));
-        dismissButton.setAttribute("aria-label", isMinimised ? "Expand beta notice" : "Minimise beta notice");
+        dismissButton.setAttribute("aria-label", "Minimise beta notice");
       }
       if (expandButton) {
         expandButton.setAttribute("aria-expanded", String(!isMinimised));
-        expandButton.setAttribute("aria-label", isMinimised ? "Expand beta notice" : "Minimise beta notice");
+        expandButton.setAttribute("aria-label", "Expand beta notice");
       }
     });
   }
 
-  function saveNoticeState(isMinimised) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, String(isMinimised));
-    } catch (error) {
-      // Ignore storage failures; the toggle should still work for this page load.
-    }
-  }
-
-  function readNoticeState() {
-    try {
-      return window.localStorage.getItem(STORAGE_KEY) === "true";
-    } catch (error) {
-      return false;
-    }
-  }
-
   document.addEventListener("DOMContentLoaded", () => {
-    setNoticeState(readNoticeState());
+    setNoticeState(false);
 
-    document.querySelectorAll(".beta-data-disclaimer--map[data-beta-notice]").forEach((notice) => {
+    getNotices().forEach((notice) => {
       const dismissButton = notice.querySelector("[data-beta-notice-dismiss]");
       const expandButton = notice.querySelector("[data-beta-notice-expand]");
 
       dismissButton?.addEventListener("click", () => {
         setNoticeState(true);
-        saveNoticeState(true);
       });
 
       expandButton?.addEventListener("click", () => {
         setNoticeState(false);
-        saveNoticeState(false);
       });
     });
   });
