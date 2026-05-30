@@ -621,9 +621,6 @@
         : "";
       // chart-core.js is rendering-only; timeseries-client.js owns request/response normalization.
       const sharedTimeseriesClient = window.UkAqTimeseriesClient || null;
-      // Match hex_map: default to v2, but keep ?timeseries_v2=0 available
-      // so the page can fall back to the origin/Edge path when the v2 R2-first
-      // stitcher reports no rows for a series that exists in the DB.
       const UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED = parseBooleanFlag(
         params.get("timeseries_v2"),
         true
@@ -737,7 +734,16 @@
 
       function resolveAqiHistoryBaseUrl(rawValue) {
         const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
-        return explicit ? explicit.replace(/\/+$/, "") : "";
+        if (explicit) {
+          return explicit.replace(/\/+$/, "");
+        }
+        if (configuredAqiHistoryBase) {
+          return configuredAqiHistoryBase.replace(/\/+$/, "");
+        }
+        if (cacheAqiHistoryBase) {
+          return cacheAqiHistoryBase;
+        }
+        return "";
       }
 
 
@@ -1789,33 +1795,6 @@
         }
       }
 
-      function getRowsForSelectedPollutant(rows) {
-        const selected = pollutantSelect ? pollutantSelect.value : "";
-        return selected
-          ? rows.filter((row) => getPollutantLabel(row) === selected)
-          : rows;
-      }
-
-      function applyPollutantSelectionToTableAndChart() {
-        const filteredRows = getRowsForSelectedPollutant(cachedRows);
-        const previousSelectedSeriesId = selectedSeriesId;
-
-        renderRows(cachedRows);
-        buildSeriesOptions(filteredRows);
-        updateChartHint();
-
-        if (!selectedSeriesId) {
-          clearSeriesChart("No series for this pollutant.");
-          setChartStatus("No station selected");
-          return;
-        }
-
-        if (selectedSeriesId !== previousSelectedSeriesId) {
-          nextSeriesLoadReason = "pollutant-change";
-          loadSeriesData();
-        }
-      }
-
       function renderRows(rows) {
         const selected = pollutantSelect ? pollutantSelect.value : "";
         const filtered = selected
@@ -1907,7 +1886,6 @@
             uom: row.uom_display || row.uom || "",
             stationId,
             stationLabel: baseLabel || "Unknown station",
-            lastValueAt: normalizeIsoTimestamp(row.last_value_at) || null,
           });
         });
         const options = Array.from(unique.values())
@@ -2468,9 +2446,6 @@
         ) {
           return;
         }
-        const payloadCount = Number.isFinite(Number(payload?.count)) ? Number(payload.count) : null;
-        const dataCount = Array.isArray(payload?.data) ? payload.data.length : null;
-        const rowCount = Number.isFinite(Number(payload?.meta?.row_count)) ? Number(payload.meta.row_count) : null;
         console.debug("[uk-aq timeseries]", contextLabel, {
           timeseries_id: details.seriesId || selectedSeriesId || null,
           window: details.windowValue || null,
@@ -2481,13 +2456,7 @@
           ingest_tail_start: meta.ingest_tail_start,
           has_gap: meta.has_gap,
           cache_status: meta.cache_status,
-          count: payloadCount,
-          data_count: dataCount,
-          row_count: rowCount,
         });
-        console.info(
-          `[uk-aq timeseries summary] ${contextLabel} ts=${details.seriesId || selectedSeriesId || ""} window=${details.windowValue || ""} source=${meta.source_mode || ""} count=${payloadCount ?? ""} data=${dataCount ?? ""} rows=${rowCount ?? ""}`
-        );
       }
 
       function parseAqiBandPayload(payload, pollutantKey) {
@@ -3640,14 +3609,7 @@
 
 
 
-      function buildObservationSeriesRequestUrl({
-        seriesId,
-        startIso = null,
-        endIso = null,
-        since = null,
-        windowValue = null,
-        proxyV2Enabled = UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED,
-      }) {
+      function buildObservationSeriesRequestUrl({ seriesId, startIso, endIso, since = null, windowValue = null }) {
         if (sharedTimeseriesClient?.buildCanonicalTimeseriesUrl) {
           return sharedTimeseriesClient.buildCanonicalTimeseriesUrl({
             baseUrl: SERIES_EDGE_URL,
@@ -3656,18 +3618,14 @@
             endIso,
             since,
             windowLabel: windowValue || (windowSelect?.value || "24h"),
-            proxyV2Enabled,
+            proxyV2Enabled: UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED,
             format: "compact",
           });
         }
         const url = new URL(SERIES_EDGE_URL);
         url.searchParams.set("timeseries_id", seriesId);
-        if (startIso && endIso) {
-          url.searchParams.set("start", startIso);
-          url.searchParams.set("end", endIso);
-        } else if (windowValue || windowSelect?.value) {
-          url.searchParams.set("window", windowValue || windowSelect.value || "24h");
-        }
+        url.searchParams.set("start", startIso);
+        url.searchParams.set("end", endIso);
         url.searchParams.set("format", "compact");
         if (since) {
           url.searchParams.set("since", since);
@@ -3706,32 +3664,6 @@
           seriesId,
           startIso,
           endIso,
-          windowValue,
-        });
-        return payload;
-      }
-
-      async function fetchObservationSeriesWindowFallback({ seriesId, signal, loadId, windowValue = null }) {
-        noteObservationRequest(loadId, { usedEtag: false });
-        const url = buildObservationSeriesRequestUrl({
-          seriesId,
-          windowValue,
-          proxyV2Enabled: false,
-        });
-        const response = await fetchCacheApi(
-          url.toString(),
-          {
-            headers: { Accept: "application/json" },
-            signal,
-          }
-        );
-        noteObservationResponse(loadId, response);
-        if (!response.ok) {
-          throw new Error(`Series fallback request failed: ${response.status}`);
-        }
-        const payload = await response.json();
-        logTimeseriesDebugMeta("sensors_chart_window_fallback", payload, {
-          seriesId,
           windowValue,
         });
         return payload;
@@ -3938,134 +3870,214 @@
           valueFormat: "decimal",
           emptyMessage: "No observations in this window.",
         };
-
         if (telemetry) {
-          telemetry.obs_cache_mode = "network_full";
+          telemetry.obs_cache_mode = "unknown";
         }
 
-        const controller = new AbortController();
-        activeObservationAbortController = controller;
-
-        let guideline = getSeriesGuideline(selectedSeriesId, seriesKey) || null;
-        const cachedPoints = Array.isArray(seriesPointCacheByKey.get(seriesKey))
-          ? seriesPointCacheByKey.get(seriesKey)
-          : [];
+        let since = seriesSinceByKey.get(seriesKey) || null;
+        const cachedPoints = seriesPointCacheByKey.get(seriesKey) || [];
         const cachedWindowPoints = pruneSeriesPointsToWindow(cachedPoints, windowValue, range.endIso);
+        let cacheChanged = false;
+        if (
+          since
+          && cachedWindowPoints.length
+          && shouldForceFullObservationReload(windowValue, loadReason)
+        ) {
+          since = null;
+          seriesSinceByKey.delete(seriesKey);
+          seriesEtagByKey.delete(seriesKey);
+          cacheChanged = true;
+        }
+        if (since && cachedWindowPoints.length === 0) {
+          since = null;
+          dropSeriesCacheForKey(seriesKey);
+          cacheChanged = true;
+        }
+        if (cachedWindowPoints.length !== cachedPoints.length) {
+          seriesPointCacheByKey.set(seriesKey, cachedWindowPoints);
+          cacheChanged = true;
+        }
+        if (cacheChanged) {
+          persistSeriesCacheToStorage();
+        }
 
-        if (cachedWindowPoints.length) {
-          renderSeriesChart(cachedWindowPoints, meta, windowValue, guideline, {
+        if (cachedWindowPoints.length && since) {
+          if (telemetry) {
+            telemetry.obs_used_local_cache = true;
+            telemetry.obs_cache_mode = "local_plus_refresh";
+          }
+          const usedImmediateCache = await loadObservationSeriesDataImmediate({
+            seriesKey,
+            range,
+            meta,
+            windowValue,
+            loadId,
+            cachedWindowPoints,
+          });
+          if (usedImmediateCache !== false) {
+            return;
+          }
+        }
+
+        const seedPoints = mergeSeriesPoints(
+          pruneSeriesPointsToWindow(getObservationSeedPoints(meta), windowValue, range.endIso),
+          cachedWindowPoints
+        );
+        const earliestSeedMs = seedPoints[0]?.date instanceof Date
+          ? seedPoints[0].date.getTime()
+          : Number.NaN;
+        if (
+          loadReason === "window-change" &&
+          seedPoints.length &&
+          Number.isFinite(earliestSeedMs) &&
+          range.startMs >= (earliestSeedMs - 60 * 1000)
+        ) {
+          if (telemetry) {
+            telemetry.obs_used_local_cache = true;
+            telemetry.obs_cache_mode = "local_only";
+          }
+          const points = pruneSeriesPointsToWindow(seedPoints, windowValue, range.endIso);
+          seriesPointCacheByKey.set(seriesKey, points);
+          const nextSince = latestObservedAtFromPoints(points);
+          if (nextSince) {
+            seriesSinceByKey.set(seriesKey, nextSince);
+          }
+          persistSeriesCacheToStorage();
+          renderSeriesChart(points, meta, windowValue, getSeriesGuideline(selectedSeriesId, seriesKey), {
             domainStartMs: range.startMs,
             domainEndMs: range.endMs,
             animate: false,
           }, loadId);
-        } else {
-          clearSeriesChart("Loading chart data…");
-        }
-
-        async function fetchAndParseWindow(candidateWindow) {
-          const payload = await fetchObservationSeriesWindowFallback({
-            seriesId: selectedSeriesId,
-            signal: controller.signal,
-            loadId,
-            windowValue: candidateWindow,
-          });
-          const parsed = parseSeriesPayloadPoints(payload);
-          console.info("[uk-aq chart points]", {
-            timeseries_id: selectedSeriesId,
-            requested_window: candidateWindow,
-            payload_count: Number.isFinite(Number(payload?.count)) ? Number(payload.count) : null,
-            payload_data_count: Array.isArray(payload?.data) ? payload.data.length : null,
-            parsed_points: parsed.length,
-            first: parsed[0]?.date instanceof Date ? parsed[0].date.toISOString() : null,
-            last: parsed[parsed.length - 1]?.date instanceof Date ? parsed[parsed.length - 1].date.toISOString() : null,
-            last_value_at: baseMeta?.lastValueAt || null,
-          });
-          return { payload, parsed };
-        }
-
-        let chosenWindow = windowValue;
-        let payload = null;
-        let rawPoints = [];
-        try {
-          const result = await fetchAndParseWindow(windowValue);
-          payload = result.payload;
-          rawPoints = result.parsed;
-
-          // If the selected 12h/24h window has no observations but the station row
-          // has a latest timestamp, try wider windows before giving up. Some networks
-          // publish less frequently, and the standalone chart should still show a useful
-          // trend rather than a blank panel.
-          if (!rawPoints.length && windowValue !== "7d") {
-            const retry = await fetchAndParseWindow("7d");
-            if (retry.parsed.length) {
-              payload = retry.payload;
-              rawPoints = retry.parsed;
-              chosenWindow = "7d";
-            }
-          }
-          if (!rawPoints.length && windowValue !== "31d") {
-            const retry = await fetchAndParseWindow("31d");
-            if (retry.parsed.length) {
-              payload = retry.payload;
-              rawPoints = retry.parsed;
-              chosenWindow = "31d";
-            }
-          }
-        } catch (error) {
-          if (controller.signal.aborted || !isSeriesLoadCurrent(loadId)) {
-            return;
-          }
-          throw error;
-        }
-
-        if (!isSeriesLoadCurrent(loadId) || controller.signal.aborted) {
+          setChartStatus("Live");
           return;
         }
 
-        guideline = payload?.guideline || guideline;
-        if (guideline) {
-          seriesGuidelineByKey.set(seriesKey, guideline);
+        const expansionContext = resolveObservationExpansionContext(meta, seedPoints, range, loadReason);
+        if (!expansionContext) {
+          if (telemetry && telemetry.obs_cache_mode === "unknown") {
+            telemetry.obs_cache_mode = "network_full";
+          }
+          await loadObservationSeriesDataImmediate({
+            seriesKey,
+            range,
+            meta,
+            windowValue,
+            loadId,
+            cachedWindowPoints,
+          });
+          return;
         }
 
-        const renderRange = chosenWindow === windowValue
-          ? range
-          : resolveObservationRequestRange(chosenWindow);
-        const points = pruneSeriesPointsToWindow(
-          rawPoints,
-          chosenWindow,
-          renderRange.endIso
-        );
+        // Expansion keeps the existing visible range in place, then widens leftward as
+        // newly fetched older chunks are merged in nearest-first order.
+        if (telemetry) {
+          telemetry.obs_cache_mode = "network_chunked";
+        }
+        let mergedPoints = mergeSeriesPoints(expansionContext.seedPoints, cachedWindowPoints);
+        let guideline = getSeriesGuideline(selectedSeriesId, seriesKey);
+        let renderedDomainStartMs = expansionContext.currentDomainStartMs;
+        let renderedDomainEndMs = expansionContext.currentDomainEndMs;
+        const mergedSeedEarliestMs = mergedPoints[0]?.date instanceof Date
+          ? mergedPoints[0].date.getTime()
+          : Number.NaN;
+        if (
+          Number.isFinite(mergedSeedEarliestMs)
+          && (
+            mergedSeedEarliestMs < (renderedDomainStartMs - 1)
+            || Math.abs(range.endMs - renderedDomainEndMs) > 1
+          )
+        ) {
+          renderSeriesChart(mergedPoints, meta, windowValue, guideline, {
+            animate: true,
+            domainStartMs: Math.min(renderedDomainStartMs, mergedSeedEarliestMs),
+            domainEndMs: range.endMs,
+            emptyMessage: "",
+          }, loadId);
+          renderedDomainStartMs = Math.min(renderedDomainStartMs, mergedSeedEarliestMs);
+          renderedDomainEndMs = range.endMs;
+        }
+        const controller = new AbortController();
+        activeObservationAbortController = controller;
+        const chunks = buildObservationLoadChunks(windowValue, {
+          startMs: range.startMs,
+          endMs: Math.min(
+            Number.isFinite(mergedSeedEarliestMs) ? mergedSeedEarliestMs : expansionContext.earliestSeedMs,
+            range.endMs
+          ),
+        });
 
+        seriesEtagByKey.delete(seriesKey);
+        seriesSinceByKey.delete(seriesKey);
+
+        for (const chunk of chunks) {
+          const payload = await fetchObservationSeriesChunk({
+            seriesId: selectedSeriesId,
+            startIso: chunk.startIso,
+            endIso: chunk.endIso,
+            signal: controller.signal,
+            loadId,
+            windowValue,
+          });
+          if (!isSeriesLoadCurrent(loadId)) {
+            return;
+          }
+          guideline = payload?.guideline || guideline;
+          if (guideline) {
+            seriesGuidelineByKey.set(seriesKey, guideline);
+          }
+          mergedPoints = mergeSeriesPoints(mergedPoints, parseSeriesPayloadPoints(payload));
+
+          const actualEarliestMs = mergedPoints[0]?.date instanceof Date
+            ? mergedPoints[0].date.getTime()
+            : Number.NaN;
+          const nextDomainStartMs = Number.isFinite(actualEarliestMs)
+            ? Math.min(renderedDomainStartMs, actualEarliestMs)
+            : renderedDomainStartMs;
+          const nextDomainEndMs = range.endMs;
+          if (
+            nextDomainStartMs < (renderedDomainStartMs - 1)
+            || Math.abs(nextDomainEndMs - renderedDomainEndMs) > 1
+          ) {
+            renderSeriesChart(mergedPoints, meta, windowValue, guideline, {
+              animate: true,
+              domainEndMs: nextDomainEndMs,
+              domainStartMs: nextDomainStartMs,
+              emptyMessage: "",
+            }, loadId);
+            renderedDomainStartMs = nextDomainStartMs;
+            renderedDomainEndMs = nextDomainEndMs;
+          }
+        }
+
+        if (!isSeriesLoadCurrent(loadId)) {
+          return;
+        }
+
+        const points = pruneSeriesPointsToWindow(mergedPoints, windowValue, range.endIso);
         if (points.length) {
           seriesPointCacheByKey.set(seriesKey, points);
-          const nextSince = normalizeIsoTimestamp(payload?.next_since) || latestObservedAtFromPoints(points);
+          if (guideline) {
+            seriesGuidelineByKey.set(seriesKey, guideline);
+          }
+          const nextSince = latestObservedAtFromPoints(points);
           if (nextSince) {
             seriesSinceByKey.set(seriesKey, nextSince);
           }
-          seriesEtagByKey.delete(seriesKey);
           persistSeriesCacheToStorage();
-          renderSeriesChart(points, meta, chosenWindow, guideline, {
-            domainStartMs: renderRange.startMs,
-            domainEndMs: renderRange.endMs,
-            animate: false,
+          renderSeriesChart(points, meta, windowValue, guideline, {
+            animate: Math.abs(renderedDomainStartMs - range.startMs) > 1 || Math.abs(renderedDomainEndMs - range.endMs) > 1,
+            domainStartMs: range.startMs,
+            domainEndMs: range.endMs,
           }, loadId);
-          if (chosenWindow !== windowValue) {
-            setChartStatus(`Live (${chosenWindow} fallback)`);
-          }
         } else {
           clearSeriesChart(meta.emptyMessage);
         }
-
         await waitForChartRenderIdle();
         if (!isSeriesLoadCurrent(loadId)) {
           return;
         }
         activeObservationAbortController = null;
-        if (points.length && chosenWindow !== windowValue) {
-          setChartStatus(`Live (${chosenWindow} fallback)`);
-        } else {
-          setChartStatus("Live");
-        }
+        setChartStatus("Live");
       }
 
       async function loadAqiBandsData(windowValue, loadId, signal = null) {
@@ -4570,7 +4582,7 @@
           cachedRows = payload.data || [];
           updatePollutantOptions(cachedRows);
           renderRows(cachedRows);
-          buildSeriesOptions(getRowsForSelectedPollutant(cachedRows));
+          buildSeriesOptions(cachedRows);
           await loadSeriesData();
           lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
           statusEl.textContent = "Live";
@@ -4640,7 +4652,7 @@
         });
       }
       if (pollutantSelect) {
-        pollutantSelect.addEventListener("change", applyPollutantSelectionToTableAndChart);
+        pollutantSelect.addEventListener("change", () => renderRows(cachedRows));
       }
       if (stationSelect) {
         stationSelect.addEventListener("change", () => {
