@@ -2728,27 +2728,6 @@
         box-shadow: none;
         border-color: var(--ukaq-control-selected-border);
       }
-      .segmented--view button {
-        display: inline-flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 1px;
-        padding: 5px 14px;
-        line-height: 1.1;
-      }
-      .segmented--view .view-button-main {
-        display: block;
-        font-size: inherit;
-        font-weight: inherit;
-        white-space: nowrap;
-      }
-      .segmented--view .view-button-sub {
-        display: block;
-        font-size: 0.82em;
-        font-weight: inherit;
-        white-space: nowrap;
-      }
 
       /* Pollutant pills (toolbar) */
       .pill-group {
@@ -3984,7 +3963,7 @@
       .map-controls-row {
         grid-column: 1 / -1;
         grid-row: 3;
-        min-height: 72px;
+        min-height: 56px;
         display: flex;
         align-items: center;
         margin: 0 0 0 -18px;
@@ -4589,7 +4568,7 @@
         .map-controls-row {
           grid-column: 1;
           grid-row: 3;
-          min-height: 72px;
+          min-height: 56px;
           margin: 0;
           padding: 0;
         }
@@ -5279,15 +5258,9 @@
                       <span>Back to Hex Map</span>
                     </button>
                     <span class="field-label chart-mode-view-control">View</span>
-                    <div class="segmented segmented--view chart-mode-view-control">
-                      <button type="button" id="toolbar-tab-uk" class="active">
-                        <span class="view-button-main">United Kingdom</span>
-                        <span class="view-button-sub">Constituencies</span>
-                      </button>
-                      <button type="button" id="toolbar-tab-cr">
-                        <span class="view-button-main">Countries &amp; Regions</span>
-                        <span class="view-button-sub">Local Authorities</span>
-                      </button>
+                    <div class="segmented chart-mode-view-control">
+                      <button type="button" id="toolbar-tab-uk" class="active">United Kingdom</button>
+                      <button type="button" id="toolbar-tab-cr">Countries &amp; Regions</button>
                     </div>
 
                     <div class="toolbar-region-section chart-mode-view-control" id="toolbar-region-section">
