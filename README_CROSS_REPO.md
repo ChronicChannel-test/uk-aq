@@ -1,8 +1,8 @@
-# Cross-repo map: CIC-test-uk-aq (web UI)
+# Cross-repo map: CIC-test-uk-aq-webpage (web UI)
 
 ## Main repo
-- `CIC-test-uk-aq` is the main repo for this project and the default starting point for cross-repo tasks.
-- Filesystem location: `/Users/mikehinford/Library/CloudStorage/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC UK-AQ Webpage/CIC-test-uk-aq`.
+- `CIC-test-uk-aq-webpage` is the main repo for this project and the default starting point for cross-repo tasks.
+- Filesystem location: `/Users/mikehinford/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC-UK-AQ Webpage/CIC-test-uk-aq-webpage`.
 
 ## Purpose
 This repo is a static HTML/CSS/JS front-end for the UK Air Quality Networks project. It renders latest station readings, timeseries charts, and hex-map summaries by calling the Cloudflare cache proxy (`/api/aq/*`) for AQ reads and using local data files for geometry and styling.
@@ -51,7 +51,7 @@ Data flow across repos:
 ### Edge Functions (if applicable)
 - **Location**:
   - AQ functions: [../../CIC-test-uk-aq-ingest/supabase/functions/](../../CIC-test-uk-aq-ingest/supabase/functions/)
-  - Population function: [../../CIC UK Population Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population](../../CIC%20UK%20Population%20Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population)
+  - Population function: [../../CIC-Test-uk-aq-Population-Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population](../../CIC-Test-uk-aq-Population-Ingest/CIC-Test-uk-population-ingest/supabase/functions/uk_aq_population)
 - **Invocation pattern**:
   - AQ reads (main pages): `${window.location.origin}/api/aq/<route>` by default, overrideable via `?cache_base=...`
   - AQI history chart reads (DAQI/EAQI mode): default from injected `UK_AQ_AQI_HISTORY_BASE_URL`, overrideable via `?aqi_history_base=<aqi-history-worker-base>`
@@ -73,11 +73,11 @@ Data flow across repos:
 
 ## Data model pointers
 - Core AQ tables/views (timeseries, observations, stations, guidelines, pcon/la latest views):
-  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_core_schema.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_core_schema.sql)
+  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/ingest_db/uk_aq_core_schema.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/ingest_db/uk_aq_core_schema.sql)
 - Public read-only views (if used by Edge Functions):
-  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_public_views.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_public_views.sql)
+  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/ingest_db/uk_aq_public_views.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/ingest_db/uk_aq_public_views.sql)
 - Population views (`uk_population_observations`):
-  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_pop_schema.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/main_db/uk_aq_pop_schema.sql)
+  - [../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/ingest_db/uk_aq_pop_schema.sql](../../CIC-Test-UK-AQ-Schema/CIC-test-uk-aq-schema/schemas/ingest_db/uk_aq_pop_schema.sql)
 
 ## Egress-relevant notes (FACTUAL, no solutions)
 - [index.html](index.html) and [uk_aq_stations_chart.html](uk_aq_stations_chart.html) poll live data every 5 minutes via Edge Functions.
