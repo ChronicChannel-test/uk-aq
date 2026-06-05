@@ -17185,6 +17185,7 @@
     isChartMode: false,
     mapKey: null,
     chartModeAreaCode: null,
+    lastChartModeAreaCode: null,
     chartModeSelectedSensors: new Set(),
     chartModeTimeRange: "24h",
     visibleEntries: [],
@@ -18035,9 +18036,16 @@
     const context = getCurrentContext(mapKey);
     if (!context?.areaCode) return;
     const entries = (context.entries || []).map(normalizeEntry).filter(Boolean);
+    const nextAreaCode = String(context.areaCode || "").trim();
+    if (nextAreaCode && state.lastChartModeAreaCode !== nextAreaCode) {
+      state.chartModeTimeRange = "24h";
+    }
     state.isChartMode = true;
     state.mapKey = mapKey;
-    state.chartModeAreaCode = context.areaCode;
+    state.chartModeAreaCode = nextAreaCode;
+    if (nextAreaCode) {
+      state.lastChartModeAreaCode = nextAreaCode;
+    }
     state.visibleEntries = entries;
     const requestedSensorIdRaw = options.initialSensorId ?? options.initialStationId;
     const requestedSensorId = requestedSensorIdRaw ? String(requestedSensorIdRaw).trim() : "";
@@ -18386,6 +18394,20 @@
       : DAY_MS;
   }
 
+  async function runChunkQueueWithConcurrency(queue, concurrency, iterator) {
+    const items = Array.isArray(queue) ? queue : [];
+    const limit = Math.max(1, Math.min(Number(concurrency) || 1, items.length || 1));
+    let cursor = 0;
+    const workers = Array.from({ length: limit }, () => (async () => {
+      while (true) {
+        const index = cursor++;
+        if (index >= items.length) return;
+        await iterator(items[index], index);
+      }
+    })());
+    await Promise.all(workers);
+  }
+
   function buildAqiChunkWorkQueue(missingRanges, windowValue) {
     const chunkSpanMs = getChunkSpanMs(windowValue);
     const firstChunkSpanMs = Math.max(HOUR_MS, Math.min(chunkSpanMs, 2 * HOUR_MS));
@@ -18714,18 +18736,11 @@
         ? getMissingRangesForRequest(range, aqiCacheRecord.coveredRanges)
         : [];
       let aqiLoadingActive = aqiMissingRanges.length > 0;
-
-      // Build or reuse the SVG frame.
-      if (!frameValid) {
-        initChartFrame(dom, range, MAX_SELECTED_SENSORS);
-        if (token !== state.loadToken) return;
-      }
-
       const aqiProgressPromise = (async () => {
         if (!aqiCacheRecord || !aqiMissingRanges.length) return;
         let lastResponseMeta = aqiCacheRecord.lastResponseMeta || null;
         const aqiWorkQueue = buildAqiChunkWorkQueue(aqiMissingRanges, windowValue);
-        for (const missing of aqiWorkQueue) {
+        await runChunkQueueWithConcurrency(aqiWorkQueue, 3, async (missing) => {
           if (token !== state.loadToken || signal.aborted) return;
           const missingRange = {
             startMs: missing.startMs,
@@ -18754,7 +18769,7 @@
             aqiLoading: true,
             aqiSourceSymbolIndex,
           });
-        }
+        });
         aqiLoadingActive = false;
         if (token !== state.loadToken || signal.aborted) return;
         syncAqiBands(dom?.chartFrame, {
@@ -18766,6 +18781,12 @@
       })().catch((_err) => {
         aqiLoadingActive = false;
       });
+
+      // Build or reuse the SVG frame.
+      if (!frameValid) {
+        initChartFrame(dom, range, MAX_SELECTED_SENSORS);
+        if (token !== state.loadToken) return;
+      }
 
       const hasCachedData = Array.from(seriesPointsMap.values()).some((points) => points.length > 0);
       const hasObservationFetch = !isAqiSourceChangeOnly && fetchPlans.length > 0;
@@ -18800,22 +18821,27 @@
         });
       }
 
+      if (aqiLoadingActive || hasObservationFetch) {
+        setLoading(true);
+      }
+      await aqiProgressPromise;
+      if (token !== state.loadToken || signal.aborted) return;
+
       // --- Fast path: everything already cached for this requested range. ---
       if (!hasObservationFetch) {
-        if (aqiLoadingActive && !isAqiSourceChangeOnly) {
-          setLoading(true);
-          await aqiProgressPromise;
-        }
-        if (token !== state.loadToken) return;
         updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
-          aqiLoading: aqiLoadingActive,
+          aqiLoading: false,
           yAxisLoading: false,
           aqiSourceSymbolIndex,
           aqiCacheKey,
         });
-        setMessage(Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0)
-          ? ""
-          : "No history available for this sensor.");
+        const totalPoints = Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0);
+        if (!totalPoints) {
+          setMessage("");
+          renderNoHistoryChartMessage(dom, getNoHistoryChartMessage(usableEntries.length));
+        } else {
+          setMessage("");
+        }
         void prefetchAqiBandsForEntries(usableEntries, range, {
           activeSourceStationId: aqiSourceId,
           loadToken: token,
@@ -18824,62 +18850,92 @@
       }
 
       // --- Fetch path: some entries have missing intervals. ---
-      setLoading(true);
-
-      const progressFrame = {
-        margin: dom.chartFrame.margin,
-        width: dom.chartFrame.width,
-        height: dom.chartFrame.height,
-      };
-      if (dom.chartFrame?.progressBar?.remove) dom.chartFrame.progressBar.remove();
-      dom.chartFrame.progressBar = ChartCore.renderProgressBar(svgEl, progressFrame);
-
-      const workQueue = buildChunkWorkQueue(fetchPlans, windowValue);
-      const totalChunks = Math.max(1, workQueue.length);
+      const lineWorkQueue = buildChunkWorkQueue(fetchPlans, windowValue);
+      const totalChunks = Math.max(1, lineWorkQueue.length);
       let completedChunks = 0;
+      let lineNextCommitIndex = 0;
+      let lineCanCommit = true;
+      let lineFlushChain = Promise.resolve();
+      const linePendingResults = new Map();
+      const scheduleLineFlush = () => {
+        lineFlushChain = lineFlushChain.then(async () => {
+          while (linePendingResults.has(lineNextCommitIndex)) {
+            const payload = linePendingResults.get(lineNextCommitIndex);
+            linePendingResults.delete(lineNextCommitIndex);
+            lineNextCommitIndex += 1;
+            if (payload?.failed) {
+              completedChunks += 1;
+              dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
+              continue;
+            }
 
-      for (const { entry, cacheKey, chunk } of workQueue) {
-        if (token !== state.loadToken || signal.aborted) return;
-        let result;
-        try {
-          result = await fetchObservationSeriesChunk(entry, chunk, signal);
-        } catch (_chunkErr) {
-          if (signal.aborted || token !== state.loadToken) return;
-          completedChunks++;
-          dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-          continue;
-        }
-        if (token !== state.loadToken || signal.aborted) return;
+            const { entry, cacheKey, chunk, result } = payload;
+            let cacheRecord = seriesDataCache.get(cacheKey);
+            if (!cacheRecord) {
+              cacheRecord = { points: [], guideline: null, coveredRanges: [] };
+            }
+            cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
+            cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, chunk.startMs, chunk.endMs);
+            if (result.guideline && !cacheRecord.guideline) {
+              cacheRecord.guideline = result.guideline;
+            }
+            seriesDataCache.set(cacheKey, cacheRecord);
 
-        let cacheRecord = seriesDataCache.get(cacheKey);
-        if (!cacheRecord) {
-          cacheRecord = { points: [], guideline: null, coveredRanges: [] };
-        }
-        cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
-        cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, chunk.startMs, chunk.endMs);
-        if (result.guideline && !cacheRecord.guideline) {
-          cacheRecord.guideline = result.guideline;
-        }
-        seriesDataCache.set(cacheKey, cacheRecord);
+            const inRangePoints = getPointsInRange(cacheRecord.points, range);
+            seriesPointsMap.set(entry.stationId, inRangePoints);
+            if (!primaryGuideline && entry.stationId === primaryId && cacheRecord.guideline) {
+              primaryGuideline = cacheRecord.guideline;
+            }
 
-        const inRangePoints = getPointsInRange(cacheRecord.points, range);
-        seriesPointsMap.set(entry.stationId, inRangePoints);
-        if (!primaryGuideline && entry.stationId === primaryId && cacheRecord.guideline) {
-          primaryGuideline = cacheRecord.guideline;
-        }
-
-        completedChunks++;
-        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
-          aqiLoading: aqiLoadingActive,
-          yAxisLoading: true,
-          aqiSourceSymbolIndex,
-          aqiCacheKey,
-          skipAqiRepaint: true,
+            completedChunks += 1;
+            updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+              aqiLoading: false,
+              yAxisLoading: true,
+              aqiSourceSymbolIndex,
+              aqiCacheKey,
+              skipAqiRepaint: true,
+            });
+            dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
+          }
         });
-        dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-      }
+        return lineFlushChain;
+      };
+      const lineProgressPromise = (async () => {
+        const progressFrame = {
+          margin: dom.chartFrame.margin,
+          width: dom.chartFrame.width,
+          height: dom.chartFrame.height,
+        };
+        if (dom.chartFrame?.progressBar?.remove) dom.chartFrame.progressBar.remove();
+        dom.chartFrame.progressBar = ChartCore.renderProgressBar(svgEl, progressFrame);
 
-      await aqiProgressPromise;
+        await runChunkQueueWithConcurrency(lineWorkQueue, 4, async (workItem, index) => {
+          if (token !== state.loadToken || signal.aborted) return;
+          try {
+            const result = await fetchObservationSeriesChunk(workItem.entry, workItem.chunk, signal);
+            if (token !== state.loadToken || signal.aborted) return;
+            linePendingResults.set(index, {
+              entry: workItem.entry,
+              cacheKey: workItem.cacheKey,
+              chunk: workItem.chunk,
+              result,
+            });
+          } catch (_chunkErr) {
+            if (signal.aborted || token !== state.loadToken) return;
+            linePendingResults.set(index, {
+              entry: workItem.entry,
+              cacheKey: workItem.cacheKey,
+              chunk: workItem.chunk,
+              failed: true,
+            });
+          }
+          void scheduleLineFlush();
+        });
+      })().catch((_err) => {});
+
+      setLoading(true);
+      await lineProgressPromise;
+      await scheduleLineFlush();
       if (token !== state.loadToken || signal.aborted) return;
 
       updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
@@ -18889,7 +18945,12 @@
         aqiCacheKey,
       });
       const totalPoints = Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0);
-      setMessage(totalPoints ? "" : "No history available for this sensor.");
+      if (!totalPoints) {
+        setMessage("");
+        renderNoHistoryChartMessage(dom, getNoHistoryChartMessage(usableEntries.length));
+      } else {
+        setMessage("");
+      }
       void prefetchAqiBandsForEntries(usableEntries, range, {
         activeSourceStationId: aqiSourceId,
         loadToken: token,
@@ -18940,6 +19001,65 @@
       .style("font-size", "0.95rem")
       .style("font-weight", "700")
       .text(message || "");
+  }
+
+  function getNoHistoryChartMessage(sensorCount = 1) {
+    return sensorCount > 1
+      ? "No chart data is available for these sensors in the selected range"
+      : "No chart data is available for this sensor in the selected range";
+  }
+
+  function renderNoHistoryChartMessage(dom, message) {
+    const cf = dom?.chartFrame;
+    if (!cf?.svgEl || !message) return;
+    const svg = d3.select(cf.svgEl);
+    if (cf.emptyStateGroup?.remove) {
+      cf.emptyStateGroup.remove();
+    }
+    const group = svg.append("g")
+      .attr("class", "chart-empty-state")
+      .style("pointer-events", "none");
+    const plotLeft = cf.margin.left;
+    const plotRight = cf.width - cf.margin.right;
+    const plotTop = cf.margin.top;
+    const plotBottom = cf.height - cf.margin.bottom;
+    const centerX = (plotLeft + plotRight) / 2;
+    const centerY = (plotTop + plotBottom) / 2;
+    const text = group.append("text")
+      .attr("x", centerX)
+      .attr("y", centerY)
+      .attr("text-anchor", "middle")
+      .attr("fill", "rgba(20, 34, 37, 0.72)")
+      .style("font-size", "1.2rem")
+      .style("font-weight", "700")
+      .style("letter-spacing", "0.01em");
+    const maxWidth = Math.max(180, Math.min(plotRight - plotLeft - 24, cf.width * 0.72));
+    const words = String(message).trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    const lines = [];
+    let current = [];
+    const measureCurrent = () => {
+      text.text(current.join(" "));
+      return text.node()?.getComputedTextLength?.() || 0;
+    };
+    words.forEach((word) => {
+      current.push(word);
+      if (measureCurrent() > maxWidth && current.length > 1) {
+        current.pop();
+        lines.push(current.join(" "));
+        current = [word];
+      }
+    });
+    if (current.length) lines.push(current.join(" "));
+    text.text(null);
+    const lineHeight = 1.25;
+    lines.forEach((line, index) => {
+      text.append("tspan")
+        .attr("x", centerX)
+        .attr("dy", index === 0 ? `${-(lines.length - 1) * lineHeight / 2}em` : `${lineHeight}em`)
+        .text(line);
+    });
+    cf.emptyStateGroup = group;
   }
 
   function renderAqiBands(svg, aqiPoints, frame, xScale, options = {}) {
@@ -19228,12 +19348,18 @@
       currentAqiLoading: false,
       currentAqiSourceSymbolIndex: -1,
       hoveredSeriesIndex: null,
+      emptyStateGroup: null,
     };
   }
 
   function updateChart(dom, seriesPointsMap, usableEntries, range, guideline, units, aqiPoints, renderOptions = {}) {
     const cf = dom.chartFrame;
     if (!cf) return;
+
+    if (cf.emptyStateGroup?.remove) {
+      cf.emptyStateGroup.remove();
+      cf.emptyStateGroup = null;
+    }
 
     // Cancel any running domain animation — we now have real data.
     if (cf.animFrameId != null) {
