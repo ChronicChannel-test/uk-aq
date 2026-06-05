@@ -17583,6 +17583,52 @@
     return [];
   }
 
+  function parseAqiDelimitedText(text) {
+    const rawText = String(text || "").replace(/^\uFEFF/, "").trim();
+    if (!rawText) return { rows: [], columns: [], dataFormat: "text" };
+    const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) return { rows: [], columns: [], dataFormat: "text" };
+    const header = lines[0];
+    const delimiter = header.includes("\t")
+      ? "\t"
+      : header.includes(",")
+        ? ","
+        : null;
+    if (!delimiter) {
+      return { rows: [], columns: [], dataFormat: "text" };
+    }
+    const columns = header.split(delimiter).map((column) => column.trim());
+    const rows = lines.slice(1).map((line) => {
+      const cells = line.split(delimiter);
+      const row = {};
+      columns.forEach((column, index) => {
+        row[column] = index < cells.length ? cells[index].trim() : "";
+      });
+      return row;
+    });
+    return { rows, columns, dataFormat: "text" };
+  }
+
+  function parseAqiHistoryResponseBody(body) {
+    if (body && typeof body === "object" && !Array.isArray(body)) {
+      return body;
+    }
+    const text = String(body || "").trim();
+    if (!text) return { points: [] };
+    if (text.startsWith("{") || text.startsWith("[")) {
+      try {
+        return JSON.parse(text);
+      } catch (_err) {
+        // Fall through to delimited text parsing.
+      }
+    }
+    const textPayload = parseAqiDelimitedText(text);
+    if (textPayload.rows.length) {
+      return textPayload;
+    }
+    return { points: [] };
+  }
+
   function normalizeAqiHistoryResponseMeta(payload, requestMeta = {}) {
     const meta = payload?.meta || {};
     const pointCount = Array.isArray(requestMeta?.points) ? requestMeta.points.length : getAqiPayloadRows(payload).length;
@@ -17598,6 +17644,7 @@
       row_count: Number.isFinite(Number(rowCountValue)) ? Number(rowCountValue) : null,
       point_count: Number.isFinite(Number(pointCount)) ? Number(pointCount) : null,
       data_format: payload?.data_format || meta?.data_format || null,
+      wire_format: payload?.wire_format || meta?.wire_format || requestMeta?.wireFormat || null,
       cache_status: payload?.cache_status || meta?.cache_status || null,
       http_status: Number.isFinite(Number(requestMeta?.httpStatus)) ? Number(requestMeta.httpStatus) : null,
       query_from_utc: payload?.query_from_utc || meta?.query_from_utc || requestMeta?.fromIso || null,
@@ -17622,6 +17669,7 @@
       row_count: normalizedMeta.row_count,
       point_count: normalizedMeta.point_count,
       data_format: normalizedMeta.data_format,
+      wire_format: normalizedMeta.wire_format,
       cache_status: normalizedMeta.cache_status,
       http_status: normalizedMeta.http_status,
     });
@@ -18203,7 +18251,12 @@
     const cacheFetch = getCacheFetch();
     const response = cacheFetch ? await cacheFetch(url, init) : await fetch(url, init);
     if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
-    return { status: response.status, payload: await response.json() };
+    const contentType = response.headers.get("content-type") || "";
+    return {
+      status: response.status,
+      contentType,
+      body: await response.text(),
+    };
   }
 
   async function fetchObservationSeriesChunk(entry, chunk, signal) {
@@ -18344,7 +18397,9 @@
     const candidates = buildAqiHistoryRequestCandidates(entry, pollutantKey, range);
     for (const url of candidates) {
       try {
-        const { status, payload } = await fetchAqiHistoryPayload(url);
+        const { status, contentType, body } = await fetchAqiHistoryPayload(url);
+        const payload = parseAqiHistoryResponseBody(body);
+        const wireFormat = payload?.data_format || body?.data_format || (String(contentType).includes("json") ? "json" : "text");
         const points = parseAqiBandPayload(payload, pollutantKey);
         if (isAqiHistoryDebugEnabled()) {
           logAqiHistoryDebugMeta("fetch-success", url, payload, {
@@ -18353,6 +18408,7 @@
             fromIso: range?.startIso || null,
             toIso: range?.endIso || null,
             httpStatus: status,
+            wireFormat,
           }, points);
         }
         return {
@@ -18363,6 +18419,7 @@
             fromIso: range?.startIso || null,
             toIso: range?.endIso || null,
             httpStatus: status,
+            wireFormat,
             points,
           }),
         };
