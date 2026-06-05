@@ -29,6 +29,13 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - `setMapLoading(true)` adds `.map-wrap.is-loading` to dim the SVG during data refresh.
 - `setMapLoading(false)` clears the dim after render.
 
+## Chart-mode AQI bands
+- `hex_map.html` requests AQI history from the configured cache/AQI-history bases using `scope=timeseries`, `grain=hourly`, `timeseries_id`, `entity`, `pollutant`, `from_utc`, `to_utc`, and `row_limit`.
+- AQI responses are parsed more defensively: pollutant-specific DAQI/EAQI fields are preferred, but generic `daqi_index_level` and `eaqi_index_level` fields are accepted as fallbacks.
+- AQI cache coverage is only advanced when the response is usable. Empty responses can still mark a range as covered if the worker says `response_complete=true`; malformed or incomplete responses do not.
+- The chart no longer reuses stale `currentAqiPoints` when a new AQI fetch comes back empty.
+- Add `?debug_aqi=1` to the page URL to log AQI-history candidate URLs, response metadata, and parsed point counts in the browser console.
+
 ## Pollutant caching
 - `pollutantCache` stores latest rows per pollutant with a short TTL (`POLLUTANT_CACHE_TTL`).
 - `applyCachedPollutant()` allows instant switching if data is fresh.

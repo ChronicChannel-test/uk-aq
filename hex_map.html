@@ -17193,7 +17193,7 @@
   // value: { points: Point[], guideline: object|null, coveredRanges: [{startMs,endMs}] }
   const seriesDataCache = new Map();
   // key: `${timeseriesId}|${pollutantKey}`
-  // value: { points: AqiPoint[], coveredRanges: [{startMs,endMs}] }
+  // value: { points: AqiPoint[], coveredRanges: [{startMs,endMs}], lastResponseMeta: object|null }
   const aqiBandCache    = new Map();
 
   function collectChartDom(prefix) {
@@ -17571,6 +17571,67 @@
     return Number.isFinite(numeric) && numeric > 0 ? Math.trunc(numeric) : null;
   }
 
+  function isAqiHistoryDebugEnabled() {
+    return params.get("debug_aqi") === "1";
+  }
+
+  function getAqiPayloadRows(payload) {
+    if (Array.isArray(payload?.points)) return payload.points;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.rows)) return payload.rows;
+    if (Array.isArray(payload?.result?.points)) return payload.result.points;
+    return [];
+  }
+
+  function normalizeAqiHistoryResponseMeta(payload, requestMeta = {}) {
+    const meta = payload?.meta || {};
+    const pointCount = Array.isArray(requestMeta?.points) ? requestMeta.points.length : getAqiPayloadRows(payload).length;
+    const responseComplete = Object.prototype.hasOwnProperty.call(payload || {}, "response_complete")
+      ? payload.response_complete
+      : Object.prototype.hasOwnProperty.call(meta, "response_complete")
+        ? meta.response_complete
+        : null;
+    const rowCountValue = payload?.row_count ?? meta?.row_count ?? null;
+    return {
+      source: payload?.source || meta?.source || null,
+      response_complete: responseComplete,
+      row_count: Number.isFinite(Number(rowCountValue)) ? Number(rowCountValue) : null,
+      point_count: Number.isFinite(Number(pointCount)) ? Number(pointCount) : null,
+      data_format: payload?.data_format || meta?.data_format || null,
+      cache_status: payload?.cache_status || meta?.cache_status || null,
+      http_status: Number.isFinite(Number(requestMeta?.httpStatus)) ? Number(requestMeta.httpStatus) : null,
+      query_from_utc: payload?.query_from_utc || meta?.query_from_utc || requestMeta?.fromIso || null,
+      query_to_utc: payload?.query_to_utc || meta?.query_to_utc || requestMeta?.toIso || null,
+      timeseries_id: payload?.timeseries_id || meta?.timeseries_id || requestMeta?.timeseriesId || null,
+      entity_id: payload?.entity_id || meta?.entity_id || requestMeta?.timeseriesId || null,
+      pollutant: payload?.pollutant || meta?.pollutant || requestMeta?.pollutantKey || null,
+    };
+  }
+
+  function logAqiHistoryDebugMeta(stage, url, payload, requestMeta, points) {
+    if (!isAqiHistoryDebugEnabled()) return;
+    const normalizedMeta = normalizeAqiHistoryResponseMeta(payload, { ...requestMeta, points });
+    console.debug("[uk-aq aqi-history]", stage, {
+      url,
+      timeseries_id: normalizedMeta.timeseries_id,
+      pollutant: normalizedMeta.pollutant,
+      query_from_utc: normalizedMeta.query_from_utc,
+      query_to_utc: normalizedMeta.query_to_utc,
+      source: normalizedMeta.source,
+      response_complete: normalizedMeta.response_complete,
+      row_count: normalizedMeta.row_count,
+      point_count: normalizedMeta.point_count,
+      data_format: normalizedMeta.data_format,
+      cache_status: normalizedMeta.cache_status,
+      http_status: normalizedMeta.http_status,
+    });
+  }
+
+  function shouldMarkAqiHistoryRangeCovered(payload, points) {
+    if (Array.isArray(points) && points.length > 0) return true;
+    return normalizeAqiHistoryResponseMeta(payload, { points }).response_complete === true;
+  }
+
   function parseObservationNumericValue(rawValue) {
     if (rawValue === null || rawValue === undefined) return Number.NaN;
     if (typeof rawValue === "string") {
@@ -17668,9 +17729,13 @@
     const periodStartIndex = columns.indexOf("period_start_utc");
     const timestampHourIndex = columns.indexOf("timestamp_hour_utc");
     const observedAtIndex = columns.indexOf("observed_at");
-    const daqiIndex = columns.indexOf(mapping.daqiField);
-    const eaqiIndex = columns.indexOf(mapping.eaqiField);
-    const rawPoints = Array.isArray(payload?.points) ? payload.points : Array.isArray(payload?.data) ? payload.data : [];
+    const daqiIndex = [mapping.daqiField, "daqi_index_level", "daqi"]
+      .map((field) => columns.indexOf(field))
+      .find((index) => index >= 0);
+    const eaqiIndex = [mapping.eaqiField, "eaqi_index_level", "eaqi"]
+      .map((field) => columns.indexOf(field))
+      .find((index) => index >= 0);
+    const rawPoints = getAqiPayloadRows(payload);
     return rawPoints.map((row) => {
       if (dataFormat === "compact" && Array.isArray(row)) {
         const observedAt = periodStartIndex >= 0 ? row[periodStartIndex] : timestampHourIndex >= 0 ? row[timestampHourIndex] : observedAtIndex >= 0 ? row[observedAtIndex] : row[0];
@@ -17682,8 +17747,14 @@
       }
       return {
         date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
-        daqi: normalizeAqiBandLevel(row?.[mapping.daqiField], false),
-        eaqi: normalizeAqiBandLevel(row?.[mapping.eaqiField], true),
+        daqi: normalizeAqiBandLevel(
+          row?.[mapping.daqiField] ?? row?.daqi_index_level ?? row?.daqi,
+          false,
+        ),
+        eaqi: normalizeAqiBandLevel(
+          row?.[mapping.eaqiField] ?? row?.eaqi_index_level ?? row?.eaqi,
+          true,
+        ),
       };
     }).filter((row) => Number.isFinite(row.date?.getTime()) && (row.daqi !== null || row.eaqi !== null))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -18127,12 +18198,12 @@
     return typeof window.ukAqFetchCacheApi === "function" ? window.ukAqFetchCacheApi : null;
   }
 
-  async function fetchChartJson(url) {
+  async function fetchAqiHistoryPayload(url) {
     const init = { credentials: "include", headers: { Accept: "application/json" } };
     const cacheFetch = getCacheFetch();
     const response = cacheFetch ? await cacheFetch(url, init) : await fetch(url, init);
     if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
-    return response.json();
+    return { status: response.status, payload: await response.json() };
   }
 
   async function fetchObservationSeriesChunk(entry, chunk, signal) {
@@ -18273,11 +18344,42 @@
     const candidates = buildAqiHistoryRequestCandidates(entry, pollutantKey, range);
     for (const url of candidates) {
       try {
-        return parseAqiBandPayload(await fetchChartJson(url), pollutantKey);
-      } catch (_err) {
+        const { status, payload } = await fetchAqiHistoryPayload(url);
+        const points = parseAqiBandPayload(payload, pollutantKey);
+        if (isAqiHistoryDebugEnabled()) {
+          logAqiHistoryDebugMeta("fetch-success", url, payload, {
+            timeseriesId: entry?.timeseriesId || null,
+            pollutantKey,
+            fromIso: range?.startIso || null,
+            toIso: range?.endIso || null,
+            httpStatus: status,
+          }, points);
+        }
+        return {
+          points,
+          meta: normalizeAqiHistoryResponseMeta(payload, {
+            timeseriesId: entry?.timeseriesId || null,
+            pollutantKey,
+            fromIso: range?.startIso || null,
+            toIso: range?.endIso || null,
+            httpStatus: status,
+            points,
+          }),
+        };
+      } catch (error) {
+        if (isAqiHistoryDebugEnabled()) {
+          console.debug("[uk-aq aqi-history]", "fetch-failed", {
+            url,
+            timeseries_id: entry?.timeseriesId || null,
+            pollutant: pollutantKey,
+            query_from_utc: range?.startIso || null,
+            query_to_utc: range?.endIso || null,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     }
-    return [];
+    return { points: [], meta: null };
   }
 
   async function prefetchAqiBandsForEntries(entries, range, options = {}) {
@@ -18303,6 +18405,7 @@
         continue;
       }
       const newlyFetched = [];
+      let lastResponseMeta = cacheRecord.lastResponseMeta || null;
       for (const missing of missingRanges) {
         if (!shouldContinue()) return;
         const missingRange = {
@@ -18313,11 +18416,16 @@
           startIso: new Date(missing.startMs).toISOString(),
           endIso: new Date(missing.endMs).toISOString(),
         };
-        const points = await fetchAqiBands(entry, pollutantKey, missingRange);
-        newlyFetched.push(...(Array.isArray(points) ? points : []));
-        cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, missing.startMs, missing.endMs);
+        const result = await fetchAqiBands(entry, pollutantKey, missingRange);
+        const points = Array.isArray(result?.points) ? result.points : [];
+        newlyFetched.push(...points);
+        lastResponseMeta = result?.meta || lastResponseMeta;
+        if (shouldMarkAqiHistoryRangeCovered(result?.meta || null, points)) {
+          cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, missing.startMs, missing.endMs);
+        }
       }
       cacheRecord.points = mergeSeriesPoints(cacheRecord.points, newlyFetched);
+      cacheRecord.lastResponseMeta = lastResponseMeta;
       aqiBandCache.set(aqiCacheKey, cacheRecord);
     }
   }
@@ -18494,13 +18602,7 @@
         if (!Array.isArray(aqiCacheRecord.points)) aqiCacheRecord.points = [];
         aqiCacheRecord.coveredRanges = normalizeCoveredRanges(aqiCacheRecord.coveredRanges);
       }
-      const existingAqiOnFrame = Array.isArray(dom.chartFrame?.currentAqiPoints)
-        ? dom.chartFrame.currentAqiPoints
-        : [];
       let aqiPoints = aqiCacheRecord ? getPointsInRange(aqiCacheRecord.points, range) : [];
-      if (!aqiPoints.length && existingAqiOnFrame.length) {
-        aqiPoints = existingAqiOnFrame;
-      }
 
       const aqiMissingRanges = (aqiCacheRecord && primary && pollutantKey)
         ? getMissingRangesForRequest(range, aqiCacheRecord.coveredRanges)
@@ -18547,6 +18649,7 @@
       const aqiProgressPromise = (async () => {
         if (!aqiCacheRecord || !aqiMissingRanges.length) return;
         const newlyFetched = [];
+        let lastResponseMeta = aqiCacheRecord.lastResponseMeta || null;
         for (const missing of aqiMissingRanges) {
           if (token !== state.loadToken || signal.aborted) return;
           const missingRange = {
@@ -18557,11 +18660,16 @@
             startIso: new Date(missing.startMs).toISOString(),
             endIso: new Date(missing.endMs).toISOString(),
           };
-          const points = await fetchAqiBands(primary, pollutantKey, missingRange);
-          newlyFetched.push(...(Array.isArray(points) ? points : []));
-          aqiCacheRecord.coveredRanges = addCoveredRange(aqiCacheRecord.coveredRanges, missing.startMs, missing.endMs);
+          const result = await fetchAqiBands(primary, pollutantKey, missingRange);
+          const points = Array.isArray(result?.points) ? result.points : [];
+          newlyFetched.push(...points);
+          lastResponseMeta = result?.meta || lastResponseMeta;
+          if (shouldMarkAqiHistoryRangeCovered(result?.meta || null, points)) {
+            aqiCacheRecord.coveredRanges = addCoveredRange(aqiCacheRecord.coveredRanges, missing.startMs, missing.endMs);
+          }
         }
         aqiCacheRecord.points = mergeSeriesPoints(aqiCacheRecord.points, newlyFetched);
+        aqiCacheRecord.lastResponseMeta = lastResponseMeta;
         aqiBandCache.set(aqiCacheKey, aqiCacheRecord);
         aqiPoints = getPointsInRange(aqiCacheRecord.points, range);
         aqiLoadingActive = false;
