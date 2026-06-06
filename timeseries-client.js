@@ -63,12 +63,24 @@
     var ingestTailStart = meta.ingest_tail_start || null;
     var hasGap = Object.prototype.hasOwnProperty.call(meta, "has_gap") ? meta.has_gap : null;
     var cacheStatus = meta.cache_status || null;
+    var rowCount = Number(meta.row_count);
+    var r2RowCount = Number(meta.r2_row_count);
+    var ingestRowCount = Number(meta.ingest_row_count);
+    var dedupedRowCount = Number(meta.deduped_row_count);
+    var r2Errors = Array.isArray(meta.r2_errors) ? meta.r2_errors : null;
+    var ingestErrors = Array.isArray(meta.ingest_errors) ? meta.ingest_errors : null;
     return {
       source_mode: sourceMode,
       r2_coverage_end: r2CoverageEnd,
       ingest_tail_start: ingestTailStart,
       has_gap: hasGap,
       cache_status: cacheStatus,
+      row_count: Number.isFinite(rowCount) ? rowCount : null,
+      r2_row_count: Number.isFinite(r2RowCount) ? r2RowCount : null,
+      ingest_row_count: Number.isFinite(ingestRowCount) ? ingestRowCount : null,
+      deduped_row_count: Number.isFinite(dedupedRowCount) ? dedupedRowCount : null,
+      r2_errors: r2Errors,
+      ingest_errors: ingestErrors,
     };
   }
 
