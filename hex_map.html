@@ -18670,7 +18670,9 @@
         };
         const result = await fetchAqiBands(entry, pollutantKey, missingRange);
         const points = Array.isArray(result?.points) ? result.points : [];
-        newlyFetched.push(...points);
+      for (let i = 0; i < points.length; i++) {
+        newlyFetched.push(points[i]);
+      }
         lastResponseMeta = result?.meta || lastResponseMeta;
         if (shouldMarkAqiHistoryRangeCovered(result?.meta || null, points)) {
           cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, missing.startMs, missing.endMs);
@@ -18693,14 +18695,26 @@
   }
 
   function computeYDomainNiced(seriesPointsMap, usableEntries, guideline) {
-    const allPoints = [];
-    usableEntries.forEach((e) => allPoints.push(...(seriesPointsMap.get(e.stationId) || [])));
-    const yExtent = d3.extent(allPoints, (p) => p.value);
+    let yMin = Infinity;
+    let yMax = -Infinity;
+    let hasAnyPoints = false;
+    usableEntries.forEach((e) => {
+      const points = seriesPointsMap.get(e.stationId) || [];
+      for (let i = 0; i < points.length; i++) {
+        const value = Number(points[i]?.value);
+        if (!Number.isFinite(value)) continue;
+        hasAnyPoints = true;
+        if (value < yMin) yMin = value;
+        if (value > yMax) yMax = value;
+      }
+    });
     const guidelineValue = Number(guideline?.limit_value);
     const hasGuideline = Number.isFinite(guidelineValue);
-    const yMin    = Math.min(0, Number.isFinite(yExtent[0]) ? yExtent[0] : 0, hasGuideline ? guidelineValue : 0);
-    const yMaxRaw = Math.max(Number.isFinite(yExtent[1]) ? yExtent[1] : 1, hasGuideline ? guidelineValue : 1);
-    return d3.scaleLinear().domain([yMin, yMaxRaw === yMin ? yMin + 1 : yMaxRaw]).nice(5).domain();
+    const chartMin = hasAnyPoints && Number.isFinite(yMin) ? yMin : 0;
+    const chartMax = hasAnyPoints && Number.isFinite(yMax) ? yMax : 1;
+    const domainMin = Math.min(0, chartMin, hasGuideline ? guidelineValue : 0);
+    const domainMax = Math.max(chartMax, hasGuideline ? guidelineValue : 1);
+    return d3.scaleLinear().domain([domainMin, domainMax === domainMin ? domainMin + 1 : domainMax]).nice(5).domain();
   }
 
   function animateChartDomains(cf, newRange, newYDomain, token, onComplete) {
@@ -19602,9 +19616,13 @@
     function finalizeSymbols() {
       const guidelineValue = Number(guideline?.limit_value);
       const hasGuideline   = Number.isFinite(guidelineValue);
-      const allPoints = [];
-      usableEntries.forEach((e) => allPoints.push(...(seriesPointsMap.get(e.stationId) || [])));
-      if (hasGuideline && allPoints.length) {
+      let hasAnyPoints = false;
+      usableEntries.forEach((e) => {
+        if (!hasAnyPoints && (seriesPointsMap.get(e.stationId) || []).length) {
+          hasAnyPoints = true;
+        }
+      });
+      if (hasGuideline && hasAnyPoints) {
         const gy = cf.yScale(guidelineValue);
         cf.guidelineEl.style("opacity", 0.85)
           .attr("x1", cf.margin.left).attr("x2", cf.width - cf.margin.right)
