@@ -17624,6 +17624,9 @@
     return params.get("debug_aqi") === "1";
   }
 
+  const AQI_HISTORY_CHUNK_MAX_ATTEMPTS = 3;
+  const AQI_HISTORY_CHUNK_RETRY_DELAY_MS = 250;
+
   function getAqiPayloadRows(payload) {
     if (Array.isArray(payload?.points)) return payload.points;
     if (Array.isArray(payload?.data)) return payload.data;
@@ -17721,6 +17724,54 @@
       wire_format: normalizedMeta.wire_format,
       cache_status: normalizedMeta.cache_status,
       http_status: normalizedMeta.http_status,
+    });
+  }
+
+  function getAqiHistoryErrorStatus(error) {
+    const message = String(error?.message || "");
+    const match = message.match(/^(?:Chart request failed|Session start failed):\s*(\d{3})/i);
+    if (!match) {
+      return null;
+    }
+    const status = Number(match[1]);
+    return Number.isFinite(status) ? status : null;
+  }
+
+  function shouldRetryAqiHistoryError(error) {
+    if (error instanceof TypeError) {
+      return true;
+    }
+    const status = getAqiHistoryErrorStatus(error);
+    if (!Number.isFinite(status)) {
+      return false;
+    }
+    return status === 401
+      || status === 403
+      || status === 408
+      || status === 425
+      || status === 429
+      || status >= 500;
+  }
+
+  function logAqiHistoryChunkFailure(stage, url, payload, requestMeta, error, extra = {}) {
+    const normalizedMeta = normalizeAqiHistoryResponseMeta(payload, requestMeta);
+    console.warn("[uk-aq aqi-history]", stage, {
+      url,
+      timeseries_id: normalizedMeta.timeseries_id,
+      pollutant: normalizedMeta.pollutant,
+      query_from_utc: normalizedMeta.query_from_utc,
+      query_to_utc: normalizedMeta.query_to_utc,
+      source: normalizedMeta.source,
+      response_complete: normalizedMeta.response_complete,
+      row_count: normalizedMeta.row_count,
+      point_count: normalizedMeta.point_count,
+      data_format: normalizedMeta.data_format,
+      wire_format: normalizedMeta.wire_format,
+      cache_status: normalizedMeta.cache_status,
+      http_status: normalizedMeta.http_status,
+      error: error instanceof Error ? error.message : String(error),
+      retryable: shouldRetryAqiHistoryError(error),
+      ...extra,
     });
   }
 
@@ -18494,46 +18545,84 @@
 
   async function fetchAqiBands(entry, pollutantKey, range) {
     const candidates = buildAqiHistoryRequestCandidates(entry, pollutantKey, range);
+    let lastFailure = null;
     for (const url of candidates) {
-      try {
-        const { status, contentType, body } = await fetchAqiHistoryPayload(url);
-        const payload = parseAqiHistoryResponseBody(body);
-        const wireFormat = payload?.data_format || body?.data_format || (String(contentType).includes("json") ? "json" : "text");
-        const points = parseAqiBandPayload(payload, pollutantKey);
-        if (isAqiHistoryDebugEnabled()) {
-          logAqiHistoryDebugMeta("fetch-success", url, payload, {
-            timeseriesId: entry?.timeseriesId || null,
-            pollutantKey,
-            fromIso: range?.startIso || null,
-            toIso: range?.endIso || null,
-            httpStatus: status,
-            wireFormat,
-          }, points);
-        }
-        return {
-          points,
-          meta: normalizeAqiHistoryResponseMeta(payload, {
-            timeseriesId: entry?.timeseriesId || null,
-            pollutantKey,
-            fromIso: range?.startIso || null,
-            toIso: range?.endIso || null,
-            httpStatus: status,
-            wireFormat,
+      let lastError = null;
+      let lastRequestMeta = null;
+      for (let attempt = 1; attempt <= AQI_HISTORY_CHUNK_MAX_ATTEMPTS; attempt++) {
+        try {
+          const { status, contentType, body } = await fetchAqiHistoryPayload(url);
+          const payload = parseAqiHistoryResponseBody(body);
+          const wireFormat = payload?.data_format || body?.data_format || (String(contentType).includes("json") ? "json" : "text");
+          const points = parseAqiBandPayload(payload, pollutantKey);
+          if (isAqiHistoryDebugEnabled()) {
+            logAqiHistoryDebugMeta("fetch-success", url, payload, {
+              timeseriesId: entry?.timeseriesId || null,
+              pollutantKey,
+              fromIso: range?.startIso || null,
+              toIso: range?.endIso || null,
+              httpStatus: status,
+              wireFormat,
+              attempt,
+            }, points);
+          }
+          return {
             points,
-          }),
-        };
-      } catch (error) {
-        if (isAqiHistoryDebugEnabled()) {
-          console.debug("[uk-aq aqi-history]", "fetch-failed", {
-            url,
-            timeseries_id: entry?.timeseriesId || null,
-            pollutant: pollutantKey,
-            query_from_utc: range?.startIso || null,
-            query_to_utc: range?.endIso || null,
-            error: error instanceof Error ? error.message : String(error),
-          });
+            meta: normalizeAqiHistoryResponseMeta(payload, {
+              timeseriesId: entry?.timeseriesId || null,
+              pollutantKey,
+              fromIso: range?.startIso || null,
+              toIso: range?.endIso || null,
+              httpStatus: status,
+              wireFormat,
+              points,
+            }),
+          };
+        } catch (error) {
+          lastError = error;
+          lastRequestMeta = {
+            timeseriesId: entry?.timeseriesId || null,
+            pollutantKey,
+            fromIso: range?.startIso || null,
+            toIso: range?.endIso || null,
+            attempt,
+          };
+          const retryable = shouldRetryAqiHistoryError(error) && attempt < AQI_HISTORY_CHUNK_MAX_ATTEMPTS;
+          if (isAqiHistoryDebugEnabled()) {
+            console.debug("[uk-aq aqi-history]", "fetch-failed", {
+              url,
+              timeseries_id: entry?.timeseriesId || null,
+              pollutant: pollutantKey,
+              query_from_utc: range?.startIso || null,
+              query_to_utc: range?.endIso || null,
+              attempt,
+              max_attempts: AQI_HISTORY_CHUNK_MAX_ATTEMPTS,
+              retryable,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+          if (!retryable) {
+            break;
+          }
+          await delay(AQI_HISTORY_CHUNK_RETRY_DELAY_MS * attempt);
         }
       }
+      if (lastError) {
+        lastFailure = {
+          url,
+          error: lastError,
+          requestMeta: lastRequestMeta,
+        };
+      }
+    }
+    if (lastFailure) {
+      logAqiHistoryChunkFailure("chunk-failed", lastFailure.url || null, null, {
+        ...(lastFailure.requestMeta || {}),
+        fromIso: range?.startIso || null,
+        toIso: range?.endIso || null,
+        attempts: AQI_HISTORY_CHUNK_MAX_ATTEMPTS,
+        candidateCount: candidates.length,
+      }, lastFailure.error);
     }
     return { points: [], meta: null };
   }
