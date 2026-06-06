@@ -17625,7 +17625,13 @@
   }
 
   const AQI_HISTORY_CHUNK_MAX_ATTEMPTS = 3;
-  const AQI_HISTORY_CHUNK_RETRY_DELAY_MS = 250;
+  const AQI_HISTORY_CHUNK_BASE_RETRY_DELAY_MS = 1000;
+  const AQI_HISTORY_CHUNK_RETRY_DELAY_CAP_MS = 8000;
+
+  function getAqiHistoryChunkRetryDelayMs(attempt) {
+    const delayMs = AQI_HISTORY_CHUNK_BASE_RETRY_DELAY_MS * (2 ** Math.max(0, attempt - 1));
+    return Math.min(delayMs, AQI_HISTORY_CHUNK_RETRY_DELAY_CAP_MS);
+  }
 
   function getAqiPayloadRows(payload) {
     if (Array.isArray(payload?.points)) return payload.points;
@@ -18598,13 +18604,14 @@
               attempt,
               max_attempts: AQI_HISTORY_CHUNK_MAX_ATTEMPTS,
               retryable,
+              next_retry_in_ms: retryable ? getAqiHistoryChunkRetryDelayMs(attempt) : null,
               error: error instanceof Error ? error.message : String(error),
             });
           }
           if (!retryable) {
             break;
           }
-          await delay(AQI_HISTORY_CHUNK_RETRY_DELAY_MS * attempt);
+          await delay(getAqiHistoryChunkRetryDelayMs(attempt));
         }
       }
       if (lastError) {
