@@ -7571,6 +7571,7 @@
       let latestPollutant = null;
       let ukRefreshTimer = null;
       let ukWasHidden = true;
+      let ukBootstrapReady = false;
       let populationLookup = new Map();
       let networkInputs = [];
       let networkSelectionMismatch = false;
@@ -8507,6 +8508,9 @@
           ukWasHidden = true;
           return;
         }
+        if (!ukBootstrapReady) {
+          return;
+        }
         startUkRefreshTimer();
         if (ukWasHidden) {
           loadMapData();
@@ -8979,11 +8983,23 @@
             { code: def.code, label: def.label, count: 0 },
           ])
         );
+        const seenStationsByCode = new Map();
         rows.forEach((row) => {
           const seen = new Set();
+          const stationKey = resolveStationKey(row)
+            || `${resolveStationName(row)}::${resolveCoordinatePair(row).lat ?? ""}::${resolveCoordinatePair(row).lon ?? ""}`;
           collectNetworkEntries(row).forEach((entry) => {
             if (!entry.code || seen.has(entry.code)) return;
             seen.add(entry.code);
+            const code = String(entry.code || "").toLowerCase();
+            if (!seenStationsByCode.has(code)) {
+              seenStationsByCode.set(code, new Set());
+            }
+            const seenStations = seenStationsByCode.get(code);
+            if (seenStations.has(stationKey)) {
+              return;
+            }
+            seenStations.add(stationKey);
             if (!byCode.has(entry.code)) {
               byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
             }
@@ -11875,6 +11891,10 @@
           applyStoredNetworkSelection();
           applyNetworkFilters();
         },
+        markBootstrapReady: () => {
+          ukBootstrapReady = true;
+          syncUkPollingOnVisibility();
+        },
         reapplyNetworkFilters: () => {
           applyNetworkFilters();
         },
@@ -12557,6 +12577,7 @@
       let allRegionsFetchPollutant = null;
       let crRefreshTimer = null;
       let crWasHidden = true;
+      let crBootstrapReady = false;
       let populationLookup = new Map();
 	      let networkInputs = [];
 	      let networkSelectionMismatch = false;
@@ -13221,6 +13242,9 @@
           crWasHidden = true;
           return;
         }
+        if (!crBootstrapReady) {
+          return;
+        }
         startCrRefreshTimer();
         if (crWasHidden) {
           loadMapData();
@@ -13635,11 +13659,23 @@
             { code: def.code, label: def.label, count: 0 },
           ])
         );
+        const seenStationsByCode = new Map();
         rows.forEach((row) => {
           const seen = new Set();
+          const stationKey = resolveStationKey(row)
+            || `${resolveStationName(row)}::${resolveCoordinatePair(row).lat ?? ""}::${resolveCoordinatePair(row).lon ?? ""}`;
           collectNetworkEntries(row).forEach((entry) => {
             if (!entry.code || seen.has(entry.code)) return;
             seen.add(entry.code);
+            const code = String(entry.code || "").toLowerCase();
+            if (!seenStationsByCode.has(code)) {
+              seenStationsByCode.set(code, new Set());
+            }
+            const seenStations = seenStationsByCode.get(code);
+            if (seenStations.has(stationKey)) {
+              return;
+            }
+            seenStations.add(stationKey);
             if (!byCode.has(entry.code)) {
               byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
             }
@@ -17082,6 +17118,10 @@
           applyStoredNetworkSelection();
           applyNetworkFilters();
         },
+        markBootstrapReady: () => {
+          crBootstrapReady = true;
+          syncCrPollingOnVisibility();
+        },
         reapplyNetworkFilters: () => {
           applyNetworkFilters();
         },
@@ -19699,6 +19739,11 @@
       void window.ukMap?.ensureSearchDataLoaded?.();
     }
     window.syncToolbar?.(tabKey);
+    if (isUk) {
+      window.ukMap?.markBootstrapReady?.();
+    } else {
+      window.crMap?.markBootstrapReady?.();
+    }
   }
 
   function applyMap(mapValue, options = {}) {
