@@ -7807,29 +7807,36 @@
           throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
         }
         if (!cacheAuthInflight) {
+          const timingId = nextHexMapTimingId();
+          markHexMapTiming(timingId, "cache-session:start");
           cacheAuthInflight = (async () => {
-            const turnstileToken = await getTurnstileToken();
-            const response = await fetch(cacheSessionUrl, {
-              method: "POST",
-              headers: {
-                "Accept": "application/json",
-                "X-UK-AQ-Session-Init": "1",
-                "CF-Turnstile-Token": turnstileToken,
-              },
-              credentials: "include",
-            });
-            if (!response.ok) {
-              throw new Error(`Session start failed: ${response.status}`);
+            try {
+              const turnstileToken = await getTurnstileToken();
+              const response = await fetch(cacheSessionUrl, {
+                method: "POST",
+                headers: {
+                  "Accept": "application/json",
+                  "X-UK-AQ-Session-Init": "1",
+                  "CF-Turnstile-Token": turnstileToken,
+                },
+                credentials: "include",
+              });
+              if (!response.ok) {
+                throw new Error(`Session start failed: ${response.status}`);
+              }
+              const payload = await response.json().catch(() => ({}));
+              const expiresIn = Number(payload?.session_expires_in);
+              cacheAuthToken = "session";
+              cacheAuthTokenExpiresAt = Date.now() + Math.max(
+                30000,
+                Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
+              );
+              writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
+              return cacheAuthToken;
+            } finally {
+              markHexMapTiming(timingId, "cache-session:end");
+              measureHexMapTiming(timingId, "cache-session", "cache-session:start", "cache-session:end");
             }
-            const payload = await response.json().catch(() => ({}));
-            const expiresIn = Number(payload?.session_expires_in);
-            cacheAuthToken = "session";
-            cacheAuthTokenExpiresAt = Date.now() + Math.max(
-              30000,
-              Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
-            );
-            writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
-            return cacheAuthToken;
           })().finally(() => {
             cacheAuthInflight = null;
           });
@@ -7838,6 +7845,9 @@
       }
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
+        const timingId = nextHexMapTimingId();
+        const requestLabel = getHexMapRequestLabel(input);
+        markHexMapTiming(timingId, `fetch:${requestLabel}:start`);
         if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
           try {
             await getCacheAuthToken(false);
@@ -7845,24 +7855,79 @@
             // Fall back to the existing 401 retry flow below.
           }
         }
-        const response = await fetch(input, { ...init, credentials: "include" });
-        if (response.status === 401 && retryOnAuthFailure) {
-          clearCacheAuthToken(false);
-          await getCacheAuthToken(false);
-          let retried = await fetch(input, { ...init, credentials: "include" });
-          if (retried.status !== 401) {
+        try {
+          const response = await fetch(input, { ...init, credentials: "include" });
+          if (response.status === 401 && retryOnAuthFailure) {
+            clearCacheAuthToken(false);
+            await getCacheAuthToken(false);
+            let retried = await fetch(input, { ...init, credentials: "include" });
+            if (retried.status !== 401) {
+              return retried;
+            }
+            clearCacheAuthToken();
+            await getCacheAuthToken(true);
+            retried = await fetch(input, { ...init, credentials: "include" });
             return retried;
           }
-          clearCacheAuthToken();
-          await getCacheAuthToken(true);
-          retried = await fetch(input, { ...init, credentials: "include" });
-          return retried;
+          return response;
+        } finally {
+          markHexMapTiming(timingId, `fetch:${requestLabel}:end`);
+          measureHexMapTiming(
+            timingId,
+            `fetch:${requestLabel}`,
+            `fetch:${requestLabel}:start`,
+            `fetch:${requestLabel}:end`,
+          );
         }
-        return response;
       }
       window.ukAqFetchCacheApi = fetchCacheApi;
 
       const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
+      const HEX_MAP_TIMING_PREFIX = "uk-aq-hex-map";
+      const MAP_TIMING_KEY = "uk";
+      let hexMapTimingSequence = 0;
+
+      function nextHexMapTimingId() {
+        hexMapTimingSequence += 1;
+        return hexMapTimingSequence;
+      }
+
+      function getHexMapTimingMarkName(timingId, stage) {
+        return `${HEX_MAP_TIMING_PREFIX}:${MAP_TIMING_KEY}:${timingId}:${stage}`;
+      }
+
+      function getHexMapRequestLabel(input) {
+        try {
+          const requestUrl = input instanceof Request
+            ? new URL(input.url)
+            : new URL(String(input), window.location.href);
+          return requestUrl.pathname.replace(/^\/+/, "").replace(/\//g, ":") || "request";
+        } catch (_err) {
+          return "request";
+        }
+      }
+
+      function markHexMapTiming(timingId, stage) {
+        if (typeof performance === "undefined" || typeof performance.mark !== "function") {
+          return;
+        }
+        performance.mark(getHexMapTimingMarkName(timingId, stage));
+      }
+
+      function measureHexMapTiming(timingId, measureName, startStage, endStage) {
+        if (typeof performance === "undefined" || typeof performance.measure !== "function") {
+          return;
+        }
+        try {
+          performance.measure(
+            `${HEX_MAP_TIMING_PREFIX}:${MAP_TIMING_KEY}:${timingId}:${measureName}`,
+            getHexMapTimingMarkName(timingId, startStage),
+            getHexMapTimingMarkName(timingId, endStage),
+          );
+        } catch (_err) {
+          // Ignore missing-mark errors when a load aborts before completion.
+        }
+      }
 
       function isLikelyAccessFetchFailure(error) {
         if (!(error instanceof TypeError)) {
@@ -11158,10 +11223,12 @@
         const requestPollutant = activePollutant;
         const requestWindow = currentWindow;
         const requestId = ++latestLoadId;
+        const timingId = nextHexMapTimingId();
         const isStale = () =>
           requestId !== latestLoadId
           || requestPollutant !== activePollutant
           || requestWindow !== currentWindow;
+        markHexMapTiming(timingId, "load:start");
         setStatus("Loading...");
         setMapLoading(true);
         if (errorEl) {
@@ -11288,6 +11355,8 @@
             : new Map();
           prepareHexGrid();
           renderMapIfReady();
+          markHexMapTiming(timingId, "geometry-ready");
+          measureHexMapTiming(timingId, "load-to-geometry-ready", "load:start", "geometry-ready");
           requestAnimationFrame(() => {
             if (!isStale()) {
               renderMapIfReady();
@@ -11463,7 +11532,11 @@
             populationLookup = new Map();
           }
           applyNetworkFilters();
+          markHexMapTiming(timingId, "colored-ready");
+          measureHexMapTiming(timingId, "load-to-colored-ready", "load:start", "colored-ready");
           setStatus("Live");
+          markHexMapTiming(timingId, "load-complete");
+          measureHexMapTiming(timingId, "load-total", "load:start", "load-complete");
         } catch (error) {
           if (isStale()) {
             return;
@@ -12820,30 +12893,37 @@
 	        if (!cacheSessionUrl) {
 	          throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
 	        }
-		        if (!cacheAuthInflight) {
-		          cacheAuthInflight = (async () => {
-		            const turnstileToken = await getTurnstileToken();
-		            const response = await fetch(cacheSessionUrl, {
-		              method: "POST",
-		              headers: {
-		                "Accept": "application/json",
-		                "X-UK-AQ-Session-Init": "1",
-		                "CF-Turnstile-Token": turnstileToken,
-		              },
-		              credentials: "include",
-		            });
-	            if (!response.ok) {
-	              throw new Error(`Session start failed: ${response.status}`);
+	        if (!cacheAuthInflight) {
+	          const timingId = nextHexMapTimingId();
+	          markHexMapTiming(timingId, "cache-session:start");
+	          cacheAuthInflight = (async () => {
+	            try {
+	              const turnstileToken = await getTurnstileToken();
+	              const response = await fetch(cacheSessionUrl, {
+	                method: "POST",
+	                headers: {
+	                  "Accept": "application/json",
+	                  "X-UK-AQ-Session-Init": "1",
+	                  "CF-Turnstile-Token": turnstileToken,
+	                },
+	                credentials: "include",
+	              });
+	              if (!response.ok) {
+	                throw new Error(`Session start failed: ${response.status}`);
+	              }
+	              const payload = await response.json().catch(() => ({}));
+	              const expiresIn = Number(payload?.session_expires_in);
+	              cacheAuthToken = "session";
+	              cacheAuthTokenExpiresAt = Date.now() + Math.max(
+	                30000,
+	                Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
+	              );
+	              writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
+	              return cacheAuthToken;
+	            } finally {
+	              markHexMapTiming(timingId, "cache-session:end");
+	              measureHexMapTiming(timingId, "cache-session", "cache-session:start", "cache-session:end");
 	            }
-	            const payload = await response.json().catch(() => ({}));
-	            const expiresIn = Number(payload?.session_expires_in);
-	            cacheAuthToken = "session";
-	            cacheAuthTokenExpiresAt = Date.now() + Math.max(
-	              30000,
-	              Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
-	            );
-	            writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
-	            return cacheAuthToken;
 	          })().finally(() => {
 	            cacheAuthInflight = null;
 	          });
@@ -12852,6 +12932,9 @@
 	      }
 
 	      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
+	        const timingId = nextHexMapTimingId();
+	        const requestLabel = getHexMapRequestLabel(input);
+	        markHexMapTiming(timingId, `fetch:${requestLabel}:start`);
 	        if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
 	          try {
 	            await getCacheAuthToken(false);
@@ -12859,29 +12942,84 @@
 	            // Fall back to the existing 401 retry flow below.
 	          }
 	        }
-	        const response = await fetch(input, { ...init, credentials: "include" });
-	        if (response.status === 401 && retryOnAuthFailure) {
-	          clearCacheAuthToken(false);
-	          await getCacheAuthToken(false);
-	          let retried = await fetch(input, { ...init, credentials: "include" });
-	          if (retried.status !== 401) {
+	        try {
+	          const response = await fetch(input, { ...init, credentials: "include" });
+	          if (response.status === 401 && retryOnAuthFailure) {
+	            clearCacheAuthToken(false);
+	            await getCacheAuthToken(false);
+	            let retried = await fetch(input, { ...init, credentials: "include" });
+	            if (retried.status !== 401) {
+	              return retried;
+	            }
+	            clearCacheAuthToken();
+	            await getCacheAuthToken(true);
+	            retried = await fetch(input, { ...init, credentials: "include" });
 	            return retried;
 	          }
-	          clearCacheAuthToken();
-	          await getCacheAuthToken(true);
-	          retried = await fetch(input, { ...init, credentials: "include" });
-	          return retried;
+	          return response;
+	        } finally {
+	          markHexMapTiming(timingId, `fetch:${requestLabel}:end`);
+	          measureHexMapTiming(
+	            timingId,
+	            `fetch:${requestLabel}`,
+	            `fetch:${requestLabel}:start`,
+	            `fetch:${requestLabel}:end`,
+	          );
 	        }
-	        return response;
 	      }
-	      window.ukAqFetchCacheApi = fetchCacheApi;
+      window.ukAqFetchCacheApi = fetchCacheApi;
 
-	      const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
+      const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
+      const HEX_MAP_TIMING_PREFIX = "uk-aq-hex-map";
+      const MAP_TIMING_KEY = "cr";
+      let hexMapTimingSequence = 0;
 
-	      function isLikelyAccessFetchFailure(error) {
-	        if (!(error instanceof TypeError)) {
-	          return false;
-	        }
+      function nextHexMapTimingId() {
+        hexMapTimingSequence += 1;
+        return hexMapTimingSequence;
+      }
+
+      function getHexMapTimingMarkName(timingId, stage) {
+        return `${HEX_MAP_TIMING_PREFIX}:${MAP_TIMING_KEY}:${timingId}:${stage}`;
+      }
+
+      function getHexMapRequestLabel(input) {
+        try {
+          const requestUrl = input instanceof Request
+            ? new URL(input.url)
+            : new URL(String(input), window.location.href);
+          return requestUrl.pathname.replace(/^\/+/, "").replace(/\//g, ":") || "request";
+        } catch (_err) {
+          return "request";
+        }
+      }
+
+      function markHexMapTiming(timingId, stage) {
+        if (typeof performance === "undefined" || typeof performance.mark !== "function") {
+          return;
+        }
+        performance.mark(getHexMapTimingMarkName(timingId, stage));
+      }
+
+      function measureHexMapTiming(timingId, measureName, startStage, endStage) {
+        if (typeof performance === "undefined" || typeof performance.measure !== "function") {
+          return;
+        }
+        try {
+          performance.measure(
+            `${HEX_MAP_TIMING_PREFIX}:${MAP_TIMING_KEY}:${timingId}:${measureName}`,
+            getHexMapTimingMarkName(timingId, startStage),
+            getHexMapTimingMarkName(timingId, endStage),
+          );
+        } catch (_err) {
+          // Ignore missing-mark errors when a load aborts before completion.
+        }
+      }
+
+      function isLikelyAccessFetchFailure(error) {
+        if (!(error instanceof TypeError)) {
+          return false;
+        }
 	        const message = String(error.message || "").toLowerCase();
 	        return message.includes("failed to fetch") || message.includes("networkerror");
 	      }
@@ -16286,11 +16424,13 @@
         const requestWindow = currentWindow;
         const requestRegion = activeRegion;
         const requestId = ++latestLoadId;
+        const timingId = nextHexMapTimingId();
         const isStale = () =>
           requestId !== latestLoadId
           || requestPollutant !== activePollutant
           || requestWindow !== currentWindow
           || requestRegion !== activeRegion;
+        markHexMapTiming(timingId, "load:start");
         setStatus("Loading...");
         setMapLoading(true);
         if (errorEl) {
@@ -16419,6 +16559,8 @@
           hexData = await hexResponse.json();
           prepareHexGrid();
           renderMapIfReady();
+          markHexMapTiming(timingId, "geometry-ready");
+          measureHexMapTiming(timingId, "load-to-geometry-ready", "load:start", "geometry-ready");
           requestAnimationFrame(() => {
             if (!isStale()) {
               renderMapIfReady();
@@ -16647,12 +16789,16 @@
               lastUpdated.textContent = "Boundary only (no sensor data yet)";
             }
           }
+          markHexMapTiming(timingId, "colored-ready");
+          measureHexMapTiming(timingId, "load-to-colored-ready", "load:start", "colored-ready");
 	          if (isStale()) {
 	            return;
 	          }
 	          applyNetworkFilters();
 	          applyPendingAreaSelection();
 	          setStatus("Live");
+          markHexMapTiming(timingId, "load-complete");
+          measureHexMapTiming(timingId, "load-total", "load:start", "load-complete");
         } catch (error) {
           if (isStale()) {
             return;

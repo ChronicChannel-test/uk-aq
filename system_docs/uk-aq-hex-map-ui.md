@@ -28,6 +28,9 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 ## Loading/dimming behavior
 - `setMapLoading(true)` adds `.map-wrap.is-loading` to dim the SVG during data refresh.
 - `setMapLoading(false)` clears the dim after render.
+- Hex-map performance timing marks are emitted with the `uk-aq-hex-map` prefix.
+- The most useful spans are `load:start`, `geometry-ready`, `colored-ready`, and `load-complete`.
+- Cache auth and request spans are also marked, including `cache-session` and `fetch:<path>` entries such as `fetch:api:aq:pcon-hex`.
 
 ## Chart-mode AQI bands
 - `hex_map.html` requests AQI history from the configured cache/AQI-history bases using `scope=timeseries`, `grain=hourly`, `timeseries_id`, `entity`, `pollutant`, `from_utc`, `to_utc`, and `row_limit`.
