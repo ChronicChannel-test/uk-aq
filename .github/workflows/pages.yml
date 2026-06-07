@@ -27,12 +27,18 @@ jobs:
         with:
           node-version: 20
 
+      - name: Verify AQI history base secret
+        run: test -n "${UK_AQ_AQI_HISTORY_BASE_URL}"
+        env:
+          UK_AQ_AQI_HISTORY_BASE_URL: ${{ secrets.UK_AQ_AQI_HISTORY_BASE_URL }}
+
       - name: Inject Supabase config
         run: node scripts/uk_aq_inject_project_ref.mjs
         env:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SB_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SB_PUBLISHABLE_DEFAULT_KEY }}
           UK_AQ_TURNSTILE_SITE_KEY: ${{ secrets.UK_AQ_TURNSTILE_SITE_KEY }}
+          UK_AQ_AQI_HISTORY_BASE_URL: ${{ secrets.UK_AQ_AQI_HISTORY_BASE_URL }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
