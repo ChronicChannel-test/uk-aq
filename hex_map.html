@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- trigger -->
-<!-- trigger -->
+
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -6964,8 +6964,8 @@
       };
     </script>
     <script>
-      const PROJECT_REF_PLACEHOLDER = "__SUPABASE_PROJECT_REF__";
-      const ANON_KEY_PLACEHOLDER = "__SB_PUBLISHABLE_DEFAULT_KEY__";
+      const PROJECT_REF_PLACEHOLDER = "zztjgmdiftqtdcrlfpvc";
+      const ANON_KEY_PLACEHOLDER = "sb_publishable_Cru7ACLoK8kKQdID5jPaDw_3RHvQNxO";
       const params = new URLSearchParams(window.location.search);
       const projectRefParam = params.get("project_ref");
       const anonKeyParam = params.get("anon_key");
@@ -7037,7 +7037,7 @@
       const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
         ? (anonKeyParam || "")
         : ANON_KEY_PLACEHOLDER;
-      const TURNSTILE_SITE_KEY_PLACEHOLDER = "__UK_AQ_TURNSTILE_SITE_KEY__";
+      const TURNSTILE_SITE_KEY_PLACEHOLDER = "0x4AAAAAACgnR_Sa-RXK0lPJ";
       const turnstileSiteKey = TURNSTILE_SITE_KEY_PLACEHOLDER.includes("__UK_AQ_TURNSTILE_SITE_KEY__")
         ? (turnstileSiteKeyParam || "")
         : (turnstileSiteKeyParam || TURNSTILE_SITE_KEY_PLACEHOLDER);
@@ -12036,8 +12036,8 @@
   const query = (selector) => root.querySelector(selector);
   const queryAll = (selector) => Array.from(root.querySelectorAll(selector));
 
-	      const PROJECT_REF_PLACEHOLDER = "__SUPABASE_PROJECT_REF__";
-	      const ANON_KEY_PLACEHOLDER = "__SB_PUBLISHABLE_DEFAULT_KEY__";
+	      const PROJECT_REF_PLACEHOLDER = "zztjgmdiftqtdcrlfpvc";
+	      const ANON_KEY_PLACEHOLDER = "sb_publishable_Cru7ACLoK8kKQdID5jPaDw_3RHvQNxO";
 		      const params = new URLSearchParams(window.location.search);
 		      const projectRefParam = params.get("project_ref");
 		      const anonKeyParam = params.get("anon_key");
@@ -12072,7 +12072,7 @@
 	      const anonKey = ANON_KEY_PLACEHOLDER.includes("__SB_PUBLISHABLE_DEFAULT_KEY__")
 	        ? (anonKeyParam || "")
 	        : ANON_KEY_PLACEHOLDER;
-	      const TURNSTILE_SITE_KEY_PLACEHOLDER = "__UK_AQ_TURNSTILE_SITE_KEY__";
+	      const TURNSTILE_SITE_KEY_PLACEHOLDER = "0x4AAAAAACgnR_Sa-RXK0lPJ";
 	      const turnstileSiteKey = TURNSTILE_SITE_KEY_PLACEHOLDER.includes("__UK_AQ_TURNSTILE_SITE_KEY__")
 	        ? (turnstileSiteKeyParam || "")
 	        : (turnstileSiteKeyParam || TURNSTILE_SITE_KEY_PLACEHOLDER);
@@ -17355,11 +17355,15 @@
     true
   );
   const aqiHistoryBaseUrl = resolveAqiHistoryBaseUrl(params.get("aqi_history_base"));
+  const AQI_HISTORY_BASE_PLACEHOLDER = "https://cic-test.chronicillnesschannel.co.uk/api/aq/aqi-history";
+  const configuredAqiHistoryBase = AQI_HISTORY_BASE_PLACEHOLDER.includes("__UK_AQ_AQI_HISTORY_BASE_URL__")
+    ? ""
+    : AQI_HISTORY_BASE_PLACEHOLDER;
   const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
   const aqiHistoryBaseCandidates = dedupeStrings([
     aqiHistoryBaseUrl,
     cacheAqiHistoryBase,
-    "__UK_AQ_AQI_HISTORY_BASE_URL__",
+    configuredAqiHistoryBase,
   ]);
 
   const backButton = document.getElementById("chart-back-to-map");
