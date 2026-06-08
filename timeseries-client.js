@@ -61,6 +61,9 @@
     var sourceMode = meta.source_mode || payload.source_mode || payload.source || null;
     var r2CoverageEnd = meta.r2_coverage_end || null;
     var ingestTailStart = meta.ingest_tail_start || null;
+    var sourceSplitBoundaryUtc = meta.source_split_boundary_utc || payload.source_split_boundary_utc || null;
+    var ingestRetentionDays = meta.ingest_retention_days || null;
+    var responseComplete = Object.prototype.hasOwnProperty.call(meta, "response_complete") ? meta.response_complete : null;
     var hasGap = Object.prototype.hasOwnProperty.call(meta, "has_gap") ? meta.has_gap : null;
     var cacheStatus = meta.cache_status || null;
     var rowCount = Number(meta.row_count);
@@ -73,12 +76,16 @@
       source_mode: sourceMode,
       r2_coverage_end: r2CoverageEnd,
       ingest_tail_start: ingestTailStart,
+      source_split_boundary_utc: sourceSplitBoundaryUtc,
+      ingest_retention_days: ingestRetentionDays,
+      response_complete: responseComplete,
       has_gap: hasGap,
       cache_status: cacheStatus,
       row_count: Number.isFinite(rowCount) ? rowCount : null,
       r2_row_count: Number.isFinite(r2RowCount) ? r2RowCount : null,
       ingest_row_count: Number.isFinite(ingestRowCount) ? ingestRowCount : null,
       deduped_row_count: Number.isFinite(dedupedRowCount) ? dedupedRowCount : null,
+      coverage: meta.coverage || null,
       r2_errors: r2Errors,
       ingest_errors: ingestErrors,
     };

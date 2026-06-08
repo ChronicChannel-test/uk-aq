@@ -17775,6 +17775,97 @@
     return params.get("debug_aqi") === "1";
   }
 
+  function isChartDebugEnabled() {
+    return params.get("debug_chart") === "1";
+  }
+
+  function getEntryConnectorId(entry) {
+    const value = entry?.connectorId
+      ?? entry?.connector_id
+      ?? entry?.row?.connector_id
+      ?? entry?.row?.connector?.id
+      ?? entry?.row?.connectorId
+      ?? null;
+    if (value === null || value === undefined || value === "") return null;
+    return String(value).trim() || null;
+  }
+
+  function getEntryStationId(entry) {
+    const value = entry?.stationId
+      ?? entry?.station_id
+      ?? entry?.row?.station_id
+      ?? entry?.row?.station?.id
+      ?? null;
+    if (value === null || value === undefined || value === "") return null;
+    return String(value).trim() || null;
+  }
+
+  function normalizeDebugRanges(ranges = []) {
+    return (Array.isArray(ranges) ? ranges : [])
+      .filter((segment) => Number.isFinite(segment?.startMs) && Number.isFinite(segment?.endMs))
+      .map((segment) => ({
+        start_utc: new Date(segment.startMs).toISOString(),
+        end_utc: new Date(segment.endMs).toISOString(),
+      }));
+  }
+
+  function summarizeParsedGapRanges(points, range, expectedMs = HOUR_MS, maxRanges = 25) {
+    const rangeStart = Number(range?.startMs);
+    const rangeEnd = Number(range?.endMs);
+    if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd) || rangeEnd <= rangeStart) {
+      return { ranges: [], total: 0, truncated: false };
+    }
+    const times = (Array.isArray(points) ? points : [])
+      .map((point) => point?.date?.getTime?.())
+      .filter((timeMs) => Number.isFinite(timeMs) && timeMs >= rangeStart && timeMs <= rangeEnd)
+      .sort((a, b) => a - b);
+    const uniqueTimes = Array.from(new Set(times));
+    const gapRanges = [];
+    const addGap = (startMs, endMs) => {
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return;
+      gapRanges.push({ startMs, endMs });
+    };
+    if (!uniqueTimes.length) {
+      addGap(rangeStart, rangeEnd);
+    } else {
+      if (uniqueTimes[0] - rangeStart > expectedMs * 1.5) {
+        addGap(rangeStart, uniqueTimes[0]);
+      }
+      for (let index = 1; index < uniqueTimes.length; index++) {
+        const previous = uniqueTimes[index - 1];
+        const current = uniqueTimes[index];
+        if (current - previous > expectedMs * 1.5) {
+          addGap(previous + expectedMs, current);
+        }
+      }
+      const last = uniqueTimes[uniqueTimes.length - 1];
+      if (rangeEnd - last > expectedMs * 1.5) {
+        addGap(last + expectedMs, rangeEnd);
+      }
+    }
+    return {
+      ranges: normalizeDebugRanges(gapRanges.slice(0, maxRanges)),
+      total: gapRanges.length,
+      truncated: gapRanges.length > maxRanges,
+    };
+  }
+
+  function getAqiPointCounts(points) {
+    const list = Array.isArray(points) ? points : [];
+    return {
+      parsed_point_count: list.length,
+      daqi_count: list.filter((point) => point?.daqi !== null && point?.daqi !== undefined).length,
+      eaqi_count: list.filter((point) => point?.eaqi !== null && point?.eaqi !== undefined).length,
+    };
+  }
+
+  function getTimeseriesPayloadRows(payload) {
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.points)) return payload.points;
+    if (Array.isArray(payload?.rows)) return payload.rows;
+    return [];
+  }
+
   const AQI_HISTORY_CHUNK_MAX_ATTEMPTS = 3;
   const AQI_HISTORY_CHUNK_BASE_RETRY_DELAY_MS = 1000;
   const AQI_HISTORY_CHUNK_RETRY_DELAY_CAP_MS = 8000;
@@ -17840,18 +17931,26 @@
 
   function normalizeAqiHistoryResponseMeta(payload, requestMeta = {}) {
     const meta = payload?.meta || {};
-    const pointCount = Array.isArray(requestMeta?.points) ? requestMeta.points.length : getAqiPayloadRows(payload).length;
+    const parsedPoints = Array.isArray(requestMeta?.points) ? requestMeta.points : [];
+    const rawRows = getAqiPayloadRows(payload);
+    const pointCount = parsedPoints.length || rawRows.length;
+    const aqiCounts = getAqiPointCounts(parsedPoints);
     const responseComplete = Object.prototype.hasOwnProperty.call(payload || {}, "response_complete")
       ? payload.response_complete
       : Object.prototype.hasOwnProperty.call(meta, "response_complete")
         ? meta.response_complete
         : null;
     const rowCountValue = payload?.row_count ?? meta?.row_count ?? null;
+    const coverage = payload?.coverage || meta?.coverage || null;
     return {
       source: payload?.source || meta?.source || null,
       response_complete: responseComplete,
       row_count: Number.isFinite(Number(rowCountValue)) ? Number(rowCountValue) : null,
+      raw_row_count: rawRows.length,
       point_count: Number.isFinite(Number(pointCount)) ? Number(pointCount) : null,
+      parsed_point_count: aqiCounts.parsed_point_count,
+      daqi_count: Number.isFinite(Number(meta?.daqi_count)) ? Number(meta.daqi_count) : aqiCounts.daqi_count,
+      eaqi_count: Number.isFinite(Number(meta?.eaqi_count)) ? Number(meta.eaqi_count) : aqiCounts.eaqi_count,
       data_format: payload?.data_format || meta?.data_format || null,
       wire_format: payload?.wire_format || meta?.wire_format || requestMeta?.wireFormat || null,
       cache_status: payload?.cache_status || meta?.cache_status || null,
@@ -17860,27 +17959,50 @@
       query_to_utc: payload?.query_to_utc || meta?.query_to_utc || requestMeta?.toIso || null,
       timeseries_id: payload?.timeseries_id || meta?.timeseries_id || requestMeta?.timeseriesId || null,
       entity_id: payload?.entity_id || meta?.entity_id || requestMeta?.timeseriesId || null,
+      station_id: payload?.station_id || meta?.station_id || requestMeta?.stationId || null,
+      connector_id: payload?.connector_id || meta?.connector_id || requestMeta?.connectorId || null,
       pollutant: payload?.pollutant || meta?.pollutant || requestMeta?.pollutantKey || null,
+      source_split_boundary_utc: payload?.source_split_boundary_utc || meta?.source_split_boundary_utc || null,
+      source_of_truth_days: payload?.source_of_truth_days || meta?.source_of_truth_days || coverage?.ingest_retention_days || null,
+      coverage,
     };
   }
 
   function logAqiHistoryDebugMeta(stage, url, payload, requestMeta, points) {
     if (!isAqiHistoryDebugEnabled()) return;
     const normalizedMeta = normalizeAqiHistoryResponseMeta(payload, { ...requestMeta, points });
+    const parsedGapSummary = summarizeParsedGapRanges(points, {
+      startMs: Date.parse(normalizedMeta.query_from_utc || requestMeta?.fromIso || ""),
+      endMs: Date.parse(normalizedMeta.query_to_utc || requestMeta?.toIso || ""),
+    });
     console.debug("[uk-aq aqi-history]", stage, {
       url,
+      selected_aqi_source_station_id: state.selectedAqiSensorId || null,
       timeseries_id: normalizedMeta.timeseries_id,
+      station_id: normalizedMeta.station_id,
+      connector_id: normalizedMeta.connector_id,
       pollutant: normalizedMeta.pollutant,
       query_from_utc: normalizedMeta.query_from_utc,
       query_to_utc: normalizedMeta.query_to_utc,
       source: normalizedMeta.source,
+      source_split_boundary_utc: normalizedMeta.source_split_boundary_utc,
+      source_of_truth_days: normalizedMeta.source_of_truth_days,
       response_complete: normalizedMeta.response_complete,
       row_count: normalizedMeta.row_count,
+      raw_row_count: normalizedMeta.raw_row_count,
       point_count: normalizedMeta.point_count,
+      parsed_point_count: normalizedMeta.parsed_point_count,
+      daqi_count: normalizedMeta.daqi_count,
+      eaqi_count: normalizedMeta.eaqi_count,
+      parsed_gap_ranges: parsedGapSummary.ranges,
+      parsed_gap_range_count: parsedGapSummary.total,
+      parsed_gap_ranges_truncated: parsedGapSummary.truncated,
       data_format: normalizedMeta.data_format,
       wire_format: normalizedMeta.wire_format,
       cache_status: normalizedMeta.cache_status,
       http_status: normalizedMeta.http_status,
+      attempt: requestMeta?.attempt || null,
+      coverage: normalizedMeta.coverage,
     });
   }
 
@@ -17914,7 +18036,10 @@
     const normalizedMeta = normalizeAqiHistoryResponseMeta(payload, requestMeta);
     console.warn("[uk-aq aqi-history]", stage, {
       url,
+      selected_aqi_source_station_id: state.selectedAqiSensorId || null,
       timeseries_id: normalizedMeta.timeseries_id,
+      station_id: normalizedMeta.station_id,
+      connector_id: normalizedMeta.connector_id,
       pollutant: normalizedMeta.pollutant,
       query_from_utc: normalizedMeta.query_from_utc,
       query_to_utc: normalizedMeta.query_to_utc,
@@ -17980,50 +18105,98 @@
       source_mode: meta?.source_mode || payload?.source_mode || null,
       r2_coverage_end: meta?.r2_coverage_end || null,
       ingest_tail_start: meta?.ingest_tail_start || null,
+      source_split_boundary_utc: meta?.source_split_boundary_utc || payload?.source_split_boundary_utc || null,
+      ingest_retention_days: meta?.ingest_retention_days || null,
+      response_complete: Object.prototype.hasOwnProperty.call(meta, "response_complete") ? meta.response_complete : null,
       has_gap: Object.prototype.hasOwnProperty.call(meta, "has_gap") ? meta.has_gap : null,
       cache_status: meta?.cache_status || null,
       row_count: Number.isFinite(rowCount) ? rowCount : null,
       r2_row_count: Number.isFinite(r2RowCount) ? r2RowCount : null,
       ingest_row_count: Number.isFinite(ingestRowCount) ? ingestRowCount : null,
       deduped_row_count: Number.isFinite(dedupedRowCount) ? dedupedRowCount : null,
+      coverage: meta?.coverage || null,
       r2_errors: Array.isArray(meta?.r2_errors) ? meta.r2_errors : null,
       ingest_errors: Array.isArray(meta?.ingest_errors) ? meta.ingest_errors : null,
     };
   }
 
-  function logTimeseriesDebugMeta(contextLabel, payload, entry, chunk) {
+  function logTimeseriesDebugMeta(contextLabel, payload, entry, chunk, requestMeta = {}) {
+    if (!isChartDebugEnabled()) return;
     const meta = normalizeTimeseriesDebugMeta(payload);
     if (!meta) return;
+    const rows = getTimeseriesPayloadRows(payload);
+    const points = Array.isArray(requestMeta?.points) ? requestMeta.points : parseSeriesPayloadPoints(payload);
+    const gapSummary = summarizeParsedGapRanges(points, chunk);
     if (
       meta.source_mode === null &&
       meta.r2_coverage_end === null &&
       meta.ingest_tail_start === null &&
+      meta.source_split_boundary_utc === null &&
+      meta.ingest_retention_days === null &&
       meta.has_gap === null &&
       meta.cache_status === null &&
       meta.row_count === null &&
       meta.r2_row_count === null &&
       meta.ingest_row_count === null &&
       meta.deduped_row_count === null &&
+      !rows.length &&
       (!Array.isArray(meta.r2_errors) || meta.r2_errors.length === 0) &&
       (!Array.isArray(meta.ingest_errors) || meta.ingest_errors.length === 0)
     ) {
       return;
     }
     console.debug("[uk-aq timeseries]", contextLabel, {
+      url: requestMeta?.url || null,
+      selected_chart_identity: {
+        map_key: state.mapKey || null,
+        area_code: state.chartModeAreaCode || null,
+      },
       timeseries_id: entry?.timeseriesId || null,
+      station_id: getEntryStationId(entry),
+      connector_id: getEntryConnectorId(entry) || meta?.coverage?.target_connector_id || meta?.coverage?.connector_id || null,
+      pollutant: entry?.pollutant || getCurrentContext()?.pollutant || null,
       chunk_start: chunk?.startIso || null,
       chunk_end: chunk?.endIso || null,
       source_mode: meta.source_mode,
       r2_coverage_end: meta.r2_coverage_end,
       ingest_tail_start: meta.ingest_tail_start,
+      source_split_boundary_utc: meta.source_split_boundary_utc,
+      ingest_retention_days: meta.ingest_retention_days,
+      response_complete: meta.response_complete,
       has_gap: meta.has_gap,
       cache_status: meta.cache_status,
+      http_status: requestMeta?.httpStatus || null,
       row_count: meta.row_count,
+      raw_row_count: rows.length,
+      parsed_point_count: points.length,
+      parsed_gap_ranges: gapSummary.ranges,
+      parsed_gap_range_count: gapSummary.total,
+      parsed_gap_ranges_truncated: gapSummary.truncated,
       r2_row_count: meta.r2_row_count,
       ingest_row_count: meta.ingest_row_count,
       deduped_row_count: meta.deduped_row_count,
+      coverage: meta.coverage,
       r2_errors: meta.r2_errors,
       ingest_errors: meta.ingest_errors,
+    });
+  }
+
+  function logTimeseriesDebugFailure(stage, entry, chunk, error, requestMeta = {}) {
+    if (!isChartDebugEnabled()) return;
+    console.debug("[uk-aq timeseries]", stage, {
+      url: requestMeta?.url || null,
+      selected_chart_identity: {
+        map_key: state.mapKey || null,
+        area_code: state.chartModeAreaCode || null,
+      },
+      timeseries_id: entry?.timeseriesId || null,
+      station_id: getEntryStationId(entry),
+      connector_id: getEntryConnectorId(entry),
+      pollutant: entry?.pollutant || getCurrentContext()?.pollutant || null,
+      chunk_start: chunk?.startIso || null,
+      chunk_end: chunk?.endIso || null,
+      http_status: requestMeta?.httpStatus || null,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 
@@ -18553,12 +18726,25 @@
     const init = { credentials: "include", headers: { Accept: "application/json" }, signal };
     const cacheFetch = getCacheFetch();
     const response = cacheFetch ? await cacheFetch(url.toString(), init) : await fetch(url.toString(), init);
-    if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
+    if (!response.ok) {
+      const error = new Error(`Chart request failed: ${response.status}`);
+      error.ukAqDebugLogged = true;
+      logTimeseriesDebugFailure("fetch-failed", entry, chunk, error, {
+        url: url.toString(),
+        httpStatus: response.status,
+      });
+      throw error;
+    }
     const payload = await response.json();
-    logTimeseriesDebugMeta("hex_map", payload, entry, chunk);
+    const points = parseSeriesPayloadPoints(payload);
+    logTimeseriesDebugMeta("fetch-success", payload, entry, chunk, {
+      url: url.toString(),
+      httpStatus: response.status,
+      points,
+    });
     return {
       entry,
-      points: parseSeriesPayloadPoints(payload),
+      points,
       guideline: payload?.guideline || null,
       meta: payload?.meta || null,
     };
@@ -18742,6 +18928,8 @@
           if (isAqiHistoryDebugEnabled()) {
             logAqiHistoryDebugMeta("fetch-success", url, payload, {
               timeseriesId: entry?.timeseriesId || null,
+              stationId: getEntryStationId(entry),
+              connectorId: getEntryConnectorId(entry),
               pollutantKey,
               fromIso: range?.startIso || null,
               toIso: range?.endIso || null,
@@ -18754,6 +18942,8 @@
             points,
             meta: normalizeAqiHistoryResponseMeta(payload, {
               timeseriesId: entry?.timeseriesId || null,
+              stationId: getEntryStationId(entry),
+              connectorId: getEntryConnectorId(entry),
               pollutantKey,
               fromIso: range?.startIso || null,
               toIso: range?.endIso || null,
@@ -18766,6 +18956,8 @@
           lastError = error;
           lastRequestMeta = {
             timeseriesId: entry?.timeseriesId || null,
+            stationId: getEntryStationId(entry),
+            connectorId: getEntryConnectorId(entry),
             pollutantKey,
             fromIso: range?.startIso || null,
             toIso: range?.endIso || null,
@@ -18776,6 +18968,8 @@
             console.debug("[uk-aq aqi-history]", "fetch-failed", {
               url,
               timeseries_id: entry?.timeseriesId || null,
+              station_id: getEntryStationId(entry),
+              connector_id: getEntryConnectorId(entry),
               pollutant: pollutantKey,
               query_from_utc: range?.startIso || null,
               query_to_utc: range?.endIso || null,
@@ -19023,6 +19217,7 @@
 
       const seriesPointsMap = new Map();
       const fetchPlans = [];
+      const observationDebugPlans = [];
       let primaryGuideline = null;
       const primaryId = aqiSourceId || state.selectedPrimaryId || usableEntries[0]?.stationId;
       const primary = aqiSourceEntry || usableEntries.find((entry) => entry.stationId === primaryId) || usableEntries[0];
@@ -19044,6 +19239,15 @@
         }
 
         const missingRanges = getMissingRangesForRequest(range, cacheRecord.coveredRanges);
+        observationDebugPlans.push({
+          timeseries_id: entry?.timeseriesId || null,
+          station_id: getEntryStationId(entry),
+          connector_id: getEntryConnectorId(entry),
+          cache_key: cacheKey || null,
+          cache_status: missingRanges.length ? "miss_or_partial" : "hit",
+          covered_ranges: normalizeDebugRanges(cacheRecord.coveredRanges),
+          missing_ranges: normalizeDebugRanges(missingRanges),
+        });
         if (missingRanges.length && cacheKey) {
           fetchPlans.push({ entry, cacheKey, missingRanges });
         }
@@ -19063,6 +19267,38 @@
       const aqiMissingRanges = (aqiCacheRecord && primary && pollutantKey)
         ? getMissingRangesForRequest(range, aqiCacheRecord.coveredRanges)
         : [];
+      if (isChartDebugEnabled()) {
+        console.debug("[uk-aq chart]", "load-plan", {
+          reason,
+          selected_chart_identity: {
+            map_key: state.mapKey || null,
+            area_code: state.chartModeAreaCode || null,
+          },
+          range_label: windowValue,
+          range_start_utc: range.startIso,
+          range_end_utc: range.endIso,
+          selected_sensor_ids: selectedIds,
+          selected_aqi_source_station_id: state.selectedAqiSensorId || null,
+          selected_aqi_source_timeseries_id: primary?.timeseriesId || null,
+          selected_aqi_source_connector_id: getEntryConnectorId(primary),
+          pollutant: pollutantKey,
+          observation_cache: observationDebugPlans,
+          observation_fetch_required: fetchPlans.length > 0,
+        });
+      }
+      if (isAqiHistoryDebugEnabled()) {
+        console.debug("[uk-aq aqi-history]", "cache-plan", {
+          selected_aqi_source_station_id: state.selectedAqiSensorId || null,
+          timeseries_id: primary?.timeseriesId || null,
+          station_id: getEntryStationId(primary),
+          connector_id: getEntryConnectorId(primary),
+          pollutant: pollutantKey,
+          cache_key: aqiCacheKey || null,
+          cache_status: aqiMissingRanges.length ? "miss_or_partial" : "hit",
+          covered_ranges: normalizeDebugRanges(aqiCacheRecord?.coveredRanges || []),
+          missing_ranges: normalizeDebugRanges(aqiMissingRanges),
+        });
+      }
       let aqiLoadingActive = aqiMissingRanges.length > 0;
       const aqiProgressPromise = (async () => {
         if (!aqiCacheRecord || !aqiMissingRanges.length) return;
@@ -19250,8 +19486,19 @@
               chunk: workItem.chunk,
               result,
             });
-          } catch (_chunkErr) {
+          } catch (chunkErr) {
             if (signal.aborted || token !== state.loadToken) return;
+            let debugUrl = null;
+            try {
+              debugUrl = buildObservationSeriesRequestUrl(workItem.entry?.timeseriesId, workItem.chunk)?.toString?.() || null;
+            } catch (_err) {
+              debugUrl = null;
+            }
+            if (!chunkErr?.ukAqDebugLogged) {
+              logTimeseriesDebugFailure("fetch-failed", workItem.entry, workItem.chunk, chunkErr, {
+                url: debugUrl,
+              });
+            }
             linePendingResults.set(index, {
               entry: workItem.entry,
               cacheKey: workItem.cacheKey,
@@ -19406,6 +19653,7 @@
     const bandHeight = 22;
     const gap = 4;
     const slotWidth = Math.max(1, (frame.width - frame.margin.left - frame.margin.right) / Math.max(1, (frame.endMs - frame.startMs) / HOUR_MS));
+    const renderedCounts = { daqi_segment_count: 0, eaqi_segment_count: 0 };
     const drawBand = (label, y, key, colors) => {
       const group = svg.append("g")
         .attr("transform", `translate(0, ${y})`)
@@ -19436,6 +19684,8 @@
             .attr("width", width)
             .attr("height", bandHeight)
             .attr("fill", color);
+          if (key === "daqi") renderedCounts.daqi_segment_count += 1;
+          if (key === "eaqi") renderedCounts.eaqi_segment_count += 1;
         }
       }
     };
@@ -19462,6 +19712,7 @@
     }
     drawBand("DAQI", bandTop, "daqi", daqiColors);
     drawBand("EAQI", bandTop + bandHeight + gap, "eaqi", eaqiColors);
+    return renderedCounts;
   }
 
   function syncAqiBands(cf, renderOptions = {}) {
@@ -19482,10 +19733,25 @@
       : (Number.isInteger(cf.currentAqiSourceSymbolIndex) ? cf.currentAqiSourceSymbolIndex : -1);
     cf.aqiBandsContainer.selectAll("*").remove();
     cf.aqiBandsContainer.classed("is-loading", cf.currentAqiLoading);
-    renderAqiBands(cf.aqiBandsContainer, cf.currentAqiPoints || [], cf.frame, cf.xScale, {
+    const renderedCounts = renderAqiBands(cf.aqiBandsContainer, cf.currentAqiPoints || [], cf.frame, cf.xScale, {
       loading: cf.currentAqiLoading,
       aqiSourceSymbolIndex: cf.currentAqiSourceSymbolIndex,
     });
+    if (isAqiHistoryDebugEnabled()) {
+      const pointCounts = getAqiPointCounts(cf.currentAqiPoints || []);
+      console.debug("[uk-aq aqi-history]", "render-bands", {
+        selected_aqi_source_station_id: state.selectedAqiSensorId || null,
+        cache_key: cf.currentAqiKey || null,
+        loading: cf.currentAqiLoading,
+        range_start_utc: new Date(cf.frame.startMs).toISOString(),
+        range_end_utc: new Date(cf.frame.endMs).toISOString(),
+        parsed_point_count: pointCounts.parsed_point_count,
+        daqi_count: pointCounts.daqi_count,
+        eaqi_count: pointCounts.eaqi_count,
+        rendered_daqi_segment_count: renderedCounts?.daqi_segment_count || 0,
+        rendered_eaqi_segment_count: renderedCounts?.eaqi_segment_count || 0,
+      });
+    }
   }
 
   function initChartFrame(dom, range, numSeries) {
@@ -19765,6 +20031,32 @@
     usableEntries.forEach((entry) => {
       seriesSegments.push(ChartCore.buildSegments(seriesPointsMap.get(entry.stationId) || []));
     });
+    if (isChartDebugEnabled()) {
+      console.debug("[uk-aq chart]", "render-lines", {
+        selected_chart_identity: {
+          map_key: state.mapKey || null,
+          area_code: state.chartModeAreaCode || null,
+        },
+        range_label: windowValue,
+        range_start_utc: range.startDate.toISOString(),
+        range_end_utc: range.endDate.toISOString(),
+        series: usableEntries.map((entry, index) => {
+          const points = seriesPointsMap.get(entry.stationId) || [];
+          const gapSummary = summarizeParsedGapRanges(points, range);
+          return {
+            timeseries_id: entry?.timeseriesId || null,
+            station_id: getEntryStationId(entry),
+            connector_id: getEntryConnectorId(entry),
+            pollutant: entry?.pollutant || getCurrentContext()?.pollutant || null,
+            parsed_point_count: points.length,
+            rendered_line_segment_count: Array.isArray(seriesSegments[index]) ? seriesSegments[index].length : 0,
+            parsed_gap_ranges: gapSummary.ranges,
+            parsed_gap_range_count: gapSummary.total,
+            parsed_gap_ranges_truncated: gapSummary.truncated,
+          };
+        }),
+      });
+    }
 
     // Clear paths/symbols for slots beyond the active series count.
     for (let i = usableEntries.length; i < cf.seriesPaths.length; i++) {
