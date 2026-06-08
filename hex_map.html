@@ -17376,7 +17376,8 @@
     isChartMode: false,
     mapKey: null,
     chartModeAreaCode: null,
-    lastChartModeAreaCode: null,
+    chartModeSessionIdentity: null,
+    lastChartModeSessionIdentity: null,
     chartModeSelectedSensors: new Set(),
     chartModeTimeRange: "24h",
     visibleEntries: [],
@@ -18155,6 +18156,7 @@
       selected_chart_identity: {
         map_key: state.mapKey || null,
         area_code: state.chartModeAreaCode || null,
+        session_identity: state.chartModeSessionIdentity || null,
       },
       timeseries_id: entry?.timeseriesId || null,
       station_id: getEntryStationId(entry),
@@ -18193,6 +18195,7 @@
       selected_chart_identity: {
         map_key: state.mapKey || null,
         area_code: state.chartModeAreaCode || null,
+        session_identity: state.chartModeSessionIdentity || null,
       },
       timeseries_id: entry?.timeseriesId || null,
       station_id: getEntryStationId(entry),
@@ -18211,7 +18214,7 @@
       return sharedTimeseriesClient.buildCanonicalTimeseriesUrl({
         baseUrl: seriesUrl,
         timeseriesId,
-        windowLabel: state.chartModeTimeRange || "24h",
+        windowLabel: normalizeChartRangeValue(state.chartModeTimeRange),
         startIso: chunk?.startIso || null,
         endIso: chunk?.endIso || null,
         proxyV2Enabled: UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED,
@@ -18272,12 +18275,80 @@
     return { startDate, endDate, startMs: startDate.getTime(), endMs: endDate.getTime(), startIso: startDate.toISOString(), endIso: endDate.toISOString() };
   }
 
+  function normalizeChartRangeValue(value) {
+    const normalized = String(value || "").trim();
+    return normalized === "12h" || normalized === "24h" || normalized === "7d" || normalized === "31d" || normalized === "90d"
+      ? normalized
+      : "24h";
+  }
+
   function getAdapter(mapKey = state.mapKey) {
     return mapKey === "cr" ? window.crMap : window.ukMap;
   }
 
   function getCurrentContext(mapKey = state.mapKey) {
     return getAdapter(mapKey)?.getChartModeContext?.() || null;
+  }
+
+  function normalizeChartSessionPart(value) {
+    const text = String(value ?? "").trim();
+    return text ? text.toUpperCase() : "";
+  }
+
+  function resolveChartSessionAreaCode(context) {
+    return normalizeChartSessionPart(
+      context?.areaCode
+        ?? context?.area_code
+        ?? context?.pcon_code
+        ?? context?.lad_code
+        ?? context?.la_code
+        ?? context?.code
+        ?? "",
+    );
+  }
+
+  function resolveChartSessionHexCellKey(context) {
+    return normalizeChartSessionPart(
+      context?.hexCellKey
+        ?? context?.hex_cell_key
+        ?? context?.visualHexCellKey
+        ?? context?.visual_hex_cell_key
+        ?? context?.cellKey
+        ?? context?.cell_key
+        ?? context?.hexKey
+        ?? context?.hex_key
+        ?? "",
+    );
+  }
+
+  function resolveChartSessionIdentity(mapKey, context) {
+    const scope = normalizeChartSessionPart(mapKey || context?.mapKey || state.mapKey || "uk").toLowerCase();
+    const areaCode = resolveChartSessionAreaCode(context);
+    if (areaCode) {
+      return {
+        identity: `${scope}|area:${areaCode}`,
+        mapKey: scope,
+        areaCode,
+        source: "area_code",
+      };
+    }
+    const hexCellKey = resolveChartSessionHexCellKey(context);
+    if (hexCellKey) {
+      return {
+        identity: `${scope}|hex:${hexCellKey}`,
+        mapKey: scope,
+        areaCode: "",
+        hexCellKey,
+        source: "hex_cell_key",
+      };
+    }
+    return {
+      identity: "",
+      mapKey: scope,
+      areaCode: "",
+      hexCellKey: "",
+      source: null,
+    };
   }
 
   function getInlineTableRefs(mapKey = state.mapKey) {
@@ -18482,18 +18553,20 @@
   function enter(options = {}) {
     const mapKey = options.mapKey || window.mapTabController?.getActiveTab?.() || "uk";
     const context = getCurrentContext(mapKey);
-    if (!context?.areaCode) return;
+    const nextSession = resolveChartSessionIdentity(mapKey, context);
+    if (!nextSession.identity) return;
     const entries = (context.entries || []).map(normalizeEntry).filter(Boolean);
-    const nextAreaCode = String(context.areaCode || "").trim();
-    if (nextAreaCode && state.lastChartModeAreaCode !== nextAreaCode) {
+    const nextAreaCode = nextSession.areaCode || nextSession.hexCellKey || "";
+    if (state.lastChartModeSessionIdentity !== nextSession.identity) {
       state.chartModeTimeRange = "24h";
+    } else {
+      state.chartModeTimeRange = normalizeChartRangeValue(state.chartModeTimeRange);
     }
     state.isChartMode = true;
     state.mapKey = mapKey;
     state.chartModeAreaCode = nextAreaCode;
-    if (nextAreaCode) {
-      state.lastChartModeAreaCode = nextAreaCode;
-    }
+    state.chartModeSessionIdentity = nextSession.identity;
+    state.lastChartModeSessionIdentity = nextSession.identity;
     state.visibleEntries = entries;
     const requestedSensorIdRaw = options.initialSensorId ?? options.initialStationId;
     const requestedSensorId = requestedSensorIdRaw ? String(requestedSensorIdRaw).trim() : "";
@@ -18516,6 +18589,7 @@
     state.isChartMode = false;
     state.mapKey = null;
     state.chartModeAreaCode = null;
+    state.chartModeSessionIdentity = null;
     state.chartModeSelectedSensors.clear();
     state.selectedAqiSensorId = null;
     state.visibleEntries = [];
@@ -18529,13 +18603,14 @@
 
   function syncWindowControl() {
     const dom = domByMap[state.mapKey];
-    if (dom?.windowSelect) dom.windowSelect.value = state.chartModeTimeRange || "24h";
+    if (dom?.windowSelect) dom.windowSelect.value = normalizeChartRangeValue(state.chartModeTimeRange);
   }
 
   function syncFromMap(mapKey = state.mapKey, options = {}) {
     if (!state.isChartMode || state.mapKey !== mapKey) return;
     const context = getCurrentContext(mapKey);
-    if (!context?.areaCode || context.areaCode !== state.chartModeAreaCode) {
+    const nextSession = resolveChartSessionIdentity(mapKey, context);
+    if (!nextSession.identity || nextSession.identity !== state.chartModeSessionIdentity) {
       if (options.preserveChartMode) {
         syncPanels();
         return;
@@ -18567,7 +18642,7 @@
     const cf = dom?.chartFrame;
     if (!cf?.currentSeriesData?.entries?.length) return;
 
-    const windowValue = state.chartModeTimeRange || "24h";
+    const windowValue = normalizeChartRangeValue(state.chartModeTimeRange);
     const newRange    = resolveRange(windowValue);
     const token       = state.loadToken; // snapshot — do NOT increment
 
@@ -19533,7 +19608,7 @@
       }
       const aqiSourceSymbolIndex = Math.max(0, selectedIds.indexOf(aqiSourceId));
 
-      const windowValue = state.chartModeTimeRange || "24h";
+      const windowValue = normalizeChartRangeValue(state.chartModeTimeRange);
       const range = resolveRange(windowValue);
       dom = domByMap[state.mapKey];
       const units = usableEntries[0]?.units || getCurrentContext()?.units || "";
@@ -19547,6 +19622,7 @@
       const cf = dom.chartFrame;
       const frameValid = !!(cf
         && cf.areaCode === state.chartModeAreaCode
+        && cf.sessionIdentity === state.chartModeSessionIdentity
         && cf.mapKey === state.mapKey
         && cf.width === svgWidth
         && cf.height === svgHeight);
@@ -19604,6 +19680,7 @@
           selected_chart_identity: {
             map_key: state.mapKey || null,
             area_code: state.chartModeAreaCode || null,
+            session_identity: state.chartModeSessionIdentity || null,
           },
           range_label: windowValue,
           range_start_utc: range.startIso,
@@ -20284,6 +20361,7 @@
       margin, width, height,
       frame: { width, height, margin, startMs: range.startMs, endMs: range.endMs },
       areaCode: state.chartModeAreaCode,
+      sessionIdentity: state.chartModeSessionIdentity,
       mapKey: state.mapKey,
       animFrameId: null,
       currentGuideline: null,
@@ -20374,7 +20452,7 @@
     const lineFn = d3.line()
       .x((p) => cf.xScale(p.date))
       .y((p) => cf.yScale(p.value));
-    const windowValue = state.chartModeTimeRange || "24h";
+    const windowValue = normalizeChartRangeValue(state.chartModeTimeRange);
     const intervalMs  = ChartCore.getSymbolIntervalMs(windowValue);
     const seriesSegments = [];
     usableEntries.forEach((entry) => {
@@ -20385,6 +20463,7 @@
         selected_chart_identity: {
           map_key: state.mapKey || null,
           area_code: state.chartModeAreaCode || null,
+          session_identity: state.chartModeSessionIdentity || null,
         },
         range_label: windowValue,
         range_start_utc: range.startDate.toISOString(),
@@ -20531,7 +20610,9 @@
     dom.panel?.addEventListener("click", (event) => { event.stopPropagation(); });
   });
   chartRangeToolbarSelect?.addEventListener("change", () => {
-    state.chartModeTimeRange = chartRangeToolbarSelect.value || "24h";
+    if (!state.isChartMode) return;
+    state.chartModeTimeRange = normalizeChartRangeValue(chartRangeToolbarSelect.value);
+    chartRangeToolbarSelect.value = state.chartModeTimeRange;
     loadChartData("window-change");
   });
   backButton?.addEventListener("click", exit);
