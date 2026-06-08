@@ -212,6 +212,13 @@ Acceptance checks:
 - Response exposes `INGESTDB_RETENTION_DAYS` used for the split.
 - Response exposes source coverage metadata by interval.
 
+Implementation notes:
+
+- Phase 5 is implemented in the TEST AQI history R2 API worker.
+- AQI source splitting uses the same rolling `INGESTDB_RETENTION_DAYS` boundary as observation history.
+- The worker now exposes `overlap_start_utc`, `retention_start_utc`, `coverage.source_coverage`, `coverage_state`, `has_gap`, and `partial_reasons`.
+- The cache proxy and `hex_map.html` remain consumers of AQI metadata; source planning stays behind the API/proxy boundary.
+
 Manual browser tests:
 
 - Confirm AQI bands render for recent 24h, overlap boundary, and 31d history.
