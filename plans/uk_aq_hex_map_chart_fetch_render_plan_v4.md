@@ -418,7 +418,7 @@ Observation fetches may also use chunking, but they should be balanced so that A
 
 Recommended approach:
 
-- primary sensor observation chunks start after AQI fetch queue has started
+- primary sensor observation chunks start only after all active-source AQI fetches for the requested range have completed
 - additional sensor observation chunks start after the primary sensor is underway
 - each sensor’s newest chunks should be prioritised first
 
@@ -813,7 +813,8 @@ This plan does not include:
 - On fresh chart load, start AQI source fetches first.
 - Fetch AQI chunks in parallel.
 - Render AQI bands incrementally from newest to oldest.
-- Start observation line fetches after AQI fetch queue has started.
+- Do not start observation line fetches while there are outstanding active-source AQI fetches for the requested range.
+- Start observation line fetches only after all active-source AQI fetches for the requested range have completed.
 
 ### Phase 4: enforce source rules
 

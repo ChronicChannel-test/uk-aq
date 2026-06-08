@@ -19032,6 +19032,7 @@
 
     const prop = getNonCoveredRangeProperty(normalizedState);
     if (prop) {
+      record.coveredRanges = removeOverlappingRanges(record.coveredRanges, startMs, endMs);
       nonCoveredProps.forEach((rangeProp) => {
         record[rangeProp] = rangeProp === prop
           ? addCoveredRange(record[rangeProp], startMs, endMs)

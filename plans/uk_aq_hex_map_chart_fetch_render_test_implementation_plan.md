@@ -9,8 +9,8 @@ Related plan: `plans/uk_aq_hex_map_chart_fetch_render_plan_v4.md`
 1. Selected-hex chart session identity uses map scope plus stable area code. Do not use the visual hex cell key unless no stable area code exists.
 2. Do not hard-code retention days. Implementation must read deployed config. Current TEST setting confirmed on 2026-06-08:
    - `ChronicChannel-test/uk-aq-ops`: `INGESTDB_RETENTION_DAYS=4`
-   - `ChronicChannel-test/uk-aq-ingest`: `UK_AQ_TIMESERIES_INGEST_SOURCE_OF_TRUTH_HOURS=120`
-3. `INGESTDB_RETENTION_DAYS`, or the existing equivalent after cleanup, should be the single source for both observation and AQI source splits.
+   - `ChronicChannel-test/uk-aq-ingest`: `INGESTDB_RETENTION_DAYS=4`
+3. `INGESTDB_RETENTION_DAYS` is the single source for both observation and AQI source splits.
 4. Source splitting belongs behind the API/proxy boundary, not in `hex_map.html`. The frontend should request chart history by timeseries, pollutant, and range, then receive merged data plus source coverage metadata.
 5. Historical observation ranges must not fall back to ingestdb. Only the retention range and one-day overlap may use ingestdb.
 6. Initial AQI chunk sizes:
@@ -25,7 +25,7 @@ Related plan: `plans/uk_aq_hex_map_chart_fetch_render_plan_v4.md`
    - 90d: five-to-seven-day chunks
 8. Initial concurrency:
    - AQI active source: 4
-   - Primary observation line: 3
+   - Primary observation line: 3, starting only after all active-source AQI fetches for the requested range have completed
    - Additional selected timeseries observations: 2 per timeseries, with a global chart cap
    - Background AQI prefetch: 1 or 2
    - Global chart fetch cap: 6
@@ -35,14 +35,14 @@ Related plan: `plans/uk_aq_hex_map_chart_fetch_render_plan_v4.md`
 12. Observation cache keys should include `timeseries_id`, `pollutant_code`, and `connector_id` if available.
 13. Store source metadata per interval so gaps and mixed-source periods are explainable.
 
-## Current TEST Config Issue To Resolve
+## Split Config Status
 
-TEST currently has two active split controls:
+TEST previously had two split controls:
 
 - Ops/AQI: `INGESTDB_RETENTION_DAYS=4`
-- Ingest timeseries edge function: `UK_AQ_TIMESERIES_INGEST_SOURCE_OF_TRUTH_HOURS=120`
+- Ingest timeseries edge function: a separate 120-hour observation split
 
-This is a five-day observation split and a four-day AQI/ops split. The implementation should remove this independent split by making the observation API read the same deployed retention-day source as AQI, or by deriving hours from `INGESTDB_RETENTION_DAYS * 24`.
+Phase 4 removes the independent observation split by making the observation API read `INGESTDB_RETENTION_DAYS`. Any hours value exposed in `uk_aq_timeseries` metadata is derived from `INGESTDB_RETENTION_DAYS * 24` for compatibility only.
 
 ## Recommended Implementation Path For TEST
 
@@ -169,6 +169,9 @@ Acceptance checks:
 - ObsAQIDB is never called for observation line data.
 - R2 wins duplicate hours when both R2 and ingestdb return the same observation hour.
 - Response includes source coverage metadata by interval.
+- R2 observation worker responses expose explicit completeness state, not just `ok: true`, including whether missing day manifests, missing connector manifests, missing parquet files, or skipped index days make the response partial.
+- `uk_aq_timeseries` maps incomplete R2 observation coverage to `response_complete=false` / `has_gap=true` and does not mark those chunks complete.
+- Frontend observation cache records incomplete R2-backed chunks as `partial`, `failed`, `malformed`, or `unknown`, not `covered_empty`.
 - Source split reads deployed `INGESTDB_RETENTION_DAYS`, currently 4 in TEST, rather than hard-coded days or independent timeseries hours.
 
 Manual browser tests:
@@ -181,6 +184,8 @@ Local/DuckDB checks:
 - Inspect R2 observation availability by day/hour.
 - Compare missing-overlap fills against ingestdb rows.
 - Verify historical windows without R2 rows return complete empty or partial metadata, not ingestdb fallback.
+- For a known timeseries with R2 data, compare each 7-day/90-day chart chunk against R2 rows and confirm `r2_row_count`, `row_count`, and frontend `parsed_point_count` agree.
+- Simulate or identify a missing manifest/index day and confirm the response is partial, not `covered_empty`.
 
 Impact:
 
@@ -237,7 +242,8 @@ Acceptance checks:
 
 - On fresh chart load, frontend establishes pollutant, selected hex identity, chart range, first selected timeseries, and AQI source timeseries before fetching.
 - AQI source chunks start first.
-- Primary observation line starts after the AQI queue starts, not after all AQI chunks finish.
+- No observation history fetches start while there are outstanding active-source AQI history fetches for the requested range.
+- Primary observation history fetches start only after all active-source AQI history fetches for the requested range have completed.
 - AQI chunks prioritize newest-to-oldest rendering, visually right to left.
 - Added timeseries observation lines render promptly when observation data arrives.
 - Selecting an additional timeseries does not change or repaint AQI bands.
@@ -248,7 +254,8 @@ Acceptance checks:
 
 Manual browser tests:
 
-- Throttle network and confirm AQI bands start before lines.
+- Throttle network and confirm no observation history requests start until all active-source AQI history requests have completed.
+- Confirm AQI bands render before observation lines.
 - Add/remove selected timeseries.
 - Switch AQI source after background prefetch.
 - Confirm non-source AQI prefetch does not repaint current bands.
@@ -279,4 +286,3 @@ Less complete alternatives:
 - No website polling reduction below one minute.
 - No aggregation/downsampling of raw history data.
 - Range expansion/contraction behavior remains intact.
-
