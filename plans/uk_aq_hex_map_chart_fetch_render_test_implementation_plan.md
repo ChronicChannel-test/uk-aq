@@ -264,7 +264,7 @@ Implementation notes:
 - Phase 6 is implemented in TEST `hex_map.html`.
 - Active-source AQI chunks run before observation chunks and use concurrency 4.
 - Observation chunks do not start until active-source AQI chunks have completed; observation fetches use a global cap of 6, primary-timeseries cap 3, and additional-timeseries cap 2.
-- Observation line chunks commit in completion order so added timeseries render as soon as their data arrives.
+- Observation line chunks commit in newest-first queue order. Concurrent fetches may complete out of order, but older completed chunks must wait until earlier/newer queued chunks have rendered.
 - Background AQI prefetch for non-source selected timeseries runs at concurrency 2 and only writes AQI cache; it does not repaint current AQI bands.
 
 Manual browser tests:

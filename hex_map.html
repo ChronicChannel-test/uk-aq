@@ -19202,7 +19202,9 @@
     const chunkSpanMs = getChunkSpanMs(windowValue);
     const allEntryChunks = entryPlans.map(({ entry, missingRanges, cacheKey }) => {
       const chunks = [];
-      (missingRanges || []).forEach((segment) => {
+      const newestFirstRanges = (Array.isArray(missingRanges) ? [...missingRanges] : [])
+        .sort((a, b) => Number(b?.endMs || 0) - Number(a?.endMs || 0));
+      newestFirstRanges.forEach((segment) => {
         let end = segment.endMs;
         while (end > segment.startMs) {
           const start = Math.max(segment.startMs, end - chunkSpanMs);
@@ -19943,47 +19945,58 @@
       const totalChunks = Math.max(1, lineWorkQueue.length);
       let completedChunks = 0;
       let lineFlushChain = Promise.resolve();
-      const commitLinePayload = (payload) => {
-        lineFlushChain = lineFlushChain.then(async () => {
-          if (payload?.failed) {
-            completedChunks += 1;
-            dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-            return;
-          }
-
-          const { entry, cacheKey, chunk, result } = payload;
-          const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
-          cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
-          recordCacheRangeState(
-            cacheRecord,
-            chunk.startMs,
-            chunk.endMs,
-            classifyObservationCacheState(result),
-            {
-              sourceMetadata: extractObservationSourceMetadata(entry, result),
-              error: result?.error,
-            },
-          );
-          if (result.guideline && !cacheRecord.guideline) {
-            cacheRecord.guideline = result.guideline;
-          }
-          seriesDataCache.set(cacheKey, cacheRecord);
-
-          const inRangePoints = getPointsInRange(cacheRecord.points, range);
-          seriesPointsMap.set(entry.stationId, inRangePoints);
-          if (!primaryGuideline && entry.stationId === primaryId && cacheRecord.guideline) {
-            primaryGuideline = cacheRecord.guideline;
-          }
-
+      let lineNextCommitIndex = 0;
+      const linePendingResults = new Map();
+      const applyLinePayload = async (payload) => {
+        if (!payload) return;
+        if (payload.failed) {
           completedChunks += 1;
-          updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
-            aqiLoading: false,
-            yAxisLoading: true,
-            aqiSourceSymbolIndex,
-            aqiCacheKey,
-            skipAqiRepaint: true,
-          });
           dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
+          return;
+        }
+
+        const { entry, cacheKey, chunk, result } = payload;
+        const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
+        cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
+        recordCacheRangeState(
+          cacheRecord,
+          chunk.startMs,
+          chunk.endMs,
+          classifyObservationCacheState(result),
+          {
+            sourceMetadata: extractObservationSourceMetadata(entry, result),
+            error: result?.error,
+          },
+        );
+        if (result.guideline && !cacheRecord.guideline) {
+          cacheRecord.guideline = result.guideline;
+        }
+        seriesDataCache.set(cacheKey, cacheRecord);
+
+        const inRangePoints = getPointsInRange(cacheRecord.points, range);
+        seriesPointsMap.set(entry.stationId, inRangePoints);
+        if (!primaryGuideline && entry.stationId === primaryId && cacheRecord.guideline) {
+          primaryGuideline = cacheRecord.guideline;
+        }
+
+        completedChunks += 1;
+        updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+          aqiLoading: false,
+          yAxisLoading: true,
+          aqiSourceSymbolIndex,
+          aqiCacheKey,
+          skipAqiRepaint: true,
+        });
+        dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
+      };
+      const scheduleOrderedLineFlush = () => {
+        lineFlushChain = lineFlushChain.then(async () => {
+          while (linePendingResults.has(lineNextCommitIndex)) {
+            const payload = linePendingResults.get(lineNextCommitIndex);
+            linePendingResults.delete(lineNextCommitIndex);
+            lineNextCommitIndex += 1;
+            await applyLinePayload(payload);
+          }
         });
         return lineFlushChain;
       };
@@ -20001,12 +20014,12 @@
           primaryConcurrency: PRIMARY_OBSERVATION_CONCURRENCY,
           additionalConcurrency: ADDITIONAL_OBSERVATION_CONCURRENCY,
           globalConcurrency: CHART_GLOBAL_FETCH_CAP,
-        }, async (workItem) => {
+        }, async (workItem, index) => {
           if (token !== state.loadToken || signal.aborted) return;
           try {
             const result = await fetchObservationSeriesChunkDeduped(workItem.entry, workItem.cacheKey, workItem.chunk, signal);
             if (token !== state.loadToken || signal.aborted) return;
-            void commitLinePayload({
+            linePendingResults.set(index, {
               entry: workItem.entry,
               cacheKey: workItem.cacheKey,
               chunk: workItem.chunk,
@@ -20031,19 +20044,20 @@
               error: chunkErr,
             });
             seriesDataCache.set(workItem.cacheKey, cacheRecord);
-            void commitLinePayload({
+            linePendingResults.set(index, {
               entry: workItem.entry,
               cacheKey: workItem.cacheKey,
               chunk: workItem.chunk,
               failed: true,
             });
           }
+          void scheduleOrderedLineFlush();
         });
       })().catch((_err) => {});
 
       setLoading(true);
       await lineProgressPromise;
-      await lineFlushChain;
+      await scheduleOrderedLineFlush();
       if (token !== state.loadToken || signal.aborted) return;
 
       updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
