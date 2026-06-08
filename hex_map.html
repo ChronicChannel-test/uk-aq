@@ -17344,6 +17344,11 @@
   const DAY_MS = 24 * 60 * 60 * 1000;
   const HOUR_MS = 60 * 60 * 1000;
   const AQI_HISTORY_ROW_LIMIT = 20000;
+  const CHART_GLOBAL_FETCH_CAP = 6;
+  const AQI_ACTIVE_SOURCE_CONCURRENCY = 4;
+  const PRIMARY_OBSERVATION_CONCURRENCY = 3;
+  const ADDITIONAL_OBSERVATION_CONCURRENCY = 2;
+  const BACKGROUND_AQI_PREFETCH_CONCURRENCY = 2;
   const AQI_BAND_TOP_OFFSET_PX = 1;
   const params = new URLSearchParams(window.location.search);
   const cacheBaseUrl = resolveCacheBaseUrl(params.get("cache_base"));
@@ -17943,11 +17948,22 @@
       : Object.prototype.hasOwnProperty.call(meta, "response_complete")
         ? meta.response_complete
         : null;
+    const hasGap = Object.prototype.hasOwnProperty.call(payload || {}, "has_gap")
+      ? payload.has_gap
+      : Object.prototype.hasOwnProperty.call(meta, "has_gap")
+        ? meta.has_gap
+        : null;
     const rowCountValue = payload?.row_count ?? meta?.row_count ?? null;
     const coverage = payload?.coverage || meta?.coverage || null;
     return {
       source: payload?.source || meta?.source || null,
       response_complete: responseComplete,
+      has_gap: hasGap,
+      coverage_state: payload?.coverage_state || meta?.coverage_state || coverage?.coverage_state || null,
+      partial_reasons: Array.isArray(payload?.partial_reasons) ? payload.partial_reasons
+        : Array.isArray(meta?.partial_reasons) ? meta.partial_reasons
+        : Array.isArray(coverage?.partial_reasons) ? coverage.partial_reasons
+        : null,
       row_count: Number.isFinite(Number(rowCountValue)) ? Number(rowCountValue) : null,
       raw_row_count: rawRows.length,
       point_count: Number.isFinite(Number(pointCount)) ? Number(pointCount) : null,
@@ -17966,6 +17982,8 @@
       connector_id: payload?.connector_id || meta?.connector_id || requestMeta?.connectorId || null,
       pollutant: payload?.pollutant || meta?.pollutant || requestMeta?.pollutantKey || null,
       source_split_boundary_utc: payload?.source_split_boundary_utc || meta?.source_split_boundary_utc || null,
+      overlap_start_utc: payload?.overlap_start_utc || meta?.overlap_start_utc || coverage?.overlap_start_utc || null,
+      retention_start_utc: payload?.retention_start_utc || meta?.retention_start_utc || coverage?.retention_start_utc || null,
       source_of_truth_days: payload?.source_of_truth_days || meta?.source_of_truth_days || coverage?.ingest_retention_days || null,
       coverage,
     };
@@ -17989,8 +18007,13 @@
       query_to_utc: normalizedMeta.query_to_utc,
       source: normalizedMeta.source,
       source_split_boundary_utc: normalizedMeta.source_split_boundary_utc,
+      overlap_start_utc: normalizedMeta.overlap_start_utc,
+      retention_start_utc: normalizedMeta.retention_start_utc,
       source_of_truth_days: normalizedMeta.source_of_truth_days,
       response_complete: normalizedMeta.response_complete,
+      has_gap: normalizedMeta.has_gap,
+      coverage_state: normalizedMeta.coverage_state,
+      partial_reasons: normalizedMeta.partial_reasons,
       row_count: normalizedMeta.row_count,
       raw_row_count: normalizedMeta.raw_row_count,
       point_count: normalizedMeta.point_count,
@@ -19088,16 +19111,17 @@
     const points = Array.isArray(result?.points) ? result.points : [];
     const meta = result?.meta || {};
     const responseComplete = meta?.response_complete;
+    const hasGap = meta?.has_gap === true;
     const rawRowCount = Number.isFinite(Number(result?.rawRowCount)) ? Number(result.rawRowCount)
       : Number.isFinite(Number(meta?.raw_row_count)) ? Number(meta.raw_row_count)
       : Number.isFinite(Number(meta?.row_count)) ? Number(meta.row_count)
       : null;
     if (Number.isFinite(rawRowCount) && rawRowCount > points.length) return "malformed";
     if (points.length > 0) {
-      return responseComplete === false ? "partial" : "covered_with_data";
+      return responseComplete === false || hasGap ? "partial" : "covered_with_data";
     }
     if (responseComplete === true) return "covered_empty";
-    if (responseComplete === false) return "partial";
+    if (responseComplete === false || hasGap) return "partial";
     return "unknown";
   }
 
@@ -19126,8 +19150,13 @@
       pollutant: pollutantKey || meta?.pollutant || null,
       source: meta?.source || null,
       source_split_boundary_utc: meta?.source_split_boundary_utc || null,
+      overlap_start_utc: meta?.overlap_start_utc || meta?.coverage?.overlap_start_utc || null,
+      retention_start_utc: meta?.retention_start_utc || meta?.coverage?.retention_start_utc || null,
       source_of_truth_days: meta?.source_of_truth_days || null,
       response_complete: meta?.response_complete ?? null,
+      has_gap: meta?.has_gap ?? null,
+      coverage_state: meta?.coverage_state || null,
+      partial_reasons: Array.isArray(meta?.partial_reasons) ? meta.partial_reasons : null,
       coverage: meta?.coverage || null,
     };
   }
@@ -19221,6 +19250,70 @@
       }
     })());
     await Promise.all(workers);
+  }
+
+  async function runObservationQueueWithFetchCaps(queue, options = {}, iterator) {
+    const items = Array.isArray(queue) ? queue.map((item, index) => ({ item, index })) : [];
+    if (!items.length) return;
+    const totalItems = items.length;
+    const primaryStationId = String(options.primaryStationId || "").trim();
+    const globalLimit = Math.max(1, Math.min(
+      Number(options.globalConcurrency) || CHART_GLOBAL_FETCH_CAP,
+      CHART_GLOBAL_FETCH_CAP,
+      items.length,
+    ));
+    const primaryLimit = Math.max(1, Math.min(
+      Number(options.primaryConcurrency) || PRIMARY_OBSERVATION_CONCURRENCY,
+      PRIMARY_OBSERVATION_CONCURRENCY,
+      globalLimit,
+    ));
+    const additionalLimit = Math.max(1, Math.min(
+      Number(options.additionalConcurrency) || ADDITIONAL_OBSERVATION_CONCURRENCY,
+      ADDITIONAL_OBSERVATION_CONCURRENCY,
+      globalLimit,
+    ));
+    const activeByStationId = new Map();
+    let activeCount = 0;
+    let completedCount = 0;
+    let rejected = false;
+
+    const getStationLimit = (workItem) => {
+      const stationId = String(workItem?.entry?.stationId || "").trim();
+      return stationId && stationId === primaryStationId ? primaryLimit : additionalLimit;
+    };
+
+    await new Promise((resolve, reject) => {
+      const pump = () => {
+        if (rejected) return;
+        if (completedCount >= totalItems) {
+          resolve();
+          return;
+        }
+        while (activeCount < globalLimit && items.length > 0) {
+          const nextIndex = items.findIndex(({ item }) => {
+            const stationId = String(item?.entry?.stationId || "unknown").trim() || "unknown";
+            return (activeByStationId.get(stationId) || 0) < getStationLimit(item);
+          });
+          if (nextIndex < 0) return;
+          const { item, index } = items.splice(nextIndex, 1)[0];
+          const stationId = String(item?.entry?.stationId || "unknown").trim() || "unknown";
+          activeByStationId.set(stationId, (activeByStationId.get(stationId) || 0) + 1);
+          activeCount += 1;
+          Promise.resolve(iterator(item, index))
+            .then(() => {
+              activeByStationId.set(stationId, Math.max(0, (activeByStationId.get(stationId) || 1) - 1));
+              activeCount -= 1;
+              completedCount += 1;
+              pump();
+            })
+            .catch((error) => {
+              rejected = true;
+              reject(error);
+            });
+        }
+      };
+      pump();
+    });
   }
 
   function buildAqiChunkWorkQueue(missingRanges, windowValue) {
@@ -19417,8 +19510,14 @@
     if (!list.length || !range) return;
     const activeSourceStationId = String(options.activeSourceStationId || "").trim();
     const loadToken = Number.isFinite(options.loadToken) ? Number(options.loadToken) : null;
+    const concurrency = Math.max(1, Math.min(
+      Number(options.concurrency) || BACKGROUND_AQI_PREFETCH_CONCURRENCY,
+      BACKGROUND_AQI_PREFETCH_CONCURRENCY,
+      CHART_GLOBAL_FETCH_CAP,
+    ));
     const contextPollutant = normalizeAqiSupportedPollutant(getCurrentContext()?.pollutant || "");
     const shouldContinue = () => loadToken === null || state.loadToken === loadToken;
+    const prefetchQueue = [];
     for (const entry of list) {
       if (!shouldContinue()) return;
       const stationId = String(entry?.stationId || "").trim();
@@ -19432,40 +19531,40 @@
         aqiBandCache.set(aqiCacheKey, cacheRecord);
         continue;
       }
-      const newlyFetched = [];
-      let lastResponseMeta = cacheRecord.lastResponseMeta || null;
       for (const missing of missingRanges) {
-        if (!shouldContinue()) return;
-        const missingRange = {
-          startMs: missing.startMs,
-          endMs: missing.endMs,
-          startDate: new Date(missing.startMs),
-          endDate: new Date(missing.endMs),
-          startIso: new Date(missing.startMs).toISOString(),
-          endIso: new Date(missing.endMs).toISOString(),
-        };
-        const result = await fetchAqiBandsDeduped(entry, pollutantKey, missingRange, aqiCacheKey);
-        const points = Array.isArray(result?.points) ? result.points : [];
-        for (let i = 0; i < points.length; i++) {
-          newlyFetched.push(points[i]);
-        }
-        lastResponseMeta = result?.meta || lastResponseMeta;
-        recordCacheRangeState(
-          cacheRecord,
-          missing.startMs,
-          missing.endMs,
-          classifyAqiCacheState(result),
-          {
-            sourceMetadata: extractAqiSourceMetadata(entry, pollutantKey, result),
-            error: result?.error,
-            httpStatus: result?.meta?.http_status,
-          },
-        );
+        prefetchQueue.push({ entry, pollutantKey, aqiCacheKey, cacheRecord, missing });
       }
-      cacheRecord.points = mergeSeriesPoints(cacheRecord.points, newlyFetched);
-      cacheRecord.lastResponseMeta = lastResponseMeta;
-      aqiBandCache.set(aqiCacheKey, cacheRecord);
     }
+    await runChunkQueueWithConcurrency(prefetchQueue, concurrency, async (workItem) => {
+      if (!shouldContinue()) return;
+      const { entry, pollutantKey, aqiCacheKey, cacheRecord, missing } = workItem;
+      const missingRange = {
+        startMs: missing.startMs,
+        endMs: missing.endMs,
+        startDate: new Date(missing.startMs),
+        endDate: new Date(missing.endMs),
+        startIso: new Date(missing.startMs).toISOString(),
+        endIso: new Date(missing.endMs).toISOString(),
+      };
+      const result = await fetchAqiBandsDeduped(entry, pollutantKey, missingRange, aqiCacheKey);
+      const points = Array.isArray(result?.points) ? result.points : [];
+      if (points.length) {
+        cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], points);
+      }
+      cacheRecord.lastResponseMeta = result?.meta || cacheRecord.lastResponseMeta || null;
+      recordCacheRangeState(
+        cacheRecord,
+        missing.startMs,
+        missing.endMs,
+        classifyAqiCacheState(result),
+        {
+          sourceMetadata: extractAqiSourceMetadata(entry, pollutantKey, result),
+          error: result?.error,
+          httpStatus: result?.meta?.http_status,
+        },
+      );
+      aqiBandCache.set(aqiCacheKey, cacheRecord);
+    });
   }
 
   function clearCacheForCurrentSensors() {
@@ -19709,11 +19808,15 @@
         });
       }
       let aqiLoadingActive = aqiMissingRanges.length > 0;
+      const preserveAqiBandsForLineOnlyChange = reason === "sensor-change"
+        && frameValid
+        && dom?.chartFrame?.currentAqiKey === aqiCacheKey
+        && aqiMissingRanges.length === 0;
       const aqiProgressPromise = (async () => {
         if (!aqiCacheRecord || !aqiMissingRanges.length) return;
         let lastResponseMeta = aqiCacheRecord.lastResponseMeta || null;
         const aqiWorkQueue = buildAqiChunkWorkQueue(aqiMissingRanges, windowValue);
-        await runChunkQueueWithConcurrency(aqiWorkQueue, 3, async (missing) => {
+        await runChunkQueueWithConcurrency(aqiWorkQueue, AQI_ACTIVE_SOURCE_CONCURRENCY, async (missing) => {
           if (token !== state.loadToken || signal.aborted) return;
           const missingRange = {
             startMs: missing.startMs,
@@ -19783,6 +19886,7 @@
             yAxisLoading: observsLoadingActive,
             aqiSourceSymbolIndex,
             aqiCacheKey,
+            skipAqiRepaint: preserveAqiBandsForLineOnlyChange,
           });
         }
       } else if (hasCachedData) {
@@ -19791,6 +19895,7 @@
           yAxisLoading: observsLoadingActive,
           aqiSourceSymbolIndex,
           aqiCacheKey,
+          skipAqiRepaint: preserveAqiBandsForLineOnlyChange,
         });
       }
       if (!hasCachedData) {
@@ -19799,6 +19904,7 @@
           yAxisLoading: observsLoadingActive,
           aqiSourceSymbolIndex,
           aqiCacheKey,
+          skipAqiRepaint: preserveAqiBandsForLineOnlyChange,
         });
       }
 
@@ -19815,6 +19921,7 @@
           yAxisLoading: false,
           aqiSourceSymbolIndex,
           aqiCacheKey,
+          skipAqiRepaint: preserveAqiBandsForLineOnlyChange,
         });
         const totalPoints = Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0);
         if (!totalPoints) {
@@ -19826,6 +19933,7 @@
         void prefetchAqiBandsForEntries(usableEntries, range, {
           activeSourceStationId: aqiSourceId,
           loadToken: token,
+          concurrency: BACKGROUND_AQI_PREFETCH_CONCURRENCY,
         });
         return;
       }
@@ -19834,56 +19942,48 @@
       const lineWorkQueue = buildChunkWorkQueue(fetchPlans, windowValue);
       const totalChunks = Math.max(1, lineWorkQueue.length);
       let completedChunks = 0;
-      let lineNextCommitIndex = 0;
-      let lineCanCommit = true;
       let lineFlushChain = Promise.resolve();
-      const linePendingResults = new Map();
-      const scheduleLineFlush = () => {
+      const commitLinePayload = (payload) => {
         lineFlushChain = lineFlushChain.then(async () => {
-          while (linePendingResults.has(lineNextCommitIndex)) {
-            const payload = linePendingResults.get(lineNextCommitIndex);
-            linePendingResults.delete(lineNextCommitIndex);
-            lineNextCommitIndex += 1;
-            if (payload?.failed) {
-              completedChunks += 1;
-              dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
-              continue;
-            }
-
-            const { entry, cacheKey, chunk, result } = payload;
-            const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
-            cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
-            recordCacheRangeState(
-              cacheRecord,
-              chunk.startMs,
-              chunk.endMs,
-              classifyObservationCacheState(result),
-              {
-                sourceMetadata: extractObservationSourceMetadata(entry, result),
-                error: result?.error,
-              },
-            );
-            if (result.guideline && !cacheRecord.guideline) {
-              cacheRecord.guideline = result.guideline;
-            }
-            seriesDataCache.set(cacheKey, cacheRecord);
-
-            const inRangePoints = getPointsInRange(cacheRecord.points, range);
-            seriesPointsMap.set(entry.stationId, inRangePoints);
-            if (!primaryGuideline && entry.stationId === primaryId && cacheRecord.guideline) {
-              primaryGuideline = cacheRecord.guideline;
-            }
-
+          if (payload?.failed) {
             completedChunks += 1;
-            updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
-              aqiLoading: false,
-              yAxisLoading: true,
-              aqiSourceSymbolIndex,
-              aqiCacheKey,
-              skipAqiRepaint: true,
-            });
             dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
+            return;
           }
+
+          const { entry, cacheKey, chunk, result } = payload;
+          const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
+          cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
+          recordCacheRangeState(
+            cacheRecord,
+            chunk.startMs,
+            chunk.endMs,
+            classifyObservationCacheState(result),
+            {
+              sourceMetadata: extractObservationSourceMetadata(entry, result),
+              error: result?.error,
+            },
+          );
+          if (result.guideline && !cacheRecord.guideline) {
+            cacheRecord.guideline = result.guideline;
+          }
+          seriesDataCache.set(cacheKey, cacheRecord);
+
+          const inRangePoints = getPointsInRange(cacheRecord.points, range);
+          seriesPointsMap.set(entry.stationId, inRangePoints);
+          if (!primaryGuideline && entry.stationId === primaryId && cacheRecord.guideline) {
+            primaryGuideline = cacheRecord.guideline;
+          }
+
+          completedChunks += 1;
+          updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
+            aqiLoading: false,
+            yAxisLoading: true,
+            aqiSourceSymbolIndex,
+            aqiCacheKey,
+            skipAqiRepaint: true,
+          });
+          dom.chartFrame?.progressBar?.update(completedChunks / totalChunks);
         });
         return lineFlushChain;
       };
@@ -19896,12 +19996,17 @@
         if (dom.chartFrame?.progressBar?.remove) dom.chartFrame.progressBar.remove();
         dom.chartFrame.progressBar = ChartCore.renderProgressBar(svgEl, progressFrame);
 
-        await runChunkQueueWithConcurrency(lineWorkQueue, 4, async (workItem, index) => {
+        await runObservationQueueWithFetchCaps(lineWorkQueue, {
+          primaryStationId: primaryId,
+          primaryConcurrency: PRIMARY_OBSERVATION_CONCURRENCY,
+          additionalConcurrency: ADDITIONAL_OBSERVATION_CONCURRENCY,
+          globalConcurrency: CHART_GLOBAL_FETCH_CAP,
+        }, async (workItem) => {
           if (token !== state.loadToken || signal.aborted) return;
           try {
             const result = await fetchObservationSeriesChunkDeduped(workItem.entry, workItem.cacheKey, workItem.chunk, signal);
             if (token !== state.loadToken || signal.aborted) return;
-            linePendingResults.set(index, {
+            void commitLinePayload({
               entry: workItem.entry,
               cacheKey: workItem.cacheKey,
               chunk: workItem.chunk,
@@ -19926,20 +20031,19 @@
               error: chunkErr,
             });
             seriesDataCache.set(workItem.cacheKey, cacheRecord);
-            linePendingResults.set(index, {
+            void commitLinePayload({
               entry: workItem.entry,
               cacheKey: workItem.cacheKey,
               chunk: workItem.chunk,
               failed: true,
             });
           }
-          void scheduleLineFlush();
         });
       })().catch((_err) => {});
 
       setLoading(true);
       await lineProgressPromise;
-      await scheduleLineFlush();
+      await lineFlushChain;
       if (token !== state.loadToken || signal.aborted) return;
 
       updateChart(dom, seriesPointsMap, usableEntries, range, primaryGuideline, units, aqiPoints, {
@@ -19947,6 +20051,7 @@
         yAxisLoading: false,
         aqiSourceSymbolIndex,
         aqiCacheKey,
+        skipAqiRepaint: true,
       });
       const totalPoints = Array.from(seriesPointsMap.values()).reduce((sum, points) => sum + points.length, 0);
       if (!totalPoints) {
@@ -19958,6 +20063,7 @@
       void prefetchAqiBandsForEntries(usableEntries, range, {
         activeSourceStationId: aqiSourceId,
         loadToken: token,
+        concurrency: BACKGROUND_AQI_PREFETCH_CONCURRENCY,
       });
 
     } catch (error) {
