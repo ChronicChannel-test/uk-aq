@@ -17389,12 +17389,14 @@
   };
   const NO_SELECTED_SENSOR_CHART_MESSAGE = "Select a sensor from the list to draw a chart.";
 
-  // key: `${timeseriesId}|${pollutantKey}`
-  // value: { points: Point[], guideline: object|null, coveredRanges: [{startMs,endMs}] }
+  // key: `${timeseriesId}|connector:${connectorId}|pollutant:${pollutantKey}`
+  // value: { points: Point[], guideline: object|null, coveredRanges: [], failedRanges: [], partialRanges: [], malformedRanges: [], unknownRanges: [], rangeStates: [] }
   const seriesDataCache = new Map();
-  // key: `${timeseriesId}|${pollutantKey}`
-  // value: { points: AqiPoint[], coveredRanges: [{startMs,endMs}], lastResponseMeta: object|null }
+  // key: `${timeseriesId}|station:${stationId}|connector:${connectorId}|pollutant:${pollutantKey}`
+  // value: { points: AqiPoint[], coveredRanges: [], failedRanges: [], partialRanges: [], malformedRanges: [], unknownRanges: [], rangeStates: [], lastResponseMeta: object|null }
   const aqiBandCache    = new Map();
+  const seriesChunkInFlight = new Map();
+  const aqiChunkInFlight = new Map();
 
   function collectChartDom(prefix) {
     const panel = document.getElementById(`${prefix}-hex-chart-mode`);
@@ -17926,7 +17928,7 @@
     if (textPayload.rows.length) {
       return textPayload;
     }
-    return { points: [] };
+    return { points: [], malformed: text.length > 0 };
   }
 
   function normalizeAqiHistoryResponseMeta(payload, requestMeta = {}) {
@@ -18058,8 +18060,11 @@
   }
 
   function shouldMarkAqiHistoryRangeCovered(payload, points) {
-    if (Array.isArray(points) && points.length > 0) return true;
-    return normalizeAqiHistoryResponseMeta(payload, { points }).response_complete === true;
+    return isCoveredCacheState(classifyAqiCacheState({
+      points,
+      meta: normalizeAqiHistoryResponseMeta(payload, { points }),
+      cacheState: payload?.malformed ? "malformed" : null,
+    }));
   }
 
   function parseObservationNumericValue(rawValue) {
@@ -18575,34 +18580,52 @@
     const deltaMs  = newRange.endDate.getTime() - prevEnd.getTime();
     if (deltaMs < 30 * 1000) return; // < 30 s elapsed — nothing meaningful to fetch
 
-    const deltaChunk = { startIso: prevEnd.toISOString(), endIso: newRange.endIso };
+    const deltaChunk = {
+      startMs: prevEnd.getTime(),
+      endMs: newRange.endDate.getTime(),
+      startIso: prevEnd.toISOString(),
+      endIso: newRange.endIso,
+    };
     let anyNewData     = false;
     let primaryGuideline = cf.currentGuideline;
     const primaryId      = state.selectedAqiSensorId || state.selectedPrimaryId || usableEntries[0]?.stationId;
 
     for (const entry of usableEntries) {
       if (state.loadToken !== token) return; // superseded by a user action
+      const cacheKey = buildSeriesCacheKey(entry);
+      if (!cacheKey) continue;
       try {
-        const result = await fetchObservationSeriesChunk(entry, deltaChunk, null);
+        const result = await fetchObservationSeriesChunkDeduped(entry, cacheKey, deltaChunk, null);
+        const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
+        recordCacheRangeState(
+          cacheRecord,
+          deltaChunk.startMs,
+          deltaChunk.endMs,
+          classifyObservationCacheState(result),
+          {
+            sourceMetadata: extractObservationSourceMetadata(entry, result),
+            error: result?.error,
+          },
+        );
         if (result.points.length > 0) {
-          const cacheKey = buildSeriesCacheKey(entry);
-          const cached = seriesDataCache.get(cacheKey) || { points: [], guideline: null, coveredRanges: [] };
-          cached.points = mergeSeriesPoints(cached?.points || [], result.points);
-          cached.coveredRanges = addCoveredRange(
-            cached.coveredRanges,
-            prevEnd.getTime(),
-            newRange.endDate.getTime()
-          );
-          if (result.guideline && !cached.guideline) {
-            cached.guideline = result.guideline;
+          cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points);
+          if (result.guideline && !cacheRecord.guideline) {
+            cacheRecord.guideline = result.guideline;
           }
-          seriesDataCache.set(cacheKey, cached);
+          seriesDataCache.set(cacheKey, cacheRecord);
           if (!primaryGuideline && entry.stationId === primaryId && result.guideline) {
             primaryGuideline = result.guideline;
           }
           anyNewData = true;
         }
-      } catch (_err) {}
+      } catch (error) {
+        const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
+        recordCacheRangeState(cacheRecord, deltaChunk.startMs, deltaChunk.endMs, "failed", {
+          sourceMetadata: extractObservationSourceMetadata(entry, null),
+          error,
+        });
+        seriesDataCache.set(cacheKey, cacheRecord);
+      }
     }
 
     if (state.loadToken !== token || !anyNewData) return; // nothing changed
@@ -18611,7 +18634,7 @@
     const seriesPointsMap = new Map();
     usableEntries.forEach((entry) => {
       const cacheKey = buildSeriesCacheKey(entry);
-      const cached = seriesDataCache.get(cacheKey);
+      const cached = cacheKey ? getOrCreateSeriesCacheRecord(cacheKey) : null;
       if (cached?.points?.length) {
         seriesPointsMap.set(entry.stationId, getPointsInRange(cached.points, newRange));
       } else {
@@ -18720,9 +18743,9 @@
   }
 
   async function fetchObservationSeriesChunk(entry, chunk, signal) {
-    if (!seriesUrl || !entry?.timeseriesId) return { entry, points: [], guideline: null };
+    if (!seriesUrl || !entry?.timeseriesId) return { entry, points: [], guideline: null, cacheState: "unknown" };
     const url = buildObservationSeriesRequestUrl(entry.timeseriesId, chunk);
-    if (!url) return { entry, points: [], guideline: null };
+    if (!url) return { entry, points: [], guideline: null, cacheState: "unknown" };
     const init = { credentials: "include", headers: { Accept: "application/json" }, signal };
     const cacheFetch = getCacheFetch();
     const response = cacheFetch ? await cacheFetch(url.toString(), init) : await fetch(url.toString(), init);
@@ -18735,8 +18758,28 @@
       });
       throw error;
     }
-    const payload = await response.json();
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      error.ukAqDebugLogged = true;
+      logTimeseriesDebugFailure("fetch-malformed", entry, chunk, error, {
+        url: url.toString(),
+        httpStatus: response.status,
+      });
+      return {
+        entry,
+        points: [],
+        guideline: null,
+        meta: null,
+        normalizedMeta: null,
+        rawRowCount: null,
+        cacheState: "malformed",
+        error,
+      };
+    }
     const points = parseSeriesPayloadPoints(payload);
+    const normalizedMeta = normalizeTimeseriesDebugMeta(payload);
     logTimeseriesDebugMeta("fetch-success", payload, entry, chunk, {
       url: url.toString(),
       httpStatus: response.status,
@@ -18747,6 +18790,8 @@
       points,
       guideline: payload?.guideline || null,
       meta: payload?.meta || null,
+      normalizedMeta,
+      rawRowCount: getTimeseriesPayloadRows(payload).length,
     };
   }
 
@@ -18754,6 +18799,39 @@
     const byTime = new Map();
     [...existingPoints, ...newPoints].forEach((p) => byTime.set(p.date.getTime(), p));
     return Array.from(byTime.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+
+  const CACHE_RANGE_STATES = new Set([
+    "covered_empty",
+    "covered_with_data",
+    "failed",
+    "partial",
+    "malformed",
+    "unknown",
+  ]);
+
+  function normalizeCacheRangeState(value) {
+    const state = String(value || "").trim().toLowerCase();
+    return CACHE_RANGE_STATES.has(state) ? state : "unknown";
+  }
+
+  function isCoveredCacheState(value) {
+    const state = normalizeCacheRangeState(value);
+    return state === "covered_empty" || state === "covered_with_data";
+  }
+
+  function getNonCoveredRangeProperty(state) {
+    const normalized = normalizeCacheRangeState(state);
+    return normalized === "failed" ? "failedRanges"
+      : normalized === "partial" ? "partialRanges"
+      : normalized === "malformed" ? "malformedRanges"
+      : normalized === "unknown" ? "unknownRanges"
+      : null;
+  }
+
+  function normalizeCacheKeyPart(value) {
+    const text = String(value ?? "").trim();
+    return (text || "null").replace(/\|/g, "_");
   }
 
   function normalizeCoveredRanges(ranges = []) {
@@ -18777,6 +18855,205 @@
 
   function addCoveredRange(ranges, startMs, endMs) {
     return normalizeCoveredRanges([...(Array.isArray(ranges) ? ranges : []), { startMs, endMs }]);
+  }
+
+  function rangesOverlap(leftStartMs, leftEndMs, rightStartMs, rightEndMs) {
+    return Number.isFinite(leftStartMs)
+      && Number.isFinite(leftEndMs)
+      && Number.isFinite(rightStartMs)
+      && Number.isFinite(rightEndMs)
+      && leftStartMs < rightEndMs
+      && rightStartMs < leftEndMs;
+  }
+
+  function removeOverlappingRanges(ranges, startMs, endMs) {
+    return normalizeCoveredRanges((Array.isArray(ranges) ? ranges : []).filter((segment) => (
+      !rangesOverlap(Number(segment?.startMs), Number(segment?.endMs), startMs, endMs)
+    )));
+  }
+
+  function normalizeCacheRangeStates(ranges = []) {
+    return (Array.isArray(ranges) ? ranges : [])
+      .filter((segment) => Number.isFinite(segment?.startMs) && Number.isFinite(segment?.endMs) && segment.endMs > segment.startMs)
+      .map((segment) => ({
+        startMs: Number(segment.startMs),
+        endMs: Number(segment.endMs),
+        state: normalizeCacheRangeState(segment.state),
+        sourceMetadata: segment.sourceMetadata && typeof segment.sourceMetadata === "object" ? segment.sourceMetadata : null,
+        error: segment.error ? String(segment.error) : null,
+        httpStatus: Number.isFinite(Number(segment.httpStatus)) ? Number(segment.httpStatus) : null,
+        recordedAtUtc: segment.recordedAtUtc || null,
+      }))
+      .sort((a, b) => a.startMs - b.startMs);
+  }
+
+  function normalizeCacheRecord(record = {}, defaults = {}) {
+    const normalized = {
+      ...record,
+      ...defaults,
+      points: Array.isArray(record.points) ? record.points : [],
+      coveredRanges: normalizeCoveredRanges(record.coveredRanges),
+      failedRanges: normalizeCoveredRanges(record.failedRanges),
+      partialRanges: normalizeCoveredRanges(record.partialRanges),
+      malformedRanges: normalizeCoveredRanges(record.malformedRanges),
+      unknownRanges: normalizeCoveredRanges(record.unknownRanges),
+      rangeStates: normalizeCacheRangeStates(record.rangeStates),
+    };
+    if (Object.prototype.hasOwnProperty.call(defaults, "guideline")) {
+      normalized.guideline = record.guideline || defaults.guideline || null;
+    }
+    if (Object.prototype.hasOwnProperty.call(defaults, "lastResponseMeta")) {
+      normalized.lastResponseMeta = record.lastResponseMeta || defaults.lastResponseMeta || null;
+    }
+    return normalized;
+  }
+
+  function normalizeSeriesCacheRecord(record = {}) {
+    return normalizeCacheRecord(record, { guideline: null });
+  }
+
+  function normalizeAqiCacheRecord(record = {}) {
+    return normalizeCacheRecord(record, { lastResponseMeta: null });
+  }
+
+  function getOrCreateSeriesCacheRecord(cacheKey) {
+    if (!cacheKey) return null;
+    const normalized = normalizeSeriesCacheRecord(seriesDataCache.get(cacheKey) || {});
+    seriesDataCache.set(cacheKey, normalized);
+    return normalized;
+  }
+
+  function getOrCreateAqiCacheRecord(cacheKey) {
+    if (!cacheKey) return null;
+    const normalized = normalizeAqiCacheRecord(aqiBandCache.get(cacheKey) || {});
+    aqiBandCache.set(cacheKey, normalized);
+    return normalized;
+  }
+
+  function recordCacheRangeState(record, startMs, endMs, state, details = {}) {
+    if (!record || !Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return record;
+    const normalizedState = normalizeCacheRangeState(state);
+    const nonCoveredProps = ["failedRanges", "partialRanges", "malformedRanges", "unknownRanges"];
+    record.rangeStates = normalizeCacheRangeStates(record.rangeStates)
+      .filter((segment) => !rangesOverlap(segment.startMs, segment.endMs, startMs, endMs));
+    record.rangeStates.push({
+      startMs,
+      endMs,
+      state: normalizedState,
+      sourceMetadata: details.sourceMetadata || null,
+      error: details.error ? String(details.error) : null,
+      httpStatus: Number.isFinite(Number(details.httpStatus)) ? Number(details.httpStatus) : null,
+      recordedAtUtc: new Date().toISOString(),
+    });
+    record.rangeStates = normalizeCacheRangeStates(record.rangeStates);
+
+    if (isCoveredCacheState(normalizedState)) {
+      record.coveredRanges = addCoveredRange(record.coveredRanges, startMs, endMs);
+      nonCoveredProps.forEach((prop) => {
+        record[prop] = removeOverlappingRanges(record[prop], startMs, endMs);
+      });
+      return record;
+    }
+
+    const prop = getNonCoveredRangeProperty(normalizedState);
+    if (prop) {
+      nonCoveredProps.forEach((rangeProp) => {
+        record[rangeProp] = rangeProp === prop
+          ? addCoveredRange(record[rangeProp], startMs, endMs)
+          : removeOverlappingRanges(record[rangeProp], startMs, endMs);
+      });
+    }
+    return record;
+  }
+
+  function getCacheStateDebug(record) {
+    const normalized = normalizeCacheRecord(record || {});
+    return {
+      covered_ranges: normalizeDebugRanges(normalized.coveredRanges),
+      failed_ranges: normalizeDebugRanges(normalized.failedRanges),
+      partial_ranges: normalizeDebugRanges(normalized.partialRanges),
+      malformed_ranges: normalizeDebugRanges(normalized.malformedRanges),
+      unknown_ranges: normalizeDebugRanges(normalized.unknownRanges),
+      range_states: normalizeCacheRangeStates(normalized.rangeStates).map((segment) => ({
+        startMs: segment.startMs,
+        endMs: segment.endMs,
+        startIso: new Date(segment.startMs).toISOString(),
+        endIso: new Date(segment.endMs).toISOString(),
+        state: segment.state,
+        sourceMetadata: segment.sourceMetadata,
+        error: segment.error,
+        httpStatus: segment.httpStatus,
+      })),
+    };
+  }
+
+  function classifyObservationCacheState(result) {
+    const explicitState = normalizeCacheRangeState(result?.cacheState);
+    if (explicitState !== "unknown" || result?.cacheState === "unknown") return explicitState;
+    const points = Array.isArray(result?.points) ? result.points : [];
+    const meta = result?.normalizedMeta || normalizeTimeseriesDebugMeta({ meta: result?.meta || {} });
+    const responseComplete = meta?.response_complete;
+    const hasGap = meta?.has_gap === true;
+    const rawRowCount = Number.isFinite(Number(result?.rawRowCount)) ? Number(result.rawRowCount)
+      : Number.isFinite(Number(meta?.row_count)) ? Number(meta.row_count)
+      : null;
+    if (Number.isFinite(rawRowCount) && rawRowCount > points.length) return "malformed";
+    if (points.length > 0) {
+      return responseComplete === false || hasGap ? "partial" : "covered_with_data";
+    }
+    if (responseComplete === true) return "covered_empty";
+    if (responseComplete === false || hasGap) return "partial";
+    return "unknown";
+  }
+
+  function classifyAqiCacheState(result) {
+    const explicitState = normalizeCacheRangeState(result?.cacheState);
+    if (explicitState !== "unknown" || result?.cacheState === "unknown") return explicitState;
+    const points = Array.isArray(result?.points) ? result.points : [];
+    const meta = result?.meta || {};
+    const responseComplete = meta?.response_complete;
+    const rawRowCount = Number.isFinite(Number(result?.rawRowCount)) ? Number(result.rawRowCount)
+      : Number.isFinite(Number(meta?.raw_row_count)) ? Number(meta.raw_row_count)
+      : Number.isFinite(Number(meta?.row_count)) ? Number(meta.row_count)
+      : null;
+    if (Number.isFinite(rawRowCount) && rawRowCount > points.length) return "malformed";
+    if (points.length > 0) {
+      return responseComplete === false ? "partial" : "covered_with_data";
+    }
+    if (responseComplete === true) return "covered_empty";
+    if (responseComplete === false) return "partial";
+    return "unknown";
+  }
+
+  function extractObservationSourceMetadata(entry, result) {
+    const meta = result?.normalizedMeta || normalizeTimeseriesDebugMeta({ meta: result?.meta || {} });
+    const coverage = meta?.coverage || {};
+    return {
+      timeseries_id: entry?.timeseriesId || null,
+      station_id: getEntryStationId(entry),
+      connector_id: getEntryConnectorId(entry) || coverage?.target_connector_id || coverage?.connector_id || null,
+      pollutant: entry?.pollutant || getCurrentContext()?.pollutant || null,
+      source_mode: meta?.source_mode || null,
+      source_split_boundary_utc: meta?.source_split_boundary_utc || null,
+      ingest_retention_days: meta?.ingest_retention_days || coverage?.ingest_retention_days || null,
+      response_complete: meta?.response_complete ?? null,
+      coverage,
+    };
+  }
+
+  function extractAqiSourceMetadata(entry, pollutantKey, result) {
+    const meta = result?.meta || {};
+    return {
+      timeseries_id: entry?.timeseriesId || meta?.timeseries_id || null,
+      station_id: getEntryStationId(entry) || meta?.station_id || null,
+      connector_id: getEntryConnectorId(entry) || meta?.connector_id || null,
+      pollutant: pollutantKey || meta?.pollutant || null,
+      source: meta?.source || null,
+      source_split_boundary_utc: meta?.source_split_boundary_utc || null,
+      source_of_truth_days: meta?.source_of_truth_days || null,
+      response_complete: meta?.response_complete ?? null,
+      coverage: meta?.coverage || null,
+    };
   }
 
   function getMissingRangesForRequest(range, coveredRanges) {
@@ -18807,12 +19084,13 @@
   function buildSeriesCacheKey(entry) {
     if (!entry?.timeseriesId) return "";
     const pollutantKey = normalizeAqiSupportedPollutant(entry?.pollutant || "") || "unknown";
-    return `${entry.timeseriesId}|${pollutantKey}`;
+    const connectorId = getEntryConnectorId(entry);
+    return `${normalizeCacheKeyPart(entry.timeseriesId)}|connector:${normalizeCacheKeyPart(connectorId)}|pollutant:${normalizeCacheKeyPart(pollutantKey)}`;
   }
 
   function buildAqiCacheKey(entry, pollutantKey) {
     if (!entry?.timeseriesId || !pollutantKey) return "";
-    return `${entry.timeseriesId}|${pollutantKey}`;
+    return `${normalizeCacheKeyPart(entry.timeseriesId)}|station:${normalizeCacheKeyPart(getEntryStationId(entry))}|connector:${normalizeCacheKeyPart(getEntryConnectorId(entry))}|pollutant:${normalizeCacheKeyPart(pollutantKey)}`;
   }
 
   function buildChunkWorkQueue(entryPlans, windowValue) {
@@ -18951,6 +19229,8 @@
               wireFormat,
               points,
             }),
+            rawRowCount: getAqiPayloadRows(payload).length,
+            cacheState: payload?.malformed ? "malformed" : null,
           };
         } catch (error) {
           lastError = error;
@@ -19003,7 +19283,57 @@
         candidateCount: candidates.length,
       }, lastFailure.error);
     }
-    return { points: [], meta: null };
+    return {
+      points: [],
+      meta: null,
+      cacheState: "failed",
+      error: lastFailure?.error || new Error("AQI history request failed."),
+    };
+  }
+
+  function getChunkBoundaryMs(chunk, key) {
+    const direct = Number(chunk?.[key]);
+    if (Number.isFinite(direct)) return direct;
+    const isoKey = key === "startMs" ? "startIso" : "endIso";
+    const parsed = Date.parse(chunk?.[isoKey] || "");
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function buildInFlightChunkKey(cacheKey, chunk) {
+    const startMs = getChunkBoundaryMs(chunk, "startMs");
+    const endMs = getChunkBoundaryMs(chunk, "endMs");
+    if (!cacheKey || !Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return "";
+    return `${cacheKey}|${startMs}|${endMs}`;
+  }
+
+  async function fetchObservationSeriesChunkDeduped(entry, cacheKey, chunk, signal) {
+    const inFlightKey = buildInFlightChunkKey(cacheKey || buildSeriesCacheKey(entry), chunk);
+    if (!inFlightKey) return fetchObservationSeriesChunk(entry, chunk, signal);
+    const existing = seriesChunkInFlight.get(inFlightKey);
+    if (existing) return existing;
+    const request = fetchObservationSeriesChunk(entry, chunk, signal)
+      .finally(() => {
+        if (seriesChunkInFlight.get(inFlightKey) === request) {
+          seriesChunkInFlight.delete(inFlightKey);
+        }
+      });
+    seriesChunkInFlight.set(inFlightKey, request);
+    return request;
+  }
+
+  async function fetchAqiBandsDeduped(entry, pollutantKey, range, cacheKey) {
+    const inFlightKey = buildInFlightChunkKey(cacheKey || buildAqiCacheKey(entry, pollutantKey), range);
+    if (!inFlightKey) return fetchAqiBands(entry, pollutantKey, range);
+    const existing = aqiChunkInFlight.get(inFlightKey);
+    if (existing) return existing;
+    const request = fetchAqiBands(entry, pollutantKey, range)
+      .finally(() => {
+        if (aqiChunkInFlight.get(inFlightKey) === request) {
+          aqiChunkInFlight.delete(inFlightKey);
+        }
+      });
+    aqiChunkInFlight.set(inFlightKey, request);
+    return request;
   }
 
   async function prefetchAqiBandsForEntries(entries, range, options = {}) {
@@ -19020,9 +19350,7 @@
       const pollutantKey = normalizeAqiSupportedPollutant(entry?.pollutant || "") || contextPollutant;
       const aqiCacheKey = buildAqiCacheKey(entry, pollutantKey);
       if (!aqiCacheKey || !pollutantKey) continue;
-      let cacheRecord = aqiBandCache.get(aqiCacheKey) || { points: [], coveredRanges: [] };
-      if (!Array.isArray(cacheRecord.points)) cacheRecord.points = [];
-      cacheRecord.coveredRanges = normalizeCoveredRanges(cacheRecord.coveredRanges);
+      const cacheRecord = getOrCreateAqiCacheRecord(aqiCacheKey);
       const missingRanges = getMissingRangesForRequest(range, cacheRecord.coveredRanges);
       if (!missingRanges.length) {
         aqiBandCache.set(aqiCacheKey, cacheRecord);
@@ -19040,15 +19368,23 @@
           startIso: new Date(missing.startMs).toISOString(),
           endIso: new Date(missing.endMs).toISOString(),
         };
-        const result = await fetchAqiBands(entry, pollutantKey, missingRange);
+        const result = await fetchAqiBandsDeduped(entry, pollutantKey, missingRange, aqiCacheKey);
         const points = Array.isArray(result?.points) ? result.points : [];
-      for (let i = 0; i < points.length; i++) {
-        newlyFetched.push(points[i]);
-      }
-        lastResponseMeta = result?.meta || lastResponseMeta;
-        if (shouldMarkAqiHistoryRangeCovered(result?.meta || null, points)) {
-          cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, missing.startMs, missing.endMs);
+        for (let i = 0; i < points.length; i++) {
+          newlyFetched.push(points[i]);
         }
+        lastResponseMeta = result?.meta || lastResponseMeta;
+        recordCacheRangeState(
+          cacheRecord,
+          missing.startMs,
+          missing.endMs,
+          classifyAqiCacheState(result),
+          {
+            sourceMetadata: extractAqiSourceMetadata(entry, pollutantKey, result),
+            error: result?.error,
+            httpStatus: result?.meta?.http_status,
+          },
+        );
       }
       cacheRecord.points = mergeSeriesPoints(cacheRecord.points, newlyFetched);
       cacheRecord.lastResponseMeta = lastResponseMeta;
@@ -19060,7 +19396,7 @@
     const tidSet = new Set();
     Array.from(state.chartModeSelectedSensors).forEach((id) => {
       const entry = state.visibleEntries.find((e) => e.stationId === id);
-      if (entry?.timeseriesId) tidSet.add(entry.timeseriesId);
+      if (entry?.timeseriesId) tidSet.add(String(entry.timeseriesId));
     });
     seriesDataCache.forEach((_v, key) => { if (tidSet.has(key.split("|")[0])) seriesDataCache.delete(key); });
     aqiBandCache.forEach((_v, key)    => { if (tidSet.has(key.split("|")[0])) aqiBandCache.delete(key); });
@@ -19225,12 +19561,7 @@
 
       usableEntries.forEach((entry) => {
         const cacheKey = buildSeriesCacheKey(entry);
-        let cacheRecord = cacheKey ? seriesDataCache.get(cacheKey) : null;
-        if (!cacheRecord) {
-          cacheRecord = { points: [], guideline: null, coveredRanges: [] };
-        }
-        if (!Array.isArray(cacheRecord.points)) cacheRecord.points = [];
-        cacheRecord.coveredRanges = normalizeCoveredRanges(cacheRecord.coveredRanges);
+        const cacheRecord = cacheKey ? getOrCreateSeriesCacheRecord(cacheKey) : normalizeSeriesCacheRecord();
 
         const inRangePoints = getPointsInRange(cacheRecord.points, range);
         seriesPointsMap.set(entry.stationId, inRangePoints);
@@ -19245,7 +19576,7 @@
           connector_id: getEntryConnectorId(entry),
           cache_key: cacheKey || null,
           cache_status: missingRanges.length ? "miss_or_partial" : "hit",
-          covered_ranges: normalizeDebugRanges(cacheRecord.coveredRanges),
+          ...getCacheStateDebug(cacheRecord),
           missing_ranges: normalizeDebugRanges(missingRanges),
         });
         if (missingRanges.length && cacheKey) {
@@ -19256,11 +19587,11 @@
       const aqiCacheKey = buildAqiCacheKey(primary, pollutantKey);
       let aqiCacheRecord = aqiCacheKey ? aqiBandCache.get(aqiCacheKey) : null;
       if (!aqiCacheRecord && aqiCacheKey) {
-        aqiCacheRecord = { points: [], coveredRanges: [] };
+        aqiCacheRecord = getOrCreateAqiCacheRecord(aqiCacheKey);
       }
       if (aqiCacheRecord) {
-        if (!Array.isArray(aqiCacheRecord.points)) aqiCacheRecord.points = [];
-        aqiCacheRecord.coveredRanges = normalizeCoveredRanges(aqiCacheRecord.coveredRanges);
+        aqiCacheRecord = normalizeAqiCacheRecord(aqiCacheRecord);
+        if (aqiCacheKey) aqiBandCache.set(aqiCacheKey, aqiCacheRecord);
       }
       let aqiPoints = aqiCacheRecord ? getPointsInRange(aqiCacheRecord.points, range) : [];
 
@@ -19295,7 +19626,7 @@
           pollutant: pollutantKey,
           cache_key: aqiCacheKey || null,
           cache_status: aqiMissingRanges.length ? "miss_or_partial" : "hit",
-          covered_ranges: normalizeDebugRanges(aqiCacheRecord?.coveredRanges || []),
+          ...getCacheStateDebug(aqiCacheRecord || {}),
           missing_ranges: normalizeDebugRanges(aqiMissingRanges),
         });
       }
@@ -19314,15 +19645,23 @@
             startIso: missing.startIso,
             endIso: missing.endIso,
           };
-          const result = await fetchAqiBands(primary, pollutantKey, missingRange);
+          const result = await fetchAqiBandsDeduped(primary, pollutantKey, missingRange, aqiCacheKey);
           const points = Array.isArray(result?.points) ? result.points : [];
           lastResponseMeta = result?.meta || lastResponseMeta;
           if (points.length) {
             aqiCacheRecord.points = mergeSeriesPoints(aqiCacheRecord.points, points);
           }
-          if (shouldMarkAqiHistoryRangeCovered(result?.meta || null, points)) {
-            aqiCacheRecord.coveredRanges = addCoveredRange(aqiCacheRecord.coveredRanges, missing.startMs, missing.endMs);
-          }
+          recordCacheRangeState(
+            aqiCacheRecord,
+            missing.startMs,
+            missing.endMs,
+            classifyAqiCacheState(result),
+            {
+              sourceMetadata: extractAqiSourceMetadata(primary, pollutantKey, result),
+              error: result?.error,
+              httpStatus: result?.meta?.http_status,
+            },
+          );
           aqiCacheRecord.lastResponseMeta = lastResponseMeta;
           aqiBandCache.set(aqiCacheKey, aqiCacheRecord);
           aqiPoints = getPointsInRange(aqiCacheRecord.points, range);
@@ -19434,14 +19773,18 @@
             }
 
             const { entry, cacheKey, chunk, result } = payload;
-            let cacheRecord = seriesDataCache.get(cacheKey);
-            if (!cacheRecord) {
-              cacheRecord = { points: [], guideline: null, coveredRanges: [] };
-            }
+            const cacheRecord = getOrCreateSeriesCacheRecord(cacheKey);
             cacheRecord.points = mergeSeriesPoints(cacheRecord.points || [], result.points || []);
-            if (Array.isArray(result.points) && result.points.length > 0) {
-              cacheRecord.coveredRanges = addCoveredRange(cacheRecord.coveredRanges, chunk.startMs, chunk.endMs);
-            }
+            recordCacheRangeState(
+              cacheRecord,
+              chunk.startMs,
+              chunk.endMs,
+              classifyObservationCacheState(result),
+              {
+                sourceMetadata: extractObservationSourceMetadata(entry, result),
+                error: result?.error,
+              },
+            );
             if (result.guideline && !cacheRecord.guideline) {
               cacheRecord.guideline = result.guideline;
             }
@@ -19478,7 +19821,7 @@
         await runChunkQueueWithConcurrency(lineWorkQueue, 4, async (workItem, index) => {
           if (token !== state.loadToken || signal.aborted) return;
           try {
-            const result = await fetchObservationSeriesChunk(workItem.entry, workItem.chunk, signal);
+            const result = await fetchObservationSeriesChunkDeduped(workItem.entry, workItem.cacheKey, workItem.chunk, signal);
             if (token !== state.loadToken || signal.aborted) return;
             linePendingResults.set(index, {
               entry: workItem.entry,
@@ -19499,6 +19842,12 @@
                 url: debugUrl,
               });
             }
+            const cacheRecord = getOrCreateSeriesCacheRecord(workItem.cacheKey);
+            recordCacheRangeState(cacheRecord, workItem.chunk.startMs, workItem.chunk.endMs, "failed", {
+              sourceMetadata: extractObservationSourceMetadata(workItem.entry, null),
+              error: chunkErr,
+            });
+            seriesDataCache.set(workItem.cacheKey, cacheRecord);
             linePendingResults.set(index, {
               entry: workItem.entry,
               cacheKey: workItem.cacheKey,
