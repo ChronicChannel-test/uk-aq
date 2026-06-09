@@ -165,12 +165,13 @@ When chart mode opens for a selected area and selected sensor:
 6. Set the AQI source sensor to the primary chart sensor, unless already explicitly selected for the current chart session.
 7. Fetch AQI history for the AQI source sensor first.
 8. Start all required AQI history chunk requests in parallel.
-9. Render AQI bands as soon as AQI chunks arrive.
+9. Merge AQI chunks as soon as they arrive.
 10. Render AQI bands from newest to oldest, visually right to left.
-11. Then fetch observation history for the line chart.
-12. Render observation history as chunks arrive.
-13. Render observation line chunks from newest to oldest, visually right to left.
-14. Preserve the current smooth expand/contract behaviour when the chart range changes.
+11. Do not visibly render an older AQI band chunk before all newer missing AQI chunks for the same range have rendered; buffer out-of-order older completions if needed.
+12. Then fetch observation history for the line chart.
+13. Merge observation history chunks as they arrive.
+14. Render observation line chunks from newest to oldest, visually right to left.
+15. Preserve the current smooth expand/contract behaviour when the chart range changes.
 
 ### Chart range changes
 
@@ -215,7 +216,8 @@ For a fresh chart:
 - split the selected chart range into AQI request chunks
 - enqueue all AQI chunks for the AQI source sensor
 - run AQI chunk fetches in parallel, with a sensible concurrency limit
-- prefer rendering chunks from newest to oldest
+- render chunks from newest to oldest
+- if an older AQI chunk completes before a newer missing chunk, merge/cache it but delay the visible band update for that older interval until the newer missing chunk has rendered
 - merge each successful chunk into the AQI cache
 - update the DAQI and EAQI bands after each chunk, or after each batch if that is smoother
 
@@ -393,6 +395,8 @@ Fetch/render order should therefore prefer:
 
 For AQI bands, the browser should be able to show the newest DAQI/EAQI band segments while older chunks are still loading.
 
+AQI rendering order is stricter than network completion order. AQI requests may complete out of order, but visible AQI band updates must advance newest-to-oldest. Older completed AQI chunks should be buffered in cache and rendered only after all newer missing AQI chunks for the current chart range have rendered.
+
 For observation lines, the newest line segment should appear while older chunks are still loading.
 
 ### Parallel AQI fetches
@@ -403,7 +407,8 @@ Recommended approach:
 
 - create a chunk work queue sorted newest to oldest
 - start up to `AQI_HISTORY_CONCURRENCY` requests
-- as each request completes, merge it and render
+- as each request completes, merge it into cache
+- render only the newest contiguous completed AQI coverage; buffer older completed chunks until newer missing chunks are rendered
 - continue until queue is empty
 
 The concurrency value should be conservative to avoid too many R2/API requests at once.
@@ -574,7 +579,7 @@ This should make it possible to compare:
 7. Do not request AQI from R2 for the retention range.
 8. Fetch AQI for the retention range from obsaqidb.
 9. For the one-day overlap, fill AQI hours missing from R2 using obsaqidb.
-10. Render DAQI/EAQI chunks as responses arrive.
+10. Merge DAQI/EAQI chunks as responses arrive, but visibly render them newest-to-oldest; do not draw older AQI bands ahead of newer missing AQI chunks.
 11. Build observation request plan:
    - R2 for the historical range
    - R2 preferred for the one-day overlap

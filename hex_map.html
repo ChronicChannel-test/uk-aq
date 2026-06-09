@@ -19186,6 +19186,17 @@
     });
   }
 
+  function getPointsInRanges(points, ranges) {
+    const normalizedRanges = normalizeCoveredRanges(ranges);
+    if (!Array.isArray(points) || !points.length || !normalizedRanges.length) return [];
+    return points.filter((point) => {
+      const timeMs = point?.date?.getTime?.();
+      return Number.isFinite(timeMs) && normalizedRanges.some((segment) => (
+        timeMs >= segment.startMs && timeMs <= segment.endMs
+      ));
+    });
+  }
+
   function buildSeriesCacheKey(entry) {
     if (!entry?.timeseriesId) return "";
     const pollutantKey = normalizeAqiSupportedPollutant(entry?.pollutant || "") || "unknown";
@@ -19817,7 +19828,31 @@
       const aqiProgressPromise = (async () => {
         if (!aqiCacheRecord || !aqiMissingRanges.length) return;
         let lastResponseMeta = aqiCacheRecord.lastResponseMeta || null;
-        const aqiWorkQueue = buildAqiChunkWorkQueue(aqiMissingRanges, windowValue);
+        const initialAqiPoints = Array.isArray(aqiPoints) ? aqiPoints : [];
+        let aqiRenderableRanges = [];
+        let aqiNextRenderIndex = 0;
+        const aqiCompletedChunkIndexes = new Set();
+        const aqiWorkQueue = buildAqiChunkWorkQueue(aqiMissingRanges, windowValue)
+          .map((chunk, queueIndex) => ({ ...chunk, queueIndex }));
+        const renderContiguousAqiChunks = () => {
+          let advanced = false;
+          while (aqiCompletedChunkIndexes.has(aqiNextRenderIndex)) {
+            const chunk = aqiWorkQueue[aqiNextRenderIndex];
+            if (!chunk) break;
+            aqiRenderableRanges = addCoveredRange(aqiRenderableRanges, chunk.startMs, chunk.endMs);
+            aqiNextRenderIndex += 1;
+            advanced = true;
+          }
+          if (!advanced || token !== state.loadToken || signal.aborted) return;
+          const newlyRenderablePoints = getPointsInRanges(aqiCacheRecord.points, aqiRenderableRanges);
+          aqiPoints = mergeSeriesPoints(initialAqiPoints, newlyRenderablePoints);
+          syncAqiBands(dom?.chartFrame, {
+            aqiPoints,
+            aqiCacheKey,
+            aqiLoading: true,
+            aqiSourceSymbolIndex,
+          });
+        };
         await runChunkQueueWithConcurrency(aqiWorkQueue, AQI_ACTIVE_SOURCE_CONCURRENCY, async (missing) => {
           if (token !== state.loadToken || signal.aborted) return;
           const missingRange = {
@@ -19847,17 +19882,13 @@
           );
           aqiCacheRecord.lastResponseMeta = lastResponseMeta;
           aqiBandCache.set(aqiCacheKey, aqiCacheRecord);
-          aqiPoints = getPointsInRange(aqiCacheRecord.points, range);
           if (token !== state.loadToken || signal.aborted) return;
-          syncAqiBands(dom?.chartFrame, {
-            aqiPoints,
-            aqiCacheKey,
-            aqiLoading: true,
-            aqiSourceSymbolIndex,
-          });
+          aqiCompletedChunkIndexes.add(missing.queueIndex);
+          renderContiguousAqiChunks();
         });
         aqiLoadingActive = false;
         if (token !== state.loadToken || signal.aborted) return;
+        aqiPoints = getPointsInRange(aqiCacheRecord.points, range);
         syncAqiBands(dom?.chartFrame, {
           aqiPoints,
           aqiCacheKey,
