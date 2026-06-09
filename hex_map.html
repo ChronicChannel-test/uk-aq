@@ -18260,20 +18260,27 @@
     const periodStartIndex = columns.indexOf("period_start_utc");
     const timestampHourIndex = columns.indexOf("timestamp_hour_utc");
     const observedAtIndex = columns.indexOf("observed_at");
-    const daqiIndex = [mapping.daqiField, "daqi_index_level", "daqi"]
+    const daqiIndexes = [mapping.daqiField, "daqi_index_level", "daqi"]
       .map((field) => columns.indexOf(field))
-      .find((index) => index >= 0);
-    const eaqiIndex = [mapping.eaqiField, "eaqi_index_level", "eaqi"]
+      .filter((index) => index >= 0);
+    const eaqiIndexes = [mapping.eaqiField, "eaqi_index_level", "eaqi"]
       .map((field) => columns.indexOf(field))
-      .find((index) => index >= 0);
+      .filter((index) => index >= 0);
+    const firstCompactAqiLevel = (row, indexes, isEaqi) => {
+      for (const index of indexes) {
+        const level = normalizeAqiBandLevel(row[index], isEaqi);
+        if (level !== null) return level;
+      }
+      return null;
+    };
     const rawPoints = getAqiPayloadRows(payload);
     return rawPoints.map((row) => {
       if (dataFormat === "compact" && Array.isArray(row)) {
         const observedAt = periodStartIndex >= 0 ? row[periodStartIndex] : timestampHourIndex >= 0 ? row[timestampHourIndex] : observedAtIndex >= 0 ? row[observedAtIndex] : row[0];
         return {
           date: new Date(observedAt),
-          daqi: normalizeAqiBandLevel(daqiIndex >= 0 ? row[daqiIndex] : null, false),
-          eaqi: normalizeAqiBandLevel(eaqiIndex >= 0 ? row[eaqiIndex] : null, true),
+          daqi: firstCompactAqiLevel(row, daqiIndexes, false),
+          eaqi: firstCompactAqiLevel(row, eaqiIndexes, true),
         };
       }
       return {
