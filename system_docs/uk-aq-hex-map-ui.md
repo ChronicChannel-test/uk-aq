@@ -35,10 +35,11 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 ## Chart-mode AQI bands
 - `hex_map.html` requests AQI history from the configured cache/AQI-history bases using `scope=timeseries`, `grain=hourly`, `timeseries_id`, `entity`, `pollutant`, `from_utc`, `to_utc`, and `row_limit`.
 - The default AQI-history base is injected at build time from `UK_AQ_AQI_HISTORY_BASE_URL`; if injection is missing, the page should fail closed rather than silently keep a stale host literal.
-- AQI responses are parsed more defensively: pollutant-specific DAQI/EAQI fields are preferred, but generic `daqi_index_level` and `eaqi_index_level` fields are accepted as fallbacks.
+- AQI responses are parsed from the normalized hourly fields only: `daqi_index_level`, `eaqi_index_level`, `daqi_missing_reason`, and `eaqi_missing_reason`.
+- There is no wide-field fallback path in the AQI band parser. The renderer uses explicit missing reasons to decide when to break continuity; rows with null band values and no explicit missing reason can carry the previous band forward instead of creating a visual gap.
 - AQI cache coverage is only advanced when the response is usable. Empty responses can still mark a range as covered if the worker says `response_complete=true`; malformed or incomplete responses do not.
 - The chart no longer reuses stale `currentAqiPoints` when a new AQI fetch comes back empty.
-- Add `?debug_aqi=1` to the page URL to log AQI-history candidate URLs, response metadata, and parsed point counts in the browser console.
+- Add `?debug_aqi=1` to the page URL to log AQI-history candidate URLs, response metadata, row counts, parsed DAQI/EAQI counts, null-band counts, missing-reason counts, and rendered AQI segment counts in the browser console.
 
 ## Pollutant caching
 - `pollutantCache` stores latest rows per pollutant with a short TTL (`POLLUTANT_CACHE_TTL`).

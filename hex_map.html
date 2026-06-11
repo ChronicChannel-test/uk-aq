@@ -17762,11 +17762,28 @@
     return null;
   }
 
-  function getAqiFieldMappingForPollutant(pollutantKey) {
-    if (pollutantKey === "pm25") return { daqiField: "daqi_pm25_rolling24h_index_level", eaqiField: "eaqi_pm25_index_level" };
-    if (pollutantKey === "pm10") return { daqiField: "daqi_pm10_rolling24h_index_level", eaqiField: "eaqi_pm10_index_level" };
-    if (pollutantKey === "no2") return { daqiField: "daqi_no2_index_level", eaqiField: "eaqi_no2_index_level" };
-    return null;
+  function normalizeAqiMissingReason(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const text = String(value).trim();
+    return text || null;
+  }
+
+  function getAqiPayloadRowField(row, columns, fieldName) {
+    if (Array.isArray(row)) {
+      const index = Array.isArray(columns) ? columns.indexOf(fieldName) : -1;
+      return index >= 0 ? row[index] : undefined;
+    }
+    if (row && typeof row === "object") {
+      return row[fieldName];
+    }
+    return undefined;
+  }
+
+  function incrementAqiCount(counts, key) {
+    const normalizedKey = key === null || key === undefined || key === ""
+      ? "null"
+      : String(key);
+    counts[normalizedKey] = (counts[normalizedKey] || 0) + 1;
   }
 
   function normalizeAqiBandLevel(value, isEaqi) {
@@ -17860,10 +17877,34 @@
 
   function getAqiPointCounts(points) {
     const list = Array.isArray(points) ? points : [];
+    const daqiMissingReasonCounts = {};
+    const eaqiMissingReasonCounts = {};
+    let daqiCount = 0;
+    let eaqiCount = 0;
+    let nullDaqiCount = 0;
+    let nullEaqiCount = 0;
+    list.forEach((point) => {
+      if (point?.daqi !== null && point?.daqi !== undefined) {
+        daqiCount += 1;
+      } else {
+        nullDaqiCount += 1;
+      }
+      if (point?.eaqi !== null && point?.eaqi !== undefined) {
+        eaqiCount += 1;
+      } else {
+        nullEaqiCount += 1;
+      }
+      incrementAqiCount(daqiMissingReasonCounts, normalizeAqiMissingReason(point?.daqi_missing_reason));
+      incrementAqiCount(eaqiMissingReasonCounts, normalizeAqiMissingReason(point?.eaqi_missing_reason));
+    });
     return {
       parsed_point_count: list.length,
-      daqi_count: list.filter((point) => point?.daqi !== null && point?.daqi !== undefined).length,
-      eaqi_count: list.filter((point) => point?.eaqi !== null && point?.eaqi !== undefined).length,
+      daqi_count: daqiCount,
+      eaqi_count: eaqiCount,
+      null_daqi_count: nullDaqiCount,
+      null_eaqi_count: nullEaqiCount,
+      daqi_missing_reason_counts: daqiMissingReasonCounts,
+      eaqi_missing_reason_counts: eaqiMissingReasonCounts,
     };
   }
 
@@ -17970,6 +18011,10 @@
       parsed_point_count: aqiCounts.parsed_point_count,
       daqi_count: Number.isFinite(Number(meta?.daqi_count)) ? Number(meta.daqi_count) : aqiCounts.daqi_count,
       eaqi_count: Number.isFinite(Number(meta?.eaqi_count)) ? Number(meta.eaqi_count) : aqiCounts.eaqi_count,
+      null_daqi_count: Number.isFinite(Number(meta?.null_daqi_count)) ? Number(meta.null_daqi_count) : aqiCounts.null_daqi_count,
+      null_eaqi_count: Number.isFinite(Number(meta?.null_eaqi_count)) ? Number(meta.null_eaqi_count) : aqiCounts.null_eaqi_count,
+      daqi_missing_reason_counts: meta?.daqi_missing_reason_counts || aqiCounts.daqi_missing_reason_counts,
+      eaqi_missing_reason_counts: meta?.eaqi_missing_reason_counts || aqiCounts.eaqi_missing_reason_counts,
       data_format: payload?.data_format || meta?.data_format || null,
       wire_format: payload?.wire_format || meta?.wire_format || requestMeta?.wireFormat || null,
       cache_status: payload?.cache_status || meta?.cache_status || null,
@@ -17986,16 +18031,15 @@
       retention_start_utc: payload?.retention_start_utc || meta?.retention_start_utc || coverage?.retention_start_utc || null,
       source_of_truth_days: payload?.source_of_truth_days || meta?.source_of_truth_days || coverage?.ingest_retention_days || null,
       coverage,
+      row_summary: payload?.coverage?.row_summary || meta?.row_summary || coverage?.row_summary || null,
     };
   }
 
   function logAqiHistoryDebugMeta(stage, url, payload, requestMeta, points) {
     if (!isAqiHistoryDebugEnabled()) return;
     const normalizedMeta = normalizeAqiHistoryResponseMeta(payload, { ...requestMeta, points });
-    const parsedGapSummary = summarizeParsedGapRanges(points, {
-      startMs: Date.parse(normalizedMeta.query_from_utc || requestMeta?.fromIso || ""),
-      endMs: Date.parse(normalizedMeta.query_to_utc || requestMeta?.toIso || ""),
-    });
+    const pointCounts = getAqiPointCounts(points);
+    const rowSummary = normalizedMeta.row_summary || {};
     console.debug("[uk-aq aqi-history]", stage, {
       url,
       selected_aqi_source_station_id: state.selectedAqiSensorId || null,
@@ -18018,11 +18062,13 @@
       raw_row_count: normalizedMeta.raw_row_count,
       point_count: normalizedMeta.point_count,
       parsed_point_count: normalizedMeta.parsed_point_count,
-      daqi_count: normalizedMeta.daqi_count,
-      eaqi_count: normalizedMeta.eaqi_count,
-      parsed_gap_ranges: parsedGapSummary.ranges,
-      parsed_gap_range_count: parsedGapSummary.total,
-      parsed_gap_ranges_truncated: parsedGapSummary.truncated,
+      parsed_daqi_count: pointCounts.daqi_count,
+      parsed_eaqi_count: pointCounts.eaqi_count,
+      rows_with_null_daqi: pointCounts.null_daqi_count,
+      rows_with_null_eaqi: pointCounts.null_eaqi_count,
+      daqi_missing_reason_counts: rowSummary?.daqi_missing_reason_counts || pointCounts.daqi_missing_reason_counts,
+      eaqi_missing_reason_counts: rowSummary?.eaqi_missing_reason_counts || pointCounts.eaqi_missing_reason_counts,
+      row_summary: rowSummary,
       data_format: normalizedMeta.data_format,
       wire_format: normalizedMeta.wire_format,
       cache_status: normalizedMeta.cache_status,
@@ -18073,6 +18119,7 @@
       response_complete: normalizedMeta.response_complete,
       row_count: normalizedMeta.row_count,
       point_count: normalizedMeta.point_count,
+      row_summary: normalizedMeta.row_summary,
       data_format: normalizedMeta.data_format,
       wire_format: normalizedMeta.wire_format,
       cache_status: normalizedMeta.cache_status,
@@ -18253,48 +18300,32 @@
   }
 
   function parseAqiBandPayload(payload, pollutantKey) {
-    const mapping = getAqiFieldMappingForPollutant(pollutantKey);
-    if (!mapping) return [];
+    if (!normalizeAqiSupportedPollutant(pollutantKey)) return [];
     const dataFormat = String(payload?.data_format || "").toLowerCase();
     const columns = Array.isArray(payload?.columns) ? payload.columns : [];
     const periodStartIndex = columns.indexOf("period_start_utc");
     const timestampHourIndex = columns.indexOf("timestamp_hour_utc");
     const observedAtIndex = columns.indexOf("observed_at");
-    const daqiIndexes = [mapping.daqiField, "daqi_index_level", "daqi"]
-      .map((field) => columns.indexOf(field))
-      .filter((index) => index >= 0);
-    const eaqiIndexes = [mapping.eaqiField, "eaqi_index_level", "eaqi"]
-      .map((field) => columns.indexOf(field))
-      .filter((index) => index >= 0);
-    const firstCompactAqiLevel = (row, indexes, isEaqi) => {
-      for (const index of indexes) {
-        const level = normalizeAqiBandLevel(row[index], isEaqi);
-        if (level !== null) return level;
-      }
-      return null;
-    };
     const rawPoints = getAqiPayloadRows(payload);
     return rawPoints.map((row) => {
       if (dataFormat === "compact" && Array.isArray(row)) {
         const observedAt = periodStartIndex >= 0 ? row[periodStartIndex] : timestampHourIndex >= 0 ? row[timestampHourIndex] : observedAtIndex >= 0 ? row[observedAtIndex] : row[0];
         return {
           date: new Date(observedAt),
-          daqi: firstCompactAqiLevel(row, daqiIndexes, false),
-          eaqi: firstCompactAqiLevel(row, eaqiIndexes, true),
+          daqi: normalizeAqiBandLevel(getAqiPayloadRowField(row, columns, "daqi_index_level"), false),
+          eaqi: normalizeAqiBandLevel(getAqiPayloadRowField(row, columns, "eaqi_index_level"), true),
+          daqi_missing_reason: normalizeAqiMissingReason(getAqiPayloadRowField(row, columns, "daqi_missing_reason")),
+          eaqi_missing_reason: normalizeAqiMissingReason(getAqiPayloadRowField(row, columns, "eaqi_missing_reason")),
         };
       }
       return {
         date: new Date(row?.period_start_utc || row?.timestamp_hour_utc || row?.observed_at),
-        daqi: normalizeAqiBandLevel(
-          row?.[mapping.daqiField] ?? row?.daqi_index_level ?? row?.daqi,
-          false,
-        ),
-        eaqi: normalizeAqiBandLevel(
-          row?.[mapping.eaqiField] ?? row?.eaqi_index_level ?? row?.eaqi,
-          true,
-        ),
+        daqi: normalizeAqiBandLevel(getAqiPayloadRowField(row, columns, "daqi_index_level"), false),
+        eaqi: normalizeAqiBandLevel(getAqiPayloadRowField(row, columns, "eaqi_index_level"), true),
+        daqi_missing_reason: normalizeAqiMissingReason(getAqiPayloadRowField(row, columns, "daqi_missing_reason")),
+        eaqi_missing_reason: normalizeAqiMissingReason(getAqiPayloadRowField(row, columns, "eaqi_missing_reason")),
       };
-    }).filter((row) => Number.isFinite(row.date?.getTime()) && (row.daqi !== null || row.eaqi !== null))
+    }).filter((row) => Number.isFinite(row.date?.getTime()))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
@@ -19361,7 +19392,7 @@
   }
 
   function buildAqiHistoryRequestCandidates(entry, pollutantKey, range) {
-    if (!entry?.timeseriesId || !getAqiFieldMappingForPollutant(pollutantKey)) return [];
+    if (!entry?.timeseriesId || !pollutantKey) return [];
     return dedupeStrings(aqiHistoryBaseCandidates.map((base) => {
       try {
         const url = new URL(base);
@@ -20239,6 +20270,7 @@
     const gap = 4;
     const slotWidth = Math.max(1, (frame.width - frame.margin.left - frame.margin.right) / Math.max(1, (frame.endMs - frame.startMs) / HOUR_MS));
     const renderedCounts = { daqi_segment_count: 0, eaqi_segment_count: 0 };
+    const carryForwardLevels = { daqi: null, eaqi: null };
     const drawBand = (label, y, key, colors) => {
       const group = svg.append("g")
         .attr("transform", `translate(0, ${y})`)
@@ -20255,7 +20287,23 @@
       }
       for (let t = new Date(frame.startMs).setMinutes(0, 0, 0); t < frame.endMs; t += HOUR_MS) {
         const point = pointByHour.get(t);
-        const color = point ? colors[point[key]] : null;
+        if (!point) {
+          carryForwardLevels[key] = null;
+          continue;
+        }
+        const level = point[key];
+        const missingReason = point[`${key}_missing_reason`];
+        let resolvedLevel = null;
+        if (level !== null && level !== undefined) {
+          resolvedLevel = level;
+          carryForwardLevels[key] = level;
+        } else if (missingReason) {
+          carryForwardLevels[key] = null;
+          continue;
+        } else {
+          resolvedLevel = carryForwardLevels[key];
+        }
+        const color = resolvedLevel !== null && resolvedLevel !== undefined ? colors[resolvedLevel] : null;
         if (!color) continue;
         const x = Math.max(frame.margin.left, xScale(new Date(t)));
         const nextX = xScale(new Date(t + HOUR_MS));
@@ -20330,9 +20378,14 @@
         loading: cf.currentAqiLoading,
         range_start_utc: new Date(cf.frame.startMs).toISOString(),
         range_end_utc: new Date(cf.frame.endMs).toISOString(),
+        row_count: pointCounts.parsed_point_count,
         parsed_point_count: pointCounts.parsed_point_count,
-        daqi_count: pointCounts.daqi_count,
-        eaqi_count: pointCounts.eaqi_count,
+        parsed_daqi_count: pointCounts.daqi_count,
+        parsed_eaqi_count: pointCounts.eaqi_count,
+        rows_with_null_daqi: pointCounts.null_daqi_count,
+        rows_with_null_eaqi: pointCounts.null_eaqi_count,
+        daqi_missing_reason_counts: pointCounts.daqi_missing_reason_counts,
+        eaqi_missing_reason_counts: pointCounts.eaqi_missing_reason_counts,
         rendered_daqi_segment_count: renderedCounts?.daqi_segment_count || 0,
         rendered_eaqi_segment_count: renderedCounts?.eaqi_segment_count || 0,
       });
