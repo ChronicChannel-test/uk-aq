@@ -39,7 +39,6 @@ jobs:
           SB_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SB_PUBLISHABLE_DEFAULT_KEY }}
           UK_AQ_TURNSTILE_SITE_KEY: ${{ secrets.UK_AQ_TURNSTILE_SITE_KEY }}
           UK_AQ_AQI_HISTORY_BASE_URL: ${{ secrets.UK_AQ_AQI_HISTORY_BASE_URL }}
-          UK_AQ_WEBSITE_DEBUG_LOG_ENABLED: ${{ vars.UK_AQ_WEBSITE_DEBUG_LOG_ENABLED || 'false' }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

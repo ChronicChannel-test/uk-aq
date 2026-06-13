@@ -40,9 +40,6 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - AQI cache coverage is only advanced when the response is usable. Empty responses can still mark a range as covered if the worker says `response_complete=true`; malformed or incomplete responses do not.
 - The chart no longer reuses stale `currentAqiPoints` when a new AQI fetch comes back empty.
 - Add `?debug_aqi=1` to the page URL to log AQI-history candidate URLs, response metadata, row counts, parsed DAQI/EAQI counts, null-band counts, missing-reason counts, and rendered AQI segment counts in the browser console.
-- `UK_AQ_WEBSITE_DEBUG_LOG_ENABLED=true` enables structured browser debug uploads for chart/AQI failures. The build injects this flag into `hex_map.html`; `?debug_log=1` can also enable it for a single URL.
-- When website debug logging is enabled, `hex_map.html` captures failed `/api/aq/aqi-history` response bodies before throwing, caps response bodies at 50 KiB, redacts sensitive headers/query params, records chart range/cache/timing context, and posts one JSON payload to `/api/aq/debug-log`.
-- The cache proxy uploads those JSON payloads server-side to Dropbox under `error_logs/YYYY-MM-DD/` with filenames like `uk_aq_error_hex_map_html_YYYYMMDDTHHMMSSZ_<shortid>.json`; Dropbox secrets are never exposed to the browser.
 
 ## Pollutant caching
 - `pollutantCache` stores latest rows per pollutant with a short TTL (`POLLUTANT_CACHE_TTL`).

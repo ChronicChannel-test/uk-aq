@@ -17364,13 +17364,6 @@
   const configuredAqiHistoryBase = AQI_HISTORY_BASE_PLACEHOLDER.includes("__UK_AQ_AQI_HISTORY_BASE_URL__")
     ? ""
     : AQI_HISTORY_BASE_PLACEHOLDER;
-  const WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER = "true";
-  const configuredWebsiteDebugLogEnabled = WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER.includes("__UK_AQ_WEBSITE_DEBUG_LOG_ENABLED__")
-    ? ""
-    : WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER;
-  const WEBSITE_DEBUG_LOG_ENDPOINT = "/api/aq/debug-log";
-  const WEBSITE_DEBUG_RESPONSE_BODY_LIMIT = 50 * 1024;
-  const WEBSITE_DEBUG_EVENT_LIMIT = 240;
   const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
   const aqiHistoryBaseCandidates = dedupeStrings([
     aqiHistoryBaseUrl,
@@ -17410,7 +17403,6 @@
   const aqiBandCache    = new Map();
   const seriesChunkInFlight = new Map();
   const aqiChunkInFlight = new Map();
-  let websiteDebugSession = null;
 
   function collectChartDom(prefix) {
     const panel = document.getElementById(`${prefix}-hex-chart-mode`);
@@ -17811,244 +17803,6 @@
   function isChartDebugEnabled() {
     return params.get("debug_chart") === "1";
   }
-
-  function isWebsiteDebugLogEnabled() {
-    return parseBooleanFlag(configuredWebsiteDebugLogEnabled, false)
-      || parseBooleanFlag(params.get("debug_log"), false);
-  }
-
-  function serializeDebugError(error) {
-    if (!error) return null;
-    return {
-      name: error?.name || null,
-      message: error instanceof Error ? error.message : String(error),
-      status: Number.isFinite(Number(error?.status)) ? Number(error.status) : (
-        Number.isFinite(Number(error?.ukAqHttpStatus)) ? Number(error.ukAqHttpStatus) : null
-      ),
-    };
-  }
-
-  function capDebugText(value, limit = WEBSITE_DEBUG_RESPONSE_BODY_LIMIT) {
-    const text = String(value ?? "");
-    const cap = Math.max(0, Number(limit) || 0);
-    return {
-      text: text.slice(0, cap),
-      bytes: new Blob([text]).size,
-      truncated: text.length > cap,
-    };
-  }
-
-  function redactDebugQueryValue(key, value) {
-    const normalized = String(key || "").toLowerCase();
-    if (/(token|secret|key|auth|password|session|jwt|credential)/.test(normalized)) {
-      return "[redacted]";
-    }
-    return value;
-  }
-
-  function sanitizeDebugUrl(value) {
-    try {
-      const url = new URL(String(value || ""), window.location.origin);
-      Array.from(url.searchParams.keys()).forEach((key) => {
-        url.searchParams.set(key, redactDebugQueryValue(key, url.searchParams.get(key)));
-      });
-      return url.toString();
-    } catch (_err) {
-      return String(value || "");
-    }
-  }
-
-  function extractDebugQueryParams(value) {
-    try {
-      const url = new URL(String(value || ""), window.location.origin);
-      const output = {};
-      url.searchParams.forEach((paramValue, key) => {
-        output[key] = redactDebugQueryValue(key, paramValue);
-      });
-      return output;
-    } catch (_err) {
-      return {};
-    }
-  }
-
-  function redactDebugHeaders(headers) {
-    const output = {};
-    if (!headers?.forEach) return output;
-    headers.forEach((value, key) => {
-      const normalized = String(key || "").toLowerCase();
-      output[key] = /(authorization|cookie|set-cookie|token|secret|key|auth|session|jwt|credential)/.test(normalized)
-        ? "[redacted]"
-        : value;
-    });
-    return output;
-  }
-
-  function parseDebugBodyJson(text) {
-    const raw = String(text || "").trim();
-    if (!raw || (!raw.startsWith("{") && !raw.startsWith("["))) return null;
-    try {
-      return JSON.parse(raw);
-    } catch (_err) {
-      return null;
-    }
-  }
-
-  function createWebsiteDebugSession(context = {}) {
-    return {
-      schema_version: 1,
-      source: "hex_map.html",
-      debug_enabled: true,
-      session_id: `${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 10)}`,
-      created_at_utc: new Date().toISOString(),
-      page: {
-        path: window.location.pathname,
-        url: sanitizeDebugUrl(window.location.href),
-        user_agent: window.navigator?.userAgent || null,
-      },
-      context,
-      events: [],
-      timings_ms: {},
-      counters: {
-        failed_fetch_count: 0,
-        aqi_history_503_count: 0,
-        postcode_prefix_hints_401_count: 0,
-        warning_count: 0,
-        error_count: 0,
-      },
-      flushed: false,
-      uploading: false,
-    };
-  }
-
-  function startWebsiteDebugSession(context = {}) {
-    if (!isWebsiteDebugLogEnabled()) return null;
-    websiteDebugSession = createWebsiteDebugSession(context);
-    console.debug("[uk-aq website-debug]", "session-started", websiteDebugSession.context);
-    return websiteDebugSession;
-  }
-
-  function getWebsiteDebugSession() {
-    if (!isWebsiteDebugLogEnabled()) return null;
-    if (!websiteDebugSession) {
-      websiteDebugSession = createWebsiteDebugSession({ reason: "ad-hoc" });
-    }
-    return websiteDebugSession;
-  }
-
-  function recordWebsiteDebugEvent(type, details = {}) {
-    const session = getWebsiteDebugSession();
-    if (!session) return;
-    const event = {
-      at_utc: new Date().toISOString(),
-      type,
-      ...details,
-    };
-    if (session.events.length < WEBSITE_DEBUG_EVENT_LIMIT) {
-      session.events.push(event);
-    } else if (!session.events_truncated) {
-      session.events_truncated = true;
-      session.events.push({
-        at_utc: new Date().toISOString(),
-        type: "events_truncated",
-        limit: WEBSITE_DEBUG_EVENT_LIMIT,
-      });
-    }
-    const status = Number(details?.status ?? details?.http_status ?? details?.response?.status);
-    if (type.includes("failed") || (Number.isFinite(status) && status >= 400)) {
-      session.counters.failed_fetch_count += 1;
-    }
-    if (type.includes("error") || (Number.isFinite(status) && status >= 500)) {
-      session.counters.error_count += 1;
-    }
-    if (type.includes("warning") || type.includes("malformed")) {
-      session.counters.warning_count += 1;
-    }
-    if (String(details?.route || "").includes("aqi-history") && status === 503) {
-      session.counters.aqi_history_503_count += 1;
-    }
-    if (String(details?.route || "").includes("postcode_prefix_hints") && status === 401) {
-      session.counters.postcode_prefix_hints_401_count += 1;
-    }
-  }
-
-  function recordWebsiteDebugTiming(name, valueMs) {
-    const session = getWebsiteDebugSession();
-    if (!session || !name || !Number.isFinite(Number(valueMs))) return;
-    session.timings_ms[name] = Math.round(Number(valueMs));
-  }
-
-  async function flushWebsiteDebugLog(reason = "manual") {
-    const session = websiteDebugSession;
-    if (!isWebsiteDebugLogEnabled() || !session || session.flushed || session.uploading) return;
-    if (!session.events.length && !Object.keys(session.timings_ms || {}).length) return;
-    session.uploading = true;
-    const payload = {
-      ...session,
-      flushed_reason: reason,
-      flushed_at_utc: new Date().toISOString(),
-    };
-    try {
-      const body = JSON.stringify(payload);
-      const response = await fetch(WEBSITE_DEBUG_LOG_ENDPOINT, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: body.length < 60000,
-      });
-      if (!response.ok) {
-        console.warn("[uk-aq website-debug]", "upload failed", response.status, await response.text().catch(() => ""));
-        session.uploading = false;
-        return;
-      }
-      session.flushed = true;
-      console.debug("[uk-aq website-debug]", "uploaded", {
-        reason,
-        events: session.events.length,
-        timings: Object.keys(session.timings_ms || {}).length,
-      });
-    } catch (error) {
-      session.uploading = false;
-      console.warn("[uk-aq website-debug]", "upload error", error);
-    }
-  }
-
-  function recordWebsiteFetchFailure(route, url, response, bodyText, context = {}) {
-    if (!isWebsiteDebugLogEnabled()) return;
-    const session = getWebsiteDebugSession();
-    const status = response?.status || null;
-    const hasPriorMatchingBody = Boolean(session?.events?.some((event) => (
-      event?.type === "fetch_failed"
-      && event?.route === route
-      && event?.status === status
-      && event?.body_text
-    )));
-    const capped = capDebugText(bodyText, hasPriorMatchingBody ? 4096 : WEBSITE_DEBUG_RESPONSE_BODY_LIMIT);
-    recordWebsiteDebugEvent("fetch_failed", {
-      route,
-      url: sanitizeDebugUrl(url),
-      query: extractDebugQueryParams(url),
-      status,
-      status_text: response?.statusText || "",
-      headers: redactDebugHeaders(response?.headers),
-      body_text: capped.text,
-      body_json: parseDebugBodyJson(capped.text),
-      body_bytes: capped.bytes,
-      body_truncated: capped.truncated,
-      context,
-    });
-  }
-
-  window.ukAqWebsiteDebugLog = {
-    enabled: isWebsiteDebugLogEnabled,
-    recordEvent: recordWebsiteDebugEvent,
-    recordTiming: recordWebsiteDebugTiming,
-    flush: flushWebsiteDebugLog,
-    capText: capDebugText,
-    sanitizeUrl: sanitizeDebugUrl,
-    redactHeaders: redactDebugHeaders,
-    parseBodyJson: parseDebugBodyJson,
-  };
 
   function getEntryConnectorId(entry) {
     const value = entry?.connectorId
@@ -19111,27 +18865,16 @@
     return typeof window.ukAqFetchCacheApi === "function" ? window.ukAqFetchCacheApi : null;
   }
 
-  async function fetchAqiHistoryPayload(url, requestDebugContext = {}) {
+  async function fetchAqiHistoryPayload(url) {
     const init = { credentials: "include", headers: { Accept: "application/json" } };
     const cacheFetch = getCacheFetch();
-    const startedAt = performance.now();
     const response = cacheFetch ? await cacheFetch(url, init) : await fetch(url, init);
+    if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
     const contentType = response.headers.get("content-type") || "";
-    const body = await response.text();
-    recordWebsiteDebugTiming("last_aqi_history_fetch_ms", performance.now() - startedAt);
-    if (!response.ok) {
-      recordWebsiteFetchFailure("aqi-history", url, response, body, requestDebugContext);
-      const error = new Error(`Chart request failed: ${response.status}`);
-      error.ukAqDebugLogged = true;
-      error.ukAqHttpStatus = response.status;
-      error.ukAqResponseBodyText = capDebugText(body).text;
-      error.ukAqResponseContentType = contentType;
-      throw error;
-    }
     return {
       status: response.status,
       contentType,
-      body,
+      body: await response.text(),
     };
   }
 
@@ -19143,19 +18886,8 @@
     const cacheFetch = getCacheFetch();
     const response = cacheFetch ? await cacheFetch(url.toString(), init) : await fetch(url.toString(), init);
     if (!response.ok) {
-      const body = await response.text().catch(() => "");
       const error = new Error(`Chart request failed: ${response.status}`);
       error.ukAqDebugLogged = true;
-      error.ukAqHttpStatus = response.status;
-      error.ukAqResponseBodyText = capDebugText(body).text;
-      recordWebsiteFetchFailure("timeseries", url.toString(), response, body, {
-        timeseries_id: entry?.timeseriesId || null,
-        station_id: getEntryStationId(entry),
-        connector_id: getEntryConnectorId(entry),
-        pollutant: entry?.pollutant || getCurrentContext()?.pollutant || null,
-        from_utc: chunk?.startIso || null,
-        to_utc: chunk?.endIso || null,
-      });
       logTimeseriesDebugFailure("fetch-failed", entry, chunk, error, {
         url: url.toString(),
         httpStatus: response.status,
@@ -19686,32 +19418,11 @@
       let lastError = null;
       let lastRequestMeta = null;
       for (let attempt = 1; attempt <= AQI_HISTORY_CHUNK_MAX_ATTEMPTS; attempt++) {
-        const requestDebugContext = {
-          timeseries_id: entry?.timeseriesId || null,
-          station_id: getEntryStationId(entry),
-          connector_id: getEntryConnectorId(entry),
-          pollutant: pollutantKey,
-          from_utc: range?.startIso || null,
-          to_utc: range?.endIso || null,
-          attempt,
-          max_attempts: AQI_HISTORY_CHUNK_MAX_ATTEMPTS,
-        };
         try {
-          const { status, contentType, body } = await fetchAqiHistoryPayload(url, requestDebugContext);
+          const { status, contentType, body } = await fetchAqiHistoryPayload(url);
           const payload = parseAqiHistoryResponseBody(body);
           const wireFormat = payload?.data_format || body?.data_format || (String(contentType).includes("json") ? "json" : "text");
           const points = parseAqiBandPayload(payload, pollutantKey);
-          if (payload?.malformed) {
-            recordWebsiteDebugEvent("aqi_history_malformed", {
-              route: "aqi-history",
-              url: sanitizeDebugUrl(url),
-              query: extractDebugQueryParams(url),
-              status,
-              content_type: contentType,
-              body_preview: capDebugText(body, 4096).text,
-              context: requestDebugContext,
-            });
-          }
           if (isAqiHistoryDebugEnabled()) {
             logAqiHistoryDebugMeta("fetch-success", url, payload, {
               timeseriesId: entry?.timeseriesId || null,
@@ -19753,16 +19464,6 @@
             attempt,
           };
           const retryable = shouldRetryAqiHistoryError(error) && attempt < AQI_HISTORY_CHUNK_MAX_ATTEMPTS;
-          recordWebsiteDebugEvent("aqi_history_attempt_failed", {
-            route: "aqi-history",
-            url: sanitizeDebugUrl(url),
-            query: extractDebugQueryParams(url),
-            status: Number.isFinite(Number(error?.ukAqHttpStatus)) ? Number(error.ukAqHttpStatus) : null,
-            retryable,
-            next_retry_in_ms: retryable ? getAqiHistoryChunkRetryDelayMs(attempt) : null,
-            context: lastRequestMeta,
-            error: serializeDebugError(error),
-          });
           if (isAqiHistoryDebugEnabled()) {
             console.debug("[uk-aq aqi-history]", "fetch-failed", {
               url,
@@ -19794,19 +19495,6 @@
       }
     }
     if (lastFailure) {
-      recordWebsiteDebugEvent("aqi_bands_failed", {
-        route: "aqi-history",
-        url: sanitizeDebugUrl(lastFailure.url || ""),
-        query: extractDebugQueryParams(lastFailure.url || ""),
-        context: {
-          ...(lastFailure.requestMeta || {}),
-          from_utc: range?.startIso || null,
-          to_utc: range?.endIso || null,
-          attempts: AQI_HISTORY_CHUNK_MAX_ATTEMPTS,
-          candidate_count: candidates.length,
-        },
-        error: serializeDebugError(lastFailure.error),
-      });
       logAqiHistoryChunkFailure("chunk-failed", lastFailure.url || null, null, {
         ...(lastFailure.requestMeta || {}),
         fromIso: range?.startIso || null,
@@ -20025,7 +19713,6 @@
 
   async function loadChartData(reason = "sensor-change") {
     if (!state.isChartMode) return;
-    const websiteDebugLoadStartedAt = performance.now();
 
     // If a new load arrives while one is running, abort the current work and
     // replay the latest reason as soon as the worker loop unwinds.
@@ -20138,30 +19825,6 @@
       const aqiMissingRanges = (aqiCacheRecord && primary && pollutantKey)
         ? getMissingRangesForRequest(range, aqiCacheRecord.coveredRanges)
         : [];
-      startWebsiteDebugSession({
-        reason,
-        chart_identity: {
-          map_key: state.mapKey || null,
-          area_code: state.chartModeAreaCode || null,
-          session_identity: state.chartModeSessionIdentity || null,
-        },
-        range_label: windowValue,
-        range_start_utc: range.startIso,
-        range_end_utc: range.endIso,
-        selected_sensor_ids: selectedIds,
-        selected_aqi_source_station_id: state.selectedAqiSensorId || null,
-        selected_aqi_source_timeseries_id: primary?.timeseriesId || null,
-        selected_aqi_source_connector_id: getEntryConnectorId(primary),
-        pollutant: pollutantKey,
-        observation_cache: observationDebugPlans,
-        observation_fetch_required: fetchPlans.length > 0,
-        aqi_cache: {
-          cache_key: aqiCacheKey || null,
-          cache_status: aqiMissingRanges.length ? "miss_or_partial" : "hit",
-          ...getCacheStateDebug(aqiCacheRecord || {}),
-          missing_ranges: normalizeDebugRanges(aqiMissingRanges),
-        },
-      });
       if (isChartDebugEnabled()) {
         console.debug("[uk-aq chart]", "load-plan", {
           reason,
@@ -20200,7 +19863,6 @@
         && frameValid
         && dom?.chartFrame?.currentAqiKey === aqiCacheKey
         && aqiMissingRanges.length === 0;
-      const aqiProgressStartedAt = performance.now();
       const aqiProgressPromise = (async () => {
         if (!aqiCacheRecord || !aqiMissingRanges.length) return;
         let lastResponseMeta = aqiCacheRecord.lastResponseMeta || null;
@@ -20258,19 +19920,6 @@
           );
           aqiCacheRecord.lastResponseMeta = lastResponseMeta;
           aqiBandCache.set(aqiCacheKey, aqiCacheRecord);
-          recordWebsiteDebugEvent("aqi_chunk_completed", {
-            route: "aqi-history",
-            cache_key: aqiCacheKey || null,
-            chunk: {
-              start_utc: missing.startIso,
-              end_utc: missing.endIso,
-              queue_index: missing.queueIndex,
-            },
-            point_count: points.length,
-            cache_state: classifyAqiCacheState(result),
-            http_status: result?.meta?.http_status || null,
-            error: serializeDebugError(result?.error),
-          });
           if (token !== state.loadToken || signal.aborted) return;
           aqiCompletedChunkIndexes.add(missing.queueIndex);
           renderContiguousAqiChunks();
@@ -20284,9 +19933,7 @@
           aqiLoading: false,
           aqiSourceSymbolIndex,
         });
-      })().finally(() => {
-        recordWebsiteDebugTiming("aqi_bands_fetch_ms", performance.now() - aqiProgressStartedAt);
-      }).catch((_err) => {
+      })().catch((_err) => {
         aqiLoadingActive = false;
       });
 
@@ -20369,7 +20016,6 @@
       let lineFlushChain = Promise.resolve();
       let lineNextCommitIndex = 0;
       const linePendingResults = new Map();
-      const observationFetchStartedAt = performance.now();
       const applyLinePayload = async (payload) => {
         if (!payload) return;
         if (payload.failed) {
@@ -20448,20 +20094,6 @@
               chunk: workItem.chunk,
               result,
             });
-            recordWebsiteDebugEvent("timeseries_chunk_completed", {
-              route: "timeseries",
-              cache_key: workItem.cacheKey || null,
-              timeseries_id: workItem.entry?.timeseriesId || null,
-              station_id: getEntryStationId(workItem.entry),
-              connector_id: getEntryConnectorId(workItem.entry),
-              chunk: {
-                start_utc: workItem.chunk?.startIso || null,
-                end_utc: workItem.chunk?.endIso || null,
-                queue_index: index,
-              },
-              point_count: Array.isArray(result?.points) ? result.points.length : 0,
-              cache_state: classifyObservationCacheState(result),
-            });
           } catch (chunkErr) {
             if (signal.aborted || token !== state.loadToken) return;
             let debugUrl = null;
@@ -20487,25 +20119,10 @@
               chunk: workItem.chunk,
               failed: true,
             });
-            recordWebsiteDebugEvent("timeseries_chunk_failed", {
-              route: "timeseries",
-              cache_key: workItem.cacheKey || null,
-              timeseries_id: workItem.entry?.timeseriesId || null,
-              station_id: getEntryStationId(workItem.entry),
-              connector_id: getEntryConnectorId(workItem.entry),
-              chunk: {
-                start_utc: workItem.chunk?.startIso || null,
-                end_utc: workItem.chunk?.endIso || null,
-                queue_index: index,
-              },
-              error: serializeDebugError(chunkErr),
-            });
           }
           void scheduleOrderedLineFlush();
         });
-      })().finally(() => {
-        recordWebsiteDebugTiming("observation_fetch_ms", performance.now() - observationFetchStartedAt);
-      }).catch((_err) => {});
+      })().catch((_err) => {});
 
       setLoading(true);
       await lineProgressPromise;
@@ -20534,17 +20151,10 @@
 
     } catch (error) {
       if (signal.aborted || token !== state.loadToken) return;
-      recordWebsiteDebugEvent("chart_load_error", {
-        route: "chart",
-        reason,
-        error: serializeDebugError(error),
-      });
       console.warn("Could not load chart mode data.", error);
       renderEmptyChart("Could not load chart data. Try Refresh.");
       setMessage("Could not load chart data. Try Refresh.", { error: true });
     } finally {
-      recordWebsiteDebugTiming("load_chart_data_ms", performance.now() - websiteDebugLoadStartedAt);
-      void flushWebsiteDebugLog(signal.aborted ? "chart-load-aborted" : "chart-load-finished");
       if (state.loadAbortController === abortController) {
         state.loadAbortController = null;
       }
@@ -22220,40 +21830,8 @@
   async function loadPrefixHints() {
     try {
       const response = await fetch(POSTCODE_PREFIX_HINTS_URL, { credentials: "include" });
-      const bodyText = await response.text();
-      if (!response.ok) {
-        const debug = window.ukAqWebsiteDebugLog;
-        if (debug?.enabled?.()) {
-          const capped = debug.capText?.(bodyText) || { text: bodyText, bytes: bodyText.length, truncated: false };
-          debug.recordEvent?.("postcode_prefix_hints_failed", {
-            route: "postcode_prefix_hints",
-            url: debug.sanitizeUrl?.(POSTCODE_PREFIX_HINTS_URL) || POSTCODE_PREFIX_HINTS_URL,
-            status: response.status,
-            status_text: response.statusText || "",
-            headers: debug.redactHeaders?.(response.headers) || {},
-            body_text: capped.text,
-            body_json: debug.parseBodyJson?.(capped.text) || null,
-            body_bytes: capped.bytes,
-            body_truncated: capped.truncated,
-          });
-          void debug.flush?.("postcode-prefix-hints-failed");
-        }
-        return;
-      }
-      let payload = null;
-      try {
-        payload = JSON.parse(bodyText || "{}");
-      } catch (error) {
-        window.ukAqWebsiteDebugLog?.recordEvent?.("postcode_prefix_hints_malformed", {
-          route: "postcode_prefix_hints",
-          url: window.ukAqWebsiteDebugLog?.sanitizeUrl?.(POSTCODE_PREFIX_HINTS_URL) || POSTCODE_PREFIX_HINTS_URL,
-          status: response.status,
-          body_preview: String(bodyText || "").slice(0, 4096),
-          error: { message: error instanceof Error ? error.message : String(error) },
-        });
-        void window.ukAqWebsiteDebugLog?.flush?.("postcode-prefix-hints-malformed");
-        return;
-      }
+      if (!response.ok) return;
+      const payload = await response.json();
       if (payload?.ok && payload.postcode_samples_1 && payload.postcode_samples_2) {
         prefixHintsCache = payload;
       }

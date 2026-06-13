@@ -33,7 +33,6 @@ const refPattern = /const PROJECT_REF_PLACEHOLDER = "([^"]*)";/g;
 const anonPattern = /const ANON_KEY_PLACEHOLDER = "([^"]*)";/g;
 const turnstilePattern = /const TURNSTILE_SITE_KEY_PLACEHOLDER = "([^"]*)";/g;
 const aqiHistoryPattern = /const AQI_HISTORY_BASE_PLACEHOLDER = "([^"]*)";/g;
-const websiteDebugLogPattern = /const WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER = "([^"]*)";/g;
 
 async function main() {
   const envText = await readFileIfExists(ENV_PATH);
@@ -45,7 +44,6 @@ async function main() {
   const publishableKey = (nodeProcess.env.SB_PUBLISHABLE_DEFAULT_KEY || "").trim();
   const turnstileSiteKey = (nodeProcess.env.UK_AQ_TURNSTILE_SITE_KEY || "").trim();
   const aqiHistoryBaseUrl = (nodeProcess.env.UK_AQ_AQI_HISTORY_BASE_URL || "__UK_AQ_AQI_HISTORY_BASE_URL__").trim();
-  const websiteDebugLogEnabled = (nodeProcess.env.UK_AQ_WEBSITE_DEBUG_LOG_ENABLED || "false").trim();
 
   if (!projectRef) {
     console.error("SUPABASE_PROJECT_REF is missing. Set it in .env or the environment.");
@@ -96,20 +94,12 @@ async function main() {
       targetPath,
       { required: false },
     );
-    updated = replacePlaceholder(
-      updated,
-      websiteDebugLogPattern,
-      `const WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER = "${websiteDebugLogEnabled}";`,
-      "WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER",
-      targetPath,
-      { required: false },
-    );
 
     if (updated !== html) {
       await fs.writeFile(targetPath, updated);
-      console.log(`Injected SUPABASE_PROJECT_REF, publishable key, Turnstile site key, AQI history base, and website debug flag into ${path.relative(REPO_ROOT, targetPath)}`);
+      console.log(`Injected SUPABASE_PROJECT_REF, publishable key, Turnstile site key, and AQI history base into ${path.relative(REPO_ROOT, targetPath)}`);
     } else {
-      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref, publishable key, Turnstile site key, AQI history base, and website debug flag.`);
+      console.log(`${path.relative(REPO_ROOT, targetPath)} already uses the configured SUPABASE project ref, publishable key, Turnstile site key, and AQI history base.`);
     }
   }
 }
