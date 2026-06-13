@@ -17996,8 +17996,20 @@
         body,
         keepalive: body.length < 60000,
       });
+      const responseText = await response.text().catch(() => "");
+      let responsePayload = null;
+      try {
+        responsePayload = responseText ? JSON.parse(responseText) : null;
+      } catch (_err) {
+        responsePayload = null;
+      }
       if (!response.ok) {
-        console.warn("[uk-aq website-debug]", "upload failed", response.status, await response.text().catch(() => ""));
+        console.warn("[uk-aq website-debug]", "upload failed", response.status, responsePayload || responseText);
+        session.uploading = false;
+        return;
+      }
+      if (responsePayload?.uploaded !== true) {
+        console.warn("[uk-aq website-debug]", "upload not confirmed", responsePayload || responseText);
         session.uploading = false;
         return;
       }
@@ -18006,6 +18018,7 @@
         reason,
         events: session.events.length,
         timings: Object.keys(session.timings_ms || {}).length,
+        dropbox_path: responsePayload?.dropbox_path || null,
       });
     } catch (error) {
       session.uploading = false;
