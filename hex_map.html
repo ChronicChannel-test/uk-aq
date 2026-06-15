@@ -17964,6 +17964,8 @@
       ),
       response_complete: pickDebugValue(source?.response_complete, meta?.response_complete, coverage?.response_complete),
       partial_reasons: pickDebugArray(source?.partial_reasons, meta?.partial_reasons, coverage?.partial_reasons),
+      r2_errors: pickDebugArray(source?.r2_errors, meta?.r2_errors, coverage?.r2_errors),
+      ingest_errors: pickDebugArray(source?.ingest_errors, meta?.ingest_errors, coverage?.ingest_errors),
     };
   }
 
