@@ -3642,16 +3642,22 @@
 
       function buildObservationSeriesRequestUrl({
         seriesId,
+        pollutantKey = null,
         startIso = null,
         endIso = null,
         since = null,
         windowValue = null,
         proxyV2Enabled = UK_AQ_CHART_TIMESERIES_PROXY_V2_ENABLED,
       }) {
+        const seriesMeta = seriesLookup.get(seriesId) || null;
+        const requestPollutantKey = normalizeAqiSupportedPollutant(
+          pollutantKey || seriesMeta?.aqiPollutantKey || seriesMeta?.pollutant
+        );
         if (sharedTimeseriesClient?.buildCanonicalTimeseriesUrl) {
           return sharedTimeseriesClient.buildCanonicalTimeseriesUrl({
             baseUrl: SERIES_EDGE_URL,
             timeseriesId: seriesId,
+            pollutant: requestPollutantKey,
             startIso,
             endIso,
             since,
@@ -3662,6 +3668,9 @@
         }
         const url = new URL(SERIES_EDGE_URL);
         url.searchParams.set("timeseries_id", seriesId);
+        if (requestPollutantKey) {
+          url.searchParams.set("pollutant", requestPollutantKey);
+        }
         if (startIso && endIso) {
           url.searchParams.set("start", startIso);
           url.searchParams.set("end", endIso);

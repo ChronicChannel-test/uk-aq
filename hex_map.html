@@ -18651,6 +18651,7 @@
       return sharedTimeseriesClient.buildCanonicalTimeseriesUrl({
         baseUrl: seriesUrl,
         timeseriesId,
+        pollutant: activePollutant,
         windowLabel: normalizeChartRangeValue(state.chartModeTimeRange),
         startIso: chunk?.startIso || null,
         endIso: chunk?.endIso || null,
@@ -18660,6 +18661,7 @@
     }
     const url = new URL(seriesUrl);
     url.searchParams.set("timeseries_id", String(timeseriesId));
+    url.searchParams.set("pollutant", activePollutant);
     url.searchParams.set("start", chunk.startIso);
     url.searchParams.set("end", chunk.endIso);
     url.searchParams.set("format", "compact");

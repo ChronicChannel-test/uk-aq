@@ -16,6 +16,14 @@
     return text || null;
   }
 
+  function normalizePollutantKey(value) {
+    var text = String(value || "").trim().toLowerCase().replace(/[\s._-]+/g, "");
+    if (text === "pm25" || text === "pm10" || text === "no2") {
+      return text;
+    }
+    return null;
+  }
+
   function parseObservationNumericValue(rawValue) {
     if (rawValue === null || rawValue === undefined) return Number.NaN;
     if (typeof rawValue === "string") {
@@ -106,6 +114,12 @@
       throw new Error("Missing timeseries_id.");
     }
     url.searchParams.set("timeseries_id", timeseriesId);
+    var pollutantKey = normalizePollutantKey(options && options.pollutant);
+    if (pollutantKey) {
+      url.searchParams.set("pollutant", pollutantKey);
+    } else {
+      url.searchParams.delete("pollutant");
+    }
 
     var windowLabel = normalizeWindowLabel(options && options.windowLabel);
     var startIso = normalizeIsoTimestamp(options && options.startIso);
