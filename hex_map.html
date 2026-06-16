@@ -7582,18 +7582,6 @@
       let ukSearchPreloadPromise = null;
       let colorScale = null;
       let currentDomainMax = null;
-      const CACHE_SESSION_SKEW_MS = 10000;
-      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:uk`;
-      let cacheAuthToken = null;
-      let cacheAuthTokenExpiresAt = 0;
-      let cacheAuthInflight = null;
-      let turnstileScriptInflight = null;
-      let turnstileTokenInflight = null;
-      let turnstileWidgetId = null;
-      let turnstileTokenResolver = null;
-      let turnstileTokenRejecter = null;
-      let turnstileTokenTimeoutId = null;
-
       function setStatus(value) {
         if (!statusEl) {
           return;
@@ -7622,255 +7610,267 @@
         return "https://cic-test.chronicillnesschannel.co.uk/api/aq";
       }
 
-      function readCacheSessionHintUntil() {
-        try {
-          const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
-          if (!raw) {
-            return 0;
+      if (!window.ukAqSharedAuth) {
+        window.ukAqSharedAuth = (() => {
+          const CACHE_SESSION_SKEW_MS = 10000;
+          const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:shared`;
+          const TURNSTILE_DEBUG_PARAM = "turnstile_debug";
+          let cacheAuthToken = null;
+          let cacheAuthTokenExpiresAt = 0;
+          let cacheAuthInflight = null;
+          let turnstileScriptInflight = null;
+          let turnstileTokenInflight = null;
+          let turnstileWidgetId = null;
+          let turnstileTokenResolver = null;
+          let turnstileTokenRejecter = null;
+          let turnstileTokenTimeoutId = null;
+
+          function isTurnstileDebugMode() {
+            try {
+              return new URLSearchParams(window.location.search).get(TURNSTILE_DEBUG_PARAM) === "1";
+            } catch (_err) {
+              return false;
+            }
           }
-          const parsed = Number(raw);
-          return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-        } catch (_err) {
-          return 0;
-        }
-      }
 
-      function writeCacheSessionHintUntil(untilMs) {
-        try {
-          if (untilMs > 0) {
-            window.localStorage.setItem(CACHE_SESSION_HINT_STORAGE_KEY, String(Math.floor(untilMs)));
-          } else {
-            window.localStorage.removeItem(CACHE_SESSION_HINT_STORAGE_KEY);
+          function readCacheSessionHintUntil() {
+            try {
+              const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
+              if (!raw) return 0;
+              const parsed = Number(raw);
+              return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+            } catch (_err) {
+              return 0;
+            }
           }
-        } catch (_err) {
-          return;
-        }
-      }
 
-      function syncCacheSessionHint() {
-        const hintedUntil = readCacheSessionHintUntil();
-        if (hintedUntil > cacheAuthTokenExpiresAt) {
-          cacheAuthToken = "session";
-          cacheAuthTokenExpiresAt = hintedUntil;
-        }
-      }
-
-      function clearCacheAuthToken(clearSharedHint = true) {
-        cacheAuthToken = null;
-        cacheAuthTokenExpiresAt = 0;
-        if (clearSharedHint) {
-          writeCacheSessionHintUntil(0);
-        }
-      }
-
-      function hasFreshCacheAuthToken() {
-        syncCacheSessionHint();
-        return Boolean(
-          cacheAuthToken
-          && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS),
-        );
-      }
-
-      syncCacheSessionHint();
-      window.addEventListener("storage", (event) => {
-        if (event.key === CACHE_SESSION_HINT_STORAGE_KEY) {
-          syncCacheSessionHint();
-        }
-      });
-
-      function ensureTurnstileContainer() {
-        let container = document.getElementById("uk-aq-turnstile-widget-uk");
-        if (!container) {
-          container = document.createElement("div");
-          container.id = "uk-aq-turnstile-widget-uk";
-          container.style.display = "none";
-          document.body.appendChild(container);
-        }
-        return container;
-      }
-
-      function clearTurnstilePendingState() {
-        if (turnstileTokenTimeoutId) {
-          clearTimeout(turnstileTokenTimeoutId);
-          turnstileTokenTimeoutId = null;
-        }
-        turnstileTokenResolver = null;
-        turnstileTokenRejecter = null;
-      }
-
-      async function ensureTurnstileScript() {
-        if (window.turnstile && typeof window.turnstile.render === "function") {
-          return;
-        }
-        if (!turnstileScriptInflight) {
-          turnstileScriptInflight = new Promise((resolve, reject) => {
-            const existing = document.getElementById("uk-aq-turnstile-script");
-            if (existing) {
-              existing.addEventListener("load", () => resolve(), { once: true });
-              existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script.")), {
-                once: true,
-              });
+          function writeCacheSessionHintUntil(untilMs) {
+            try {
+              if (untilMs > 0) {
+                window.localStorage.setItem(CACHE_SESSION_HINT_STORAGE_KEY, String(Math.floor(untilMs)));
+              } else {
+                window.localStorage.removeItem(CACHE_SESSION_HINT_STORAGE_KEY);
+              }
+            } catch (_err) {
               return;
             }
-            const script = document.createElement("script");
-            script.id = "uk-aq-turnstile-script";
-            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-            script.async = true;
-            script.defer = true;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Failed to load Turnstile script."));
-            document.head.appendChild(script);
-          });
-        }
-        await turnstileScriptInflight;
-      }
+          }
 
-      async function ensureTurnstileWidget() {
-        if (!turnstileSiteKey) {
-          throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
-        }
-        await ensureTurnstileScript();
-        if (turnstileWidgetId !== null) {
-          return;
-        }
-        const turnstileApi = window.turnstile;
-        if (!turnstileApi || typeof turnstileApi.render !== "function") {
-          throw new Error("Turnstile SDK unavailable.");
-        }
-        const container = ensureTurnstileContainer();
-        turnstileWidgetId = turnstileApi.render(container, {
-          sitekey: turnstileSiteKey,
-          appearance: "execute",
-          execution: "execute",
-          callback: (token) => {
-            if (turnstileTokenResolver) {
-              turnstileTokenResolver(token);
-              clearTurnstilePendingState();
-            }
-          },
-          "error-callback": () => {
-            const _api = window.turnstile;
-            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
-              _api.remove(turnstileWidgetId);
-            }
-            turnstileWidgetId = null;
-            if (turnstileTokenRejecter) {
-              turnstileTokenRejecter(new Error("Turnstile verification failed."));
-              clearTurnstilePendingState();
-            }
-          },
-          "expired-callback": () => {
-            const _api = window.turnstile;
-            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
-              _api.remove(turnstileWidgetId);
-            }
-            turnstileWidgetId = null;
-            if (turnstileTokenRejecter) {
-              turnstileTokenRejecter(new Error("Turnstile token expired."));
-              clearTurnstilePendingState();
-            }
-          },
-        });
-      }
-
-      async function getTurnstileToken() {
-        await ensureTurnstileWidget();
-        if (!turnstileTokenInflight) {
-          turnstileTokenInflight = (async () => {
-            const turnstileApi = window.turnstile;
-            if (!turnstileApi || typeof turnstileApi.execute !== "function") {
-              throw new Error("Turnstile execute unavailable.");
-            }
-            const token = await new Promise((resolve, reject) => {
-              turnstileTokenResolver = resolve;
-              turnstileTokenRejecter = reject;
-              turnstileTokenTimeoutId = setTimeout(() => {
-                if (turnstileTokenRejecter) {
-                  turnstileTokenRejecter(new Error("Turnstile token timed out."));
-                }
-                clearTurnstilePendingState();
-              }, 30000);
-              turnstileApi.execute(turnstileWidgetId);
-            });
-            return token;
-          })().finally(() => {
-            turnstileTokenInflight = null;
-          });
-        }
-        return turnstileTokenInflight;
-      }
-
-      async function getCacheAuthToken(forceRefresh = false) {
-        if (!forceRefresh && hasFreshCacheAuthToken()) {
-          return cacheAuthToken;
-        }
-        if (!cacheSessionUrl) {
-          throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
-        }
-        if (!cacheAuthInflight) {
-          const timingId = nextHexMapTimingId();
-          markHexMapTiming(timingId, "cache-session:start");
-          cacheAuthInflight = (async () => {
-            try {
-              const turnstileToken = await getTurnstileToken();
-              const response = await fetch(cacheSessionUrl, {
-                method: "POST",
-                headers: {
-                  "Accept": "application/json",
-                  "X-UK-AQ-Session-Init": "1",
-                  "CF-Turnstile-Token": turnstileToken,
-                },
-                credentials: "include",
-              });
-              if (!response.ok) {
-                throw new Error(`Session start failed: ${response.status}`);
-              }
-              const payload = await response.json().catch(() => ({}));
-              const expiresIn = Number(payload?.session_expires_in);
+          function syncCacheSessionHint() {
+            const hintedUntil = readCacheSessionHintUntil();
+            if (hintedUntil > cacheAuthTokenExpiresAt) {
               cacheAuthToken = "session";
-              cacheAuthTokenExpiresAt = Date.now() + Math.max(
-                30000,
-                Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
-              );
-              writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
-              return cacheAuthToken;
-            } finally {
-              markHexMapTiming(timingId, "cache-session:end");
-              measureHexMapTiming(timingId, "cache-session", "cache-session:start", "cache-session:end");
+              cacheAuthTokenExpiresAt = hintedUntil;
             }
-          })().finally(() => {
-            cacheAuthInflight = null;
+          }
+
+          function clearCacheAuthToken(clearSharedHint = true) {
+            cacheAuthToken = null;
+            cacheAuthTokenExpiresAt = 0;
+            if (clearSharedHint) writeCacheSessionHintUntil(0);
+          }
+
+          function hasFreshCacheAuthToken() {
+            syncCacheSessionHint();
+            return Boolean(cacheAuthToken && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS));
+          }
+
+          function ensureTurnstileContainer() {
+            let container = document.getElementById("uk-aq-turnstile-widget-shared");
+            if (!container) {
+              container = document.createElement("div");
+              container.id = "uk-aq-turnstile-widget-shared";
+              document.body.appendChild(container);
+            }
+            container.style.position = "fixed";
+            container.style.right = "16px";
+            container.style.bottom = "110px";
+            container.style.zIndex = "2147483647";
+            container.style.width = "320px";
+            container.style.minHeight = "80px";
+            if (isTurnstileDebugMode()) {
+              container.style.padding = "12px";
+              container.style.background = "rgba(15, 23, 42, 0.92)";
+              container.style.border = "2px solid #38bdf8";
+              container.style.borderRadius = "12px";
+              container.style.boxShadow = "0 20px 45px rgba(15, 23, 42, 0.35)";
+            } else {
+              container.style.padding = "0";
+              container.style.background = "transparent";
+              container.style.border = "0";
+              container.style.borderRadius = "0";
+              container.style.boxShadow = "none";
+            }
+            return container;
+          }
+
+          function clearTurnstilePendingState() {
+            if (turnstileTokenTimeoutId) {
+              clearTimeout(turnstileTokenTimeoutId);
+              turnstileTokenTimeoutId = null;
+            }
+            turnstileTokenResolver = null;
+            turnstileTokenRejecter = null;
+          }
+
+          async function ensureTurnstileScript() {
+            if (window.turnstile && typeof window.turnstile.render === "function") return;
+            if (!turnstileScriptInflight) {
+              turnstileScriptInflight = new Promise((resolve, reject) => {
+                const existing = document.getElementById("uk-aq-turnstile-script");
+                if (existing) {
+                  existing.addEventListener("load", () => resolve(), { once: true });
+                  existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script.")), { once: true });
+                  return;
+                }
+                const script = document.createElement("script");
+                script.id = "uk-aq-turnstile-script";
+                script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+                script.async = true;
+                script.defer = true;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error("Failed to load Turnstile script."));
+                document.head.appendChild(script);
+              });
+            }
+            await turnstileScriptInflight;
+          }
+
+          async function ensureTurnstileWidget() {
+            if (!turnstileSiteKey) throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
+            await ensureTurnstileScript();
+            if (turnstileWidgetId !== null) return;
+            const turnstileApi = window.turnstile;
+            if (!turnstileApi || typeof turnstileApi.render !== "function") throw new Error("Turnstile SDK unavailable.");
+            const container = ensureTurnstileContainer();
+            turnstileWidgetId = turnstileApi.render(container, {
+              sitekey: turnstileSiteKey,
+              appearance: "interaction-only",
+              execution: "execute",
+              callback: (token) => {
+                if (turnstileTokenResolver) {
+                  turnstileTokenResolver(token);
+                  clearTurnstilePendingState();
+                }
+              },
+              "error-callback": () => {
+                const _api = window.turnstile;
+                if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) _api.remove(turnstileWidgetId);
+                turnstileWidgetId = null;
+                if (turnstileTokenRejecter) {
+                  turnstileTokenRejecter(new Error("Turnstile verification failed."));
+                  clearTurnstilePendingState();
+                }
+              },
+              "expired-callback": () => {
+                const _api = window.turnstile;
+                if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) _api.remove(turnstileWidgetId);
+                turnstileWidgetId = null;
+                if (turnstileTokenRejecter) {
+                  turnstileTokenRejecter(new Error("Turnstile token expired."));
+                  clearTurnstilePendingState();
+                }
+              },
+              "timeout-callback": () => {
+                if (turnstileTokenRejecter) {
+                  turnstileTokenRejecter(new Error("Turnstile challenge timed out."));
+                  clearTurnstilePendingState();
+                }
+              },
+            });
+          }
+
+          async function getTurnstileToken() {
+            await ensureTurnstileWidget();
+            if (!turnstileTokenInflight) {
+              turnstileTokenInflight = (async () => {
+                const turnstileApi = window.turnstile;
+                if (!turnstileApi || typeof turnstileApi.execute !== "function") throw new Error("Turnstile execute unavailable.");
+                return new Promise((resolve, reject) => {
+                  turnstileTokenResolver = resolve;
+                  turnstileTokenRejecter = reject;
+                  turnstileTokenTimeoutId = setTimeout(() => {
+                    if (turnstileTokenRejecter) turnstileTokenRejecter(new Error("Turnstile token timed out."));
+                    clearTurnstilePendingState();
+                  }, 30000);
+                  turnstileApi.execute(turnstileWidgetId);
+                });
+              })().finally(() => {
+                turnstileTokenInflight = null;
+              });
+            }
+            return turnstileTokenInflight;
+          }
+
+          async function getCacheAuthToken(forceRefresh = false) {
+            if (!forceRefresh && hasFreshCacheAuthToken()) return cacheAuthToken;
+            if (!cacheSessionUrl) throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
+            if (!cacheAuthInflight) {
+              cacheAuthInflight = (async () => {
+                const turnstileToken = await getTurnstileToken();
+                const response = await fetch(cacheSessionUrl, {
+                  method: "POST",
+                  headers: {
+                    "Accept": "application/json",
+                    "X-UK-AQ-Session-Init": "1",
+                    "CF-Turnstile-Token": turnstileToken,
+                  },
+                  credentials: "include",
+                });
+                if (!response.ok) throw new Error(`Session start failed: ${response.status}`);
+                const payload = await response.json().catch(() => ({}));
+                const expiresIn = Number(payload?.session_expires_in);
+                cacheAuthToken = "session";
+                cacheAuthTokenExpiresAt = Date.now() + Math.max(30000, Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000));
+                writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
+                return cacheAuthToken;
+              })().finally(() => {
+                cacheAuthInflight = null;
+              });
+            }
+            return cacheAuthInflight;
+          }
+
+          async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
+            if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
+              await getCacheAuthToken(false);
+            }
+            const response = await fetch(input, { ...init, credentials: "include" });
+            if (response.status === 401 && retryOnAuthFailure) {
+              clearCacheAuthToken(false);
+              await getCacheAuthToken(false);
+              let retried = await fetch(input, { ...init, credentials: "include" });
+              if (retried.status !== 401) return retried;
+              clearCacheAuthToken();
+              await getCacheAuthToken(true);
+              retried = await fetch(input, { ...init, credentials: "include" });
+              return retried;
+            }
+            return response;
+          }
+
+          syncCacheSessionHint();
+          window.addEventListener("storage", (event) => {
+            if (event.key === CACHE_SESSION_HINT_STORAGE_KEY) syncCacheSessionHint();
           });
-        }
-        return cacheAuthInflight;
+
+          return {
+            ensureTurnstileContainer,
+            ensureTurnstileScript,
+            ensureTurnstileWidget,
+            getTurnstileToken,
+            getCacheAuthToken,
+            fetchCacheApi,
+          };
+        })();
       }
 
       async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
         const timingId = nextHexMapTimingId();
         const requestLabel = getHexMapRequestLabel(input);
         markHexMapTiming(timingId, `fetch:${requestLabel}:start`);
-        if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
-          try {
-            await getCacheAuthToken(false);
-          } catch (_err) {
-            // Fall back to the existing 401 retry flow below.
-          }
-        }
         try {
-          const response = await fetch(input, { ...init, credentials: "include" });
-          if (response.status === 401 && retryOnAuthFailure) {
-            clearCacheAuthToken(false);
-            await getCacheAuthToken(false);
-            let retried = await fetch(input, { ...init, credentials: "include" });
-            if (retried.status !== 401) {
-              return retried;
-            }
-            clearCacheAuthToken();
-            await getCacheAuthToken(true);
-            retried = await fetch(input, { ...init, credentials: "include" });
-            return retried;
-          }
-          return response;
+          return await window.ukAqSharedAuth.fetchCacheApi(input, init, retryOnAuthFailure);
         } finally {
           markHexMapTiming(timingId, `fetch:${requestLabel}:end`);
           measureHexMapTiming(
@@ -12662,18 +12662,6 @@
 	      let crSearchPreloadPromise = null;
       let colorScale = null;
       let currentDomainMax = null;
-	      const CACHE_SESSION_SKEW_MS = 10000;
-	      const CACHE_SESSION_HINT_STORAGE_KEY = `uk_aq_cache_session_hint_v1:${cacheOrigin || "default"}:cr`;
-	      let cacheAuthToken = null;
-	      let cacheAuthTokenExpiresAt = 0;
-	      let cacheAuthInflight = null;
-	      let turnstileScriptInflight = null;
-	      let turnstileTokenInflight = null;
-	      let turnstileWidgetId = null;
-	      let turnstileTokenResolver = null;
-	      let turnstileTokenRejecter = null;
-	      let turnstileTokenTimeoutId = null;
-
       function setStatus(value) {
         if (!statusEl) {
           return;
@@ -12685,289 +12673,46 @@
         }
       }
 
-	      function updateEndpointHint() {
-	        if (!endpointHint) {
-	          return;
-	        }
+      function updateEndpointHint() {
+        if (!endpointHint) {
+          return;
+        }
         if (!REST_URL) {
           endpointHint.textContent = "Missing cache endpoint base URL. Add ?cache_base=... to the URL.";
           return;
         }
         const regionSuffix = activeRegion ? ` · ${activeRegion}` : "";
         endpointHint.textContent = `Endpoint: ${REST_URL} (${LA_CONFIG.label}${regionSuffix})`;
-	      }
-	      updateEndpointHint();
+      }
+      updateEndpointHint();
 
-	      function resolveCacheBaseUrl(rawValue) {
-	        const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
-	        if (explicit) {
-	          return explicit.replace(/\/+$/, "");
-	        }
-	        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-	          return `${window.location.origin.replace(/\/$/, "")}/api/aq`;
-	        }
-	        return "https://cic-test.chronicillnesschannel.co.uk/api/aq";
-	      }
+      function resolveCacheBaseUrl(rawValue) {
+        const explicit = typeof rawValue === "string" ? rawValue.trim() : "";
+        if (explicit) {
+          return explicit.replace(/\/+$/, "");
+        }
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+          return `${window.location.origin.replace(/\/$/, "")}/api/aq`;
+        }
+        return "https://cic-test.chronicillnesschannel.co.uk/api/aq";
+      }
 
-	      function readCacheSessionHintUntil() {
-	        try {
-	          const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
-	          if (!raw) {
-	            return 0;
-	          }
-	          const parsed = Number(raw);
-	          return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-	        } catch (_err) {
-	          return 0;
-	        }
-	      }
-
-	      function writeCacheSessionHintUntil(untilMs) {
-	        try {
-	          if (untilMs > 0) {
-	            window.localStorage.setItem(CACHE_SESSION_HINT_STORAGE_KEY, String(Math.floor(untilMs)));
-	          } else {
-	            window.localStorage.removeItem(CACHE_SESSION_HINT_STORAGE_KEY);
-	          }
-	        } catch (_err) {
-	          return;
-	        }
-	      }
-
-	      function syncCacheSessionHint() {
-	        const hintedUntil = readCacheSessionHintUntil();
-	        if (hintedUntil > cacheAuthTokenExpiresAt) {
-	          cacheAuthToken = "session";
-	          cacheAuthTokenExpiresAt = hintedUntil;
-	        }
-	      }
-
-	      function clearCacheAuthToken(clearSharedHint = true) {
-	        cacheAuthToken = null;
-	        cacheAuthTokenExpiresAt = 0;
-	        if (clearSharedHint) {
-	          writeCacheSessionHintUntil(0);
-	        }
-	      }
-
-	      function hasFreshCacheAuthToken() {
-	        syncCacheSessionHint();
-	        return Boolean(
-	          cacheAuthToken
-	          && Date.now() < (cacheAuthTokenExpiresAt - CACHE_SESSION_SKEW_MS),
-	        );
-	      }
-
-	      syncCacheSessionHint();
-	      window.addEventListener("storage", (event) => {
-	        if (event.key === CACHE_SESSION_HINT_STORAGE_KEY) {
-	          syncCacheSessionHint();
-	        }
-	      });
-
-	      function ensureTurnstileContainer() {
-	        let container = document.getElementById("uk-aq-turnstile-widget-cr");
-	        if (!container) {
-	          container = document.createElement("div");
-	          container.id = "uk-aq-turnstile-widget-cr";
-	          container.style.display = "none";
-	          document.body.appendChild(container);
-	        }
-	        return container;
-	      }
-
-	      function clearTurnstilePendingState() {
-	        if (turnstileTokenTimeoutId) {
-	          clearTimeout(turnstileTokenTimeoutId);
-	          turnstileTokenTimeoutId = null;
-	        }
-	        turnstileTokenResolver = null;
-	        turnstileTokenRejecter = null;
-	      }
-
-	      async function ensureTurnstileScript() {
-	        if (window.turnstile && typeof window.turnstile.render === "function") {
-	          return;
-	        }
-	        if (!turnstileScriptInflight) {
-	          turnstileScriptInflight = new Promise((resolve, reject) => {
-	            const existing = document.getElementById("uk-aq-turnstile-script");
-	            if (existing) {
-	              existing.addEventListener("load", () => resolve(), { once: true });
-	              existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script.")), {
-	                once: true,
-	              });
-	              return;
-	            }
-	            const script = document.createElement("script");
-	            script.id = "uk-aq-turnstile-script";
-	            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-	            script.async = true;
-	            script.defer = true;
-	            script.onload = () => resolve();
-	            script.onerror = () => reject(new Error("Failed to load Turnstile script."));
-	            document.head.appendChild(script);
-	          });
-	        }
-	        await turnstileScriptInflight;
-	      }
-
-	      async function ensureTurnstileWidget() {
-	        if (!turnstileSiteKey) {
-	          throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
-	        }
-	        await ensureTurnstileScript();
-	        if (turnstileWidgetId !== null) {
-	          return;
-	        }
-	        const turnstileApi = window.turnstile;
-	        if (!turnstileApi || typeof turnstileApi.render !== "function") {
-	          throw new Error("Turnstile SDK unavailable.");
-	        }
-	        const container = ensureTurnstileContainer();
-	        turnstileWidgetId = turnstileApi.render(container, {
-	          sitekey: turnstileSiteKey,
-	          appearance: "execute",
-	          execution: "execute",
-	          callback: (token) => {
-	            if (turnstileTokenResolver) {
-	              turnstileTokenResolver(token);
-	              clearTurnstilePendingState();
-	            }
-	          },
-	          "error-callback": () => {
-	            const _api = window.turnstile;
-	            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
-	              _api.remove(turnstileWidgetId);
-	            }
-	            turnstileWidgetId = null;
-	            if (turnstileTokenRejecter) {
-	              turnstileTokenRejecter(new Error("Turnstile verification failed."));
-	              clearTurnstilePendingState();
-	            }
-	          },
-	          "expired-callback": () => {
-	            const _api = window.turnstile;
-	            if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) {
-	              _api.remove(turnstileWidgetId);
-	            }
-	            turnstileWidgetId = null;
-	            if (turnstileTokenRejecter) {
-	              turnstileTokenRejecter(new Error("Turnstile token expired."));
-	              clearTurnstilePendingState();
-	            }
-	          },
-	        });
-	      }
-
-	      async function getTurnstileToken() {
-	        await ensureTurnstileWidget();
-	        if (!turnstileTokenInflight) {
-	          turnstileTokenInflight = (async () => {
-	            const turnstileApi = window.turnstile;
-	            if (!turnstileApi || typeof turnstileApi.execute !== "function") {
-	              throw new Error("Turnstile execute unavailable.");
-	            }
-	            const token = await new Promise((resolve, reject) => {
-	              turnstileTokenResolver = resolve;
-	              turnstileTokenRejecter = reject;
-	              turnstileTokenTimeoutId = setTimeout(() => {
-	                if (turnstileTokenRejecter) {
-	                  turnstileTokenRejecter(new Error("Turnstile token timed out."));
-	                }
-	                clearTurnstilePendingState();
-	              }, 30000);
-	              turnstileApi.execute(turnstileWidgetId);
-	            });
-	            return token;
-	          })().finally(() => {
-	            turnstileTokenInflight = null;
-	          });
-	        }
-	        return turnstileTokenInflight;
-	      }
-
-	      async function getCacheAuthToken(forceRefresh = false) {
-	        if (!forceRefresh && hasFreshCacheAuthToken()) {
-	          return cacheAuthToken;
-	        }
-	        if (!cacheSessionUrl) {
-	          throw new Error("Missing cache session URL. Add ?cache_session_url=... to the URL.");
-	        }
-	        if (!cacheAuthInflight) {
-	          const timingId = nextHexMapTimingId();
-	          markHexMapTiming(timingId, "cache-session:start");
-	          cacheAuthInflight = (async () => {
-	            try {
-	              const turnstileToken = await getTurnstileToken();
-	              const response = await fetch(cacheSessionUrl, {
-	                method: "POST",
-	                headers: {
-	                  "Accept": "application/json",
-	                  "X-UK-AQ-Session-Init": "1",
-	                  "CF-Turnstile-Token": turnstileToken,
-	                },
-	                credentials: "include",
-	              });
-	              if (!response.ok) {
-	                throw new Error(`Session start failed: ${response.status}`);
-	              }
-	              const payload = await response.json().catch(() => ({}));
-	              const expiresIn = Number(payload?.session_expires_in);
-	              cacheAuthToken = "session";
-	              cacheAuthTokenExpiresAt = Date.now() + Math.max(
-	                30000,
-	                Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000),
-	              );
-	              writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
-	              return cacheAuthToken;
-	            } finally {
-	              markHexMapTiming(timingId, "cache-session:end");
-	              measureHexMapTiming(timingId, "cache-session", "cache-session:start", "cache-session:end");
-	            }
-	          })().finally(() => {
-	            cacheAuthInflight = null;
-	          });
-	        }
-	        return cacheAuthInflight;
-	      }
-
-	      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
-	        const timingId = nextHexMapTimingId();
-	        const requestLabel = getHexMapRequestLabel(input);
-	        markHexMapTiming(timingId, `fetch:${requestLabel}:start`);
-	        if (retryOnAuthFailure && !hasFreshCacheAuthToken()) {
-	          try {
-	            await getCacheAuthToken(false);
-	          } catch (_err) {
-	            // Fall back to the existing 401 retry flow below.
-	          }
-	        }
-	        try {
-	          const response = await fetch(input, { ...init, credentials: "include" });
-	          if (response.status === 401 && retryOnAuthFailure) {
-	            clearCacheAuthToken(false);
-	            await getCacheAuthToken(false);
-	            let retried = await fetch(input, { ...init, credentials: "include" });
-	            if (retried.status !== 401) {
-	              return retried;
-	            }
-	            clearCacheAuthToken();
-	            await getCacheAuthToken(true);
-	            retried = await fetch(input, { ...init, credentials: "include" });
-	            return retried;
-	          }
-	          return response;
-	        } finally {
-	          markHexMapTiming(timingId, `fetch:${requestLabel}:end`);
-	          measureHexMapTiming(
-	            timingId,
-	            `fetch:${requestLabel}`,
-	            `fetch:${requestLabel}:start`,
-	            `fetch:${requestLabel}:end`,
-	          );
-	        }
-	      }
+      async function fetchCacheApi(input, init = {}, retryOnAuthFailure = true) {
+        const timingId = nextHexMapTimingId();
+        const requestLabel = getHexMapRequestLabel(input);
+        markHexMapTiming(timingId, `fetch:${requestLabel}:start`);
+        try {
+          return await window.ukAqSharedAuth.fetchCacheApi(input, init, retryOnAuthFailure);
+        } finally {
+          markHexMapTiming(timingId, `fetch:${requestLabel}:end`);
+          measureHexMapTiming(
+            timingId,
+            `fetch:${requestLabel}`,
+            `fetch:${requestLabel}:start`,
+            `fetch:${requestLabel}:end`,
+          );
+        }
+      }
       window.ukAqFetchCacheApi = fetchCacheApi;
 
       const ACCESS_LOGIN_REDIRECT_KEY = "uk_aq_access_login_redirect_ts";
