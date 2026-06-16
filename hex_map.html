@@ -7684,7 +7684,7 @@
             }
             container.style.position = "fixed";
             container.style.right = "16px";
-            container.style.bottom = "110px";
+            container.style.bottom = "24px";
             container.style.zIndex = "2147483647";
             container.style.width = "320px";
             container.style.minHeight = "80px";
@@ -7702,6 +7702,18 @@
               container.style.boxShadow = "none";
             }
             return container;
+          }
+
+          function showTurnstileContainerForAuth() {
+            const container = ensureTurnstileContainer();
+            container.style.display = "";
+            return container;
+          }
+
+          function hideTurnstileContainerAfterAuth() {
+            if (isTurnstileDebugMode()) return;
+            const container = document.getElementById("uk-aq-turnstile-widget-shared");
+            if (container) container.style.display = "none";
           }
 
           function clearTurnstilePendingState() {
@@ -7739,10 +7751,11 @@
           async function ensureTurnstileWidget() {
             if (!turnstileSiteKey) throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
             await ensureTurnstileScript();
+            showTurnstileContainerForAuth();
             if (turnstileWidgetId !== null) return;
             const turnstileApi = window.turnstile;
             if (!turnstileApi || typeof turnstileApi.render !== "function") throw new Error("Turnstile SDK unavailable.");
-            const container = ensureTurnstileContainer();
+            const container = showTurnstileContainerForAuth();
             turnstileWidgetId = turnstileApi.render(container, {
               sitekey: turnstileSiteKey,
               appearance: "interaction-only",
@@ -7823,6 +7836,7 @@
                 cacheAuthToken = "session";
                 cacheAuthTokenExpiresAt = Date.now() + Math.max(30000, Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000));
                 writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
+                hideTurnstileContainerAfterAuth();
                 return cacheAuthToken;
               })().finally(() => {
                 cacheAuthInflight = null;
