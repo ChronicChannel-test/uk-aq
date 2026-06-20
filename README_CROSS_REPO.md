@@ -1,8 +1,8 @@
 # Cross-repo map: CIC-test-uk-aq-webpage (web UI)
 
 ## Main repo
-- `CIC-test-uk-aq-webpage` is the main repo for this project and the default starting point for cross-repo tasks.
-- Filesystem location: `/Users/mikehinford/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC-UK-AQ Webpage/CIC-test-uk-aq-webpage`.
+- `CIC-test-uk-aq-ops` is the main repo for this project and the default starting point for cross-repo tasks.
+- Webpage repo location: `/Users/mikehinford/Dropbox/Projects/CIC Website/CIC Air Quality Networks/CIC-UK-AQ Webpage/CIC-test-uk-aq-webpage`.
 
 ## Purpose
 This repo is a static HTML/CSS/JS front-end for the UK Air Quality Networks project. It renders latest station readings, timeseries charts, and hex-map summaries by calling the Cloudflare cache proxy (`/api/aq/*`) for AQ reads and using local data files for geometry and styling.
