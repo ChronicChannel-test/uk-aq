@@ -17817,32 +17817,6 @@
     return type.includes("failed") || type.includes("error") || Number(event?.status || event?.http_status) >= 400;
   }
 
-  function buildUltraMinimalWebsiteDebugPayload(payload, originalBytes = null, finalBytes = null) {
-    const events = Array.isArray(payload?.events) ? payload.events : [];
-    const lastErrors = events.filter((event) => typeIsFailure(event)).slice(-5).map((event) => ({
-      at_utc: event?.at_utc || null,
-      type: event?.type || null,
-      route: event?.route || null,
-      status: event?.status ?? event?.http_status ?? null,
-      error: summarizeLargeDebugValue(event?.error || event?.message || null, "error", 0),
-    }));
-    return {
-      source: payload?.source || "hex_map.html",
-      schema_version: payload?.schema_version || 1,
-      created_at_utc: payload?.created_at_utc || new Date().toISOString(),
-      flushed_at_utc: new Date().toISOString(),
-      page_url: payload?.page?.url || sanitizeDebugUrl(window.location.href),
-      session_id: payload?.session_id || null,
-      counters: payload?.counters || {},
-      last_errors: lastErrors,
-      debug_payload_truncated: true,
-      debug_payload_truncation_reason: "payload_size_limit_hard_final",
-      debug_payload_original_bytes: originalBytes,
-      debug_payload_final_bytes: finalBytes,
-      debug_payload_compaction_version: WEBSITE_DEBUG_COMPACTION_VERSION,
-    };
-  }
-
   function prepareWebsiteDebugPayloadForUpload(payload) {
     const rawBody = JSON.stringify(payload);
     const originalBytes = getUtf8ByteLength(rawBody);
@@ -17865,16 +17839,7 @@
     minimal.debug_payload_final_bytes = minimalBytes;
     minimalBody = JSON.stringify(minimal);
     minimalBytes = getUtf8ByteLength(minimalBody);
-    if (minimalBytes <= WEBSITE_DEBUG_LOG_SAFE_MAX_BYTES) {
-      return { payload: minimal, body: minimalBody, originalBytes, finalBytes: minimalBytes, truncated: true, minimal: true };
-    }
-    const ultraMinimal = buildUltraMinimalWebsiteDebugPayload(payload, originalBytes, minimalBytes);
-    let ultraMinimalBody = JSON.stringify(ultraMinimal);
-    let ultraMinimalBytes = getUtf8ByteLength(ultraMinimalBody);
-    ultraMinimal.debug_payload_final_bytes = ultraMinimalBytes;
-    ultraMinimalBody = JSON.stringify(ultraMinimal);
-    ultraMinimalBytes = getUtf8ByteLength(ultraMinimalBody);
-    return { payload: ultraMinimal, body: ultraMinimalBody, originalBytes, finalBytes: ultraMinimalBytes, truncated: true, minimal: true, ultraMinimal: true };
+    return { payload: minimal, body: minimalBody, originalBytes, finalBytes: minimalBytes, truncated: true, minimal: true };
   }
 
   function extractHistoryCoverageDebug(source = {}) {
@@ -18020,13 +17985,11 @@
     if (!session.events.length && !Object.keys(session.timings_ms || {}).length) return;
     session.uploading = true;
     websiteDebugFlushInFlight = true;
-    const snapshotEvents = session.events.slice();
-    const uploadedEventRefs = new Set(snapshotEvents);
-    const snapshotEventCount = snapshotEvents.length;
+    const snapshotEventCount = session.events.length;
     const snapshotTimings = { ...(session.timings_ms || {}) };
     const payload = {
       ...session,
-      events: snapshotEvents,
+      events: session.events.slice(0, snapshotEventCount),
       timings_ms: snapshotTimings,
       flushed_reason: reason,
       flushed_at_utc: new Date().toISOString(),
@@ -18077,7 +18040,7 @@
         session.events = capWebsiteDebugEvents(session.events).slice(-50);
         return;
       }
-      session.events = session.events.filter((event) => !uploadedEventRefs.has(event));
+      session.events.splice(0, snapshotEventCount);
       session.timings_ms = {};
       session.flushed = false;
       session.upload_count = (session.upload_count || 0) + 1;
