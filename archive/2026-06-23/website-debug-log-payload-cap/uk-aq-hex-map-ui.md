@@ -102,9 +102,3 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - A Turnstile-backed `POST /api/aq/session/start` is attempted only after a `401` response.
 - Session expiry hints are shared across tabs in `localStorage` so quick multi-tab opens avoid redundant session minting.
 - If a cache fetch fails with the browser-level Access/CORS pattern (`TypeError: Failed to fetch`), the page redirects to Cloudflare Access login for the current hostname and then returns to the same map URL.
-
-## Website debug log payload caps
-- `hex_map.html` caps website debug log uploads client-side before posting to `/api/aq/debug-log`; the backend body-size limit is intentionally not raised.
-- Large arrays, full chart data, full API response bodies, cache objects, GeoJSON/features, and similar raw payload fields must be summarised or stripped before upload.
-- Compacted uploads include `debug_payload_truncated`, byte counts, a truncation reason, and a compaction version so oversized/debug-compacted sessions are identifiable in stored logs.
-- A `413` from `/api/aq/debug-log` means frontend compaction failed or was bypassed; the client should drop the oversized queued payload, preserve only a minimal summary, and continue with a fresh bounded buffer rather than retrying the same body.

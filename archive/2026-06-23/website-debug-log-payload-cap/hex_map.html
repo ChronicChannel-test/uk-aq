@@ -17099,11 +17099,6 @@
     </script>
     <script>
 (() => {
-  if (window.__ukAqWebsiteDebugInitialised) {
-    return;
-  }
-  window.__ukAqWebsiteDebugInitialised = true;
-
   const MAX_SELECTED_SENSORS = 4;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const HOUR_MS = 60 * 60 * 1000;
@@ -17134,22 +17129,7 @@
     : WEBSITE_DEBUG_LOG_ENABLED_PLACEHOLDER;
   const WEBSITE_DEBUG_LOG_ENDPOINT = "/api/aq/debug-log";
   const WEBSITE_DEBUG_RESPONSE_BODY_LIMIT = 50 * 1024;
-  const WEBSITE_DEBUG_SAFE_RESPONSE_BODY_LIMIT = 4096;
-  const WEBSITE_DEBUG_LOG_SAFE_MAX_BYTES = 220 * 1024;
-  const WEBSITE_DEBUG_EVENT_LIMIT = 250;
-  const WEBSITE_DEBUG_GENERAL_EVENT_UPLOAD_LIMIT = 250;
-  const WEBSITE_DEBUG_NETWORK_EVENT_UPLOAD_LIMIT = 150;
-  const WEBSITE_DEBUG_CONSOLE_EVENT_UPLOAD_LIMIT = 200;
-  const WEBSITE_DEBUG_ERROR_EVENT_UPLOAD_LIMIT = 80;
-  const WEBSITE_DEBUG_CHART_EVENT_UPLOAD_LIMIT = 50;
-  const WEBSITE_DEBUG_MAX_STRING_LENGTH = 2000;
-  const WEBSITE_DEBUG_LARGE_ARRAY_SAMPLE_SIZE = 3;
-  const WEBSITE_DEBUG_COMPACTION_VERSION = 1;
-  const WEBSITE_DEBUG_LARGE_FIELD_KEYS = new Set([
-    "data", "rows", "points", "features", "geojson", "responsebody", "response_body",
-    "payload", "rawpayload", "raw_payload", "localcache", "local_cache", "series",
-    "observations", "aqirows", "aqi_rows", "chartdata", "chart_data", "body_json", "body_text"
-  ]);
+  const WEBSITE_DEBUG_EVENT_LIMIT = 240;
   const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
   const aqiHistoryBaseCandidates = dedupeStrings([
     aqiHistoryBaseUrl,
@@ -17190,8 +17170,6 @@
   const seriesChunkInFlight = new Map();
   const aqiChunkInFlight = new Map();
   let websiteDebugSession = null;
-  let websiteDebugFlushInFlight = false;
-  let websiteDebugPayloadTooLargeWarned = false;
 
   function collectChartDom(prefix) {
     const panel = document.getElementById(`${prefix}-hex-chart-mode`);
@@ -17609,24 +17587,12 @@
     };
   }
 
-  function getUtf8ByteLength(value) {
-    const text = String(value ?? "");
-    if (typeof TextEncoder !== "undefined") {
-      return new TextEncoder().encode(text).byteLength;
-    }
-    try {
-      return new Blob([text]).size;
-    } catch (_err) {
-      return unescape(encodeURIComponent(text)).length;
-    }
-  }
-
   function capDebugText(value, limit = WEBSITE_DEBUG_RESPONSE_BODY_LIMIT) {
     const text = String(value ?? "");
     const cap = Math.max(0, Number(limit) || 0);
     return {
       text: text.slice(0, cap),
-      bytes: getUtf8ByteLength(text),
+      bytes: new Blob([text]).size,
       truncated: text.length > cap,
     };
   }
@@ -17676,18 +17642,14 @@
     return output;
   }
 
-  function summarizeDebugBodyJson(text) {
+  function parseDebugBodyJson(text) {
     const raw = String(text || "").trim();
     if (!raw || (!raw.startsWith("{") && !raw.startsWith("["))) return null;
     try {
-      return summarizeLargeDebugValue(JSON.parse(raw), "body_json", 0);
+      return JSON.parse(raw);
     } catch (_err) {
-      return { malformed: true, preview: raw.slice(0, 500) };
+      return null;
     }
-  }
-
-  function parseDebugBodyJson(text) {
-    return summarizeDebugBodyJson(text);
   }
 
   function pickDebugValue(...values) {
@@ -17708,138 +17670,6 @@
       if (Array.isArray(value)) return value;
     }
     return null;
-  }
-
-  function summarizeLargeDebugValue(value, key = "", depth = 0) {
-    const normalizedKey = String(key || "").toLowerCase();
-    if (value === null || value === undefined) return value;
-    if (typeof value === "string") {
-      if (value.length <= WEBSITE_DEBUG_MAX_STRING_LENGTH && !WEBSITE_DEBUG_LARGE_FIELD_KEYS.has(normalizedKey)) return value;
-      return {
-        truncated: true,
-        original_type: "string",
-        original_length: value.length,
-        preview: value.slice(0, WEBSITE_DEBUG_MAX_STRING_LENGTH),
-      };
-    }
-    if (typeof value !== "object") return value;
-    if (depth > 4) return { truncated: true, original_type: Array.isArray(value) ? "array" : "object", reason: "max_depth" };
-    if (Array.isArray(value)) {
-      const shouldSummarize = WEBSITE_DEBUG_LARGE_FIELD_KEYS.has(normalizedKey) || value.length > 20;
-      if (!shouldSummarize) return value.map((item) => summarizeLargeDebugValue(item, key, depth + 1));
-      return {
-        truncated: true,
-        original_type: "array",
-        original_length: value.length,
-        sample_first: value.slice(0, WEBSITE_DEBUG_LARGE_ARRAY_SAMPLE_SIZE).map((item) => summarizeLargeDebugValue(item, key, depth + 1)),
-        sample_last: value.slice(-WEBSITE_DEBUG_LARGE_ARRAY_SAMPLE_SIZE).map((item) => summarizeLargeDebugValue(item, key, depth + 1)),
-      };
-    }
-    const output = {};
-    Object.entries(value).forEach(([childKey, childValue]) => {
-      output[childKey] = summarizeLargeDebugValue(childValue, childKey, depth + 1);
-    });
-    return output;
-  }
-
-  function capWebsiteDebugEvents(events = []) {
-    const list = Array.isArray(events) ? events : [];
-    const networkEvents = [];
-    const consoleEvents = [];
-    const errorEvents = [];
-    const chartEvents = [];
-    const generalEvents = [];
-    list.forEach((event, index) => {
-      const type = String(event?.type || "").toLowerCase();
-      const item = { index, event };
-      if (type.includes("fetch") || type.includes("network") || type.includes("api") || type.includes("response") || String(event?.route || "").includes("aq")) networkEvents.push(item);
-      if (type.includes("console") || type.includes("debug")) consoleEvents.push(item);
-      if (type.includes("error") || type.includes("failed") || type.includes("warning") || Number(event?.status || event?.http_status) >= 400) errorEvents.push(item);
-      if (type.includes("chart") || type.includes("timeseries") || type.includes("aqi")) chartEvents.push(item);
-      generalEvents.push(item);
-    });
-    const keep = new Set();
-    [
-      [generalEvents, WEBSITE_DEBUG_GENERAL_EVENT_UPLOAD_LIMIT],
-      [networkEvents, WEBSITE_DEBUG_NETWORK_EVENT_UPLOAD_LIMIT],
-      [consoleEvents, WEBSITE_DEBUG_CONSOLE_EVENT_UPLOAD_LIMIT],
-      [errorEvents, WEBSITE_DEBUG_ERROR_EVENT_UPLOAD_LIMIT],
-      [chartEvents, WEBSITE_DEBUG_CHART_EVENT_UPLOAD_LIMIT],
-    ].forEach(([items, limit]) => items.slice(-limit).forEach((item) => keep.add(item.index)));
-    return list.filter((_event, index) => keep.has(index)).map((event) => summarizeLargeDebugValue(event, "event", 0));
-  }
-
-  function compactWebsiteDebugPayload(payload) {
-    const compacted = summarizeLargeDebugValue(payload, "payload", 0);
-    compacted.events = capWebsiteDebugEvents(payload?.events || []);
-    compacted.debug_payload_truncated = true;
-    compacted.debug_payload_truncation_reason = "payload_size_limit";
-    compacted.debug_payload_compaction_version = WEBSITE_DEBUG_COMPACTION_VERSION;
-    return compacted;
-  }
-
-  function buildMinimalWebsiteDebugPayload(payload, reason, originalBytes = null) {
-    const events = Array.isArray(payload?.events) ? payload.events : [];
-    const important = events.filter((event) => {
-      const type = String(event?.type || "").toLowerCase();
-      return type.includes("error") || type.includes("failed") || type.includes("warning") || Number(event?.status || event?.http_status) >= 400;
-    }).slice(-25).map((event) => summarizeLargeDebugValue(event, "event", 0));
-    const networkFailures = events.filter((event) => {
-      const type = String(event?.type || "").toLowerCase();
-      return type.includes("fetch") || type.includes("network") || type.includes("api") || String(event?.route || "");
-    }).filter((event) => typeIsFailure(event)).slice(-25).map((event) => summarizeLargeDebugValue(event, "event", 0));
-    return {
-      source: payload?.source || "hex_map.html",
-      schema_version: payload?.schema_version || 1,
-      created_at_utc: payload?.created_at_utc || new Date().toISOString(),
-      flushed_at_utc: new Date().toISOString(),
-      page_url: payload?.page?.url || sanitizeDebugUrl(window.location.href),
-      page: summarizeLargeDebugValue(payload?.page || {}, "page", 0),
-      context: summarizeLargeDebugValue(payload?.context || {}, "context", 0),
-      session_id: payload?.session_id || null,
-      page_view_id: payload?.page_view_id || payload?.context?.page_view_id || null,
-      app_version: payload?.app_version || payload?.context?.app_version || null,
-      user_agent: payload?.page?.user_agent || window.navigator?.userAgent || null,
-      last_important_events: important,
-      last_errors: important,
-      last_network_failures: networkFailures,
-      counters: payload?.counters || {},
-      timings_ms: payload?.timings_ms || {},
-      debug_payload_truncated: true,
-      debug_payload_truncation_reason: reason,
-      debug_payload_original_bytes: originalBytes,
-      debug_payload_compaction_version: WEBSITE_DEBUG_COMPACTION_VERSION,
-    };
-  }
-
-  function typeIsFailure(event) {
-    const type = String(event?.type || "").toLowerCase();
-    return type.includes("failed") || type.includes("error") || Number(event?.status || event?.http_status) >= 400;
-  }
-
-  function prepareWebsiteDebugPayloadForUpload(payload) {
-    const rawBody = JSON.stringify(payload);
-    const originalBytes = getUtf8ByteLength(rawBody);
-    if (originalBytes <= WEBSITE_DEBUG_LOG_SAFE_MAX_BYTES) {
-      return { payload, body: rawBody, originalBytes, finalBytes: originalBytes, truncated: false };
-    }
-    const compacted = compactWebsiteDebugPayload(payload);
-    compacted.debug_payload_original_bytes = originalBytes;
-    let compactedBody = JSON.stringify(compacted);
-    let compactedBytes = getUtf8ByteLength(compactedBody);
-    if (compactedBytes <= WEBSITE_DEBUG_LOG_SAFE_MAX_BYTES) {
-      compacted.debug_payload_final_bytes = compactedBytes;
-      compactedBody = JSON.stringify(compacted);
-      compactedBytes = getUtf8ByteLength(compactedBody);
-      return { payload: compacted, body: compactedBody, originalBytes, finalBytes: compactedBytes, truncated: true };
-    }
-    const minimal = buildMinimalWebsiteDebugPayload(payload, "payload_size_limit_hard", originalBytes);
-    let minimalBody = JSON.stringify(minimal);
-    let minimalBytes = getUtf8ByteLength(minimalBody);
-    minimal.debug_payload_final_bytes = minimalBytes;
-    minimalBody = JSON.stringify(minimal);
-    minimalBytes = getUtf8ByteLength(minimalBody);
-    return { payload: minimal, body: minimalBody, originalBytes, finalBytes: minimalBytes, truncated: true, minimal: true };
   }
 
   function extractHistoryCoverageDebug(source = {}) {
@@ -17927,7 +17757,6 @@
 
   function startWebsiteDebugSession(context = {}) {
     if (!isWebsiteDebugLogEnabled()) return null;
-    if (websiteDebugSession) return websiteDebugSession;
     websiteDebugSession = createWebsiteDebugSession(context);
     console.debug("[uk-aq website-debug]", "session-started", websiteDebugSession.context);
     return websiteDebugSession;
@@ -17949,12 +17778,16 @@
       type,
       ...details,
     };
-    const sanitizedEvent = summarizeLargeDebugValue(event, "event", 0);
-    if (session.events.length >= WEBSITE_DEBUG_EVENT_LIMIT) {
-      session.events.splice(0, session.events.length - WEBSITE_DEBUG_EVENT_LIMIT + 1);
+    if (session.events.length < WEBSITE_DEBUG_EVENT_LIMIT) {
+      session.events.push(event);
+    } else if (!session.events_truncated) {
       session.events_truncated = true;
+      session.events.push({
+        at_utc: new Date().toISOString(),
+        type: "events_truncated",
+        limit: WEBSITE_DEBUG_EVENT_LIMIT,
+      });
     }
-    session.events.push(sanitizedEvent);
     const status = Number(details?.status ?? details?.http_status ?? details?.response?.status);
     if (type.includes("failed") || (Number.isFinite(status) && status >= 400)) {
       session.counters.failed_fetch_count += 1;
@@ -17981,22 +17814,16 @@
 
   async function flushWebsiteDebugLog(reason = "manual") {
     const session = websiteDebugSession;
-    if (!isWebsiteDebugLogEnabled() || !session || session.flushed || session.uploading || websiteDebugFlushInFlight) return;
+    if (!isWebsiteDebugLogEnabled() || !session || session.flushed || session.uploading) return;
     if (!session.events.length && !Object.keys(session.timings_ms || {}).length) return;
     session.uploading = true;
-    websiteDebugFlushInFlight = true;
-    const snapshotEventCount = session.events.length;
-    const snapshotTimings = { ...(session.timings_ms || {}) };
     const payload = {
       ...session,
-      events: session.events.slice(0, snapshotEventCount),
-      timings_ms: snapshotTimings,
       flushed_reason: reason,
       flushed_at_utc: new Date().toISOString(),
     };
     try {
-      const prepared = prepareWebsiteDebugPayloadForUpload(payload);
-      const body = prepared.body;
+      const body = JSON.stringify(payload);
       const response = await fetch(WEBSITE_DEBUG_LOG_ENDPOINT, {
         method: "POST",
         credentials: "include",
@@ -18012,52 +17839,24 @@
         responsePayload = null;
       }
       if (!response.ok) {
-        if (response.status === 413) {
-          session.size_upload_failed = true;
-          session.events = [{
-            at_utc: new Date().toISOString(),
-            type: "debug_upload_payload_too_large",
-            original_bytes: prepared.originalBytes,
-            final_bytes: prepared.finalBytes,
-          }];
-          session.timings_ms = {};
-          if (!websiteDebugPayloadTooLargeWarned) {
-            websiteDebugPayloadTooLargeWarned = true;
-            console.warn("[uk-aq website-debug]", "upload failed 413 after compaction; dropped oversized payload", { original_bytes: prepared.originalBytes, final_bytes: prepared.finalBytes });
-          }
-        } else {
-          console.warn("[uk-aq website-debug]", "upload failed", response.status, responsePayload || responseText);
-          session.events = capWebsiteDebugEvents(session.events).slice(-50);
-        }
+        console.warn("[uk-aq website-debug]", "upload failed", response.status, responsePayload || responseText);
         session.uploading = false;
-        websiteDebugFlushInFlight = false;
         return;
       }
       if (responsePayload?.uploaded !== true) {
         console.warn("[uk-aq website-debug]", "upload not confirmed", responsePayload || responseText);
         session.uploading = false;
-        websiteDebugFlushInFlight = false;
-        session.events = capWebsiteDebugEvents(session.events).slice(-50);
         return;
       }
-      session.events.splice(0, snapshotEventCount);
-      session.timings_ms = {};
-      session.flushed = false;
-      session.upload_count = (session.upload_count || 0) + 1;
-      session.uploading = false;
-      websiteDebugFlushInFlight = false;
+      session.flushed = true;
       console.debug("[uk-aq website-debug]", "uploaded", {
         reason,
-        events: snapshotEventCount,
-        timings: Object.keys(snapshotTimings || {}).length,
-        bytes: prepared.finalBytes,
-        truncated: prepared.truncated,
+        events: session.events.length,
+        timings: Object.keys(session.timings_ms || {}).length,
         dropbox_path: responsePayload?.dropbox_path || null,
       });
     } catch (error) {
       session.uploading = false;
-      websiteDebugFlushInFlight = false;
-      session.events = capWebsiteDebugEvents(session.events).slice(-50);
       console.warn("[uk-aq website-debug]", "upload error", error);
     }
   }
@@ -18070,9 +17869,9 @@
       event?.type === "fetch_failed"
       && event?.route === route
       && event?.status === status
-      && (event?.body_text || event?.body_text_summary)
+      && event?.body_text
     )));
-    const capped = capDebugText(bodyText, hasPriorMatchingBody ? 2048 : WEBSITE_DEBUG_SAFE_RESPONSE_BODY_LIMIT);
+    const capped = capDebugText(bodyText, hasPriorMatchingBody ? 4096 : WEBSITE_DEBUG_RESPONSE_BODY_LIMIT);
     recordWebsiteDebugEvent("fetch_failed", {
       route,
       url: sanitizeDebugUrl(url),
@@ -18080,8 +17879,8 @@
       status,
       status_text: response?.statusText || "",
       headers: redactDebugHeaders(response?.headers),
-      body_text_summary: summarizeLargeDebugValue(capped.text, "body_text", 0),
-      body_json_summary: summarizeDebugBodyJson(capped.text),
+      body_text: capped.text,
+      body_json: parseDebugBodyJson(capped.text),
       body_bytes: capped.bytes,
       body_truncated: capped.truncated,
       context,
@@ -18096,8 +17895,7 @@
     capText: capDebugText,
     sanitizeUrl: sanitizeDebugUrl,
     redactHeaders: redactDebugHeaders,
-    parseBodyJson: summarizeDebugBodyJson,
-    preparePayloadForUpload: prepareWebsiteDebugPayloadForUpload,
+    parseBodyJson: parseDebugBodyJson,
   };
 
   function getEntryConnectorId(entry) {
@@ -22354,15 +22152,15 @@
       if (!response.ok) {
         const debug = window.ukAqWebsiteDebugLog;
         if (debug?.enabled?.()) {
-          const capped = debug.capText?.(bodyText, 4096) || { text: String(bodyText || "").slice(0, 4096), bytes: String(bodyText || "").length, truncated: String(bodyText || "").length > 4096 };
+          const capped = debug.capText?.(bodyText) || { text: bodyText, bytes: bodyText.length, truncated: false };
           debug.recordEvent?.("postcode_prefix_hints_failed", {
             route: "postcode_prefix_hints",
             url: debug.sanitizeUrl?.(POSTCODE_PREFIX_HINTS_URL) || POSTCODE_PREFIX_HINTS_URL,
             status: response.status,
             status_text: response.statusText || "",
             headers: debug.redactHeaders?.(response.headers) || {},
-            body_text_summary: debug.parseBodyJson?.(JSON.stringify({ body_text: capped.text })) || { truncated: capped.truncated, preview: capped.text },
-            body_json_summary: debug.parseBodyJson?.(capped.text) || null,
+            body_text: capped.text,
+            body_json: debug.parseBodyJson?.(capped.text) || null,
             body_bytes: capped.bytes,
             body_truncated: capped.truncated,
           });
