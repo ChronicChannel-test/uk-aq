@@ -105,6 +105,23 @@
         min-height: 100vh;
       }
 
+      /*
+       * Turnstile is intentionally kept off-screen. It is used only for the
+       * cache session challenge and must not display a visible widget over the map.
+       */
+      .uk-aq-turnstile-hidden,
+      #uk-aq-turnstile-widget-shared {
+        position: fixed !important;
+        left: -10000px !important;
+        top: -10000px !important;
+        width: 1px !important;
+        height: 1px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        overflow: hidden !important;
+        z-index: -1 !important;
+      }
+
       main {
         position: relative;
         padding: 34px 28px 64px;
@@ -7680,40 +7697,41 @@
             if (!container) {
               container = document.createElement("div");
               container.id = "uk-aq-turnstile-widget-shared";
+              container.classList.add("uk-aq-turnstile-hidden");
               document.body.appendChild(container);
             }
-            container.style.position = "fixed";
-            container.style.right = "16px";
-            container.style.bottom = "16px";
-            container.style.zIndex = "2147483647";
-            container.style.width = "320px";
-            container.style.minHeight = "80px";
-            if (isTurnstileDebugMode()) {
-              container.style.padding = "12px";
-              container.style.background = "rgba(15, 23, 42, 0.92)";
-              container.style.border = "2px solid #38bdf8";
-              container.style.borderRadius = "12px";
-              container.style.boxShadow = "0 20px 45px rgba(15, 23, 42, 0.35)";
-            } else {
-              container.style.padding = "0";
-              container.style.background = "transparent";
-              container.style.border = "0";
-              container.style.borderRadius = "0";
-              container.style.boxShadow = "none";
-            }
+            container.classList.add("uk-aq-turnstile-hidden");
+            Object.assign(container.style, {
+              position: "fixed",
+              left: "-10000px",
+              top: "-10000px",
+              right: "auto",
+              bottom: "auto",
+              width: "1px",
+              height: "1px",
+              minWidth: "0",
+              minHeight: "0",
+              opacity: "0",
+              pointerEvents: "none",
+              overflow: "hidden",
+              zIndex: "-1",
+              background: "transparent",
+              padding: "0",
+              border: "0",
+              borderRadius: "0",
+              boxShadow: "none",
+            });
             return container;
           }
 
           function showTurnstileContainerForAuth() {
             const container = ensureTurnstileContainer();
-            container.style.display = "";
             return container;
           }
 
           function hideTurnstileContainerAfterAuth() {
-            if (isTurnstileDebugMode()) return;
             const container = document.getElementById("uk-aq-turnstile-widget-shared");
-            if (container) container.style.display = "none";
+            if (container) ensureTurnstileContainer();
           }
 
           function clearTurnstilePendingState() {
