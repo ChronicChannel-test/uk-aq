@@ -290,8 +290,6 @@
         const limitParam = parsePositiveInt(params.get("limit"));
         const rowLimit = limitParam || 50000;
         const readingLimit = Math.max(1, Math.min(10000, rowLimit));
-        const connectorProbeMaxParam = parsePositiveInt(params.get("connector_probe_max"));
-        const connectorProbeMax = Math.max(1, Math.min(40, connectorProbeMaxParam || 12));
         const readingScopeParam = normalizeReadingScope(params.get("reading_scope"));
         let currentReadingScope = readingScopeParam || "all";
         const updatedWithinParam = normalizeUpdatedWithin(params.get("updated_within"));
@@ -301,6 +299,8 @@
         const READING_POLLUTANTS = ["pm2.5", "pm10", "no2"];
         const STATIONS_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations` : "";
         const STATIONS_MAP_FALLBACK_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations-map` : "";
+        const NETWORK_CATALOG_URL = cacheBaseUrl ? `${cacheBaseUrl}/networks` : "/api/aq/networks";
+        let networkCatalogPromise = null;
 
         const refreshBtn = document.getElementById("refresh");
         const statusEl = document.getElementById("status");
@@ -647,7 +647,7 @@
           return url.toString();
         }
 
-        function buildStationsEndpoint(baseEndpoint, connectorId = null) {
+        function buildStationsEndpoint(baseEndpoint, networkCode = null) {
           if (!baseEndpoint) {
             return "";
           }
@@ -655,10 +655,26 @@
           if (!url.searchParams.has("limit")) {
             url.searchParams.set("limit", "20000");
           }
-          if (connectorId !== null && connectorId !== undefined) {
-            url.searchParams.set("connector_id", String(connectorId));
+          if (networkCode) {
+            url.searchParams.set("network_code", networkCode);
           }
           return url.toString();
+        }
+
+        async function fetchNetworkCatalog() {
+          if (networkCatalogPromise) {
+            return networkCatalogPromise;
+          }
+          networkCatalogPromise = (async () => {
+            const response = await fetchCacheApi(NETWORK_CATALOG_URL);
+            if (!response.ok) {
+              throw new Error(`Network catalog request failed: ${response.status}`);
+            }
+            const payload = await response.json();
+            const rows = Array.isArray(payload?.data) ? payload.data : [];
+            return rows.map((row) => String(row?.network_code || "").trim()).filter(Boolean);
+          })();
+          return networkCatalogPromise;
         }
 
         function parseDate(value) {
@@ -786,29 +802,7 @@
         }
 
         function getNetworkLabel(row) {
-          const direct = normalizeText(row?.network_name);
-          if (direct) {
-            return direct;
-          }
-          const memberships = Array.isArray(row?.station_network_memberships)
-            ? row.station_network_memberships
-            : (Array.isArray(row?.network_memberships) ? row.network_memberships : []);
-          const normalizedMemberships = memberships.map((entry) => ({
-            network_label: entry?.network_label ?? entry?.label ?? null,
-            network_code: entry?.network_code ?? entry?.connector_code ?? null,
-            is_primary: Boolean(entry?.is_primary),
-          }));
-          const primary = normalizedMemberships.find((entry) => Boolean(entry?.is_primary));
-          const primaryLabel = normalizeText(primary?.network_label || primary?.network_code);
-          if (primaryLabel) {
-            return primaryLabel;
-          }
-          const first = normalizedMemberships[0];
-          const firstLabel = normalizeText(first?.network_label || first?.network_code);
-          if (firstLabel) {
-            return firstLabel;
-          }
-          return normalizeText(row?.connector_label || row?.connector_code) || "Unknown";
+          return normalizeText(row?.network_label) || "Unknown";
         }
 
         function getStationName(row) {
@@ -1016,19 +1010,18 @@
             buildStationsEndpoint(baseEndpoint),
             "Station geometry request failed",
           );
-          const shardPromises = [];
-          for (let connectorId = 1; connectorId <= connectorProbeMax; connectorId += 1) {
-            shardPromises.push(
+          const networkCodes = await fetchNetworkCatalog();
+          const shardResults = allRows.length >= 20000
+            ? await Promise.all(networkCodes.map((networkCode) =>
               fetchRowsFromEndpoint(
-                buildStationsEndpoint(baseEndpoint, connectorId),
-                `Station geometry request failed (connector ${connectorId})`,
+                buildStationsEndpoint(baseEndpoint, networkCode),
+                `Station geometry request failed (network ${networkCode})`,
               ).catch((error) => {
-                console.warn("Station geometry connector shard failed", { connectorId, error });
+                console.warn("Station geometry network shard failed", { networkCode, error });
                 return [];
               }),
-            );
-          }
-          const shardResults = await Promise.all(shardPromises);
+            ))
+            : [];
           const byId = new Map();
           [...allRows, ...shardResults.flat()].forEach((row) => {
             const id = normalizeStationId(row?.id);
