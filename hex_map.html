@@ -8301,11 +8301,7 @@
             return match.label || match.code;
           }
         }
-        return resolvePrimaryNetworkLabel(row)
-          || resolveConnectorLabel(row)
-          || entries[0]?.label
-          || entries[0]?.code
-          || "Unknown";
+        return resolvePrimaryNetworkLabel(row) || "Unknown network";
       }
 
       function buildSelectedNetworkSummary() {
@@ -9571,7 +9567,7 @@
       function countStationsByNetwork(entries) {
         const counts = new Map();
         entries.forEach((entry) => {
-          const label = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const label = resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
           counts.set(label, (counts.get(label) || 0) + 1);
         });
         return Array.from(counts.entries())
@@ -9826,7 +9822,7 @@
             const palette = HEAT_STOPS.map((n, i) => resolveCssColor(n, HEAT_STOP_FALLBACKS[i]));
             highestColor = d3.interpolateRgbBasis(palette)(mapValueToT(highestValue, capValue));
             highestSensor = resolveStationName(h.row);
-            highestNetwork = resolveConnectorLabel(h.row);
+            highestNetwork = resolvePrimaryNetworkLabel(h.row) || "Unknown network";
           }
           window.updateTopSummary({
             totalSensors: totalSensorsForTopSummary,
@@ -10028,7 +10024,7 @@
           return resolveStationName(entry.row) || "";
         }
         if (key === "network") {
-          return resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "";
+          return resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
         }
         if (key === "pm25") {
           return entry.value;
@@ -10251,7 +10247,7 @@
         const renderSensorRow = (entry) => {
           const stationName = resolveStationName(entry.row);
           const stationId = String(resolveStationKey(entry.row) || stationName || "");
-          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const chartSelected = window.hexChartMode?.isSensorSelected?.("uk", stationId) === true;
           const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("uk", stationId) ?? -1;
@@ -11783,7 +11779,7 @@
         rowsForSearch.forEach((row, index) => {
           const stationId = String(resolveStationKey(row) || `uk:${index}`);
           const stationName = resolveStationName(row);
-          const networkName = resolvePrimaryNetworkLabel(row) || resolveConnectorLabel(row) || null;
+          const networkName = resolvePrimaryNetworkLabel(row) || null;
           const pconRaw = resolvePconCode(row);
           const laRaw = resolveLaCode(row);
           const pconCode = typeof pconRaw === "string" ? pconRaw.trim().toUpperCase() : null;
@@ -11876,7 +11872,7 @@
           return {
             stationId,
             stationName,
-            networkLabel: resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "Unknown network",
+            networkLabel: resolvePrimaryNetworkLabel(entry.row) || "Unknown network",
             timeseriesId: resolveTimeseriesId(entry.row),
             value: entry.value,
             updatedText: formatSummaryTimestamp(entry.timestamp),
@@ -14256,7 +14252,7 @@
             highestValue: highest.value,
             highestColor,
             highestSensor: resolveStationName(highest.row),
-            highestNetwork: resolveConnectorLabel(highest.row),
+            highestNetwork: resolvePrimaryNetworkLabel(highest.row) || "Unknown network",
             newestReadingISO: newest ? (newest.toISOString?.() || newest) : null,
             oldestReadingISO: oldest ? (oldest.toISOString?.() || oldest) : null,
           }, 'cr-top');
@@ -14483,7 +14479,7 @@
           return resolveStationName(entry.row) || "";
         }
         if (key === "network") {
-          return resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "";
+          return resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
         }
         if (key === "pm25") {
           return entry.value;
@@ -14708,7 +14704,7 @@
         const renderSensorRow = (entry) => {
           const stationName = resolveStationName(entry.row);
           const stationId = String(resolveStationKey(entry.row) || stationName || "");
-          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const chartSelected = window.hexChartMode?.isSensorSelected?.("cr", stationId) === true;
           const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("cr", stationId) ?? -1;
@@ -16707,7 +16703,7 @@
         rowsForSearch.forEach((row, index) => {
           const stationId = String(resolveStationKey(row) || `cr:${index}`);
           const stationName = resolveStationName(row);
-          const networkName = resolvePrimaryNetworkLabel(row) || resolveConnectorLabel(row) || null;
+          const networkName = resolvePrimaryNetworkLabel(row) || null;
           const areaRaw = resolveAreaCode(row);
           const pconRaw = resolvePconCode(row);
           const laCode = typeof areaRaw === "string" ? areaRaw.trim().toUpperCase() : null;
@@ -16832,7 +16828,7 @@
           return {
             stationId,
             stationName,
-            networkLabel: resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "Unknown network",
+            networkLabel: resolvePrimaryNetworkLabel(entry.row) || "Unknown network",
             timeseriesId: resolveTimeseriesId(entry.row),
             value: entry.value,
             updatedText: formatSummaryTimestamp(entry.timestamp),

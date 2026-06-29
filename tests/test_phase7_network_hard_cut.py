@@ -68,3 +68,16 @@ def test_no_routine_cache_buster_for_network_catalog() -> None:
             if "NETWORK_CATALOG_URL" in line or "/networks" in line:
                 assert "Date.now()" not in line
                 assert "Math.random" not in line
+
+
+def test_hex_map_user_facing_network_paths_do_not_fall_back_to_connector_labels() -> None:
+    forbidden_patterns = [
+        "resolvePrimaryNetworkLabel(row) || resolveConnectorLabel",
+        "resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel",
+        "highestNetwork = resolveConnectorLabel",
+        "highestNetwork: resolveConnectorLabel",
+    ]
+    for pattern in forbidden_patterns:
+        assert pattern not in HEX
+    assert 'resolvePrimaryNetworkLabel(entry.row) || "Unknown network"' in HEX
+    assert 'resolvePrimaryNetworkLabel(h.row) || "Unknown network"' in HEX
