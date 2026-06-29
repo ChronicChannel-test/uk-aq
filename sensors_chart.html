@@ -1687,25 +1687,7 @@
       }
 
       function getNetworkLabel(row) {
-        const direct = String(row.network_name || "").trim();
-        if (direct) {
-          return direct;
-        }
-        const memberships = Array.isArray(row.station_network_memberships)
-          ? row.station_network_memberships
-          : [];
-        const primary = memberships.find((entry) => Boolean(entry?.is_primary));
-        const primaryLabel = String(primary?.network_label || primary?.network_code || "").trim();
-        if (primaryLabel) {
-          return primaryLabel;
-        }
-        const first = memberships[0];
-        const firstLabel = String(first?.network_label || first?.network_code || "").trim();
-        if (firstLabel) {
-          return firstLabel;
-        }
-        const connectorLabel = String(row.connector_label || row.connector_code || "").trim();
-        return connectorLabel || "Unknown";
+        return String(row.network_label || "").trim() || "Unknown";
       }
 
       function formatStationLabel(row) {

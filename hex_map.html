@@ -7136,22 +7136,18 @@
         "7d": "7 Days",
         all: "No Limit",
       };
-      const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
-      const GOVUK_AURN_CODE = "aurn";
-      const GOVUK_AURN_LABEL = "GOV.UK AURN";
-      const GOVUK_REMAP_MATCHERS = ["uk air sos", "uk-air-sos", "uk_air_sos", "gov.uk", "govuk"];
-      const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
-      const BREATHE_LONDON_MATCHERS = ["breathe london", "breathe-london", "breathe_london"];
-      const LAQN_NETWORK_MATCHERS = ["laqn", "london air"];
-      const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity", "sensor community", "sensor.community"];
-      const NETWORK_FILTER_BASE_DEFS = [
-        { code: GOVUK_AURN_CODE, label: GOVUK_AURN_LABEL },
-        { code: "openaq", label: "OpenAQ" },
-        { code: "breathe_london", label: "Breathe London" },
-        { code: "sensorcommunity", label: "Sensor.Community" },
-      ];
+      const NETWORK_CATALOG_URL = cacheBaseUrl
+        ? `${cacheBaseUrl}/networks`
+        : "/api/aq/networks";
+      const GOVUK_NETWORK_MATCHERS = ["gov_uk_aurn"];
+      const OPENAQ_NETWORK_MATCHERS = ["openaq"];
+      const BREATHE_LONDON_MATCHERS = ["breathelondon"];
+      const LAQN_NETWORK_MATCHERS = ["laqn"];
+      const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity"];
+      let networkCatalogDefs = [];
+      let networkCatalogPromise = null;
       const NETWORK_LOGO_META = Object.freeze({
-        aurn: {
+        gov_uk_aurn: {
           href: "https://www.ukairquality.net/",
           ariaLabel: "Open GOV.UK AURN website (external link)",
           boxClass: "network-card-logo-box--light network-card-logo-box--text",
@@ -7165,7 +7161,7 @@
           imgAlt: "OpenAQ logo",
           imgClass: "network-card-logo",
         },
-        breathe_london: {
+        breathelondon: {
           href: "https://www.breathelondon.org/",
           ariaLabel: "Open Breathe London website (external link)",
           boxClass: "network-card-logo-box--light",
@@ -7189,20 +7185,12 @@
         },
       });
       const TOTAL_PCON_COUNT = 650;
-      const CONNECTOR_DEFS = [
-        { code: "uk_air_sos", label: "UK AIR SOS" },
-        { code: "sensorcommunity", label: "Sensor Community" },
-      ];
       const SORT_DEFAULTS = {
         sensor: "asc",
         network: "asc",
         pm25: "desc",
         updated: "desc",
       };
-      function getConnectorLabelByCode(code) {
-        const match = CONNECTOR_DEFS.find((def) => def.code === code);
-        return match ? match.label : code;
-      }
       const HEAT_STOPS = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4"];
       const HEAT_STOP_FALLBACKS = ["#00a85a", "#ffd54a", "#ff9b3a", "#e03c3c", "#5b2a86"];
       const REGION_NAMES = {
@@ -8305,26 +8293,22 @@
         return Array.from(stationMap.values());
       }
 
-      function getSelectedNetworkLabel(row, selectedIds) {
+      function getSelectedNetworkLabel(row, selectedNetworkCodes) {
         const entries = collectNetworkEntries(row);
-        if (selectedIds && selectedIds.size) {
-          const match = entries.find((entry) => entry.code && selectedIds.has(entry.code));
+        if (selectedNetworkCodes && selectedNetworkCodes.size) {
+          const match = entries.find((entry) => entry.code && selectedNetworkCodes.has(entry.code));
           if (match) {
             return match.label || match.code;
           }
         }
-        return resolvePrimaryNetworkLabel(row)
-          || resolveConnectorLabel(row)
-          || entries[0]?.label
-          || entries[0]?.code
-          || "Unknown";
+        return resolvePrimaryNetworkLabel(row) || "Unknown network";
       }
 
       function buildSelectedNetworkSummary() {
         const windowed = filterRowsByWindow(scopedLatestRows);
         const scopedRows = getRowsForActivePollutant(windowed);
         const entries = collectSelectedStationEntries(scopedRows);
-        const selectedIds = getActiveNetworkIds();
+        const selectedNetworkCodes = getActiveNetworkCodes();
         const pconSet = new Set();
         const counts = new Map();
         let newest = null;
@@ -8344,7 +8328,7 @@
               oldest = timestamp;
             }
           }
-          const label = getSelectedNetworkLabel(entry.row, selectedIds);
+          const label = getSelectedNetworkLabel(entry.row, selectedNetworkCodes);
           counts.set(label, (counts.get(label) || 0) + 1);
         });
 
@@ -8960,6 +8944,41 @@
         return value || fallback;
       }
 
+      function resolveNetworkId(row) {
+        return row?.network_id || row?.station?.network_id || null;
+      }
+
+      function resolveNetworkCode(row) {
+        return row?.network_code || row?.station?.network_code || null;
+      }
+
+      function resolveNetworkLabel(row) {
+        return row?.network_label || row?.station?.network_label || null;
+      }
+
+      async function fetchNetworkCatalog() {
+        if (networkCatalogPromise) {
+          return networkCatalogPromise;
+        }
+        networkCatalogPromise = fetchCacheApi(NETWORK_CATALOG_URL, {}, true)
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`Network catalog request failed: ${response.status}`);
+            }
+            const payload = await response.json();
+            const rows = Array.isArray(payload?.data) ? payload.data : [];
+            networkCatalogDefs = rows.map((row) => ({
+              id: row?.network_id || null,
+              code: String(row?.network_code || "").trim(),
+              label: String(row?.network_label || "").trim(),
+              network_type: row?.network_type || null,
+              count: 0,
+            })).filter((row) => row.code && row.label);
+            return networkCatalogDefs;
+          });
+        return networkCatalogPromise;
+      }
+
       function resolveStationName(row) {
         return row?.display_name
           || row?.station?.display_name
@@ -8984,129 +9003,65 @@
           return label;
         }
         const code = resolveConnectorCode(row);
-        return code ? getConnectorLabelByCode(code) : "Unknown network";
-      }
-
-      function resolveNetworkMemberships(row) {
-        const memberships = row?.station?.station_network_memberships
-          || row?.station_network_memberships
-          || row?.station?.network_memberships
-          || row?.network_memberships
-          || [];
-        if (!Array.isArray(memberships)) {
-          return [];
-        }
-        return memberships.map((entry) => {
-          const code = entry?.network_code
-            || entry?.connector_code
-            || entry?.code
-            || null;
-          if (!code) {
-            return null;
-          }
-          return {
-            code,
-            label: entry?.network_label || entry?.label || null,
-            is_primary: Boolean(entry?.is_primary),
-          };
-        }).filter(Boolean);
+        return code || "Unknown network";
       }
 
       function resolvePrimaryNetworkEntry(row) {
-        const memberships = collectNetworkEntries(row);
-        if (!memberships.length) {
+        const code = resolveNetworkCode(row);
+        const label = resolveNetworkLabel(row);
+        if (!code || !label) {
           return null;
         }
-        const primary = memberships.find((entry) => entry.is_primary);
-        if (primary) {
-          return primary;
-        }
-        return memberships[0];
+        return {
+          id: resolveNetworkId(row),
+          code,
+          label,
+        };
       }
 
       function resolvePrimaryNetworkLabel(row) {
-        const primary = resolvePrimaryNetworkEntry(row);
-        if (!primary) {
-          return null;
-        }
-        return primary.label || primary.code || null;
+        return resolveNetworkLabel(row);
       }
 
       function resolveSecondaryNetworkLabels(row) {
-        const memberships = collectNetworkEntries(row);
-        if (memberships.length <= 1) {
-          return [];
-        }
-        const primary = resolvePrimaryNetworkEntry(row);
-        const primaryCode = primary?.code || null;
-        const primaryLabel = primary?.label || null;
-        const labels = memberships
-          .filter((entry) => {
-            if (!primary) {
-              return true;
-            }
-            if (primaryCode && entry.code === primaryCode) {
-              return false;
-            }
-            if (!primaryCode && primaryLabel && entry.label === primaryLabel) {
-              return false;
-            }
-            return entry !== primary;
-          })
-          .map((entry) => entry.label || entry.code)
-          .filter(Boolean);
-        return Array.from(new Set(labels));
+        return [];
       }
 
       function collectNetworkEntries(row) {
-        const memberships = resolveNetworkMemberships(row);
-        let entries = memberships;
-        if (!entries.length) {
-          const fallbackCode = resolveConnectorCode(row);
-          if (!fallbackCode) {
-            return [];
-          }
-          entries = [{
-            code: fallbackCode,
-            label: row?.connector_label || row?.connector?.label || null,
-          }];
+        const code = resolveNetworkCode(row);
+        const label = resolveNetworkLabel(row);
+        if (!code || !label) {
+          return [];
         }
-        return canonicalizeNetworkEntries(entries);
+        return [{
+          id: resolveNetworkId(row),
+          code,
+          label,
+        }];
       }
 
       function buildNetworkDefs(rows) {
         const byCode = new Map(
-          NETWORK_FILTER_BASE_DEFS.map((def) => [
+          networkCatalogDefs.map((def) => [
             def.code,
-            { code: def.code, label: def.label, count: 0 },
+            { ...def, count: 0 },
           ])
         );
         const seenStationsByCode = new Map();
         rows.forEach((row) => {
-          const seen = new Set();
+          const entry = resolvePrimaryNetworkEntry(row);
+          if (!entry || !byCode.has(entry.code)) return;
           const stationKey = resolveStationKey(row)
             || `${resolveStationName(row)}::${resolveCoordinatePair(row).lat ?? ""}::${resolveCoordinatePair(row).lon ?? ""}`;
-          collectNetworkEntries(row).forEach((entry) => {
-            if (!entry.code || seen.has(entry.code)) return;
-            seen.add(entry.code);
-            const code = String(entry.code || "").toLowerCase();
-            if (!seenStationsByCode.has(code)) {
-              seenStationsByCode.set(code, new Set());
-            }
-            const seenStations = seenStationsByCode.get(code);
-            if (seenStations.has(stationKey)) {
-              return;
-            }
-            seenStations.add(stationKey);
-            if (!byCode.has(entry.code)) {
-              byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
-            }
-            const def = byCode.get(entry.code);
-            if (entry.label && (!def.label || def.label === def.code)) {
-              def.label = entry.label;
-            }
-            def.count++;
-          });
+          if (!seenStationsByCode.has(entry.code)) {
+            seenStationsByCode.set(entry.code, new Set());
+          }
+          const seenStations = seenStationsByCode.get(entry.code);
+          if (seenStations.has(stationKey)) {
+            return;
+          }
+          seenStations.add(stationKey);
+          byCode.get(entry.code).count++;
         });
         return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
       }
@@ -9135,13 +9090,13 @@
           return NETWORK_LOGO_META.laqn;
         }
         if (GOVUK_NETWORK_MATCHERS.some((token) => label.includes(token))) {
-          return NETWORK_LOGO_META.aurn;
+          return NETWORK_LOGO_META.gov_uk_aurn;
         }
         if (OPENAQ_NETWORK_MATCHERS.some((token) => label.includes(token))) {
           return NETWORK_LOGO_META.openaq;
         }
         if (BREATHE_LONDON_MATCHERS.some((token) => label.includes(token))) {
-          return NETWORK_LOGO_META.breathe_london;
+          return NETWORK_LOGO_META.breathelondon;
         }
         if (SENSOR_COMMUNITY_MATCHERS.some((token) => label.includes(token))) {
           return NETWORK_LOGO_META.sensorcommunity;
@@ -9305,7 +9260,7 @@
           text.className = "network-name";
           text.textContent = def.label;
           nameWrap.appendChild(text);
-          if (String(def.code || "").toLowerCase() === "openaq") {
+          if (def.network_type === "aggregator") {
             const openaqTag = document.createElement("span");
             openaqTag.className = "network-option-tag";
             openaqTag.textContent = "AGGREGATOR";
@@ -9406,7 +9361,8 @@
       }
 
       function resolveNetworkCodes(row) {
-        return collectNetworkEntries(row).map((entry) => entry.code);
+        const code = resolveNetworkCode(row);
+        return code ? [code] : [];
       }
 
       function resolvePconCode(row) {
@@ -9580,60 +9536,7 @@
         return rows.filter((row) => rowMatchesPollutant(row, activePollutant));
       }
 
-      function canonicalizeNetworkEntries(entries) {
-        if (!entries.length) {
-          return entries;
-        }
-        const remapped = entries.map((entry) => {
-          const code = String(entry.code || "").toLowerCase();
-          const label = String(entry.label || "").toLowerCase();
-          const combined = `${code} ${label}`;
-          if (combined.includes("aurn") || GOVUK_REMAP_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: GOVUK_AURN_CODE,
-              label: GOVUK_AURN_LABEL,
-            };
-          }
-          if (OPENAQ_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: "openaq",
-              label: "OpenAQ",
-            };
-          }
-          if (BREATHE_LONDON_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: "breathe_london",
-              label: "Breathe London",
-            };
-          }
-          if (SENSOR_COMMUNITY_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: "sensorcommunity",
-              label: "Sensor.Community",
-            };
-          }
-          if (LAQN_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
-            return null;
-          }
-          return null;
-        });
-        const seen = new Set();
-        return remapped.filter((entry) => {
-          if (!entry?.code) {
-            return false;
-          }
-          const key = String(entry.code || "").toLowerCase();
-          if (seen.has(key)) {
-            return false;
-          }
-          seen.add(key);
-          return true;
-        });
-      }
+
 
       function collectStationEntries(rows, pconCode) {
         const stationMap = new Map();
@@ -9664,7 +9567,7 @@
       function countStationsByNetwork(entries) {
         const counts = new Map();
         entries.forEach((entry) => {
-          const label = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const label = resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
           counts.set(label, (counts.get(label) || 0) + 1);
         });
         return Array.from(counts.entries())
@@ -9919,7 +9822,7 @@
             const palette = HEAT_STOPS.map((n, i) => resolveCssColor(n, HEAT_STOP_FALLBACKS[i]));
             highestColor = d3.interpolateRgbBasis(palette)(mapValueToT(highestValue, capValue));
             highestSensor = resolveStationName(h.row);
-            highestNetwork = resolveConnectorLabel(h.row);
+            highestNetwork = resolvePrimaryNetworkLabel(h.row) || "Unknown network";
           }
           window.updateTopSummary({
             totalSensors: totalSensorsForTopSummary,
@@ -10121,7 +10024,7 @@
           return resolveStationName(entry.row) || "";
         }
         if (key === "network") {
-          return resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "";
+          return resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
         }
         if (key === "pm25") {
           return entry.value;
@@ -10344,7 +10247,7 @@
         const renderSensorRow = (entry) => {
           const stationName = resolveStationName(entry.row);
           const stationId = String(resolveStationKey(entry.row) || stationName || "");
-          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const chartSelected = window.hexChartMode?.isSensorSelected?.("uk", stationId) === true;
           const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("uk", stationId) ?? -1;
@@ -10824,7 +10727,7 @@
         return count === null ? 0 : count;
       }
 
-      function getActiveNetworkIds() {
+      function getActiveNetworkCodes() {
         if (!networkInputs.length) {
           return null;
         }
@@ -10894,13 +10797,13 @@
         });
       }
 
-      function filterLatestRowsByNetwork(rows, networkIds) {
+      function filterLatestRowsByNetwork(rows, networkCodes) {
         if (!rows.length) {
           return [];
         }
         return rows.filter((row) => {
           const codes = resolveNetworkCodes(row);
-          return codes.some((code) => networkIds.has(code));
+          return codes.some((code) => networkCodes.has(code));
         });
       }
 
@@ -10995,18 +10898,18 @@
           persistNetworkSelection();
           return;
         }
-        const networkIds = getActiveNetworkIds();
+        const networkCodes = getActiveNetworkCodes();
         let filteredLatest = [];
-        if (networkIds === null) {
+        if (networkCodes === null) {
           filteredLatest = baseLatestRows;
-        } else if (networkIds.size > 0) {
-          filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkIds);
+        } else if (networkCodes.size > 0) {
+          filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkCodes);
         }
         let filteredLatestAllWindow = [];
-        if (networkIds === null) {
+        if (networkCodes === null) {
           filteredLatestAllWindow = baseLatestRowsAllWindow;
-        } else if (networkIds.size > 0) {
-          filteredLatestAllWindow = filterLatestRowsByNetwork(baseLatestRowsAllWindow, networkIds);
+        } else if (networkCodes.size > 0) {
+          filteredLatestAllWindow = filterLatestRowsByNetwork(baseLatestRowsAllWindow, networkCodes);
         }
         scopedLatestRows = filteredLatest;
         scopedLatestRowsAllWindow = filteredLatestAllWindow;
@@ -11294,6 +11197,10 @@
           return;
         }
         try {
+          await fetchNetworkCatalog();
+          if (isStale()) {
+            return;
+          }
           const pconUrl = new URL(REST_URL);
           if (activePconVersion) {
             pconUrl.searchParams.set("pcon_version", activePconVersion);
@@ -11872,7 +11779,7 @@
         rowsForSearch.forEach((row, index) => {
           const stationId = String(resolveStationKey(row) || `uk:${index}`);
           const stationName = resolveStationName(row);
-          const networkName = resolvePrimaryNetworkLabel(row) || resolveConnectorLabel(row) || null;
+          const networkName = resolvePrimaryNetworkLabel(row) || null;
           const pconRaw = resolvePconCode(row);
           const laRaw = resolveLaCode(row);
           const pconCode = typeof pconRaw === "string" ? pconRaw.trim().toUpperCase() : null;
@@ -11898,7 +11805,7 @@
           recordsByKey.set(key, {
             station_id: stationId,
             station_name: stationName,
-            network_name: networkName,
+            network_label: networkName,
             pcon_code: pconCode,
             la_code: laCode,
             lat,
@@ -11965,7 +11872,7 @@
           return {
             stationId,
             stationName,
-            networkLabel: resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "Unknown network",
+            networkLabel: resolvePrimaryNetworkLabel(entry.row) || "Unknown network",
             timeseriesId: resolveTimeseriesId(entry.row),
             value: entry.value,
             updatedText: formatSummaryTimestamp(entry.timestamp),
@@ -12212,22 +12119,18 @@
         "7d": "7 Days",
         all: "No Limit",
       };
-      const GOVUK_NETWORK_MATCHERS = ["aurn", "uk air sos", "uk-air-sos", "uk_air_sos"];
-      const GOVUK_AURN_CODE = "aurn";
-      const GOVUK_AURN_LABEL = "GOV.UK AURN";
-      const GOVUK_REMAP_MATCHERS = ["uk air sos", "uk-air-sos", "uk_air_sos", "gov.uk", "govuk"];
-      const OPENAQ_NETWORK_MATCHERS = ["openaq", "open aq", "open-aq", "open_aq"];
-      const BREATHE_LONDON_MATCHERS = ["breathe london", "breathe-london", "breathe_london"];
-      const LAQN_NETWORK_MATCHERS = ["laqn", "london air"];
-      const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity", "sensor community", "sensor.community"];
-      const NETWORK_FILTER_BASE_DEFS = [
-        { code: GOVUK_AURN_CODE, label: GOVUK_AURN_LABEL },
-        { code: "openaq", label: "OpenAQ" },
-        { code: "breathe_london", label: "Breathe London" },
-        { code: "sensorcommunity", label: "Sensor.Community" },
-      ];
+      const NETWORK_CATALOG_URL = cacheBaseUrl
+        ? `${cacheBaseUrl}/networks`
+        : "/api/aq/networks";
+      const GOVUK_NETWORK_MATCHERS = ["gov_uk_aurn"];
+      const OPENAQ_NETWORK_MATCHERS = ["openaq"];
+      const BREATHE_LONDON_MATCHERS = ["breathelondon"];
+      const LAQN_NETWORK_MATCHERS = ["laqn"];
+      const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity"];
+      let networkCatalogDefs = [];
+      let networkCatalogPromise = null;
       const NETWORK_LOGO_META = Object.freeze({
-        aurn: {
+        gov_uk_aurn: {
           href: "https://www.ukairquality.net/",
           ariaLabel: "Open GOV.UK AURN website (external link)",
           boxClass: "network-card-logo-box--light network-card-logo-box--text",
@@ -12241,7 +12144,7 @@
           imgAlt: "OpenAQ logo",
           imgClass: "network-card-logo",
         },
-        breathe_london: {
+        breathelondon: {
           href: "https://www.breathelondon.org/",
           ariaLabel: "Open Breathe London website (external link)",
           boxClass: "network-card-logo-box--light",
@@ -12265,15 +12168,6 @@
         },
       });
       const AREA_LABEL_PLURAL = "local authorities";
-      const CONNECTOR_DEFS = [
-        { code: "uk_air_sos", label: "UK AIR SOS" },
-        { code: "sensorcommunity", label: "Sensor Community" },
-      ];
-
-      function getConnectorLabelByCode(code) {
-        const match = CONNECTOR_DEFS.find((def) => def.code === code);
-        return match ? match.label : code;
-      }
       const HEAT_STOPS = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4"];
       const HEAT_STOP_FALLBACKS = ["#00a85a", "#ffd54a", "#ff9b3a", "#e03c3c", "#5b2a86"];
       const REGION_NAMES = {
@@ -13455,6 +13349,41 @@
         return value || fallback;
       }
 
+      function resolveNetworkId(row) {
+        return row?.network_id || row?.station?.network_id || null;
+      }
+
+      function resolveNetworkCode(row) {
+        return row?.network_code || row?.station?.network_code || null;
+      }
+
+      function resolveNetworkLabel(row) {
+        return row?.network_label || row?.station?.network_label || null;
+      }
+
+      async function fetchNetworkCatalog() {
+        if (networkCatalogPromise) {
+          return networkCatalogPromise;
+        }
+        networkCatalogPromise = fetchCacheApi(NETWORK_CATALOG_URL, {}, true)
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`Network catalog request failed: ${response.status}`);
+            }
+            const payload = await response.json();
+            const rows = Array.isArray(payload?.data) ? payload.data : [];
+            networkCatalogDefs = rows.map((row) => ({
+              id: row?.network_id || null,
+              code: String(row?.network_code || "").trim(),
+              label: String(row?.network_label || "").trim(),
+              network_type: row?.network_type || null,
+              count: 0,
+            })).filter((row) => row.code && row.label);
+            return networkCatalogDefs;
+          });
+        return networkCatalogPromise;
+      }
+
       function resolveStationName(row) {
         return row?.display_name
           || row?.station?.display_name
@@ -13479,128 +13408,65 @@
           return label;
         }
         const code = resolveConnectorCode(row);
-        return code ? getConnectorLabelByCode(code) : "Unknown network";
-      }
-
-      function resolveNetworkMemberships(row) {
-        const memberships = row?.station?.station_network_memberships
-          || row?.station_network_memberships
-          || row?.station?.network_memberships
-          || row?.network_memberships
-          || [];
-        if (!Array.isArray(memberships)) {
-          return [];
-        }
-        return memberships.map((entry) => {
-          const code = entry?.network_code
-            || entry?.connector_code
-            || entry?.code
-            || null;
-          if (!code) {
-            return null;
-          }
-          return {
-            code,
-            label: entry?.network_label || entry?.label || null,
-            is_primary: Boolean(entry?.is_primary),
-          };
-        }).filter(Boolean);
+        return code || "Unknown network";
       }
 
       function resolvePrimaryNetworkEntry(row) {
-        const memberships = collectNetworkEntries(row);
-        if (!memberships.length) {
+        const code = resolveNetworkCode(row);
+        const label = resolveNetworkLabel(row);
+        if (!code || !label) {
           return null;
         }
-        const primary = memberships.find((entry) => entry.is_primary);
-        if (primary) {
-          return primary;
-        }
-        return memberships[0];
+        return {
+          id: resolveNetworkId(row),
+          code,
+          label,
+        };
       }
 
       function resolvePrimaryNetworkLabel(row) {
-        const primary = resolvePrimaryNetworkEntry(row);
-        if (!primary) {
-          return null;
-        }
-        return primary.label || primary.code || null;
+        return resolveNetworkLabel(row);
       }
 
       function resolveSecondaryNetworkLabels(row) {
-        const memberships = collectNetworkEntries(row);
-        if (memberships.length <= 1) {
-          return [];
-        }
-        const primary = resolvePrimaryNetworkEntry(row);
-        const primaryCode = primary?.code || null;
-        const primaryLabel = primary?.label || null;
-        const labels = memberships
-          .filter((entry) => {
-            if (!primary) {
-              return true;
-            }
-            if (primaryCode && entry.code === primaryCode) {
-              return false;
-            }
-            if (!primaryCode && primaryLabel && entry.label === primaryLabel) {
-              return false;
-            }
-            return entry !== primary;
-          })
-          .map((entry) => entry.label || entry.code)
-          .filter(Boolean);
-        return Array.from(new Set(labels));
+        return [];
       }
 
       function collectNetworkEntries(row) {
-        const memberships = resolveNetworkMemberships(row);
-        if (memberships.length) {
-          return canonicalizeNetworkEntries(memberships);
-        }
-        const fallbackCode = resolveConnectorCode(row);
-        if (!fallbackCode) {
+        const code = resolveNetworkCode(row);
+        const label = resolveNetworkLabel(row);
+        if (!code || !label) {
           return [];
         }
-        return canonicalizeNetworkEntries([{
-          code: fallbackCode,
-          label: row?.connector_label || row?.connector?.label || null,
-        }]);
+        return [{
+          id: resolveNetworkId(row),
+          code,
+          label,
+        }];
       }
 
       function buildNetworkDefs(rows) {
         const byCode = new Map(
-          NETWORK_FILTER_BASE_DEFS.map((def) => [
+          networkCatalogDefs.map((def) => [
             def.code,
-            { code: def.code, label: def.label, count: 0 },
+            { ...def, count: 0 },
           ])
         );
         const seenStationsByCode = new Map();
         rows.forEach((row) => {
-          const seen = new Set();
+          const entry = resolvePrimaryNetworkEntry(row);
+          if (!entry || !byCode.has(entry.code)) return;
           const stationKey = resolveStationKey(row)
             || `${resolveStationName(row)}::${resolveCoordinatePair(row).lat ?? ""}::${resolveCoordinatePair(row).lon ?? ""}`;
-          collectNetworkEntries(row).forEach((entry) => {
-            if (!entry.code || seen.has(entry.code)) return;
-            seen.add(entry.code);
-            const code = String(entry.code || "").toLowerCase();
-            if (!seenStationsByCode.has(code)) {
-              seenStationsByCode.set(code, new Set());
-            }
-            const seenStations = seenStationsByCode.get(code);
-            if (seenStations.has(stationKey)) {
-              return;
-            }
-            seenStations.add(stationKey);
-            if (!byCode.has(entry.code)) {
-              byCode.set(entry.code, { code: entry.code, label: entry.label || entry.code, count: 0 });
-            }
-            const def = byCode.get(entry.code);
-            if (entry.label && (!def.label || def.label === def.code)) {
-              def.label = entry.label;
-            }
-            def.count++;
-          });
+          if (!seenStationsByCode.has(entry.code)) {
+            seenStationsByCode.set(entry.code, new Set());
+          }
+          const seenStations = seenStationsByCode.get(entry.code);
+          if (seenStations.has(stationKey)) {
+            return;
+          }
+          seenStations.add(stationKey);
+          byCode.get(entry.code).count++;
         });
         return Array.from(byCode.values()).sort((a, b) => a.label.localeCompare(b.label));
       }
@@ -13629,13 +13495,13 @@
           return NETWORK_LOGO_META.laqn;
         }
         if (GOVUK_NETWORK_MATCHERS.some((token) => label.includes(token))) {
-          return NETWORK_LOGO_META.aurn;
+          return NETWORK_LOGO_META.gov_uk_aurn;
         }
         if (OPENAQ_NETWORK_MATCHERS.some((token) => label.includes(token))) {
           return NETWORK_LOGO_META.openaq;
         }
         if (BREATHE_LONDON_MATCHERS.some((token) => label.includes(token))) {
-          return NETWORK_LOGO_META.breathe_london;
+          return NETWORK_LOGO_META.breathelondon;
         }
         if (SENSOR_COMMUNITY_MATCHERS.some((token) => label.includes(token))) {
           return NETWORK_LOGO_META.sensorcommunity;
@@ -13800,7 +13666,7 @@
           text.className = "network-name";
           text.textContent = def.label;
           nameWrap.appendChild(text);
-          if (String(def.code || "").toLowerCase() === "openaq") {
+          if (def.network_type === "aggregator") {
             const openaqTag = document.createElement("span");
             openaqTag.className = "network-option-tag";
             openaqTag.textContent = "AGGREGATOR";
@@ -13901,7 +13767,8 @@
       }
 
       function resolveNetworkCodes(row) {
-        return collectNetworkEntries(row).map((entry) => entry.code);
+        const code = resolveNetworkCode(row);
+        return code ? [code] : [];
       }
 
       function resolveAreaCode(row) {
@@ -14108,60 +13975,7 @@
         return rows.filter((row) => rowMatchesPollutant(row, activePollutant));
       }
 
-      function canonicalizeNetworkEntries(entries) {
-        if (!entries.length) {
-          return entries;
-        }
-        const remapped = entries.map((entry) => {
-          const code = String(entry.code || "").toLowerCase();
-          const label = String(entry.label || "").toLowerCase();
-          const combined = `${code} ${label}`;
-          if (combined.includes("aurn") || GOVUK_REMAP_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: GOVUK_AURN_CODE,
-              label: GOVUK_AURN_LABEL,
-            };
-          }
-          if (OPENAQ_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: "openaq",
-              label: "OpenAQ",
-            };
-          }
-          if (BREATHE_LONDON_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: "breathe_london",
-              label: "Breathe London",
-            };
-          }
-          if (SENSOR_COMMUNITY_MATCHERS.some((token) => combined.includes(token))) {
-            return {
-              ...entry,
-              code: "sensorcommunity",
-              label: "Sensor.Community",
-            };
-          }
-          if (LAQN_NETWORK_MATCHERS.some((token) => combined.includes(token))) {
-            return null;
-          }
-          return null;
-        });
-        const seen = new Set();
-        return remapped.filter((entry) => {
-          if (!entry?.code) {
-            return false;
-          }
-          const key = String(entry.code || "").toLowerCase();
-          if (seen.has(key)) {
-            return false;
-          }
-          seen.add(key);
-          return true;
-        });
-      }
+
 
       function collectStationEntries(rows, pconCode) {
         const stationMap = new Map();
@@ -14438,7 +14252,7 @@
             highestValue: highest.value,
             highestColor,
             highestSensor: resolveStationName(highest.row),
-            highestNetwork: resolveConnectorLabel(highest.row),
+            highestNetwork: resolvePrimaryNetworkLabel(highest.row) || "Unknown network",
             newestReadingISO: newest ? (newest.toISOString?.() || newest) : null,
             oldestReadingISO: oldest ? (oldest.toISOString?.() || oldest) : null,
           }, 'cr-top');
@@ -14665,7 +14479,7 @@
           return resolveStationName(entry.row) || "";
         }
         if (key === "network") {
-          return resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "";
+          return resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
         }
         if (key === "pm25") {
           return entry.value;
@@ -14890,7 +14704,7 @@
         const renderSensorRow = (entry) => {
           const stationName = resolveStationName(entry.row);
           const stationId = String(resolveStationKey(entry.row) || stationName || "");
-          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row);
+          const networkLabel = resolvePrimaryNetworkLabel(entry.row) || "Unknown network";
           const updatedText = formatSummaryTimestamp(entry.timestamp);
           const chartSelected = window.hexChartMode?.isSensorSelected?.("cr", stationId) === true;
           const symbolIndex = window.hexChartMode?.getSelectedSensorIndex?.("cr", stationId) ?? -1;
@@ -15749,7 +15563,7 @@
         return count === null ? 0 : count;
       }
 
-      function getActiveNetworkIds() {
+      function getActiveNetworkCodes() {
         if (!networkInputs.length) {
           return null;
         }
@@ -15823,13 +15637,13 @@
         });
       }
 
-      function filterLatestRowsByNetwork(rows, networkIds) {
+      function filterLatestRowsByNetwork(rows, networkCodes) {
         if (!rows.length) {
           return [];
         }
         return rows.filter((row) => {
           const codes = resolveNetworkCodes(row);
-          return codes.some((code) => networkIds.has(code));
+          return codes.some((code) => networkCodes.has(code));
         });
       }
 
@@ -15925,18 +15739,18 @@
           persistNetworkSelection();
           return;
         }
-        const networkIds = getActiveNetworkIds();
+        const networkCodes = getActiveNetworkCodes();
         let filteredLatest = [];
-        if (networkIds === null) {
+        if (networkCodes === null) {
           filteredLatest = baseLatestRows;
-        } else if (networkIds.size > 0) {
-          filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkIds);
+        } else if (networkCodes.size > 0) {
+          filteredLatest = filterLatestRowsByNetwork(baseLatestRows, networkCodes);
         }
         let filteredLatestAllWindow = [];
-        if (networkIds === null) {
+        if (networkCodes === null) {
           filteredLatestAllWindow = baseLatestRowsAllWindow;
-        } else if (networkIds.size > 0) {
-          filteredLatestAllWindow = filterLatestRowsByNetwork(baseLatestRowsAllWindow, networkIds);
+        } else if (networkCodes.size > 0) {
+          filteredLatestAllWindow = filterLatestRowsByNetwork(baseLatestRowsAllWindow, networkCodes);
         }
         scopedLatestRows = filteredLatest;
         scopedLatestRowsAllWindow = filteredLatestAllWindow;
@@ -16233,6 +16047,10 @@
 	          }
 	        }
         try {
+          await fetchNetworkCatalog();
+          if (isStale()) {
+            return;
+          }
           const hexUrl = getHexUrlForRegion(requestRegion);
           const hexPromise = fetch(hexUrl);
           let laPromise = Promise.resolve(null);
@@ -16885,7 +16703,7 @@
         rowsForSearch.forEach((row, index) => {
           const stationId = String(resolveStationKey(row) || `cr:${index}`);
           const stationName = resolveStationName(row);
-          const networkName = resolvePrimaryNetworkLabel(row) || resolveConnectorLabel(row) || null;
+          const networkName = resolvePrimaryNetworkLabel(row) || null;
           const areaRaw = resolveAreaCode(row);
           const pconRaw = resolvePconCode(row);
           const laCode = typeof areaRaw === "string" ? areaRaw.trim().toUpperCase() : null;
@@ -16911,7 +16729,7 @@
           recordsByKey.set(key, {
             station_id: stationId,
             station_name: stationName,
-            network_name: networkName,
+            network_label: networkName,
             pcon_code: pconCode,
             la_code: laCode,
             lat,
@@ -17010,7 +16828,7 @@
           return {
             stationId,
             stationName,
-            networkLabel: resolvePrimaryNetworkLabel(entry.row) || resolveConnectorLabel(entry.row) || "Unknown network",
+            networkLabel: resolvePrimaryNetworkLabel(entry.row) || "Unknown network",
             timeseriesId: resolveTimeseriesId(entry.row),
             value: entry.value,
             updatedText: formatSummaryTimestamp(entry.timestamp),
@@ -22860,7 +22678,7 @@
       const stationName = String(row?.station_name || "").trim();
       if (!stationName) return null;
       const stationId = String(row?.station_id || "").trim();
-      const networkName = String(row?.network_name || "").trim();
+      const networkName = String(row?.network_label || "").trim();
       return {
         group: "sensor",
         kind: "sensor",
