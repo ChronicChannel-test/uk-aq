@@ -596,6 +596,11 @@
       const EDGE_URL = cacheBaseUrl
         ? `${cacheBaseUrl}/stations-chart`
         : "";
+      const NETWORK_CATALOG_URL = cacheBaseUrl
+        ? `${cacheBaseUrl}/networks`
+        : "/api/aq/networks";
+      let networkCatalogByCode = new Map();
+      let networkCatalogPromise = null;
       const cacheAqiHistoryBase = cacheBaseUrl ? `${cacheBaseUrl}/aqi-history` : "";
       const DEFAULT_AQI_HISTORY_BASE_URL = configuredAqiHistoryBase;
       const AQI_HISTORY_BASE_URL = resolveAqiHistoryBaseUrl(aqiHistoryBaseParam);
@@ -1687,7 +1692,39 @@
       }
 
       function getNetworkLabel(row) {
-        return String(row.network_label || "").trim() || "Unknown";
+        const scalarLabel = String(
+          row?.network_label || row?.station?.network_label || "",
+        ).trim();
+        if (scalarLabel) {
+          return scalarLabel;
+        }
+        const code = String(
+          row?.network_code || row?.station?.network_code || "",
+        ).trim();
+        return (code ? networkCatalogByCode.get(code)?.label : null) || "Unknown";
+      }
+
+      async function fetchNetworkCatalog() {
+        if (networkCatalogPromise) {
+          return networkCatalogPromise;
+        }
+        networkCatalogPromise = (async () => {
+          const response = await fetchCacheApi(NETWORK_CATALOG_URL);
+          if (!response.ok) {
+            throw new Error(`Network catalog request failed: ${response.status}`);
+          }
+          const payload = await response.json();
+          const rows = Array.isArray(payload?.data) ? payload.data : [];
+          const definitions = rows.map((row) => ({
+            code: String(row?.network_code || "").trim(),
+            label: String(row?.network_label || "").trim(),
+          })).filter((row) => row.code && row.label);
+          networkCatalogByCode = new Map(
+            definitions.map((definition) => [definition.code, definition])
+          );
+          return definitions;
+        })();
+        return networkCatalogPromise;
       }
 
       function formatStationLabel(row) {
@@ -4541,9 +4578,12 @@
           if (etag) {
             requestHeaders["If-None-Match"] = etag;
           }
-          const response = await fetchCacheApi(endpoint, {
-            headers: requestHeaders,
-          });
+          const [response] = await Promise.all([
+            fetchCacheApi(endpoint, {
+              headers: requestHeaders,
+            }),
+            fetchNetworkCatalog(),
+          ]);
           if (response.status === 304) {
             await loadSeriesData();
             lastUpdated.textContent = `Unchanged ${new Date().toLocaleTimeString()}`;

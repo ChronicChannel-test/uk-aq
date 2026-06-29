@@ -300,6 +300,7 @@
         const STATIONS_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations` : "";
         const STATIONS_MAP_FALLBACK_URL = cacheBaseUrl ? `${cacheBaseUrl}/stations-map` : "";
         const NETWORK_CATALOG_URL = cacheBaseUrl ? `${cacheBaseUrl}/networks` : "/api/aq/networks";
+        let networkCatalogByCode = new Map();
         let networkCatalogPromise = null;
 
         const refreshBtn = document.getElementById("refresh");
@@ -672,7 +673,14 @@
             }
             const payload = await response.json();
             const rows = Array.isArray(payload?.data) ? payload.data : [];
-            return rows.map((row) => String(row?.network_code || "").trim()).filter(Boolean);
+            const definitions = rows.map((row) => ({
+              code: String(row?.network_code || "").trim(),
+              label: String(row?.network_label || "").trim(),
+            })).filter((row) => row.code && row.label);
+            networkCatalogByCode = new Map(
+              definitions.map((definition) => [definition.code, definition])
+            );
+            return definitions;
           })();
           return networkCatalogPromise;
         }
@@ -802,7 +810,12 @@
         }
 
         function getNetworkLabel(row) {
-          return normalizeText(row?.network_label) || "Unknown";
+          const scalarLabel = normalizeText(row?.network_label || row?.station?.network_label);
+          if (scalarLabel) {
+            return scalarLabel;
+          }
+          const code = normalizeText(row?.network_code || row?.station?.network_code);
+          return (code ? networkCatalogByCode.get(code)?.label : null) || "Unknown";
         }
 
         function getStationName(row) {
@@ -1010,9 +1023,9 @@
             buildStationsEndpoint(baseEndpoint),
             "Station geometry request failed",
           );
-          const networkCodes = await fetchNetworkCatalog();
+          const networkDefinitions = await fetchNetworkCatalog();
           const shardResults = allRows.length >= 20000
-            ? await Promise.all(networkCodes.map((networkCode) =>
+            ? await Promise.all(networkDefinitions.map(({ code: networkCode }) =>
               fetchRowsFromEndpoint(
                 buildStationsEndpoint(baseEndpoint, networkCode),
                 `Station geometry request failed (network ${networkCode})`,

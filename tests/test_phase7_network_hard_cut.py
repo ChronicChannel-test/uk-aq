@@ -12,6 +12,8 @@ def test_hex_map_uses_network_catalog_for_public_filters() -> None:
     assert "fetchNetworkCatalog" in HEX
     assert "networkCatalogDefs.map" in HEX
     assert "NETWORK_FILTER_BASE_DEFS" not in HEX
+    assert HEX.count("let networkCatalogByCode = new Map();") == 2
+    assert HEX.count("function getCatalogNetworkByCode(code)") == 2
 
 
 def test_hex_map_filters_exact_catalog_network_codes_without_remaps() -> None:
@@ -51,13 +53,54 @@ def test_sensors_map_uses_catalog_network_code_shards_not_connector_shards() -> 
 
 
 def test_public_display_names_use_network_label_only() -> None:
-    assert 'return normalizeText(row?.network_label) || "Unknown";' in SENSORS_MAP
-    assert 'return String(row.network_label || "").trim() || "Unknown";' in SENSORS_CHART
+    for content in (SENSORS_MAP, SENSORS_CHART):
+        assert "networkCatalogByCode.get(code)?.label" in content
+        assert "row?.network_label || row?.station?.network_label" in content
     for content in (SENSORS_MAP, SENSORS_CHART):
         assert "station_network_memberships" not in content
         assert "network_memberships" not in content
         assert "connector_label || row?.connector_code" not in content
         assert "connector_label || row.connector_code" not in content
+
+
+def test_catalog_resolves_missing_scalar_labels_by_exact_network_code() -> None:
+    expected = (
+        "return getCatalogNetworkByCode(resolveNetworkCode(row))?.label || null;"
+    )
+    assert HEX.count(expected) == 2
+    assert HEX.count(
+        "networkCatalogDefs.map((definition) => [definition.code, definition])"
+    ) == 2
+    assert ".toLowerCase()" not in "\n".join(
+        line
+        for line in HEX.splitlines()
+        if "networkCatalogByCode.get" in line
+    )
+
+
+def test_network_counts_use_canonical_codes_and_refresh_on_mode_switch() -> None:
+    assert HEX.count("if (!entry || !byCode.has(entry.code)) return;") == 2
+    assert HEX.count("byCode.get(entry.code).count++;") == 2
+    assert HEX.count('restoreNetworks: () => {\n          networkDefsKey = "";') == 2
+    assert 'window.ukMap?.restoreNetworks();' in HEX
+    assert 'window.crMap?.restoreNetworks();' in HEX
+
+
+def test_user_facing_network_paths_use_catalog_backed_resolver() -> None:
+    assert 'resolvePrimaryNetworkLabel(entry.row) || "Unknown network"' in HEX
+    assert 'resolvePrimaryNetworkLabel(h.row) || "Unknown network"' in HEX
+    assert 'resolvePrimaryNetworkLabel(highest.row) || "Unknown network"' in HEX
+    assert 'networkLabel: resolvePrimaryNetworkLabel(entry.row) || "Unknown network"' in HEX
+
+
+def test_datetime_cards_use_active_filtered_valid_rows() -> None:
+    assert "const windowed = filterRowsByWindow(scopedLatestRows);" in HEX
+    assert "const scopedRows = getRowsForActivePollutant(windowed);" in HEX
+    assert "const summaryBaseRows = filterRowsByWindow(scopedLatestRows);" in HEX
+    assert "const rowsForSummary = getRowsForActivePollutant(summaryBaseRows);" in HEX
+    assert "if (timestamp)" in HEX
+    assert "if (!newest || timestamp > newest)" in HEX
+    assert "if (!oldest || timestamp < oldest)" in HEX
 
 
 def test_no_routine_cache_buster_for_network_catalog() -> None:

@@ -7145,6 +7145,7 @@
       const LAQN_NETWORK_MATCHERS = ["laqn"];
       const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity"];
       let networkCatalogDefs = [];
+      let networkCatalogByCode = new Map();
       let networkCatalogPromise = null;
       const NETWORK_LOGO_META = Object.freeze({
         gov_uk_aurn: {
@@ -8949,11 +8950,21 @@
       }
 
       function resolveNetworkCode(row) {
-        return row?.network_code || row?.station?.network_code || null;
+        const code = row?.network_code || row?.station?.network_code || null;
+        return code ? String(code).trim() || null : null;
+      }
+
+      function getCatalogNetworkByCode(code) {
+        const key = code ? String(code).trim() : "";
+        return key ? networkCatalogByCode.get(key) || null : null;
       }
 
       function resolveNetworkLabel(row) {
-        return row?.network_label || row?.station?.network_label || null;
+        const label = row?.network_label || row?.station?.network_label || null;
+        if (label && String(label).trim()) {
+          return String(label).trim();
+        }
+        return getCatalogNetworkByCode(resolveNetworkCode(row))?.label || null;
       }
 
       async function fetchNetworkCatalog() {
@@ -8974,6 +8985,9 @@
               network_type: row?.network_type || null,
               count: 0,
             })).filter((row) => row.code && row.label);
+            networkCatalogByCode = new Map(
+              networkCatalogDefs.map((definition) => [definition.code, definition])
+            );
             return networkCatalogDefs;
           });
         return networkCatalogPromise;
@@ -9013,7 +9027,7 @@
           return null;
         }
         return {
-          id: resolveNetworkId(row),
+          id: resolveNetworkId(row) || getCatalogNetworkByCode(code)?.id || null,
           code,
           label,
         };
@@ -9034,7 +9048,7 @@
           return [];
         }
         return [{
-          id: resolveNetworkId(row),
+          id: resolveNetworkId(row) || getCatalogNetworkByCode(code)?.id || null,
           code,
           label,
         }];
@@ -9113,7 +9127,7 @@
           }
           const seenCodes = new Set();
           collectNetworkEntries(row).forEach((entry) => {
-            const code = String(entry?.code || "").toLowerCase();
+            const code = String(entry?.code || "").trim();
             if (!code || seenCodes.has(code)) {
               return;
             }
@@ -9132,7 +9146,7 @@
           return "empty";
         }
         return defs.map((def) => {
-          const code = String(def.code || "").toLowerCase();
+          const code = String(def.code || "").trim();
           const covered = coverageByCode.get(code)?.size || 0;
           const pct = coverageTotal > 0 ? Math.round((covered / coverageTotal) * 100) : 0;
           return `${def.code}:${def.label}:${def.count}:${covered}:${pct}`;
@@ -11901,6 +11915,7 @@
           syncSettingsPanelWidth();
         },
         restoreNetworks: () => {
+          networkDefsKey = "";
           applyStoredNetworkSelection();
           applyNetworkFilters();
         },
@@ -12128,6 +12143,7 @@
       const LAQN_NETWORK_MATCHERS = ["laqn"];
       const SENSOR_COMMUNITY_MATCHERS = ["sensorcommunity"];
       let networkCatalogDefs = [];
+      let networkCatalogByCode = new Map();
       let networkCatalogPromise = null;
       const NETWORK_LOGO_META = Object.freeze({
         gov_uk_aurn: {
@@ -13354,11 +13370,21 @@
       }
 
       function resolveNetworkCode(row) {
-        return row?.network_code || row?.station?.network_code || null;
+        const code = row?.network_code || row?.station?.network_code || null;
+        return code ? String(code).trim() || null : null;
+      }
+
+      function getCatalogNetworkByCode(code) {
+        const key = code ? String(code).trim() : "";
+        return key ? networkCatalogByCode.get(key) || null : null;
       }
 
       function resolveNetworkLabel(row) {
-        return row?.network_label || row?.station?.network_label || null;
+        const label = row?.network_label || row?.station?.network_label || null;
+        if (label && String(label).trim()) {
+          return String(label).trim();
+        }
+        return getCatalogNetworkByCode(resolveNetworkCode(row))?.label || null;
       }
 
       async function fetchNetworkCatalog() {
@@ -13379,6 +13405,9 @@
               network_type: row?.network_type || null,
               count: 0,
             })).filter((row) => row.code && row.label);
+            networkCatalogByCode = new Map(
+              networkCatalogDefs.map((definition) => [definition.code, definition])
+            );
             return networkCatalogDefs;
           });
         return networkCatalogPromise;
@@ -13418,7 +13447,7 @@
           return null;
         }
         return {
-          id: resolveNetworkId(row),
+          id: resolveNetworkId(row) || getCatalogNetworkByCode(code)?.id || null,
           code,
           label,
         };
@@ -13439,7 +13468,7 @@
           return [];
         }
         return [{
-          id: resolveNetworkId(row),
+          id: resolveNetworkId(row) || getCatalogNetworkByCode(code)?.id || null,
           code,
           label,
         }];
@@ -13518,7 +13547,7 @@
           }
           const seenCodes = new Set();
           collectNetworkEntries(row).forEach((entry) => {
-            const code = String(entry?.code || "").toLowerCase();
+            const code = String(entry?.code || "").trim();
             if (!code || seenCodes.has(code)) {
               return;
             }
@@ -13537,7 +13566,7 @@
           return "empty";
         }
         return defs.map((def) => {
-          const code = String(def.code || "").toLowerCase();
+          const code = String(def.code || "").trim();
           const covered = coverageByCode.get(code)?.size || 0;
           const pct = coverageTotal > 0 ? Math.round((covered / coverageTotal) * 100) : 0;
           return `${def.code}:${def.label}:${def.count}:${covered}:${pct}`;
@@ -16857,6 +16886,7 @@
           syncSettingsPanelWidth();
         },
         restoreNetworks: () => {
+          networkDefsKey = "";
           applyStoredNetworkSelection();
           applyNetworkFilters();
         },
