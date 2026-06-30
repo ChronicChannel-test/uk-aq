@@ -114,3 +114,17 @@ data/LAD/uk_aq_la_wales_hex_custom_2025.geojson
 ```
 
 This keeps the source format clear and avoids confusing general JSON, GeoJSON, and HexJSON.
+# Public network identity
+
+The website fetches the public catalogue from `/api/aq/networks` every minute
+using stable request URLs. Normal polling never uses cache busters.
+
+Filters compare exact `network_code` values and labels use `network_label`.
+The aggregator badge is driven by catalogue `network_type = "aggregator"` for
+public networks. OpenAQ therefore remains absent while its catalogue row is not
+public. Connector labels are provenance and are never a fallback for public
+network identity.
+
+There is no code remapping: `gov_uk_aurn` remains `gov_uk_aurn`, with public
+label `GOV.UK AURN`, and `breathelondon` remains `breathelondon`. Both hex-map
+controllers use the catalogue-backed resolver.
