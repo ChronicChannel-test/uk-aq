@@ -98,8 +98,14 @@ This document captures key UI state and data-flow conventions for `uk_aq_hex_map
 - Clicks inside the chart header panel no longer clear the selected hex on the map, so changing chart range preserves the existing hex selection and sensor list.
 
 ## Cache session auth
-- Cache API calls now try the request first with `credentials: include`.
-- A Turnstile-backed `POST /api/aq/session/start` is attempted only after a `401` response.
+- Before a protected cache API request, the page reuses a fresh shared session
+  hint or starts one with a Turnstile-backed `POST /api/aq/session/start`.
+- Turnstile is rendered once with `appearance: "interaction-only"` and
+  `execution: "execute"`. Its normal fixed bottom-right host is not manually
+  hidden; Cloudflare displays the widget only when visitor interaction is
+  required.
+- Concurrent protected requests share the in-flight Turnstile/session promise,
+  and the widget is not reset or re-rendered after normal successful requests.
 - Session expiry hints are shared across tabs in `localStorage` so quick multi-tab opens avoid redundant session minting.
 - If a cache fetch fails with the browser-level Access/CORS pattern (`TypeError: Failed to fetch`), the page redirects to Cloudflare Access login for the current hostname and then returns to the same map URL.
 

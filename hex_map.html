@@ -106,20 +106,17 @@
       }
 
       /*
-       * Turnstile is intentionally kept off-screen. It is used only for the
-       * cache session challenge and must not display a visible widget over the map.
+       * Turnstile controls its own visibility through appearance:
+       * interaction-only. Keep the host usable if interaction is required.
        */
-      .uk-aq-turnstile-hidden,
       #uk-aq-turnstile-widget-shared {
         position: fixed !important;
-        left: -10000px !important;
-        top: -10000px !important;
-        width: 1px !important;
-        height: 1px !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        overflow: hidden !important;
-        z-index: -1 !important;
+        right: 16px !important;
+        bottom: 16px !important;
+        width: 300px !important;
+        min-height: 65px !important;
+        z-index: 2147483647 !important;
+        background: transparent !important;
       }
 
       main {
@@ -7642,6 +7639,11 @@
             }
           }
 
+          function turnstileDebugLog(event, details = {}) {
+            if (!isTurnstileDebugMode()) return;
+            console.debug(`[UK AQ Turnstile] ${event}`, details);
+          }
+
           function readCacheSessionHintUntil() {
             try {
               const raw = window.localStorage.getItem(CACHE_SESSION_HINT_STORAGE_KEY);
@@ -7689,41 +7691,18 @@
             if (!container) {
               container = document.createElement("div");
               container.id = "uk-aq-turnstile-widget-shared";
-              container.classList.add("uk-aq-turnstile-hidden");
               document.body.appendChild(container);
             }
-            container.classList.add("uk-aq-turnstile-hidden");
             Object.assign(container.style, {
               position: "fixed",
-              left: "-10000px",
-              top: "-10000px",
-              right: "auto",
-              bottom: "auto",
-              width: "1px",
-              height: "1px",
-              minWidth: "0",
-              minHeight: "0",
-              opacity: "0",
-              pointerEvents: "none",
-              overflow: "hidden",
-              zIndex: "-1",
+              right: "16px",
+              bottom: "16px",
+              width: "300px",
+              minHeight: "65px",
+              zIndex: "2147483647",
               background: "transparent",
-              padding: "0",
-              border: "0",
-              borderRadius: "0",
-              boxShadow: "none",
             });
             return container;
-          }
-
-          function showTurnstileContainerForAuth() {
-            const container = ensureTurnstileContainer();
-            return container;
-          }
-
-          function hideTurnstileContainerAfterAuth() {
-            const container = document.getElementById("uk-aq-turnstile-widget-shared");
-            if (container) ensureTurnstileContainer();
           }
 
           function clearTurnstilePendingState() {
@@ -7761,63 +7740,66 @@
           async function ensureTurnstileWidget() {
             if (!turnstileSiteKey) throw new Error("Missing Turnstile site key. Add ?turnstile_site_key=... to the URL.");
             await ensureTurnstileScript();
-            showTurnstileContainerForAuth();
-            if (turnstileWidgetId !== null) return;
+            if (turnstileWidgetId !== null) return turnstileWidgetId;
             const turnstileApi = window.turnstile;
             if (!turnstileApi || typeof turnstileApi.render !== "function") throw new Error("Turnstile SDK unavailable.");
-            const container = showTurnstileContainerForAuth();
+            const container = ensureTurnstileContainer();
             turnstileWidgetId = turnstileApi.render(container, {
               sitekey: turnstileSiteKey,
               appearance: "interaction-only",
               execution: "execute",
+              theme: "auto",
               callback: (token) => {
-                if (turnstileTokenResolver) {
-                  turnstileTokenResolver(token);
-                  clearTurnstilePendingState();
-                }
+                const resolve = turnstileTokenResolver;
+                clearTurnstilePendingState();
+                turnstileDebugLog("turnstile-token-received");
+                if (resolve) resolve(token);
               },
-              "error-callback": () => {
-                const _api = window.turnstile;
-                if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) _api.remove(turnstileWidgetId);
-                turnstileWidgetId = null;
-                if (turnstileTokenRejecter) {
-                  turnstileTokenRejecter(new Error("Turnstile verification failed."));
-                  clearTurnstilePendingState();
-                }
+              "error-callback": (errorCode) => {
+                const reject = turnstileTokenRejecter;
+                clearTurnstilePendingState();
+                if (reject) reject(new Error(`Turnstile failed: ${errorCode || "unknown error"}`));
               },
               "expired-callback": () => {
-                const _api = window.turnstile;
-                if (_api && typeof _api.remove === "function" && turnstileWidgetId !== null) _api.remove(turnstileWidgetId);
-                turnstileWidgetId = null;
-                if (turnstileTokenRejecter) {
-                  turnstileTokenRejecter(new Error("Turnstile token expired."));
-                  clearTurnstilePendingState();
-                }
+                const reject = turnstileTokenRejecter;
+                clearTurnstilePendingState();
+                if (reject) reject(new Error("Turnstile token expired."));
               },
               "timeout-callback": () => {
-                if (turnstileTokenRejecter) {
-                  turnstileTokenRejecter(new Error("Turnstile challenge timed out."));
-                  clearTurnstilePendingState();
-                }
+                const reject = turnstileTokenRejecter;
+                clearTurnstilePendingState();
+                if (reject) reject(new Error("Turnstile challenge timed out."));
               },
             });
+            turnstileDebugLog("turnstile-widget-rendered", {
+              widgetId: turnstileWidgetId !== null,
+            });
+            return turnstileWidgetId;
           }
 
           async function getTurnstileToken() {
-            await ensureTurnstileWidget();
+            const widgetId = await ensureTurnstileWidget();
             if (!turnstileTokenInflight) {
               turnstileTokenInflight = (async () => {
                 const turnstileApi = window.turnstile;
                 if (!turnstileApi || typeof turnstileApi.execute !== "function") throw new Error("Turnstile execute unavailable.");
-                return new Promise((resolve, reject) => {
+                const tokenPromise = new Promise((resolve, reject) => {
                   turnstileTokenResolver = resolve;
                   turnstileTokenRejecter = reject;
                   turnstileTokenTimeoutId = setTimeout(() => {
-                    if (turnstileTokenRejecter) turnstileTokenRejecter(new Error("Turnstile token timed out."));
+                    const timeoutReject = turnstileTokenRejecter;
                     clearTurnstilePendingState();
+                    if (timeoutReject) timeoutReject(new Error("Turnstile token timed out."));
                   }, 30000);
-                  turnstileApi.execute(turnstileWidgetId);
                 });
+                try {
+                  turnstileDebugLog("turnstile-execute-started");
+                  turnstileApi.execute(widgetId);
+                } catch (error) {
+                  clearTurnstilePendingState();
+                  throw error;
+                }
+                return tokenPromise;
               })().finally(() => {
                 turnstileTokenInflight = null;
               });
@@ -7846,7 +7828,7 @@
                 cacheAuthToken = "session";
                 cacheAuthTokenExpiresAt = Date.now() + Math.max(30000, Math.floor((Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300) * 1000));
                 writeCacheSessionHintUntil(cacheAuthTokenExpiresAt);
-                hideTurnstileContainerAfterAuth();
+                turnstileDebugLog("session-started");
                 return cacheAuthToken;
               })().finally(() => {
                 cacheAuthInflight = null;
